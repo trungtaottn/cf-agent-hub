@@ -1,10 +1,14 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { FixedClock } from '../helpers/clock';
 import { env, exports } from 'cloudflare:workers';
 import { runInDurableObject, evictDurableObject } from 'cloudflare:test';
 import { withTransaction } from '../../src/storage/transaction';
 import { migrate, FOUNDATION_SQL } from '../../src/storage/migrations';
 import { prepareBootstrap, sha256, canonicalJson, installConfiguration } from '../../src/config/bootstrap';
 import { prepared, fixture, operator, nowMs } from '../helpers/environment';
+// Date-only control reaches systemClock in the same Workers isolate; timers and RPC stay real.
+beforeEach(()=>{vi.useFakeTimers({toFake:['Date']});vi.setSystemTime(new FixedClock().nowMs());});
+afterEach(()=>{vi.useRealTimers();});
 const stub=(name:string)=>env.WORKSPACE.getByName(name);
 async function denied(name:string,context:Parameters<import('../../src/workspace/workspace-do').WorkspaceDO['reconcileConfiguration']>[0],input:Awaited<ReturnType<typeof prepared>>) {
  return runInDurableObject(stub(name),async object=>{try {await object.reconcileConfiguration(context,input);return 'unexpected success';}catch(error){return (error as Error).message;}});
@@ -162,5 +166,28 @@ describe('transaction and authority hardening',()=>{
    expect(()=>withTransaction(state.storage,tx=>installConfiguration(tx,validated.config,validated,nowMs))).toThrow('CREDENTIAL_EXPIRY');
    expect(state.storage.sql.exec('SELECT * FROM workspace_metadata').toArray()).toEqual([]);
   });
+ });
+});
+
+describe('controlled reconciliation clock',()=>{
+ it('future_calendar_binding_install_reaches_epoch_invariant',async()=>{
+  const clock=new FixedClock(Date.parse('2035-06-01T00:00:00Z'));vi.setSystemTime(clock.nowMs());
+  const name='future-calendar',input=await prepared(name,2,clock);
+  const receipt=await stub(name).reconcileConfiguration(operator(),input);
+  expect(receipt.epoch).toBe(2);
+  const before=await snapshot(name);
+  expect(await runInDurableObject(stub(name),(_object,state)=>state.storage.sql.exec<{occurred_at:number}>('SELECT occurred_at FROM events').one().occurred_at)).toBe(clock.nowMs());
+  expect(Date.parse(input.config.static_credential_refs[0].expires_at)).toBe(clock.nowMs()+30*86400000);
+  expect(await denied(name,operator(2,receipt.installationDigest),await prepared(name,1,clock))).toBe('STALE_EPOCH');
+  expect(await snapshot(name)).toEqual(before);
+ });
+ it('controlled_clock_rejects_new_credentials_at_expiry',async()=>{
+  const clock=new FixedClock(Date.parse('2035-06-01T00:00:00Z'));vi.setSystemTime(clock.nowMs());
+  const name='future-expired',input=await prepared(name,1,clock);
+  const before=await snapshot(name);expect(before.metadata).toEqual([]);expect(before.credentials).toEqual([]);
+  clock.value=Date.parse(input.config.static_credential_refs[0].expires_at);vi.setSystemTime(clock.nowMs());
+  expect(await denied(name,operator(),input)).toBe('CREDENTIAL_EXPIRY');
+  expect(await snapshot(name)).toEqual(before);
+  expect(await runInDurableObject(stub(name),(_object,state)=>state.storage.sql.exec('SELECT * FROM events').toArray())).toEqual([]);
  });
 });
