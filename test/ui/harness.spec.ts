@@ -9,9 +9,13 @@ test('invalid unpinned key fails even for an allowed authority',async()=>{
  try {const page=await browser.newPage({ignoreHTTPSErrors:false});await expect(page.goto(appOrigin+'/health/live')).rejects.toThrow(/ERR_CERT_AUTHORITY_INVALID/);}
  finally {await browser.close();}
 });
-test('unknown hosts, alternate ports and loopback cannot bypass the proxy',async({page})=>{
- for(const url of ['https://unknown.example.invalid/','https://hub.fixture.example.invalid:444/','https://127.0.0.1:'+captures().appPort+'/health/live'])
-  await expect(page.goto(url)).rejects.toThrow(/ERR_TUNNEL_CONNECTION_FAILED/);
+test('unknown hosts, alternate ports and loopback cannot bypass the proxy',async({page,context})=>{
+ for(const url of ['https://unknown.example.invalid/','https://hub.fixture.example.invalid:444/','https://127.0.0.1:'+captures().appPort+'/health/live']) {
+  // Chromium may finish its error-page navigation after goto rejects. Isolate each attempt.
+  const rejectedPage=await context.newPage();
+  try {await expect(rejectedPage.goto(url)).rejects.toThrow(/ERR_TUNNEL_CONNECTION_FAILED/);}
+  finally {await rejectedPage.close();}
+ }
  const denied=await page.goto('http://127.0.0.1:'+captures().appPort+'/health/live');expect(denied?.status()).toBe(403);
 });
 test('fixture listeners do not turn public installation into authority',async({page})=>{
