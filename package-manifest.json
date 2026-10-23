@@ -1,21 +1,21 @@
 {
   "package": "CF Agent Hub documentation and reviewed implementation plans",
-  "contract_revision": "0.1",
+  "contract_revision": "r1-foundation-1",
   "baseline_date": "2026-10-23",
   "license": "MIT",
   "copyright_holder": "trungtaottn",
   "implementation_status": "pending",
   "planning_status": "reviewed-in-recorded-scope",
   "scope": "Standalone product documentation, proposed contracts, synthetic fixtures, reviewed R1-R4 execution plans and planning/documentation validation tooling.",
-  "file_count_including_manifest": 113,
+  "file_count_including_manifest": 151,
   "manifest_excludes_own_hash": true,
   "documentation_counts": {
-    "markdown_documents": 50,
-    "json_files_parsed": 58,
-    "json_schemas": 4,
-    "openapi_operations": 41,
-    "openapi_component_schemas": 70,
-    "mapped_fixtures": 45,
+    "markdown_documents": 52,
+    "json_files_parsed": 92,
+    "json_schemas": 10,
+    "openapi_operations": 55,
+    "openapi_component_schemas": 100,
+    "mapped_fixtures": 73,
     "external_link_occurrences_not_fetched": 49
   },
   "implementation_plan_counts": {
@@ -28,7 +28,7 @@
     {
       "path": ".gitignore",
       "size_bytes": 205,
-      "mode": "0644",
+      "mode": "0600",
       "sha256": "accbd7c94648cb95cf3ca1fd8045c12837ecd3882e9810216e0ad8933164e914"
     },
     {
@@ -42,6 +42,24 @@
       "size_bytes": 3099,
       "mode": "0644",
       "sha256": "7a2105faaec3c3ec61bd8543318c4d681008ec4fec1bad05c5acc3e953e00aad"
+    },
+    {
+      "path": "LICENSE",
+      "size_bytes": 1068,
+      "mode": "0644",
+      "sha256": "1f80d3b2e71b041b1de2e46f6faf5a16c644195c9697a8d4a1784ff89a9fd721"
+    },
+    {
+      "path": "README.md",
+      "size_bytes": 3966,
+      "mode": "0644",
+      "sha256": "26e594f1af6c4013b04879a66ed195a57b38a2375f3b6a470de1519a291876e8"
+    },
+    {
+      "path": "SECURITY.md",
+      "size_bytes": 2162,
+      "mode": "0644",
+      "sha256": "b8e171ec9c424c47d3bc3418b73f818827be7f4621f1997ed9a5add363a9d0be"
     },
     {
       "path": "docs/a2a-api.md",
@@ -86,6 +104,12 @@
       "sha256": "c92f68df63056805428017424e77ae2b7c19ce0899988b2d8c04c42ee45002f3"
     },
     {
+      "path": "docs/adr/0007-r1-ingress-and-settings.md",
+      "size_bytes": 11787,
+      "mode": "0600",
+      "sha256": "1ac4cb7a97f690f343f28af2bc1605f45038e405d3f329289868da4b49a8d529"
+    },
+    {
       "path": "docs/adr/README.md",
       "size_bytes": 1258,
       "mode": "0644",
@@ -111,9 +135,9 @@
     },
     {
       "path": "docs/configuration.md",
-      "size_bytes": 8038,
-      "mode": "0644",
-      "sha256": "7b812681456d98020f659a61af06253c8b8d3e51c3e14e3cf346a51a7f507c64"
+      "size_bytes": 11675,
+      "mode": "0600",
+      "sha256": "bf11e7d39308b15a312813d110425858f5701b3c245183bc5d8f00838c84d707"
     },
     {
       "path": "docs/customization.md",
@@ -129,15 +153,15 @@
     },
     {
       "path": "docs/delivery-semantics.md",
-      "size_bytes": 10194,
-      "mode": "0644",
-      "sha256": "9ee9e0be41250f827d16ef6778dd3d13b2003b61cc38d5015adcd8d864cec627"
+      "size_bytes": 12147,
+      "mode": "0600",
+      "sha256": "6bf083dd2bf552e8d33527e0316bfef326907cf86f074968bac9d5432f6ccab0"
     },
     {
       "path": "docs/deployment.md",
-      "size_bytes": 8656,
-      "mode": "0644",
-      "sha256": "c8f06242fd8cb6b1400f0e89b32a4b43b02fd3b7d3fb68b1794f0e8c64f9fdbe"
+      "size_bytes": 12144,
+      "mode": "0600",
+      "sha256": "a499d818ca00546572dbb358fc5c144cdfd6810601dcd8a64293597f44617bb9"
     },
     {
       "path": "docs/design-guidelines.md",
@@ -159,9 +183,9 @@
     },
     {
       "path": "docs/feature-matrix.md",
-      "size_bytes": 8797,
-      "mode": "0644",
-      "sha256": "ce9b2c4f8b4deb44fcfbc4343e60d5249586529cfaa2f17c8dcd2566ad0af55d"
+      "size_bytes": 9817,
+      "mode": "0600",
+      "sha256": "6e3a5026ddb7fc9948e9d631323b498c0d59ca2ad512128d555855cb25779967"
     },
     {
       "path": "docs/getting-started.md",
@@ -177,9 +201,9 @@
     },
     {
       "path": "docs/http-api.md",
-      "size_bytes": 15964,
-      "mode": "0644",
-      "sha256": "e456485632548fed574e3fad24d7586bfb3bde296d80e86a7093a4f6d7fd1cd4"
+      "size_bytes": 21297,
+      "mode": "0600",
+      "sha256": "06fbf5f57a6677aa5074f50fe10a3eb0c2ec2045c0d9b9f2d601260b1b9e7fb1"
     },
     {
       "path": "docs/index.md",
@@ -201,9 +225,9 @@
     },
     {
       "path": "docs/limits.md",
-      "size_bytes": 5762,
-      "mode": "0644",
-      "sha256": "96a49d4a0e1e08a94da6385b7885054bc0d4afa963d8accbbc466927ec01ce99"
+      "size_bytes": 7539,
+      "mode": "0600",
+      "sha256": "62ea32799d236f34b1c49273db88c333eea81dacec33bf03a29f403075709876"
     },
     {
       "path": "docs/mcp-api.md",
@@ -242,10 +266,16 @@
       "sha256": "4a4819e7d4d438fd3a131edd4e81f87099129d6b390b1f538ef73f4967507e86"
     },
     {
+      "path": "docs/runbooks/r1-recovery.md",
+      "size_bytes": 8585,
+      "mode": "0600",
+      "sha256": "815dc233fa8268c27c802d3065f498e81bd3879922f61f49eae17f9996d9e710"
+    },
+    {
       "path": "docs/security-model.md",
-      "size_bytes": 12760,
-      "mode": "0644",
-      "sha256": "2548d2f6b74b4ad542cf4d703276d2c0032a277048bd9311eb255149e566f7a2"
+      "size_bytes": 17260,
+      "mode": "0600",
+      "sha256": "e5a91098274d48530f45decb47fbc6521825de8dc2a073228a50dc484c258e41"
     },
     {
       "path": "docs/superpowers/plans/2026-10-23-r1-foundation.md",
@@ -321,9 +351,15 @@
     },
     {
       "path": "examples/config/deployment.example.json",
-      "size_bytes": 538,
+      "size_bytes": 2492,
+      "mode": "0600",
+      "sha256": "9a7e568836908ed2310723e6bf4e7d42cdabbddba4580b01a1c29cb73fd463a2"
+    },
+    {
+      "path": "examples/config/r1-bootstrap.example.json",
+      "size_bytes": 537,
       "mode": "0644",
-      "sha256": "c77652829224efe12d7276741782d7d4581f7caa8c1be42eaf5d87ea5cf51565"
+      "sha256": "89b4e59368fd79c9b8a6f33e13387040eb90db84ec497363e4bd3c431bf36442"
     },
     {
       "path": "examples/config/user-preferences.json",
@@ -387,9 +423,9 @@
     },
     {
       "path": "examples/http/fixture-map.json",
-      "size_bytes": 7567,
+      "size_bytes": 12678,
       "mode": "0644",
-      "sha256": "549ec03fc06806a28e8049c33adc6011d354acf34cb9852f6b2567a1173303c3"
+      "sha256": "2a31959651f02587fcfeb3ac4725f36b2740881d50e52ccd5ad008658785ba2f"
     },
     {
       "path": "examples/http/human-only-denied.response.json",
@@ -426,6 +462,150 @@
       "size_bytes": 139,
       "mode": "0644",
       "sha256": "70532cd616557a498abca2a3eccf355b602b0ae81d22d0e23a66479bcf7ee8af"
+    },
+    {
+      "path": "examples/http/r1-callback.headers.json",
+      "size_bytes": 30,
+      "mode": "0644",
+      "sha256": "4f0a4a5a77adc0d35fa9c8c1cb6565f1bfda82618cfe8de244a01602b3aab3b7"
+    },
+    {
+      "path": "examples/http/r1-callback.query.json",
+      "size_bytes": 61,
+      "mode": "0644",
+      "sha256": "0bb0f37b75df377fab0f3341a7964173155cd4299345464fc03b902712b35570"
+    },
+    {
+      "path": "examples/http/r1-contract-negative.json",
+      "size_bytes": 57127,
+      "mode": "0600",
+      "sha256": "dbcd6d68f253c6ce8a8c32f3147fcf7a3a330253d946505abc3451e8114d13a8"
+    },
+    {
+      "path": "examples/http/r1-events-owner-filtered.response.json",
+      "size_bytes": 1868,
+      "mode": "0644",
+      "sha256": "ada3704acc27dd3efda96a6482cb2d0c90f8a21926cc563acd63d8f9fb798457"
+    },
+    {
+      "path": "examples/http/r1-events-reviewer.response.json",
+      "size_bytes": 1284,
+      "mode": "0644",
+      "sha256": "a64fc5ad0f46d78b40b5a904b75e1f8d6343b1dd5b91bfc197599eb90001a8f3"
+    },
+    {
+      "path": "examples/http/r1-events.json",
+      "size_bytes": 2453,
+      "mode": "0644",
+      "sha256": "c7ab7299a2c8c5566172f960ed03716616f479f4c4222a50b3fbb842779bc200"
+    },
+    {
+      "path": "examples/http/r1-exportProfile.response.json",
+      "size_bytes": 668,
+      "mode": "0644",
+      "sha256": "d05128b98329f2cb184c481519f5bd824d4b267c4b7949e0da77ce5c06612d94"
+    },
+    {
+      "path": "examples/http/r1-getAuthSession.response.json",
+      "size_bytes": 267,
+      "mode": "0644",
+      "sha256": "ca04006e0d0c8311bbba45321175fb67596fe771f6e847edaf5e02d59db61148"
+    },
+    {
+      "path": "examples/http/r1-getConfiguration.response.json",
+      "size_bytes": 385,
+      "mode": "0644",
+      "sha256": "5e2df34c2ddf23be835b742b7e2ec5649aac0cc0455fb68a40cfdbca4e4bb68b"
+    },
+    {
+      "path": "examples/http/r1-getOperations.response.json",
+      "size_bytes": 697,
+      "mode": "0644",
+      "sha256": "1cd3aa0ed9e6d8b292b236237a375cff1caf25bbca0b22f15e8e04908fa427c2"
+    },
+    {
+      "path": "examples/http/r1-getPreferences.response.json",
+      "size_bytes": 486,
+      "mode": "0644",
+      "sha256": "4771d7f65a0ed6416f7f71e863f8ce7db707252d4a14aee3794b84a36bc4729b"
+    },
+    {
+      "path": "examples/http/r1-getProfile.response.json",
+      "size_bytes": 570,
+      "mode": "0644",
+      "sha256": "d1e69b1f7fc585069603018e69930019e1c044175a8fc072aecd557147901b0e"
+    },
+    {
+      "path": "examples/http/r1-getReadiness.response.json",
+      "size_bytes": 291,
+      "mode": "0644",
+      "sha256": "98913f58f6f7a96b9a082b3c1c67367f3c8f0b61b7d37bd394432dea02771f89"
+    },
+    {
+      "path": "examples/http/r1-liveness.response.json",
+      "size_bytes": 24,
+      "mode": "0644",
+      "sha256": "a03bface77973efaaa858819ddb73a704f8534791da17bb5fb62321abedf493c"
+    },
+    {
+      "path": "examples/http/r1-logoutAuth.request.json",
+      "size_bytes": 3,
+      "mode": "0644",
+      "sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356"
+    },
+    {
+      "path": "examples/http/r1-logoutAuth.response.json",
+      "size_bytes": 87,
+      "mode": "0644",
+      "sha256": "6c9b6fd16c2c8470b52562db04a7f3cf4dfbb9509883325c5c4e7970382b87d5"
+    },
+    {
+      "path": "examples/http/r1-previewProfile.request.json",
+      "size_bytes": 475,
+      "mode": "0644",
+      "sha256": "0abad15f0339acda14b9287712ee5499ddbf5cbd5ae20d7144aa2670da87ff58"
+    },
+    {
+      "path": "examples/http/r1-previewProfile.response.json",
+      "size_bytes": 611,
+      "mode": "0644",
+      "sha256": "012e5e81df845ca1097c3d11ca8a4a385094abaff486988196c7b38ba4c168d9"
+    },
+    {
+      "path": "examples/http/r1-putPreferences.request.json",
+      "size_bytes": 178,
+      "mode": "0644",
+      "sha256": "7a945b03677e3376760a31c7b5315b01fcf245e751a60b36094016bd0e569a04"
+    },
+    {
+      "path": "examples/http/r1-putPreferences.response.json",
+      "size_bytes": 486,
+      "mode": "0644",
+      "sha256": "9855aae145faebeafdd462b6d3d708d41371aa212d085d37b9b7be0e58fc0695"
+    },
+    {
+      "path": "examples/http/r1-putProfile.request.json",
+      "size_bytes": 475,
+      "mode": "0644",
+      "sha256": "0abad15f0339acda14b9287712ee5499ddbf5cbd5ae20d7144aa2670da87ff58"
+    },
+    {
+      "path": "examples/http/r1-putProfile.response.json",
+      "size_bytes": 570,
+      "mode": "0644",
+      "sha256": "45eb081de8359ebf4cc44dd6d35cd2d3e2ea236a0cc3dcc183944e70fe748d2a"
+    },
+    {
+      "path": "examples/http/r1-startAuth.request.json",
+      "size_bytes": 33,
+      "mode": "0644",
+      "sha256": "d1562ff2b83d42ebf3fb07dbad2e7dd79d1fd7f73e447886adb5c90ee94e7a43"
+    },
+    {
+      "path": "examples/http/r1-startAuth.response.json",
+      "size_bytes": 149,
+      "mode": "0644",
+      "sha256": "755602f2549dc8ad3e6145eb8d87c37c2a56c37d459695b02b40391c9a6a167a"
     },
     {
       "path": "examples/http/run-heartbeat.request.json",
@@ -572,6 +752,24 @@
       "sha256": "fe54adfd7f2678a82d0e3d65a873c6ab90346aa9a53a135a5c6a7b1f6225847b"
     },
     {
+      "path": "examples/recovery/r1-authority-cases.json",
+      "size_bytes": 46610,
+      "mode": "0644",
+      "sha256": "c09b1863e672ff27d4d0e8206d44431c63a6be036c616af4a853c3cf5938d79e"
+    },
+    {
+      "path": "examples/recovery/r1-commands.json",
+      "size_bytes": 21514,
+      "mode": "0644",
+      "sha256": "dc5359d9166b7b27177df191a7d6b593946754ebe5c5379e08c7162903a8be8b"
+    },
+    {
+      "path": "examples/recovery/r1-manifest.json",
+      "size_bytes": 1550,
+      "mode": "0644",
+      "sha256": "3848e3885d0e560aa322c9644014f6931936397888a4abb8c34ee200e969ef13"
+    },
+    {
       "path": "examples/tasks/claim-contention.json",
       "size_bytes": 1854,
       "mode": "0644",
@@ -596,18 +794,6 @@
       "sha256": "9c862978c5c0c1ccc56b8d9ed120a6174f1172cae219160977b4eeca1ae2a6fa"
     },
     {
-      "path": "LICENSE",
-      "size_bytes": 1068,
-      "mode": "0644",
-      "sha256": "1f80d3b2e71b041b1de2e46f6faf5a16c644195c9697a8d4a1784ff89a9fd721"
-    },
-    {
-      "path": "README.md",
-      "size_bytes": 3966,
-      "mode": "0644",
-      "sha256": "26e594f1af6c4013b04879a66ed195a57b38a2375f3b6a470de1519a291876e8"
-    },
-    {
       "path": "requirements-docs.txt",
       "size_bytes": 71,
       "mode": "0644",
@@ -615,9 +801,9 @@
     },
     {
       "path": "scripts/validate_docs.py",
-      "size_bytes": 15479,
-      "mode": "0644",
-      "sha256": "7fa1c9977b57c3c1a6ce341d56bd8a0f3cbf99e5788a0e7158c777837c6247e5"
+      "size_bytes": 24486,
+      "mode": "0600",
+      "sha256": "34997da024be4012633fea6242250b56f340ca62df74cc4b0ad3fb626ea70e1e"
     },
     {
       "path": "scripts/validate_plans.py",
@@ -626,22 +812,58 @@
       "sha256": "58a4d24987afd4fb7619b6779f220791b0817bbeb5768d06a71cb068e2109c95"
     },
     {
-      "path": "SECURITY.md",
-      "size_bytes": 2162,
-      "mode": "0644",
-      "sha256": "b8e171ec9c424c47d3bc3418b73f818827be7f4621f1997ed9a5add363a9d0be"
+      "path": "scripts/verify-r1-contract.mjs",
+      "size_bytes": 13408,
+      "mode": "0600",
+      "sha256": "04eba091db5ff21fe8c4bccfd6c4c7264394c4a7b1f4885a2db93363962e182c"
     },
     {
       "path": "spec/deployment-config.schema.json",
-      "size_bytes": 2854,
-      "mode": "0644",
-      "sha256": "13f50fc21b8066dadad09d9d9e7578c13e2fe375a9717beb9b17ddcb4bd6afb1"
+      "size_bytes": 12591,
+      "mode": "0600",
+      "sha256": "2b0c50869c439847fd21ab14a901101234accaab64869190cccc8c542bbc1165"
     },
     {
       "path": "spec/openapi.json",
-      "size_bytes": 207894,
+      "size_bytes": 269018,
+      "mode": "0600",
+      "sha256": "dc2c1189ac9dff96da1edbc4ab292fc4442fbff94e246ceddd87c50d54d8b24f"
+    },
+    {
+      "path": "spec/r1-bootstrap.schema.json",
+      "size_bytes": 3098,
       "mode": "0644",
-      "sha256": "17eb60aa35e52e20c08bcbe42c22850e6f19f9c216de4e612cf8e2f57f68ab1a"
+      "sha256": "f33cc0ac87d700a7c3371a278ebb49ffd78c7ab22a21db2d85d3c1ed0d8477ad"
+    },
+    {
+      "path": "spec/r1-contract-negative.schema.json",
+      "size_bytes": 3554,
+      "mode": "0600",
+      "sha256": "d1b8eec610a481efc11282f28c9b971893745a01ed1ee819e2df18968990adb8"
+    },
+    {
+      "path": "spec/recovery-authority-cases.schema.json",
+      "size_bytes": 105603,
+      "mode": "0644",
+      "sha256": "629269f8e1713f6a9299ec3357262776343bf8ef8e2a3327fea3e96b6af18329"
+    },
+    {
+      "path": "spec/recovery-command-examples.schema.json",
+      "size_bytes": 109853,
+      "mode": "0644",
+      "sha256": "59261961184a783fd99f18aa2b82ebda7d9bbca97b7996b364ba405fd457595e"
+    },
+    {
+      "path": "spec/recovery-command.schema.json",
+      "size_bytes": 95477,
+      "mode": "0644",
+      "sha256": "14caad13e3b522bd96554bb5e6569869a59deb7ed25ed53fdcb75295c56e59e8"
+    },
+    {
+      "path": "spec/recovery-manifest.schema.json",
+      "size_bytes": 10226,
+      "mode": "0644",
+      "sha256": "07740a7710bf5906a648bca0045f59b0d2dfcffdbe3d9dcdbb28ac3c8fadda64"
     },
     {
       "path": "spec/task-scenario.schema.json",
@@ -662,6 +884,12 @@
       "sha256": "171817786278c0d9e040adf0bc9a9ff30ed1586df2e51b12d7a5fc0b25a9eac6"
     },
     {
+      "path": "test/contracts/r1-contract.test.ts",
+      "size_bytes": 4807,
+      "mode": "0600",
+      "sha256": "05455ea9ee06c3550a812522fd32997235408a0d504c29d9677f7d5a336d98fb"
+    },
+    {
       "path": "validation/contract-review.json",
       "size_bytes": 3574,
       "mode": "0644",
@@ -669,9 +897,9 @@
     },
     {
       "path": "validation/fixtures.json",
-      "size_bytes": 996,
+      "size_bytes": 1762,
       "mode": "0644",
-      "sha256": "4a909073b354f805b0cec5ca42a59582ba781980aba0c82d5f4499660646b958"
+      "sha256": "3c7b6a0532998f2d8d3e20b2ac17036e4c864652e98bc9fbcd63d44788e4bb98"
     },
     {
       "path": "validation/implementation-plan-register.json",
@@ -693,9 +921,11 @@
     },
     {
       "path": "validation/report.json",
-      "size_bytes": 1419,
+      "size_bytes": 1614,
       "mode": "0644",
-      "sha256": "87562ae4743fcb6919e21891792e7f8f39722ba76de0d6e976dc771f4d9c7f6a"
+      "sha256": "c884c708354fd4bb701885799a9bf780f1a3743b1fcc13234c52511a6ac9e1a8"
     }
-  ]
+  ],
+  "validated_source_commit": "42ce06576c92b6c39317edebf660afd9f26ba3a9",
+  "validated_source_archive_sha256": "921106eecfb36e6b1ab4285ed434e98fde0af167f21c0b92711b8082d4f6d9fb"
 }

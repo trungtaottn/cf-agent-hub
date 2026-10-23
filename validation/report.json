@@ -1,7 +1,7 @@
 {
   "package": "CF Agent Hub documentation baseline",
-  "contract_revision": "0.1",
-  "checked_at": "2026-10-23T07:41:32.272536+00:00",
+  "contract_revision": "r1-foundation-1",
+  "checked_at": "2026-10-23T08:50:53.052895+00:00",
   "status": "passed",
   "environment": {
     "python": "3.12.14",
@@ -10,28 +10,28 @@
     "markdown-it-py": "4.2.0"
   },
   "counts": {
-    "markdown_documents": 50,
-    "json_files_parsed": 58,
-    "json_schemas": 4,
-    "openapi_operations": 41,
-    "openapi_component_schemas": 70,
-    "mapped_fixtures": 45,
+    "markdown_documents": 52,
+    "json_files_parsed": 92,
+    "json_schemas": 10,
+    "openapi_operations": 55,
+    "openapi_component_schemas": 100,
+    "mapped_fixtures": 73,
     "external_link_occurrences_not_fetched": 49
   },
   "checks": {
-    "json_syntax": 58,
-    "markdown_structure": 156,
-    "local_links": 642,
+    "json_syntax": 92,
+    "markdown_structure": 162,
+    "local_links": 694,
     "link_schemes": 49,
     "openapi_structure": 1,
-    "openapi_contract": 136,
-    "json_schemas": 4,
-    "fixture_operation_mapping": 73,
+    "openapi_contract": 278,
+    "json_schemas": 10,
+    "fixture_operation_mapping": 119,
     "fixture_coverage": 2,
-    "fixture_validation": 45,
+    "fixture_validation": 73,
     "fixture_semantics": 6,
     "fixture_integrity": 4,
-    "negative_schema_cases": 7
+    "negative_schema_cases": 25
   },
   "errors": [],
   "limitations": [
@@ -41,5 +41,7 @@
     "Mermaid diagrams are parsed as fences, not rendered.",
     "Schema checks do not prove authorization, transaction semantics, UTF-8 byte limits or all semantic constraints.",
     "Public-content review and independent contract review are separate from these automated checks."
-  ]
+  ],
+  "validated_source_commit": "42ce06576c92b6c39317edebf660afd9f26ba3a9",
+  "validated_source_archive_sha256": "921106eecfb36e6b1ab4285ed434e98fde0af167f21c0b92711b8082d4f6d9fb"
 }
