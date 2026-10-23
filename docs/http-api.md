@@ -6,7 +6,7 @@ The planned native API is the shared command surface for the web application, ex
 
 ## Authentication and authorization
 
-Every operation must resolve the route workspace through the operator-provisioned catalog, authenticate the caller, then verify current membership or native grant inside that workspace's domain transaction. An agent ID, work role, framework, display name or URL parameter grants no authority. Resources referenced in the request must belong to the same workspace and be visible within the caller's project and resource scope. Inaccessible identifiers return a generic not-found response without revealing another workspace's existence.
+Except the bounded authentication protocol and public liveness operations described below, every operation must resolve the route workspace through the operator-provisioned catalog, authenticate the caller, then verify current membership or native grant inside that workspace's domain transaction. An agent ID, work role, framework, display name or URL parameter grants no authority. Resources referenced in the request must belong to the same workspace and be visible within the caller's project and resource scope. Inaccessible identifiers return a generic not-found response without revealing another workspace's existence.
 
 There are two explicit credential lanes:
 
@@ -21,7 +21,7 @@ For runtime-bound commands, the authenticated native identity must match the run
 
 ## Canonical endpoint table
 
-Paths below are relative to `/v2/workspaces/{workspace_id}`. `/` denotes that base resource without a trailing slash. All entries are planned. Task/agent/artifact routes are staged by the [roadmap](roadmap.md); their presence here does not make them available in an earlier release gate.
+Paths below are relative to `/v2/workspaces/{workspace_id}`. `/` denotes that base resource without a trailing slash. All entries are planned. The R1 settings and authentication additions appear below. Task/agent/artifact routes are staged by the [roadmap](roadmap.md); their presence here does not make them available in an earlier release gate.
 
 | Method and relative path | Required scope | Actor lane |
 | --- | --- | --- |
@@ -123,3 +123,31 @@ Inbox reads are recipient-specific and default to unacknowledged items. ACK duri
 ## Contract fixtures and acceptance
 
 [HTTP fixtures](../examples/http/fixture-map.json) map each JSON body to an operation and OpenAPI schema. They illustrate claim, decision, result, ACK, upload staging and errors; they do not prove runtime behavior. Implementations must validate fixtures and rejection cases, race concurrent claims and reviews, prove replay after a lost response, deny cross-workspace references, enforce actor lanes and check multi-page traversal. Exercise byte limits with multi-byte text and interrupted artifact uploads. A schema-valid request can still fail authorization, state or provenance checks.
+
+## R1 foundation amendment
+
+The R1 amendment is `r1-foundation-1` on the existing `/v2` path. The portable profile and preference contracts remain revision 0.1; deployment configuration alone advances to 0.2. OpenAPI marks unavailable later-release routes with `x-r1-available: false`; they return a generic 404. No public writable deployment/policy route or delivery-replay URL exists. `GET /health/live` is the sole unscoped public route and returns only `{"status":"alive"}`.
+
+| Relative route | Lane | Required scope | Result |
+| --- | --- | --- | --- |
+| `POST /auth/start` | Same-origin protocol | None | One-use OIDC transaction and authorization URL |
+| `GET /auth/callback` | OIDC protocol | None | Verified code exchange and redirect |
+| `GET /auth/session` | Human session | None | Actor, in-memory CSRF token, expiry; no-store |
+| `POST /auth/logout` | Human session | None | Revoke session, expire cookie; Origin and CSRF required |
+| `GET /configuration` | Human or native | `workspace:read` | Redacted capabilities, epochs and revisions |
+| `GET /profile` | Human or native | `workspace:read` | Portable profile and revision |
+| `POST /profile:preview` | Human | `profile:edit` | Advisory merged profile, changes and conflicts |
+| `PUT /profile` | Human | `profile:edit` | Atomic stable-ID upsert and new revision |
+| `GET /profile:export` | Human | `profile:edit` | Portable presentation, projects and work roles only |
+| `GET /preferences`, `PUT /preferences` | Human | `workspace:read` | Caller-owned preferences/effective values; write uses expected revision |
+| `GET /operations`, `GET /readiness` | Human | `operations:read` | Redacted diagnostic snapshots |
+
+The two authenticated auth protocol routes require a live verified workspace-bound human session, enabled grant and current authentication epoch, but no domain scope. A `profile:edit`-only member can obtain CSRF/session metadata; no `workspace:read` is implied. The three unauthenticated protocol/public operations are exactly start, callback and liveness. `POST /auth/start` admits an allowlisted relative UI return path only from the same origin; the callback is a narrow, one-use exception to nonmutating GET. State, transient HttpOnly cookie, nonce and PKCE S256 bind the five-minute login attempt. Server-side code exchange verifies the ID token and already installed grant before rotating the opaque session. Provider failure clears the transient cookie without exposing a token. No arbitrary Access header supplies this flow.
+
+The session cookie is `cfhub_session`: Secure, HttpOnly, SameSite=Lax, host-only, Path `/`. It binds workspace and principal and expires no later than the verified ID token or configured session TTL; R1 has no silent refresh. A session from another workspace, a revoked grant, a stale epoch or duplicate credential lanes is denied. Ordinary human writes require exact Origin, `X-CSRF-Token` and `Idempotency-Key`. Start/callback use one-use protocol identity; they do not use ordinary domain mutation idempotency.
+
+Configuration reveals `config_epoch`, profile/preference revisions, allowed preference overrides and enabled features only. Native callers receive `preferences_revision:null`. Grants, identity registry, destinations and secrets are excluded. Preferences target only the caller; stale settings writes return 409 with the current revision. Profile preview is a noncommitting POST with a required key for correlation, not a persisted outcome. Its closed `changes` and `conflicts` each contain at most 200 JSON Pointer entries; the complete response envelope is bounded to 65,536 UTF-8 bytes. Overflow fails explicitly without truncation. Apply rechecks the expected revision and has ordinary durable idempotency. Neither referenced project/role archive nor remap is available in R1.
+
+R1 messages keep the existing DTO. A nonrecipient sees `acknowledgment:null` on accepted/view data; a recipient read shows only that recipient actor's ACK. Nonempty `artifact_ids` and task/artifact references fail before mutation with 400 `INVALID_REQUEST` and `details.feature` set to `artifacts` or `tasks`. Message references must be accessible to every fixed-thread participant. R1 inbox is native-only. Human thread discovery uses authorized `message.accepted` events with a persisted `thread_id`, then `GET /threads/{thread_id}`; no message-ID decoding or new discovery route is implied.
+
+Event `request_id` correlates the original command; a delivery-origin event receives a processing request ID linked internally to the delivery ID. Configuration, profile and preference events have typed resource/version and null task/run/fence/thread fields. Configuration install requires `events:read` plus human `operations:read`; profile requires `events:read` plus `workspace:read`; owner-only preferences require those scopes and principal equality. Message events require `events:read`, `messages:read` and fixed-thread access, or human `messages:review`. Projections join current message access; hidden/deleted links, IDs, counts and summaries are filtered. The event cursor/high-water rules still bound discovery. See [ADR 0007](adr/0007-r1-ingress-and-settings.md).

@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "schema": {
+            "enum": [
+              "spec/deployment-config.schema.json",
+              "spec/workspace-profile.schema.json"
+            ]
+          },
+          "field": {
+            "type": "string",
+            "minLength": 1
+          },
+          "value": true,
+          "context": {
+            "type": "object",
+            "properties": {
+              "installedEpoch": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "identity": {
+                "type": "object",
+                "properties": {
+                  "workspace_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                  },
+                  "issuer": {
+                    "type": "string"
+                  },
+                  "subject": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "workspace_id",
+                  "issuer",
+                  "subject"
+                ],
+                "additionalProperties": false
+              },
+              "discovery": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "issuer": {
+                    "type": "string",
+                    "minLength": 9,
+                    "maxLength": 2048,
+                    "format": "uri",
+                    "pattern": "^https://[a-zA-Z0-9](?:[a-zA-Z0-9.-]*[a-zA-Z0-9])?(?:/[a-zA-Z0-9._~!$&\\x27()*+,;=:@%/-]*)?$"
+                  },
+                  "authorization_endpoint": {
+                    "type": "string",
+                    "minLength": 9,
+                    "maxLength": 2048,
+                    "format": "uri",
+                    "pattern": "^https://[a-zA-Z0-9](?:[a-zA-Z0-9.-]*[a-zA-Z0-9])?(?:/[a-zA-Z0-9._~!$&'()*+,;=:@%/-]*)?$"
+                  },
+                  "token_endpoint": {
+                    "type": "string",
+                    "minLength": 9,
+                    "maxLength": 2048,
+                    "format": "uri",
+                    "pattern": "^https://[a-zA-Z0-9](?:[a-zA-Z0-9.-]*[a-zA-Z0-9])?(?:/[a-zA-Z0-9._~!$&'()*+,;=:@%/-]*)?$"
+                  },
+                  "jwks_uri": {
+                    "type": "string",
+                    "minLength": 9,
+                    "maxLength": 2048,
+                    "format": "uri",
+                    "pattern": "^https://[a-zA-Z0-9](?:[a-zA-Z0-9.-]*[a-zA-Z0-9])?(?:/[a-zA-Z0-9._~!$&'()*+,;=:@%/-]*)?$"
+                  }
+                },
+                "required": [
+                  "issuer",
+                  "authorization_endpoint",
+                  "token_endpoint",
+                  "jwks_uri"
+                ]
+              }
+            },
+            "required": [],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "name",
+          "schema",
+          "field",
+          "value"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "cases"
+  ],
+  "additionalProperties": false
+}

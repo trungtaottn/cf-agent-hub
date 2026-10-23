@@ -38,11 +38,11 @@ Idempotency expiry is not permission to repeat an irreversible external action. 
 
 ## Notification retry budget
 
-The proposed application budget is **six attempts total**, consisting of the initial delivery and up to five retries. Nominal retry delays are **5, 30, 120, 600 and 3,600 seconds**, selected by retry number. A worker may apply downward jitter within the chosen delay: sample a multiplier in `[0.8, 1.0]`, persist the resulting due time, and never exceed the selected delay. A `Retry-After` hint must be bounded by operator egress policy; it must not create an unlimited retry schedule.
+The proposed application budget is **six attempts total**, consisting of the initial delivery and up to five retries. Nominal retry delays are **5, 30, 120, 600 and 3,600 seconds**, selected by retry number. A worker may apply downward jitter within the chosen delay: sample a multiplier in `[0.8, 1.0]`, persist the resulting due time, and never exceed the selected delay. A `Retry-After` hint is capped by the R1 operator value below; it must not create an unlimited retry schedule.
 
 Attempt count, next due time, last failure category and terminal disposition belong in durable storage. Restarts must not reset the budget. Cloudflare alarm delivery has its own platform behavior; one alarm callback may process multiple due records, and a repeated callback must not grant additional application attempts. The platform's at-least-once alarm semantics are documented by [Cloudflare](https://developers.cloudflare.com/durable-objects/api/alarms/).
 
-An exhausted notification is visible as failed delivery and is recoverable by an authorized replay operation with a new audit event. It does not silently cancel or finish the associated task. Do not retry permanent authorization, schema or destination-policy errors as transient network failures.
+An exhausted notification is visible as failed delivery; R1 offers inbox polling and no replay endpoint. A later authorized replay operation requires its own reviewed contract and audit event. It does not silently cancel or finish the associated task. Do not retry permanent authorization, schema or destination-policy errors as transient network failures.
 
 ## Policy values without universal defaults
 
@@ -56,3 +56,25 @@ Workspace WIP ceilings, task retry limits and explicit replay-safety classificat
 - Prove a restarted notification worker retains its attempts and due times.
 - Verify pagination remains bounded when filters, deleted records and concurrent inserts are present.
 - Record load-test evidence before publishing capacity or latency targets. Changing these limits requires aligned schemas, examples and release notes.
+
+## R1 operational ceilings
+
+| Setting | R1 value | Meaning |
+| --- | ---: | --- |
+| Cursor lifetime | 3,600 seconds | Expired cursor fails explicitly |
+| Dispatcher batch | 25 | Due notifications per claim |
+| Notification attempt lease | 30 seconds | Recoverable claim boundary |
+| HTTP delivery timeout | 10 seconds | Per callback attempt |
+| Scheduler repair | Every 60 seconds | Recovers missed alarm arming |
+| Provider Retry-After cap | 3,600 seconds default; 0–3,600 allowed | Zero ignores provider hints |
+| Static credential expiry | At most 90 days from provisioning | Required RFC3339 expiry |
+| OIDC login attempt | 300 seconds | One use |
+| Human session TTL | 300–28,800 seconds | Also capped by ID-token expiry |
+| Profile-preview changes/conflicts | 200 each | Closed entries, no truncation |
+| Readiness checks | 64 | Closed, redacted entries |
+| Recovery JSON envelope/manifest | 65,536 UTF-8 bytes | Finite operator protocol |
+| Recovery binary control/chunk headers | 8,192 ASCII bytes | Unpadded base64url canonical JSON |
+| Recovery SQL page/chunk/count | 200 rows / 1,048,576 bytes / 256 chunks | Exceeding a bound fails capture |
+| Recovery total rows/bytes | 1,000,000 / 268,435,456 | Required budget ceiling |
+
+Persisted retry delay is `max(nominal * jitter, min(validRetryAfterSeconds, retry_after_max_seconds))`, with absent/invalid hints treated as zero. The cap applies only to the provider hint: it never shortens nominal jittered backoff or increases the six-attempt budget. Profile preview and recovery bounds fail explicitly; neither may truncate evidence or partly apply a command. R1 does not expose artifact upload despite retaining its later-release bounds in this register.

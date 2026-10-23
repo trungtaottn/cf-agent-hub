@@ -242,6 +242,164 @@
       "operation_id": "approveApproval",
       "direction": "response",
       "http_status": 403
+    },
+    {
+      "file": "r1-startAuth.request.json",
+      "schema": "#/components/schemas/AuthStartRequest",
+      "operation_id": "startAuth",
+      "direction": "request"
+    },
+    {
+      "file": "r1-startAuth.response.json",
+      "schema": "#/components/schemas/AuthStartDataResponse",
+      "operation_id": "startAuth",
+      "direction": "response",
+      "http_status": 200
+    },
+    {
+      "file": "r1-getAuthSession.response.json",
+      "schema": "#/components/schemas/AuthSessionResponse",
+      "operation_id": "getAuthSession",
+      "direction": "response",
+      "http_status": 200
+    },
+    {
+      "file": "r1-logoutAuth.request.json",
+      "schema": "#/components/schemas/AuthLogoutRequest",
+      "operation_id": "logoutAuth",
+      "direction": "request"
+    },
+    {
+      "file": "r1-logoutAuth.response.json",
+      "schema": "#/components/schemas/AuthLogoutDataResponse",
+      "operation_id": "logoutAuth",
+      "direction": "response",
+      "http_status": 200
+    },
+    {
+      "file": "r1-callback.query.json",
+      "schema": "#/components/schemas/AuthCallbackQuery",
+      "operation_id": "callbackAuth",
+      "direction": "query"
+    },
+    {
+      "file": "r1-callback.headers.json",
+      "schema": "#/components/schemas/AuthCallbackHeaders",
+      "operation_id": "callbackAuth",
+      "direction": "response-headers",
+      "http_status": 302
+    },
+    {
+      "file": "r1-getConfiguration.response.json",
+      "schema": "#/components/schemas/ConfigurationResponse",
+      "operation_id": "getConfiguration",
+      "direction": "response",
+      "http_status": 200
+    },
+    {
+      "file": "r1-getProfile.response.json",
+      "schema": "#/components/schemas/ProfileDataResponse",
+      "operation_id": "getProfile",
+      "direction": "response",
+      "http_status": 200
+    },
+    {
+      "file": "r1-previewProfile.request.json",
+      "schema": "#/components/schemas/ProfileWriteRequest",
+      "operation_id": "previewProfile",
+      "direction": "request"
+    },
+    {
+      "file": "r1-previewProfile.response.json",
+      "schema": "#/components/schemas/ProfilePreviewResponse",
+      "operation_id": "previewProfile",
+      "direction": "response",
+      "http_status": 200
+    },
+    {
+      "file": "r1-putProfile.request.json",
+      "schema": "#/components/schemas/ProfileWriteRequest",
+      "operation_id": "putProfile",
+      "direction": "request"
+    },
+    {
+      "file": "r1-putProfile.response.json",
+      "schema": "#/components/schemas/ProfileDataResponse",
+      "operation_id": "putProfile",
+      "direction": "response",
+      "http_status": 200
+    },
+    {
+      "file": "r1-exportProfile.response.json",
+      "schema": "#/components/schemas/ProfileExportResponse",
+      "operation_id": "exportProfile",
+      "direction": "response",
+      "http_status": 200
+    },
+    {
+      "file": "r1-getPreferences.response.json",
+      "schema": "#/components/schemas/PreferencesDataResponse",
+      "operation_id": "getPreferences",
+      "direction": "response",
+      "http_status": 200
+    },
+    {
+      "file": "r1-putPreferences.request.json",
+      "schema": "#/components/schemas/PreferencesWriteRequest",
+      "operation_id": "putPreferences",
+      "direction": "request"
+    },
+    {
+      "file": "r1-putPreferences.response.json",
+      "schema": "#/components/schemas/PreferencesDataResponse",
+      "operation_id": "putPreferences",
+      "direction": "response",
+      "http_status": 200
+    },
+    {
+      "file": "r1-getOperations.response.json",
+      "schema": "#/components/schemas/OperationsResponse",
+      "operation_id": "getOperations",
+      "direction": "response",
+      "http_status": 200
+    },
+    {
+      "file": "r1-getReadiness.response.json",
+      "schema": "#/components/schemas/ReadinessResponse",
+      "operation_id": "getReadiness",
+      "direction": "response",
+      "http_status": 200
+    },
+    {
+      "file": "r1-liveness.response.json",
+      "schema": "#/components/schemas/Liveness",
+      "operation_id": "getLiveness",
+      "direction": "response",
+      "http_status": 200
+    },
+    {
+      "file": "r1-events.json",
+      "schema": "#/components/schemas/EventListResponse",
+      "operation_id": "listEvents",
+      "direction": "response",
+      "http_status": 200
+    },
+    {
+      "file": "r1-events-owner-filtered.response.json",
+      "schema": "#/components/schemas/EventListResponse",
+      "operation_id": "listEvents",
+      "direction": "response",
+      "http_status": 200,
+      "scenario": "Other human with operations authority sees configuration/profile/message, no foreign preference event, ID, count or summary."
+    },
+    {
+      "file": "r1-events-reviewer.response.json",
+      "schema": "#/components/schemas/EventListResponse",
+      "operation_id": "listEvents",
+      "direction": "response",
+      "http_status": 200,
+      "scenario": "Newly authorized human reviewer with events:read+messages:read+messages:review+workspace:read follows persisted thread_id; no operations grant and no foreign preferences."
     }
-  ]
+  ],
+  "amendment_id": "r1-foundation-1"
 }

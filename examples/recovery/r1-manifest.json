@@ -1,0 +1,61 @@
+{
+  "format_version": 1,
+  "capture_id": "capture_example",
+  "workspace_id": "ws_example",
+  "environment_id": "env_example",
+  "started_at": "2026-10-23T00:00:00Z",
+  "ended_at": "2026-10-23T00:00:01Z",
+  "checkpoint": {
+    "barrier_id": "barrier_example",
+    "event_sequence": 0,
+    "schema_version": 1,
+    "contract_revision": "0.1",
+    "authority_epoch": 1
+  },
+  "release": {
+    "revision": "synthetic-revision",
+    "worker_version": "synthetic-worker",
+    "binding_ids": [
+      "workspace_binding"
+    ],
+    "catalog_mapping": {
+      "workspace_id": "ws_example",
+      "object_name": "workspace-example"
+    }
+  },
+  "database": {
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "byte_size": 0,
+    "table_counts": {
+      "schema_migrations": 0,
+      "workspace_metadata": 0,
+      "human_grants": 0,
+      "static_agents": 0,
+      "native_credentials": 0,
+      "login_attempts": 0,
+      "sessions": 0,
+      "profiles": 0,
+      "preferences": 0,
+      "threads": 0,
+      "thread_participants": 0,
+      "messages": 0,
+      "inbox": 0,
+      "events": 0,
+      "idempotency_outcomes": 0,
+      "outbox": 0,
+      "scheduler_state": 0,
+      "maintenance_state": 0,
+      "recovery_jobs": 0,
+      "recovery_chunks": 0,
+      "probe_receipts": 0
+    },
+    "chunks": []
+  },
+  "artifacts": [],
+  "unfinished_artifact_ids": [],
+  "auth": {
+    "key_id": "synthetic_key",
+    "algorithm": "HMAC-SHA256",
+    "tag": "0000000000000000000000000000000000000000000000000000000000000000"
+  }
+}

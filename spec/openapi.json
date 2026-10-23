@@ -2,9 +2,10 @@
   "openapi": "3.1.0",
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
-    "title": "CF Agent Hub \u2014 Proposed Native HTTP API",
+    "title": "CF Agent Hub — Proposed Native HTTP API",
     "version": "0.1.0-design",
-    "description": "Pre-implementation design baseline dated 2026-10-23; contract revision 0.1. All operations are proposed and require implementation verification. No running service, SDK, protocol certification or exactly-once external execution is claimed. docs/http-api.md defines authorization, pagination, idempotency and concurrency semantics. docs/limits.md owns numerical operational limits. All JSON writes reject unknown fields and enforce UTF-8 envelope limits. Runtime-bound writes additionally require X-Runtime-Token proof; native bearer alone is insufficient."
+    "description": "Pre-implementation design baseline dated 2026-10-23; contract revision 0.1. All operations are proposed and require implementation verification. No running service, SDK, protocol certification or exactly-once external execution is claimed. docs/http-api.md defines authorization, pagination, idempotency and concurrency semantics. docs/limits.md owns numerical operational limits. All JSON writes reject unknown fields and enforce UTF-8 envelope limits. Runtime-bound writes additionally require X-Runtime-Token proof; native bearer alone is insufficient. R1 amendment r1-foundation-1 specifies identity, settings, audit and protected recovery contracts; implementation remains pending. Portable contracts stay 0.1; deployment is 0.2.",
+    "x-amendment-id": "r1-foundation-1"
   },
   "x-contract-status": "design-baseline",
   "x-contract-revision": "0.1",
@@ -84,9 +85,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -96,8 +94,12 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
-        }
+        },
+        "x-r1-available": true
       }
     },
     "/v2/workspaces/{workspace_id}/tasks": {
@@ -165,9 +167,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -177,6 +176,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
         "parameters": [
@@ -204,7 +206,8 @@
             },
             "description": "Optional project filter."
           }
-        ]
+        ],
+        "x-r1-available": false
       },
       "post": {
         "operationId": "createTask",
@@ -258,9 +261,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -270,6 +270,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
         "x-idempotency": "required; same operation/target and canonical payload replay within retention; credential secret is redacted on replay",
@@ -290,7 +293,8 @@
               }
             }
           }
-        }
+        },
+        "x-r1-available": false
       }
     },
     "/v2/workspaces/{workspace_id}/tasks/{task_id}": {
@@ -368,9 +372,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -380,8 +381,12 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
-        }
+        },
+        "x-r1-available": false
       },
       "patch": {
         "operationId": "patchTask",
@@ -435,9 +440,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -447,6 +449,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
         "x-idempotency": "required; same operation/target and canonical payload replay within retention; credential secret is redacted on replay",
@@ -467,7 +472,8 @@
               }
             }
           }
-        }
+        },
+        "x-r1-available": false
       }
     },
     "/v2/workspaces/{workspace_id}/tasks/{task_id}:ready": {
@@ -545,9 +551,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -557,6 +560,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
         "x-idempotency": "required; same operation/target and canonical payload replay within retention; credential secret is redacted on replay",
@@ -577,7 +583,8 @@
               }
             }
           }
-        }
+        },
+        "x-r1-available": false
       }
     },
     "/v2/workspaces/{workspace_id}/tasks/{task_id}:claim": {
@@ -653,9 +660,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -665,6 +669,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
         "x-idempotency": "required; same operation/target and canonical payload replay within retention; credential secret is redacted on replay",
@@ -682,7 +689,8 @@
               }
             }
           }
-        }
+        },
+        "x-r1-available": false
       }
     },
     "/v2/workspaces/{workspace_id}/tasks/{task_id}:request-decision": {
@@ -758,9 +766,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -770,6 +775,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
         "x-idempotency": "required; same operation/target and canonical payload replay within retention; credential secret is redacted on replay",
@@ -787,7 +795,8 @@
               }
             }
           }
-        }
+        },
+        "x-r1-available": false
       }
     },
     "/v2/workspaces/{workspace_id}/tasks/{task_id}:submit-result": {
@@ -863,9 +872,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -875,6 +881,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
         "x-idempotency": "required; same operation/target and canonical payload replay within retention; credential secret is redacted on replay",
@@ -892,7 +901,8 @@
               }
             }
           }
-        }
+        },
+        "x-r1-available": false
       }
     },
     "/v2/workspaces/{workspace_id}/tasks/{task_id}:accept-result": {
@@ -970,9 +980,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -982,6 +989,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
         "x-idempotency": "required; same operation/target and canonical payload replay within retention; credential secret is redacted on replay",
@@ -1002,7 +1012,8 @@
               }
             }
           }
-        }
+        },
+        "x-r1-available": false
       }
     },
     "/v2/workspaces/{workspace_id}/tasks/{task_id}:fail": {
@@ -1078,9 +1089,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -1090,6 +1098,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
         "x-idempotency": "required; same operation/target and canonical payload replay within retention; credential secret is redacted on replay",
@@ -1107,7 +1118,8 @@
               }
             }
           }
-        }
+        },
+        "x-r1-available": false
       }
     },
     "/v2/workspaces/{workspace_id}/tasks/{task_id}:cancel": {
@@ -1185,9 +1197,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -1197,6 +1206,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
         "x-idempotency": "required; same operation/target and canonical payload replay within retention; credential secret is redacted on replay",
@@ -1217,7 +1229,8 @@
               }
             }
           }
-        }
+        },
+        "x-r1-available": false
       }
     },
     "/v2/workspaces/{workspace_id}/tasks/{task_id}:requeue": {
@@ -1295,9 +1308,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -1307,6 +1317,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
         "x-idempotency": "required; same operation/target and canonical payload replay within retention; credential secret is redacted on replay",
@@ -1327,7 +1340,8 @@
               }
             }
           }
-        }
+        },
+        "x-r1-available": false
       }
     },
     "/v2/workspaces/{workspace_id}/runs/{run_id}": {
@@ -1405,9 +1419,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -1417,8 +1428,12 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
-        }
+        },
+        "x-r1-available": false
       }
     },
     "/v2/workspaces/{workspace_id}/runs/{run_id}:heartbeat": {
@@ -1494,9 +1509,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -1506,6 +1518,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
         "x-idempotency": "required; same operation/target and canonical payload replay within retention; credential secret is redacted on replay",
@@ -1523,7 +1538,8 @@
               }
             }
           }
-        }
+        },
+        "x-r1-available": false
       }
     },
     "/v2/workspaces/{workspace_id}/approvals": {
@@ -1591,9 +1607,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -1603,6 +1616,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
         "parameters": [
@@ -1612,7 +1628,8 @@
           {
             "$ref": "#/components/parameters/ListLimit"
           }
-        ]
+        ],
+        "x-r1-available": false
       }
     },
     "/v2/workspaces/{workspace_id}/approvals/{approval_id}": {
@@ -1690,9 +1707,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -1702,8 +1716,12 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
-        }
+        },
+        "x-r1-available": false
       }
     },
     "/v2/workspaces/{workspace_id}/approvals/{approval_id}:approve": {
@@ -1778,9 +1796,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -1790,6 +1805,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
         "x-idempotency": "required; same operation/target and canonical payload replay within retention; credential secret is redacted on replay",
@@ -1810,7 +1828,8 @@
               }
             }
           }
-        }
+        },
+        "x-r1-available": false
       }
     },
     "/v2/workspaces/{workspace_id}/approvals/{approval_id}:reject": {
@@ -1885,9 +1904,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -1897,6 +1913,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
         "x-idempotency": "required; same operation/target and canonical payload replay within retention; credential secret is redacted on replay",
@@ -1917,7 +1936,8 @@
               }
             }
           }
-        }
+        },
+        "x-r1-available": false
       }
     },
     "/v2/workspaces/{workspace_id}/agents": {
@@ -1985,9 +2005,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -1997,6 +2014,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
         "parameters": [
@@ -2006,7 +2026,8 @@
           {
             "$ref": "#/components/parameters/ListLimit"
           }
-        ]
+        ],
+        "x-r1-available": false
       },
       "post": {
         "operationId": "createAgent",
@@ -2057,9 +2078,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -2069,6 +2087,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
         "x-idempotency": "required; same operation/target and canonical payload replay within retention; credential secret is redacted on replay",
@@ -2089,7 +2110,8 @@
               }
             }
           }
-        }
+        },
+        "x-r1-available": false
       }
     },
     "/v2/workspaces/{workspace_id}/agents/{agent_id}": {
@@ -2167,9 +2189,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -2179,8 +2198,12 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
-        }
+        },
+        "x-r1-available": false
       },
       "patch": {
         "operationId": "patchAgent",
@@ -2231,9 +2254,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -2243,6 +2263,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
         "x-idempotency": "required; same operation/target and canonical payload replay within retention; credential secret is redacted on replay",
@@ -2263,7 +2286,8 @@
               }
             }
           }
-        }
+        },
+        "x-r1-available": false
       }
     },
     "/v2/workspaces/{workspace_id}/agents/{agent_id}:archive": {
@@ -2338,9 +2362,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -2350,6 +2371,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
         "x-idempotency": "required; same operation/target and canonical payload replay within retention; credential secret is redacted on replay",
@@ -2370,7 +2394,8 @@
               }
             }
           }
-        }
+        },
+        "x-r1-available": false
       }
     },
     "/v2/workspaces/{workspace_id}/runtimes": {
@@ -2435,9 +2460,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -2447,6 +2469,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
         "x-idempotency": "required; same operation/target and canonical payload replay within retention; credential secret is redacted on replay",
@@ -2464,7 +2489,8 @@
               }
             }
           }
-        }
+        },
+        "x-r1-available": false
       }
     },
     "/v2/workspaces/{workspace_id}/runtimes/{runtime_instance_id}:heartbeat": {
@@ -2540,9 +2566,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -2552,6 +2575,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
         "x-idempotency": "required; same operation/target and canonical payload replay within retention; credential secret is redacted on replay",
@@ -2569,7 +2595,8 @@
               }
             }
           }
-        }
+        },
+        "x-r1-available": false
       }
     },
     "/v2/workspaces/{workspace_id}/messages": {
@@ -2637,9 +2664,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -2649,6 +2673,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
         "x-idempotency": "required; same operation/target and canonical payload replay within retention; credential secret is redacted on replay",
@@ -2669,7 +2696,8 @@
               }
             }
           }
-        }
+        },
+        "x-r1-available": true
       }
     },
     "/v2/workspaces/{workspace_id}/inbox": {
@@ -2734,9 +2762,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -2746,6 +2771,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
         "parameters": [
@@ -2763,7 +2791,8 @@
             },
             "description": "Omitted or false returns unacknowledged; true returns acknowledged. Cursor binds filter."
           }
-        ]
+        ],
+        "x-r1-available": true
       }
     },
     "/v2/workspaces/{workspace_id}/threads/{thread_id}": {
@@ -2841,9 +2870,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -2853,6 +2879,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
         "parameters": [
@@ -2863,7 +2892,8 @@
             "$ref": "#/components/parameters/ThreadLimit"
           }
         ],
-        "x-human-review-scope": "messages:review"
+        "x-human-review-scope": "messages:review",
+        "x-r1-available": true
       }
     },
     "/v2/workspaces/{workspace_id}/messages:ack": {
@@ -2928,9 +2958,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -2940,6 +2967,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
         "x-idempotency": "required; same operation/target and canonical payload replay within retention; credential secret is redacted on replay",
@@ -2957,7 +2987,8 @@
               }
             }
           }
-        }
+        },
+        "x-r1-available": true
       }
     },
     "/v2/workspaces/{workspace_id}/artifacts": {
@@ -3025,9 +3056,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -3037,6 +3065,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
         "parameters": [
@@ -3056,7 +3087,8 @@
             },
             "description": "Optional task filter."
           }
-        ]
+        ],
+        "x-r1-available": false
       },
       "post": {
         "operationId": "stageArtifact",
@@ -3111,9 +3143,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -3123,6 +3152,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
         "x-idempotency": "required; same operation/target and canonical payload replay within retention; credential secret is redacted on replay",
@@ -3143,7 +3175,8 @@
               }
             }
           }
-        }
+        },
+        "x-r1-available": false
       }
     },
     "/v2/workspaces/{workspace_id}/artifacts/{artifact_id}": {
@@ -3221,9 +3254,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -3233,8 +3263,12 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
-        }
+        },
+        "x-r1-available": false
       }
     },
     "/v2/workspaces/{workspace_id}/artifacts/{artifact_id}/content": {
@@ -3313,9 +3347,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -3325,6 +3356,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
         "x-idempotency": "required; same operation/target and canonical payload replay within retention; credential secret is redacted on replay",
@@ -3347,7 +3381,8 @@
               }
             }
           }
-        }
+        },
+        "x-r1-available": false
       },
       "get": {
         "operationId": "downloadArtifactContent",
@@ -3402,9 +3437,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -3414,8 +3446,12 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
-        }
+        },
+        "x-r1-available": false
       }
     },
     "/v2/workspaces/{workspace_id}/artifacts/{artifact_id}:commit": {
@@ -3494,9 +3530,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -3506,6 +3539,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
         "x-idempotency": "required; same operation/target and canonical payload replay within retention; credential secret is redacted on replay",
@@ -3526,7 +3562,8 @@
               }
             }
           }
-        }
+        },
+        "x-r1-available": false
       }
     },
     "/v2/workspaces/{workspace_id}/events": {
@@ -3594,9 +3631,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -3606,6 +3640,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
         "parameters": [
@@ -3624,7 +3661,8 @@
             },
             "description": "Exclusive event sequence; used only without cursor. Cursors bind authorization and high-water boundary."
           }
-        ]
+        ],
+        "x-r1-available": true
       }
     },
     "/v2/workspaces/{workspace_id}/credentials": {
@@ -3689,9 +3727,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -3701,6 +3736,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
         "parameters": [
@@ -3710,7 +3748,8 @@
           {
             "$ref": "#/components/parameters/ListLimit"
           }
-        ]
+        ],
+        "x-r1-available": false
       },
       "post": {
         "operationId": "createCredential",
@@ -3761,9 +3800,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -3773,6 +3809,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
         "x-idempotency": "required; same operation/target and canonical payload replay within retention; credential secret is redacted on replay",
@@ -3793,7 +3832,8 @@
               }
             }
           }
-        }
+        },
+        "x-r1-available": false
       }
     },
     "/v2/workspaces/{workspace_id}/credentials/{credential_id}:revoke": {
@@ -3868,9 +3908,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -3880,6 +3917,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
         "x-idempotency": "required; same operation/target and canonical payload replay within retention; credential secret is redacted on replay",
@@ -3900,7 +3940,8 @@
               }
             }
           }
-        }
+        },
+        "x-r1-available": false
       }
     },
     "/v2/workspaces/{workspace_id}/search": {
@@ -3968,9 +4009,6 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          },
           "500": {
             "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
             "content": {
@@ -3980,6 +4018,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
         "parameters": [
@@ -4012,7 +4053,934 @@
             },
             "description": "Optional entity filter."
           }
-        ]
+        ],
+        "x-r1-available": false
+      }
+    },
+    "/v2/workspaces/{workspace_id}/auth/start": {
+      "parameters": [
+        {
+          "name": "workspace_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque stable identifier; never infer authority from its value."
+          }
+        }
+      ],
+      "post": {
+        "operationId": "startAuth",
+        "summary": "startAuth",
+        "description": "Same-origin only. Creates a five-minute one-use state/nonce/PKCE S256 login attempt and HttpOnly transient cookie. No domain command. Return paths use the exact schema allowlist.",
+        "security": [],
+        "x-required-scopes": [],
+        "x-actor-kind": "protocol",
+        "x-contract-status": "proposed",
+        "x-r1-available": true,
+        "responses": {
+          "200": {
+            "description": "Proposed bounded result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthStartDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthStartRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/workspaces/{workspace_id}/auth/session": {
+      "parameters": [
+        {
+          "name": "workspace_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque stable identifier; never infer authority from its value."
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getAuthSession",
+        "summary": "getAuthSession",
+        "description": "Proposed R1 contract; no implementation evidence. Current workspace authority is checked per call. Requires live verified workspace session, enabled installed grant and current epoch, with no domain scope requirement. Logout still requires exact Origin and session CSRF.",
+        "security": [
+          {
+            "HumanSession": []
+          }
+        ],
+        "x-required-scopes": [],
+        "x-actor-kind": "human",
+        "x-contract-status": "proposed",
+        "x-r1-available": true,
+        "responses": {
+          "200": {
+            "description": "Proposed bounded result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthSessionResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "parameters": [],
+        "x-auth-protocol": true
+      }
+    },
+    "/v2/workspaces/{workspace_id}/auth/logout": {
+      "parameters": [
+        {
+          "name": "workspace_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque stable identifier; never infer authority from its value."
+          }
+        }
+      ],
+      "post": {
+        "operationId": "logoutAuth",
+        "summary": "logoutAuth",
+        "description": "Session CSRF and exact Origin required. Revokes session, expires cookie. Session-bound protocol identity, not ordinary domain command idempotency. Requires live verified workspace session, enabled installed grant and current epoch, with no domain scope requirement. Logout still requires exact Origin and session CSRF.",
+        "security": [
+          {
+            "HumanSession": []
+          }
+        ],
+        "x-required-scopes": [],
+        "x-actor-kind": "human",
+        "x-contract-status": "proposed",
+        "x-r1-available": true,
+        "responses": {
+          "200": {
+            "description": "Proposed bounded result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthLogoutDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CsrfToken"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthLogoutRequest"
+              }
+            }
+          }
+        },
+        "x-auth-protocol": true
+      }
+    },
+    "/v2/workspaces/{workspace_id}/auth/callback": {
+      "parameters": [
+        {
+          "name": "workspace_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque stable identifier; never infer authority from its value."
+          }
+        }
+      ],
+      "get": {
+        "operationId": "callbackAuth",
+        "summary": "One-use OIDC callback",
+        "description": "Narrow GET mutation protocol exception: verifies state+cookie, PKCE code exchange, ID token RS256 issuer/audience/azp/exp/iat/nonce and installed human grant. Consumes attempt and rotates session before redirect. Failure clears transient cookie without exposing tokens.",
+        "security": [],
+        "x-required-scopes": [],
+        "x-actor-kind": "protocol",
+        "x-contract-status": "proposed",
+        "x-r1-available": true,
+        "x-query-fixture-schema": "#/components/schemas/AuthCallbackQuery",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to saved allowlisted UI path; no JSON body.",
+            "x-header-fixture-schema": "#/components/schemas/AuthCallbackHeaders",
+            "headers": {
+              "Location": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "/",
+                    "/overview",
+                    "/inbox",
+                    "/activity",
+                    "/settings"
+                  ]
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/v2/workspaces/{workspace_id}/configuration": {
+      "parameters": [
+        {
+          "name": "workspace_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque stable identifier; never infer authority from its value."
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getConfiguration",
+        "summary": "getConfiguration",
+        "description": "Proposed R1 contract; no implementation evidence. Current workspace authority is checked per call.",
+        "security": [
+          {
+            "HumanSession": []
+          },
+          {
+            "NativeBearer": []
+          }
+        ],
+        "x-required-scopes": [
+          "workspace:read"
+        ],
+        "x-actor-kind": "both",
+        "x-contract-status": "proposed",
+        "x-r1-available": true,
+        "responses": {
+          "200": {
+            "description": "Proposed bounded result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigurationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "parameters": []
+      }
+    },
+    "/v2/workspaces/{workspace_id}/profile": {
+      "parameters": [
+        {
+          "name": "workspace_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque stable identifier; never infer authority from its value."
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getProfile",
+        "summary": "getProfile",
+        "description": "Proposed R1 contract; no implementation evidence. Current workspace authority is checked per call.",
+        "security": [
+          {
+            "HumanSession": []
+          },
+          {
+            "NativeBearer": []
+          }
+        ],
+        "x-required-scopes": [
+          "workspace:read"
+        ],
+        "x-actor-kind": "both",
+        "x-contract-status": "proposed",
+        "x-r1-available": true,
+        "responses": {
+          "200": {
+            "description": "Proposed bounded result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "parameters": []
+      },
+      "put": {
+        "operationId": "putProfile",
+        "summary": "putProfile",
+        "description": "Proposed R1 contract; no implementation evidence. Current workspace authority is checked per call.",
+        "security": [
+          {
+            "HumanSession": []
+          }
+        ],
+        "x-required-scopes": [
+          "profile:edit"
+        ],
+        "x-actor-kind": "human",
+        "x-contract-status": "proposed",
+        "x-r1-available": true,
+        "responses": {
+          "200": {
+            "description": "Proposed bounded result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/CsrfToken"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileWriteRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/workspaces/{workspace_id}/profile:preview": {
+      "parameters": [
+        {
+          "name": "workspace_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque stable identifier; never infer authority from its value."
+          }
+        }
+      ],
+      "post": {
+        "operationId": "previewProfile",
+        "summary": "previewProfile",
+        "description": "Advisory bounded canonical stable-ID merge; preserves omitted records, writes nothing and persists no successful mutation outcome. Requires same Idempotency-Key on repeat; expected revision is rechecked and stale revision returns409. Idempotency-Key correlates advisory recomputation; no durable outcome or across-restart changed-payload detection is promised. Apply retains durable idempotency and current revision checks.",
+        "security": [
+          {
+            "HumanSession": []
+          }
+        ],
+        "x-required-scopes": [
+          "profile:edit"
+        ],
+        "x-actor-kind": "human",
+        "x-contract-status": "proposed",
+        "x-r1-available": true,
+        "responses": {
+          "200": {
+            "description": "Proposed bounded result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfilePreviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/CsrfToken"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileWriteRequest"
+              }
+            }
+          }
+        },
+        "x-nonmutating": true
+      }
+    },
+    "/v2/workspaces/{workspace_id}/profile:export": {
+      "parameters": [
+        {
+          "name": "workspace_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque stable identifier; never infer authority from its value."
+          }
+        }
+      ],
+      "get": {
+        "operationId": "exportProfile",
+        "summary": "exportProfile",
+        "description": "Proposed R1 contract; no implementation evidence. Current workspace authority is checked per call.",
+        "security": [
+          {
+            "HumanSession": []
+          }
+        ],
+        "x-required-scopes": [
+          "profile:edit"
+        ],
+        "x-actor-kind": "human",
+        "x-contract-status": "proposed",
+        "x-r1-available": true,
+        "responses": {
+          "200": {
+            "description": "Proposed bounded result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileExportResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "parameters": []
+      }
+    },
+    "/v2/workspaces/{workspace_id}/preferences": {
+      "parameters": [
+        {
+          "name": "workspace_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque stable identifier; never infer authority from its value."
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getPreferences",
+        "summary": "getPreferences",
+        "description": "Proposed R1 contract; no implementation evidence. Current workspace authority is checked per call.",
+        "security": [
+          {
+            "HumanSession": []
+          }
+        ],
+        "x-required-scopes": [
+          "workspace:read"
+        ],
+        "x-actor-kind": "human",
+        "x-contract-status": "proposed",
+        "x-r1-available": true,
+        "responses": {
+          "200": {
+            "description": "Proposed bounded result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferencesDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "parameters": []
+      },
+      "put": {
+        "operationId": "putPreferences",
+        "summary": "putPreferences",
+        "description": "Proposed R1 contract; no implementation evidence. Current workspace authority is checked per call.",
+        "security": [
+          {
+            "HumanSession": []
+          }
+        ],
+        "x-required-scopes": [
+          "workspace:read"
+        ],
+        "x-actor-kind": "human",
+        "x-contract-status": "proposed",
+        "x-r1-available": true,
+        "responses": {
+          "200": {
+            "description": "Proposed bounded result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferencesDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/CsrfToken"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreferencesWriteRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/workspaces/{workspace_id}/operations": {
+      "parameters": [
+        {
+          "name": "workspace_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque stable identifier; never infer authority from its value."
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getOperations",
+        "summary": "getOperations",
+        "description": "Proposed R1 contract; no implementation evidence. Current workspace authority is checked per call.",
+        "security": [
+          {
+            "HumanSession": []
+          }
+        ],
+        "x-required-scopes": [
+          "operations:read"
+        ],
+        "x-actor-kind": "human",
+        "x-contract-status": "proposed",
+        "x-r1-available": true,
+        "responses": {
+          "200": {
+            "description": "Proposed bounded result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "parameters": []
+      }
+    },
+    "/v2/workspaces/{workspace_id}/readiness": {
+      "parameters": [
+        {
+          "name": "workspace_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque stable identifier; never infer authority from its value."
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getReadiness",
+        "summary": "getReadiness",
+        "description": "Proposed R1 contract; no implementation evidence. Current workspace authority is checked per call.",
+        "security": [
+          {
+            "HumanSession": []
+          }
+        ],
+        "x-required-scopes": [
+          "operations:read"
+        ],
+        "x-actor-kind": "human",
+        "x-contract-status": "proposed",
+        "x-r1-available": true,
+        "responses": {
+          "200": {
+            "description": "Proposed bounded result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "parameters": []
+      }
+    },
+    "/health/live": {
+      "get": {
+        "operationId": "getLiveness",
+        "summary": "Minimal public liveness",
+        "security": [],
+        "x-required-scopes": [],
+        "x-actor-kind": "public",
+        "x-contract-status": "proposed",
+        "x-r1-available": true,
+        "responses": {
+          "200": {
+            "description": "No dependency or catalog details.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Liveness"
+                }
+              }
+            }
+          }
+        }
       }
     }
   },
@@ -4182,7 +5150,9 @@
           "events:read",
           "credentials:manage",
           "search:read",
-          "messages:review"
+          "messages:review",
+          "profile:edit",
+          "operations:read"
         ]
       },
       "TaskResult": {
@@ -5012,7 +5982,7 @@
           "created_at",
           "acknowledged_at"
         ],
-        "description": "acknowledged_at is the authenticated recipient projection, not global completion. It is null for other viewers."
+        "description": "Nonrecipient accepted/view DTO acknowledgment is null; recipient reads expose only that actor’s ACK. acknowledged_at is not execution or completion."
       },
       "AckResult": {
         "type": "object",
@@ -5190,7 +6160,10 @@
               "runtime",
               "message",
               "artifact",
-              "credential"
+              "credential",
+              "configuration",
+              "profile",
+              "preferences"
             ]
           },
           "resource_id": {
@@ -5238,6 +6211,35 @@
           },
           "summary": {
             "type": "string"
+          },
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "resource_version": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "thread_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -5252,9 +6254,299 @@
           "run_id",
           "fence",
           "occurred_at",
-          "summary"
+          "summary",
+          "request_id",
+          "resource_version",
+          "thread_id"
         ],
-        "description": "Sanitized audit projection, never secrets or full message bodies. sequence is monotonic within workspace."
+        "description": "Sanitized audit projection, never secrets or full message bodies. sequence is monotonic within workspace. Required request_id correlates original processing attempt (delivery-origin gets a new internal processing ID linked to delivery). Message projection joins current accessible persisted message/thread; all other thread_id null. Settings IDs/versions follow ADR0007; preference owner filtering applies before IDs/counts/summaries.",
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "resource_type": {
+                  "enum": [
+                    "configuration",
+                    "profile",
+                    "preferences"
+                  ]
+                }
+              },
+              "required": [
+                "resource_type"
+              ]
+            },
+            "then": {
+              "properties": {
+                "resource_version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                },
+                "thread_id": {
+                  "type": "null"
+                },
+                "task_version": {
+                  "type": "null"
+                },
+                "run_id": {
+                  "type": "null"
+                },
+                "fence": {
+                  "type": "null"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "resource_type": {
+                  "enum": [
+                    "configuration",
+                    "profile"
+                  ]
+                }
+              },
+              "required": [
+                "resource_type"
+              ]
+            },
+            "then": {
+              "description": "resource_id must equal workspace_id; enforced semantically."
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "resource_type": {
+                  "enum": [
+                    "task",
+                    "run",
+                    "approval",
+                    "agent",
+                    "runtime",
+                    "message",
+                    "artifact",
+                    "credential"
+                  ]
+                }
+              },
+              "required": [
+                "resource_type"
+              ]
+            },
+            "then": {
+              "properties": {
+                "resource_version": {
+                  "type": "null"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "resource_type": {
+                  "const": "configuration"
+                }
+              },
+              "required": [
+                "resource_type"
+              ]
+            },
+            "then": {
+              "properties": {
+                "type": {
+                  "const": "configuration.installed"
+                },
+                "actor": {
+                  "properties": {
+                    "kind": {
+                      "const": "system"
+                    },
+                    "agent_id": {
+                      "type": "null"
+                    }
+                  }
+                },
+                "summary": {
+                  "const": "Workspace configuration installed."
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "resource_type": {
+                  "const": "profile"
+                }
+              },
+              "required": [
+                "resource_type"
+              ]
+            },
+            "then": {
+              "properties": {
+                "type": {
+                  "const": "profile.updated"
+                },
+                "actor": {
+                  "properties": {
+                    "kind": {
+                      "const": "human"
+                    },
+                    "agent_id": {
+                      "type": "null"
+                    }
+                  }
+                },
+                "summary": {
+                  "const": "Workspace profile updated."
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "resource_type": {
+                  "const": "preferences"
+                }
+              },
+              "required": [
+                "resource_type"
+              ]
+            },
+            "then": {
+              "properties": {
+                "type": {
+                  "const": "preferences.updated"
+                },
+                "actor": {
+                  "properties": {
+                    "kind": {
+                      "const": "human"
+                    },
+                    "agent_id": {
+                      "type": "null"
+                    }
+                  }
+                },
+                "summary": {
+                  "const": "User preferences updated."
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "message.accepted"
+                }
+              },
+              "required": [
+                "type"
+              ]
+            },
+            "then": {
+              "properties": {
+                "resource_type": {
+                  "const": "message"
+                },
+                "thread_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                },
+                "resource_version": {
+                  "type": "null"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "not": {
+                    "const": "message.accepted"
+                  }
+                }
+              },
+              "required": [
+                "type"
+              ]
+            },
+            "then": {
+              "properties": {
+                "thread_id": {
+                  "type": "null"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "configuration.installed"
+                }
+              },
+              "required": [
+                "type"
+              ]
+            },
+            "then": {
+              "properties": {
+                "resource_type": {
+                  "const": "configuration"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "profile.updated"
+                }
+              },
+              "required": [
+                "type"
+              ]
+            },
+            "then": {
+              "properties": {
+                "resource_type": {
+                  "const": "profile"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "preferences.updated"
+                }
+              },
+              "required": [
+                "type"
+              ]
+            },
+            "then": {
+              "properties": {
+                "resource_type": {
+                  "const": "preferences"
+                }
+              }
+            }
+          }
+        ]
       },
       "Credential": {
         "type": "object",
@@ -5478,6 +6770,17 @@
                   },
                   "reason": {
                     "type": "string"
+                  },
+                  "feature": {
+                    "enum": [
+                      "artifacts",
+                      "tasks"
+                    ]
+                  },
+                  "current_revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9007199254740991
                   }
                 },
                 "required": []
@@ -6664,6 +7967,929 @@
           "publish"
         ],
         "description": "Documentation fixture payload for exact approval-input bytes; not a built-in product action schema."
+      },
+      "WorkspaceProfile": {
+        "title": "CF Agent Hub workspace profile contract revision 0.1",
+        "type": "object",
+        "properties": {
+          "contract_revision": {
+            "const": "0.1"
+          },
+          "profile_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+          },
+          "display_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "description": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 2048
+          },
+          "branding": {
+            "type": "object",
+            "properties": {
+              "accent": {
+                "enum": [
+                  "blue",
+                  "teal",
+                  "indigo",
+                  "violet",
+                  "amber",
+                  "slate"
+                ]
+              }
+            },
+            "required": [
+              "accent"
+            ],
+            "additionalProperties": false
+          },
+          "navigation": {
+            "type": "object",
+            "properties": {
+              "visible_views": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "overview",
+                    "inbox",
+                    "tasks",
+                    "kanban",
+                    "agents",
+                    "approvals",
+                    "activity"
+                  ]
+                },
+                "uniqueItems": true
+              }
+            },
+            "required": [
+              "visible_views"
+            ],
+            "additionalProperties": false
+          },
+          "projects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkspaceProfile/$defs/named_record"
+            }
+          },
+          "work_roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkspaceProfile/$defs/named_record"
+            }
+          }
+        },
+        "required": [
+          "contract_revision",
+          "profile_id",
+          "display_name",
+          "description",
+          "branding",
+          "navigation",
+          "projects",
+          "work_roles"
+        ],
+        "additionalProperties": false,
+        "$defs": {
+          "named_record": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "display_name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "description": {
+                "type": "string",
+                "minLength": 0,
+                "maxLength": 2048
+              },
+              "archived": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "id",
+              "display_name",
+              "description",
+              "archived"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "UserPreferences": {
+        "title": "CF Agent Hub user preferences contract revision 0.1",
+        "type": "object",
+        "properties": {
+          "contract_revision": {
+            "const": "0.1"
+          },
+          "theme": {
+            "enum": [
+              "system",
+              "light",
+              "dark"
+            ]
+          },
+          "density": {
+            "enum": [
+              "comfortable",
+              "compact"
+            ]
+          },
+          "default_view": {
+            "enum": [
+              "overview",
+              "inbox",
+              "tasks",
+              "kanban",
+              "agents",
+              "approvals",
+              "activity"
+            ]
+          }
+        },
+        "required": [
+          "contract_revision",
+          "theme",
+          "density",
+          "default_view"
+        ],
+        "additionalProperties": false
+      },
+      "Configuration": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "config_epoch": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "profile_revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "preferences_revision": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "allowed_user_overrides": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "theme",
+                "density",
+                "default_view"
+              ]
+            }
+          },
+          "enabled_features": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "workspace",
+                "messages",
+                "events",
+                "profile",
+                "preferences",
+                "operations"
+              ]
+            }
+          }
+        },
+        "required": [
+          "config_epoch",
+          "profile_revision",
+          "preferences_revision",
+          "allowed_user_overrides",
+          "enabled_features"
+        ]
+      },
+      "ProfileData": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "profile_revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "profile": {
+            "$ref": "#/components/schemas/WorkspaceProfile"
+          }
+        },
+        "required": [
+          "profile_revision",
+          "profile"
+        ]
+      },
+      "ProfileWriteRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "expected_profile_revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "profile": {
+            "$ref": "#/components/schemas/WorkspaceProfile"
+          }
+        },
+        "required": [
+          "expected_profile_revision",
+          "profile"
+        ]
+      },
+      "ProfilePreview": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "base_revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "profile": {
+            "$ref": "#/components/schemas/WorkspaceProfile"
+          },
+          "changes": {
+            "type": "array",
+            "maxItems": 200,
+            "items": {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 512,
+                  "pattern": "^/(?:[^~/]|~[01])*(?:/(?:[^~/]|~[01])*)*$"
+                },
+                "operation": {
+                  "enum": [
+                    "add",
+                    "update"
+                  ]
+                }
+              },
+              "required": [
+                "field",
+                "operation"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "conflicts": {
+            "type": "array",
+            "maxItems": 200,
+            "items": {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 512,
+                  "pattern": "^/(?:[^~/]|~[01])*(?:/(?:[^~/]|~[01])*)*$"
+                },
+                "code": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64,
+                  "pattern": "^[A-Z][A-Z0-9_]*$",
+                  "enum": [
+                    "REFERENCED_ARCHIVE",
+                    "REFERENCED_REMAP"
+                  ]
+                }
+              },
+              "required": [
+                "field",
+                "code"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "base_revision",
+          "profile",
+          "changes",
+          "conflicts"
+        ],
+        "description": "field is a JSON Pointer into canonical merged profile. Arrays <=200; entire UTF-8 response envelope <=65536 bytes. Reject overflow, never truncate. Stale revision409; malformed shapes/duplicates use normal validation errors."
+      },
+      "ProfileExport": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "profile_revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "profile": {
+            "$ref": "#/components/schemas/WorkspaceProfile"
+          },
+          "included_categories": {
+            "const": [
+              "presentation",
+              "projects",
+              "work_roles"
+            ]
+          }
+        },
+        "required": [
+          "profile_revision",
+          "profile",
+          "included_categories"
+        ]
+      },
+      "PreferencesData": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "preferences_revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "preferences": {
+            "$ref": "#/components/schemas/UserPreferences"
+          },
+          "effective": {
+            "$ref": "#/components/schemas/UserPreferences"
+          },
+          "allowed_user_overrides": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "theme",
+                "density",
+                "default_view"
+              ]
+            }
+          }
+        },
+        "required": [
+          "preferences_revision",
+          "preferences",
+          "effective",
+          "allowed_user_overrides"
+        ]
+      },
+      "PreferencesWriteRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "expected_preferences_revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "preferences": {
+            "$ref": "#/components/schemas/UserPreferences"
+          }
+        },
+        "required": [
+          "expected_preferences_revision",
+          "preferences"
+        ]
+      },
+      "ReadinessCheck": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "status": {
+            "enum": [
+              "pass",
+              "fail",
+              "unknown"
+            ]
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[A-Z][A-Z0-9_]*$"
+          },
+          "checked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "status",
+          "code",
+          "checked_at"
+        ]
+      },
+      "Readiness": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "observed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "ready": {
+            "type": "boolean"
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReadinessCheck"
+            },
+            "maxItems": 64
+          }
+        },
+        "required": [
+          "observed_at",
+          "ready",
+          "checks"
+        ]
+      },
+      "Operations": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "observed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "config_epoch": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "schema_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "readiness": {
+            "$ref": "#/components/schemas/Readiness"
+          },
+          "outbox": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "pending_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "in_flight_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "failed_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "suppressed_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "oldest_due_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "next_due_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "pending_count",
+              "in_flight_count",
+              "failed_count",
+              "suppressed_count",
+              "oldest_due_at",
+              "next_due_at"
+            ]
+          },
+          "scheduler": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "last_run_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "last_error_code": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2048
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "last_run_at",
+              "last_error_code"
+            ]
+          }
+        },
+        "required": [
+          "observed_at",
+          "config_epoch",
+          "schema_version",
+          "readiness",
+          "outbox",
+          "scheduler"
+        ]
+      },
+      "AuthStartRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "return_path": {
+            "type": "string",
+            "enum": [
+              "/",
+              "/overview",
+              "/inbox",
+              "/activity",
+              "/settings"
+            ]
+          }
+        },
+        "required": [
+          "return_path"
+        ]
+      },
+      "AuthStartData": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "authorization_url": {
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https://",
+            "maxLength": 8192
+          }
+        },
+        "required": [
+          "authorization_url"
+        ]
+      },
+      "AuthSession": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "actor": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "human"
+              },
+              "principal_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "agent_id": {
+                "type": "null"
+              }
+            },
+            "required": [
+              "kind",
+              "principal_id",
+              "agent_id"
+            ]
+          },
+          "csrf_token": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "actor",
+          "csrf_token",
+          "expires_at"
+        ]
+      },
+      "AuthLogoutRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {},
+        "required": []
+      },
+      "AuthLogoutData": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "logged_out": {
+            "const": true
+          }
+        },
+        "required": [
+          "logged_out"
+        ]
+      },
+      "AuthCallbackQuery": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          },
+          "state": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          }
+        },
+        "required": [
+          "code",
+          "state"
+        ]
+      },
+      "AuthCallbackHeaders": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "Location": {
+            "type": "string",
+            "enum": [
+              "/",
+              "/overview",
+              "/inbox",
+              "/activity",
+              "/settings"
+            ]
+          }
+        },
+        "required": [
+          "Location"
+        ]
+      },
+      "Liveness": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "const": "alive"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "AuthStartDataResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AuthStartData"
+          },
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "data",
+          "request_id"
+        ]
+      },
+      "AuthSessionResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AuthSession"
+          },
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "data",
+          "request_id"
+        ]
+      },
+      "AuthLogoutDataResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AuthLogoutData"
+          },
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "data",
+          "request_id"
+        ]
+      },
+      "ConfigurationResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Configuration"
+          },
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "data",
+          "request_id"
+        ]
+      },
+      "ProfileDataResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ProfileData"
+          },
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "data",
+          "request_id"
+        ]
+      },
+      "ProfilePreviewResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ProfilePreview"
+          },
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "data",
+          "request_id"
+        ]
+      },
+      "ProfileExportResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ProfileExport"
+          },
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "data",
+          "request_id"
+        ]
+      },
+      "PreferencesDataResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PreferencesData"
+          },
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "data",
+          "request_id"
+        ]
+      },
+      "OperationsResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Operations"
+          },
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "data",
+          "request_id"
+        ]
+      },
+      "ReadinessResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Readiness"
+          },
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "data",
+          "request_id"
+        ]
       }
     },
     "responses": {

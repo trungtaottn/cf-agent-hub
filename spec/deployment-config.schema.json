@@ -1,10 +1,10 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "CF Agent Hub deployment configuration contract revision 0.1",
+  "title": "CF Agent Hub deployment configuration contract revision 0.2",
   "type": "object",
   "properties": {
     "contract_revision": {
-      "const": "0.1"
+      "const": "0.2"
     },
     "workspace_catalog": {
       "type": "array",
@@ -61,13 +61,96 @@
             "format": "uri",
             "pattern": "^https://[a-zA-Z0-9](?:[a-zA-Z0-9.-]*[a-zA-Z0-9])?$"
           }
+        },
+        "client_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "redirect_uris": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "workspace_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "redirect_uri": {
+                "type": "string",
+                "format": "uri",
+                "maxLength": 2048,
+                "pattern": "^https://[a-zA-Z0-9.-]+/v2/workspaces/[a-z][a-z0-9_-]*/auth/callback$"
+              }
+            },
+            "required": [
+              "workspace_id",
+              "redirect_uri"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 1000
+        },
+        "client_secret_ref": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]{0,127}$"
+        },
+        "session_ttl_seconds": {
+          "type": "integer",
+          "minimum": 300,
+          "maximum": 28800
+        },
+        "id_token_algorithms": {
+          "const": [
+            "RS256"
+          ]
+        },
+        "reviewed_oidc_endpoints": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "authorization_endpoint": {
+              "type": "string",
+              "minLength": 9,
+              "maxLength": 2048,
+              "format": "uri",
+              "pattern": "^https://[a-zA-Z0-9](?:[a-zA-Z0-9.-]*[a-zA-Z0-9])?(?:/[a-zA-Z0-9._~!$&'()*+,;=:@%/-]*)?$"
+            },
+            "token_endpoint": {
+              "type": "string",
+              "minLength": 9,
+              "maxLength": 2048,
+              "format": "uri",
+              "pattern": "^https://[a-zA-Z0-9](?:[a-zA-Z0-9.-]*[a-zA-Z0-9])?(?:/[a-zA-Z0-9._~!$&'()*+,;=:@%/-]*)?$"
+            },
+            "jwks_uri": {
+              "type": "string",
+              "minLength": 9,
+              "maxLength": 2048,
+              "format": "uri",
+              "pattern": "^https://[a-zA-Z0-9](?:[a-zA-Z0-9.-]*[a-zA-Z0-9])?(?:/[a-zA-Z0-9._~!$&'()*+,;=:@%/-]*)?$"
+            }
+          },
+          "required": [
+            "authorization_endpoint",
+            "token_endpoint",
+            "jwks_uri"
+          ]
         }
       },
       "required": [
         "mode",
         "issuer",
         "audience",
-        "allowed_origins"
+        "allowed_origins",
+        "client_id",
+        "redirect_uris",
+        "client_secret_ref",
+        "session_ttl_seconds",
+        "id_token_algorithms",
+        "reviewed_oidc_endpoints"
       ],
       "additionalProperties": false
     },
@@ -101,13 +184,260 @@
         ],
         "additionalProperties": false
       }
+    },
+    "config_epoch": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "human_grants": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "workspace_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+          },
+          "principal_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+          },
+          "issuer": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 2048,
+            "pattern": "^https://[a-zA-Z0-9](?:[a-zA-Z0-9.-]*[a-zA-Z0-9])?(?::443)?(?:/[^#]*)?$"
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "workspace:read",
+                "messages:send",
+                "messages:read",
+                "messages:review",
+                "events:read",
+                "profile:edit",
+                "operations:read"
+              ]
+            },
+            "maxItems": 1000,
+            "uniqueItems": true
+          },
+          "project_ids": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                },
+                "maxItems": 1000,
+                "uniqueItems": true
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "workspace_id",
+          "principal_id",
+          "issuer",
+          "subject",
+          "scopes",
+          "project_ids",
+          "enabled"
+        ],
+        "additionalProperties": false
+      },
+      "maxItems": 1000
+    },
+    "static_credential_refs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "workspace_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+          },
+          "credential_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+          },
+          "agent_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "workspace:read",
+                "messages:send",
+                "messages:read",
+                "messages:ack",
+                "events:read"
+              ]
+            },
+            "maxItems": 1000,
+            "uniqueItems": true
+          },
+          "project_ids": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                },
+                "maxItems": 1000,
+                "uniqueItems": true
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "workspace_id",
+          "credential_id",
+          "agent_id",
+          "scopes",
+          "project_ids",
+          "expires_at",
+          "enabled"
+        ],
+        "additionalProperties": false
+      },
+      "maxItems": 1000
+    },
+    "workspace_policies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "workspace_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+          },
+          "allowed_user_overrides": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "theme",
+                "density",
+                "default_view"
+              ]
+            },
+            "maxItems": 1000,
+            "uniqueItems": true
+          },
+          "notification_destinations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "destination_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                },
+                "agent_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                },
+                "url": {
+                  "type": "string",
+                  "format": "uri",
+                  "maxLength": 2048,
+                  "pattern": "^https://[a-zA-Z0-9](?:[a-zA-Z0-9.-]*[a-zA-Z0-9])?(?::443)?(?:/[^#]*)?$"
+                },
+                "signing_key_ref": {
+                  "type": "string",
+                  "pattern": "^[A-Z][A-Z0-9_]{0,127}$"
+                },
+                "enabled": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "destination_id",
+                "agent_id",
+                "url",
+                "signing_key_ref",
+                "enabled"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 1000
+          },
+          "retry_after_max_seconds": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3600,
+            "default": 3600
+          }
+        },
+        "required": [
+          "workspace_id",
+          "allowed_user_overrides",
+          "notification_destinations",
+          "retry_after_max_seconds"
+        ],
+        "additionalProperties": false
+      },
+      "maxItems": 1000
     }
   },
   "required": [
     "contract_revision",
     "workspace_catalog",
     "authentication",
-    "static_participants"
+    "static_participants",
+    "config_epoch",
+    "human_grants",
+    "static_credential_refs",
+    "workspace_policies"
   ],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "description": "Shape validation is necessary, never authorization. Semantic validation additionally requires exact issuer/subject grants, stable actor/hash mappings, one policy and callback per workspace, immutable unique catalog mappings, client_id=audience, safe operator-approved notification host/path, and <=90-day credential expiry at provisioning. Unknown fields fail with field paths and no values."
 }

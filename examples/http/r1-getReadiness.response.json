@@ -1,0 +1,15 @@
+{
+  "data": {
+    "observed_at": "2026-10-23T00:00:00Z",
+    "ready": false,
+    "checks": [
+      {
+        "name": "operator_probe",
+        "status": "unknown",
+        "code": "PROBE_REQUIRED",
+        "checked_at": null
+      }
+    ]
+  },
+  "request_id": "req_synthetic_getReadiness"
+}

@@ -77,3 +77,7 @@ R2 offers independent result acceptance through authorized native/human calls. T
 ## How to update status
 
 A status change must include implementation references, exact revision, test commands/environment, expected/observed outcomes and any exceptions. Record evidence in the release's review material and link it from the corresponding row; never overwrite this baseline with an unsupported “complete.” If a feature is disabled or removed, document user-visible behavior, retained data and recovery rather than leaving a stale green badge.
+
+## R1 contract amendment status
+
+ADR [0007](adr/0007-r1-ingress-and-settings.md) closes the proposed static grant/credential, OIDC session, settings, event-discovery, notification and operator recovery contracts for F01–F10, F27, F28, F30 and F41. Their status remains **Specified** pending runtime implementation and verification. F03 now includes explicit operator-provisioned hashes, immutable credential IDs, scoped grants and monotonic install, without claiming R2 F12 dynamic credential management. F28 includes profile preview/apply/export with revision and size bounds; F30 includes caller-owned preferences and policy overrides; F41 includes public minimal liveness, human-only redacted readiness/operations and an authenticated operator probe. R1 owns first logical SQL/message/outbox recovery; R2 F40 expands it for task/runtime/fence and artifact-byte invariants. Unavailable R2 routes and task/artifact message references do not become R1 features merely because later-release schemas or fixtures exist.

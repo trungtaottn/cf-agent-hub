@@ -1,0 +1,32 @@
+{
+  "data": {
+    "profile_revision": 1,
+    "profile": {
+      "contract_revision": "0.1",
+      "profile_id": "profile_neutral",
+      "display_name": "Workspace",
+      "description": "A shared coordination workspace.",
+      "branding": {
+        "accent": "blue"
+      },
+      "navigation": {
+        "visible_views": [
+          "overview",
+          "inbox",
+          "tasks",
+          "agents",
+          "approvals",
+          "activity"
+        ]
+      },
+      "projects": [],
+      "work_roles": []
+    },
+    "included_categories": [
+      "presentation",
+      "projects",
+      "work_roles"
+    ]
+  },
+  "request_id": "req_synthetic_exportProfile"
+}

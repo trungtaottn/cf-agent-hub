@@ -1,0 +1,1817 @@
+{
+  "cases": [
+    {
+      "name": "verified but ungranted human",
+      "schema": "spec/deployment-config.schema.json",
+      "field": "human_grants",
+      "value": {
+        "contract_revision": "0.2",
+        "config_epoch": 1,
+        "workspace_catalog": [
+          {
+            "workspace_id": "ws_example",
+            "object_name": "workspace-example"
+          }
+        ],
+        "authentication": {
+          "mode": "verified-oidc",
+          "issuer": "https://identity.example.invalid",
+          "audience": "cfhub-client",
+          "client_id": "cfhub-client",
+          "allowed_origins": [
+            "https://hub.example.invalid"
+          ],
+          "redirect_uris": [
+            {
+              "workspace_id": "ws_example",
+              "redirect_uri": "https://hub.example.invalid/v2/workspaces/ws_example/auth/callback"
+            }
+          ],
+          "client_secret_ref": "OIDC_CLIENT_SECRET",
+          "session_ttl_seconds": 3600,
+          "id_token_algorithms": [
+            "RS256"
+          ],
+          "reviewed_oidc_endpoints": {
+            "authorization_endpoint": "https://identity.example.invalid/authorize",
+            "token_endpoint": "https://identity.example.invalid/token",
+            "jwks_uri": "https://identity.example.invalid/jwks"
+          }
+        },
+        "static_participants": [
+          {
+            "workspace_id": "ws_example",
+            "agent_id": "agent_research",
+            "display_name": "Research participant"
+          }
+        ],
+        "human_grants": [
+          {
+            "workspace_id": "ws_example",
+            "principal_id": "human_operator",
+            "issuer": "https://identity.example.invalid",
+            "subject": "synthetic-subject",
+            "scopes": [
+              "workspace:read",
+              "messages:send",
+              "messages:read",
+              "messages:review",
+              "events:read",
+              "profile:edit",
+              "operations:read"
+            ],
+            "project_ids": null,
+            "enabled": true
+          }
+        ],
+        "static_credential_refs": [
+          {
+            "workspace_id": "ws_example",
+            "credential_id": "credential_research_1",
+            "agent_id": "agent_research",
+            "scopes": [
+              "workspace:read",
+              "messages:send",
+              "messages:read",
+              "messages:ack",
+              "events:read"
+            ],
+            "project_ids": null,
+            "expires_at": "2026-11-23T00:00:00Z",
+            "enabled": true
+          }
+        ],
+        "workspace_policies": [
+          {
+            "workspace_id": "ws_example",
+            "allowed_user_overrides": [
+              "theme",
+              "density",
+              "default_view"
+            ],
+            "notification_destinations": [
+              {
+                "destination_id": "research",
+                "agent_id": "agent_research",
+                "url": "https://receiver.example.invalid/cfhub",
+                "signing_key_ref": "NOTIFICATION_SIGNING_KEY",
+                "enabled": true
+              }
+            ],
+            "retry_after_max_seconds": 3600
+          }
+        ]
+      },
+      "context": {
+        "identity": {
+          "workspace_id": "ws_example",
+          "issuer": "https://identity.example.invalid",
+          "subject": "ungranted"
+        }
+      }
+    },
+    {
+      "name": "display name cannot supply scopes",
+      "schema": "spec/deployment-config.schema.json",
+      "field": "human_grants",
+      "value": {
+        "contract_revision": "0.2",
+        "config_epoch": 1,
+        "workspace_catalog": [
+          {
+            "workspace_id": "ws_example",
+            "object_name": "workspace-example"
+          }
+        ],
+        "authentication": {
+          "mode": "verified-oidc",
+          "issuer": "https://identity.example.invalid",
+          "audience": "cfhub-client",
+          "client_id": "cfhub-client",
+          "allowed_origins": [
+            "https://hub.example.invalid"
+          ],
+          "redirect_uris": [
+            {
+              "workspace_id": "ws_example",
+              "redirect_uri": "https://hub.example.invalid/v2/workspaces/ws_example/auth/callback"
+            }
+          ],
+          "client_secret_ref": "OIDC_CLIENT_SECRET",
+          "session_ttl_seconds": 3600,
+          "id_token_algorithms": [
+            "RS256"
+          ],
+          "reviewed_oidc_endpoints": {
+            "authorization_endpoint": "https://identity.example.invalid/authorize",
+            "token_endpoint": "https://identity.example.invalid/token",
+            "jwks_uri": "https://identity.example.invalid/jwks"
+          }
+        },
+        "static_participants": [
+          {
+            "workspace_id": "ws_example",
+            "agent_id": "agent_research",
+            "display_name": "Research participant"
+          }
+        ],
+        "human_grants": [
+          {
+            "workspace_id": "ws_example",
+            "principal_id": "human_operator",
+            "issuer": "https://identity.example.invalid",
+            "subject": "synthetic-subject",
+            "project_ids": null,
+            "enabled": true,
+            "display_name": "administrator"
+          }
+        ],
+        "static_credential_refs": [
+          {
+            "workspace_id": "ws_example",
+            "credential_id": "credential_research_1",
+            "agent_id": "agent_research",
+            "scopes": [
+              "workspace:read",
+              "messages:send",
+              "messages:read",
+              "messages:ack",
+              "events:read"
+            ],
+            "project_ids": null,
+            "expires_at": "2026-11-23T00:00:00Z",
+            "enabled": true
+          }
+        ],
+        "workspace_policies": [
+          {
+            "workspace_id": "ws_example",
+            "allowed_user_overrides": [
+              "theme",
+              "density",
+              "default_view"
+            ],
+            "notification_destinations": [
+              {
+                "destination_id": "research",
+                "agent_id": "agent_research",
+                "url": "https://receiver.example.invalid/cfhub",
+                "signing_key_ref": "NOTIFICATION_SIGNING_KEY",
+                "enabled": true
+              }
+            ],
+            "retry_after_max_seconds": 3600
+          }
+        ]
+      }
+    },
+    {
+      "name": "duplicate object mapping",
+      "schema": "spec/deployment-config.schema.json",
+      "field": "workspace_catalog.object_name",
+      "value": {
+        "contract_revision": "0.2",
+        "config_epoch": 1,
+        "workspace_catalog": [
+          {
+            "workspace_id": "ws_example",
+            "object_name": "workspace-example"
+          },
+          {
+            "workspace_id": "ws_other",
+            "object_name": "workspace-example"
+          }
+        ],
+        "authentication": {
+          "mode": "verified-oidc",
+          "issuer": "https://identity.example.invalid",
+          "audience": "cfhub-client",
+          "client_id": "cfhub-client",
+          "allowed_origins": [
+            "https://hub.example.invalid"
+          ],
+          "redirect_uris": [
+            {
+              "workspace_id": "ws_example",
+              "redirect_uri": "https://hub.example.invalid/v2/workspaces/ws_example/auth/callback"
+            }
+          ],
+          "client_secret_ref": "OIDC_CLIENT_SECRET",
+          "session_ttl_seconds": 3600,
+          "id_token_algorithms": [
+            "RS256"
+          ],
+          "reviewed_oidc_endpoints": {
+            "authorization_endpoint": "https://identity.example.invalid/authorize",
+            "token_endpoint": "https://identity.example.invalid/token",
+            "jwks_uri": "https://identity.example.invalid/jwks"
+          }
+        },
+        "static_participants": [
+          {
+            "workspace_id": "ws_example",
+            "agent_id": "agent_research",
+            "display_name": "Research participant"
+          }
+        ],
+        "human_grants": [
+          {
+            "workspace_id": "ws_example",
+            "principal_id": "human_operator",
+            "issuer": "https://identity.example.invalid",
+            "subject": "synthetic-subject",
+            "scopes": [
+              "workspace:read",
+              "messages:send",
+              "messages:read",
+              "messages:review",
+              "events:read",
+              "profile:edit",
+              "operations:read"
+            ],
+            "project_ids": null,
+            "enabled": true
+          }
+        ],
+        "static_credential_refs": [
+          {
+            "workspace_id": "ws_example",
+            "credential_id": "credential_research_1",
+            "agent_id": "agent_research",
+            "scopes": [
+              "workspace:read",
+              "messages:send",
+              "messages:read",
+              "messages:ack",
+              "events:read"
+            ],
+            "project_ids": null,
+            "expires_at": "2026-11-23T00:00:00Z",
+            "enabled": true
+          }
+        ],
+        "workspace_policies": [
+          {
+            "workspace_id": "ws_example",
+            "allowed_user_overrides": [
+              "theme",
+              "density",
+              "default_view"
+            ],
+            "notification_destinations": [
+              {
+                "destination_id": "research",
+                "agent_id": "agent_research",
+                "url": "https://receiver.example.invalid/cfhub",
+                "signing_key_ref": "NOTIFICATION_SIGNING_KEY",
+                "enabled": true
+              }
+            ],
+            "retry_after_max_seconds": 3600
+          }
+        ]
+      }
+    },
+    {
+      "name": "duplicate provider subject",
+      "schema": "spec/deployment-config.schema.json",
+      "field": "human_grants.subject",
+      "value": {
+        "contract_revision": "0.2",
+        "config_epoch": 1,
+        "workspace_catalog": [
+          {
+            "workspace_id": "ws_example",
+            "object_name": "workspace-example"
+          }
+        ],
+        "authentication": {
+          "mode": "verified-oidc",
+          "issuer": "https://identity.example.invalid",
+          "audience": "cfhub-client",
+          "client_id": "cfhub-client",
+          "allowed_origins": [
+            "https://hub.example.invalid"
+          ],
+          "redirect_uris": [
+            {
+              "workspace_id": "ws_example",
+              "redirect_uri": "https://hub.example.invalid/v2/workspaces/ws_example/auth/callback"
+            }
+          ],
+          "client_secret_ref": "OIDC_CLIENT_SECRET",
+          "session_ttl_seconds": 3600,
+          "id_token_algorithms": [
+            "RS256"
+          ],
+          "reviewed_oidc_endpoints": {
+            "authorization_endpoint": "https://identity.example.invalid/authorize",
+            "token_endpoint": "https://identity.example.invalid/token",
+            "jwks_uri": "https://identity.example.invalid/jwks"
+          }
+        },
+        "static_participants": [
+          {
+            "workspace_id": "ws_example",
+            "agent_id": "agent_research",
+            "display_name": "Research participant"
+          }
+        ],
+        "human_grants": [
+          {
+            "workspace_id": "ws_example",
+            "principal_id": "human_operator",
+            "issuer": "https://identity.example.invalid",
+            "subject": "synthetic-subject",
+            "scopes": [
+              "workspace:read",
+              "messages:send",
+              "messages:read",
+              "messages:review",
+              "events:read",
+              "profile:edit",
+              "operations:read"
+            ],
+            "project_ids": null,
+            "enabled": true
+          },
+          {
+            "workspace_id": "ws_example",
+            "principal_id": "different_principal",
+            "issuer": "https://identity.example.invalid",
+            "subject": "synthetic-subject",
+            "scopes": [
+              "workspace:read",
+              "messages:send",
+              "messages:read",
+              "messages:review",
+              "events:read",
+              "profile:edit",
+              "operations:read"
+            ],
+            "project_ids": null,
+            "enabled": true
+          }
+        ],
+        "static_credential_refs": [
+          {
+            "workspace_id": "ws_example",
+            "credential_id": "credential_research_1",
+            "agent_id": "agent_research",
+            "scopes": [
+              "workspace:read",
+              "messages:send",
+              "messages:read",
+              "messages:ack",
+              "events:read"
+            ],
+            "project_ids": null,
+            "expires_at": "2026-11-23T00:00:00Z",
+            "enabled": true
+          }
+        ],
+        "workspace_policies": [
+          {
+            "workspace_id": "ws_example",
+            "allowed_user_overrides": [
+              "theme",
+              "density",
+              "default_view"
+            ],
+            "notification_destinations": [
+              {
+                "destination_id": "research",
+                "agent_id": "agent_research",
+                "url": "https://receiver.example.invalid/cfhub",
+                "signing_key_ref": "NOTIFICATION_SIGNING_KEY",
+                "enabled": true
+              }
+            ],
+            "retry_after_max_seconds": 3600
+          }
+        ]
+      }
+    },
+    {
+      "name": "native human-only scope",
+      "schema": "spec/deployment-config.schema.json",
+      "field": "static_credential_refs",
+      "value": {
+        "contract_revision": "0.2",
+        "config_epoch": 1,
+        "workspace_catalog": [
+          {
+            "workspace_id": "ws_example",
+            "object_name": "workspace-example"
+          }
+        ],
+        "authentication": {
+          "mode": "verified-oidc",
+          "issuer": "https://identity.example.invalid",
+          "audience": "cfhub-client",
+          "client_id": "cfhub-client",
+          "allowed_origins": [
+            "https://hub.example.invalid"
+          ],
+          "redirect_uris": [
+            {
+              "workspace_id": "ws_example",
+              "redirect_uri": "https://hub.example.invalid/v2/workspaces/ws_example/auth/callback"
+            }
+          ],
+          "client_secret_ref": "OIDC_CLIENT_SECRET",
+          "session_ttl_seconds": 3600,
+          "id_token_algorithms": [
+            "RS256"
+          ],
+          "reviewed_oidc_endpoints": {
+            "authorization_endpoint": "https://identity.example.invalid/authorize",
+            "token_endpoint": "https://identity.example.invalid/token",
+            "jwks_uri": "https://identity.example.invalid/jwks"
+          }
+        },
+        "static_participants": [
+          {
+            "workspace_id": "ws_example",
+            "agent_id": "agent_research",
+            "display_name": "Research participant"
+          }
+        ],
+        "human_grants": [
+          {
+            "workspace_id": "ws_example",
+            "principal_id": "human_operator",
+            "issuer": "https://identity.example.invalid",
+            "subject": "synthetic-subject",
+            "scopes": [
+              "workspace:read",
+              "messages:send",
+              "messages:read",
+              "messages:review",
+              "events:read",
+              "profile:edit",
+              "operations:read"
+            ],
+            "project_ids": null,
+            "enabled": true
+          }
+        ],
+        "static_credential_refs": [
+          {
+            "workspace_id": "ws_example",
+            "credential_id": "credential_research_1",
+            "agent_id": "agent_research",
+            "scopes": [
+              "workspace:read",
+              "messages:send",
+              "messages:read",
+              "messages:ack",
+              "events:read",
+              "profile:edit"
+            ],
+            "project_ids": null,
+            "expires_at": "2026-11-23T00:00:00Z",
+            "enabled": true
+          }
+        ],
+        "workspace_policies": [
+          {
+            "workspace_id": "ws_example",
+            "allowed_user_overrides": [
+              "theme",
+              "density",
+              "default_view"
+            ],
+            "notification_destinations": [
+              {
+                "destination_id": "research",
+                "agent_id": "agent_research",
+                "url": "https://receiver.example.invalid/cfhub",
+                "signing_key_ref": "NOTIFICATION_SIGNING_KEY",
+                "enabled": true
+              }
+            ],
+            "retry_after_max_seconds": 3600
+          }
+        ]
+      }
+    },
+    {
+      "name": "stale authority epoch",
+      "schema": "spec/deployment-config.schema.json",
+      "field": "config_epoch",
+      "value": {
+        "contract_revision": "0.2",
+        "config_epoch": 1,
+        "workspace_catalog": [
+          {
+            "workspace_id": "ws_example",
+            "object_name": "workspace-example"
+          }
+        ],
+        "authentication": {
+          "mode": "verified-oidc",
+          "issuer": "https://identity.example.invalid",
+          "audience": "cfhub-client",
+          "client_id": "cfhub-client",
+          "allowed_origins": [
+            "https://hub.example.invalid"
+          ],
+          "redirect_uris": [
+            {
+              "workspace_id": "ws_example",
+              "redirect_uri": "https://hub.example.invalid/v2/workspaces/ws_example/auth/callback"
+            }
+          ],
+          "client_secret_ref": "OIDC_CLIENT_SECRET",
+          "session_ttl_seconds": 3600,
+          "id_token_algorithms": [
+            "RS256"
+          ],
+          "reviewed_oidc_endpoints": {
+            "authorization_endpoint": "https://identity.example.invalid/authorize",
+            "token_endpoint": "https://identity.example.invalid/token",
+            "jwks_uri": "https://identity.example.invalid/jwks"
+          }
+        },
+        "static_participants": [
+          {
+            "workspace_id": "ws_example",
+            "agent_id": "agent_research",
+            "display_name": "Research participant"
+          }
+        ],
+        "human_grants": [
+          {
+            "workspace_id": "ws_example",
+            "principal_id": "human_operator",
+            "issuer": "https://identity.example.invalid",
+            "subject": "synthetic-subject",
+            "scopes": [
+              "workspace:read",
+              "messages:send",
+              "messages:read",
+              "messages:review",
+              "events:read",
+              "profile:edit",
+              "operations:read"
+            ],
+            "project_ids": null,
+            "enabled": true
+          }
+        ],
+        "static_credential_refs": [
+          {
+            "workspace_id": "ws_example",
+            "credential_id": "credential_research_1",
+            "agent_id": "agent_research",
+            "scopes": [
+              "workspace:read",
+              "messages:send",
+              "messages:read",
+              "messages:ack",
+              "events:read"
+            ],
+            "project_ids": null,
+            "expires_at": "2026-11-23T00:00:00Z",
+            "enabled": true
+          }
+        ],
+        "workspace_policies": [
+          {
+            "workspace_id": "ws_example",
+            "allowed_user_overrides": [
+              "theme",
+              "density",
+              "default_view"
+            ],
+            "notification_destinations": [
+              {
+                "destination_id": "research",
+                "agent_id": "agent_research",
+                "url": "https://receiver.example.invalid/cfhub",
+                "signing_key_ref": "NOTIFICATION_SIGNING_KEY",
+                "enabled": true
+              }
+            ],
+            "retry_after_max_seconds": 3600
+          }
+        ]
+      },
+      "context": {
+        "installedEpoch": 2
+      }
+    },
+    {
+      "name": "unsafe loopback destination",
+      "schema": "spec/deployment-config.schema.json",
+      "field": "workspace_policies.notification_destinations.url",
+      "value": {
+        "contract_revision": "0.2",
+        "config_epoch": 1,
+        "workspace_catalog": [
+          {
+            "workspace_id": "ws_example",
+            "object_name": "workspace-example"
+          }
+        ],
+        "authentication": {
+          "mode": "verified-oidc",
+          "issuer": "https://identity.example.invalid",
+          "audience": "cfhub-client",
+          "client_id": "cfhub-client",
+          "allowed_origins": [
+            "https://hub.example.invalid"
+          ],
+          "redirect_uris": [
+            {
+              "workspace_id": "ws_example",
+              "redirect_uri": "https://hub.example.invalid/v2/workspaces/ws_example/auth/callback"
+            }
+          ],
+          "client_secret_ref": "OIDC_CLIENT_SECRET",
+          "session_ttl_seconds": 3600,
+          "id_token_algorithms": [
+            "RS256"
+          ],
+          "reviewed_oidc_endpoints": {
+            "authorization_endpoint": "https://identity.example.invalid/authorize",
+            "token_endpoint": "https://identity.example.invalid/token",
+            "jwks_uri": "https://identity.example.invalid/jwks"
+          }
+        },
+        "static_participants": [
+          {
+            "workspace_id": "ws_example",
+            "agent_id": "agent_research",
+            "display_name": "Research participant"
+          }
+        ],
+        "human_grants": [
+          {
+            "workspace_id": "ws_example",
+            "principal_id": "human_operator",
+            "issuer": "https://identity.example.invalid",
+            "subject": "synthetic-subject",
+            "scopes": [
+              "workspace:read",
+              "messages:send",
+              "messages:read",
+              "messages:review",
+              "events:read",
+              "profile:edit",
+              "operations:read"
+            ],
+            "project_ids": null,
+            "enabled": true
+          }
+        ],
+        "static_credential_refs": [
+          {
+            "workspace_id": "ws_example",
+            "credential_id": "credential_research_1",
+            "agent_id": "agent_research",
+            "scopes": [
+              "workspace:read",
+              "messages:send",
+              "messages:read",
+              "messages:ack",
+              "events:read"
+            ],
+            "project_ids": null,
+            "expires_at": "2026-11-23T00:00:00Z",
+            "enabled": true
+          }
+        ],
+        "workspace_policies": [
+          {
+            "workspace_id": "ws_example",
+            "allowed_user_overrides": [
+              "theme",
+              "density",
+              "default_view"
+            ],
+            "notification_destinations": [
+              {
+                "destination_id": "research",
+                "agent_id": "agent_research",
+                "url": "https://127.0.0.1/private",
+                "signing_key_ref": "NOTIFICATION_SIGNING_KEY",
+                "enabled": true
+              }
+            ],
+            "retry_after_max_seconds": 3600
+          }
+        ]
+      }
+    },
+    {
+      "name": "oversized session limit",
+      "schema": "spec/deployment-config.schema.json",
+      "field": "authentication.session_ttl_seconds",
+      "value": {
+        "contract_revision": "0.2",
+        "config_epoch": 1,
+        "workspace_catalog": [
+          {
+            "workspace_id": "ws_example",
+            "object_name": "workspace-example"
+          }
+        ],
+        "authentication": {
+          "mode": "verified-oidc",
+          "issuer": "https://identity.example.invalid",
+          "audience": "cfhub-client",
+          "client_id": "cfhub-client",
+          "allowed_origins": [
+            "https://hub.example.invalid"
+          ],
+          "redirect_uris": [
+            {
+              "workspace_id": "ws_example",
+              "redirect_uri": "https://hub.example.invalid/v2/workspaces/ws_example/auth/callback"
+            }
+          ],
+          "client_secret_ref": "OIDC_CLIENT_SECRET",
+          "session_ttl_seconds": 28801,
+          "id_token_algorithms": [
+            "RS256"
+          ],
+          "reviewed_oidc_endpoints": {
+            "authorization_endpoint": "https://identity.example.invalid/authorize",
+            "token_endpoint": "https://identity.example.invalid/token",
+            "jwks_uri": "https://identity.example.invalid/jwks"
+          }
+        },
+        "static_participants": [
+          {
+            "workspace_id": "ws_example",
+            "agent_id": "agent_research",
+            "display_name": "Research participant"
+          }
+        ],
+        "human_grants": [
+          {
+            "workspace_id": "ws_example",
+            "principal_id": "human_operator",
+            "issuer": "https://identity.example.invalid",
+            "subject": "synthetic-subject",
+            "scopes": [
+              "workspace:read",
+              "messages:send",
+              "messages:read",
+              "messages:review",
+              "events:read",
+              "profile:edit",
+              "operations:read"
+            ],
+            "project_ids": null,
+            "enabled": true
+          }
+        ],
+        "static_credential_refs": [
+          {
+            "workspace_id": "ws_example",
+            "credential_id": "credential_research_1",
+            "agent_id": "agent_research",
+            "scopes": [
+              "workspace:read",
+              "messages:send",
+              "messages:read",
+              "messages:ack",
+              "events:read"
+            ],
+            "project_ids": null,
+            "expires_at": "2026-11-23T00:00:00Z",
+            "enabled": true
+          }
+        ],
+        "workspace_policies": [
+          {
+            "workspace_id": "ws_example",
+            "allowed_user_overrides": [
+              "theme",
+              "density",
+              "default_view"
+            ],
+            "notification_destinations": [
+              {
+                "destination_id": "research",
+                "agent_id": "agent_research",
+                "url": "https://receiver.example.invalid/cfhub",
+                "signing_key_ref": "NOTIFICATION_SIGNING_KEY",
+                "enabled": true
+              }
+            ],
+            "retry_after_max_seconds": 3600
+          }
+        ]
+      }
+    },
+    {
+      "name": "unsupported OIDC algorithm",
+      "schema": "spec/deployment-config.schema.json",
+      "field": "authentication.id_token_algorithms",
+      "value": {
+        "contract_revision": "0.2",
+        "config_epoch": 1,
+        "workspace_catalog": [
+          {
+            "workspace_id": "ws_example",
+            "object_name": "workspace-example"
+          }
+        ],
+        "authentication": {
+          "mode": "verified-oidc",
+          "issuer": "https://identity.example.invalid",
+          "audience": "cfhub-client",
+          "client_id": "cfhub-client",
+          "allowed_origins": [
+            "https://hub.example.invalid"
+          ],
+          "redirect_uris": [
+            {
+              "workspace_id": "ws_example",
+              "redirect_uri": "https://hub.example.invalid/v2/workspaces/ws_example/auth/callback"
+            }
+          ],
+          "client_secret_ref": "OIDC_CLIENT_SECRET",
+          "session_ttl_seconds": 3600,
+          "id_token_algorithms": [
+            "HS256"
+          ],
+          "reviewed_oidc_endpoints": {
+            "authorization_endpoint": "https://identity.example.invalid/authorize",
+            "token_endpoint": "https://identity.example.invalid/token",
+            "jwks_uri": "https://identity.example.invalid/jwks"
+          }
+        },
+        "static_participants": [
+          {
+            "workspace_id": "ws_example",
+            "agent_id": "agent_research",
+            "display_name": "Research participant"
+          }
+        ],
+        "human_grants": [
+          {
+            "workspace_id": "ws_example",
+            "principal_id": "human_operator",
+            "issuer": "https://identity.example.invalid",
+            "subject": "synthetic-subject",
+            "scopes": [
+              "workspace:read",
+              "messages:send",
+              "messages:read",
+              "messages:review",
+              "events:read",
+              "profile:edit",
+              "operations:read"
+            ],
+            "project_ids": null,
+            "enabled": true
+          }
+        ],
+        "static_credential_refs": [
+          {
+            "workspace_id": "ws_example",
+            "credential_id": "credential_research_1",
+            "agent_id": "agent_research",
+            "scopes": [
+              "workspace:read",
+              "messages:send",
+              "messages:read",
+              "messages:ack",
+              "events:read"
+            ],
+            "project_ids": null,
+            "expires_at": "2026-11-23T00:00:00Z",
+            "enabled": true
+          }
+        ],
+        "workspace_policies": [
+          {
+            "workspace_id": "ws_example",
+            "allowed_user_overrides": [
+              "theme",
+              "density",
+              "default_view"
+            ],
+            "notification_destinations": [
+              {
+                "destination_id": "research",
+                "agent_id": "agent_research",
+                "url": "https://receiver.example.invalid/cfhub",
+                "signing_key_ref": "NOTIFICATION_SIGNING_KEY",
+                "enabled": true
+              }
+            ],
+            "retry_after_max_seconds": 3600
+          }
+        ]
+      }
+    },
+    {
+      "name": "client audience mismatch",
+      "schema": "spec/deployment-config.schema.json",
+      "field": "authentication.client_id",
+      "value": {
+        "contract_revision": "0.2",
+        "config_epoch": 1,
+        "workspace_catalog": [
+          {
+            "workspace_id": "ws_example",
+            "object_name": "workspace-example"
+          }
+        ],
+        "authentication": {
+          "mode": "verified-oidc",
+          "issuer": "https://identity.example.invalid",
+          "audience": "cfhub-client",
+          "client_id": "other-client",
+          "allowed_origins": [
+            "https://hub.example.invalid"
+          ],
+          "redirect_uris": [
+            {
+              "workspace_id": "ws_example",
+              "redirect_uri": "https://hub.example.invalid/v2/workspaces/ws_example/auth/callback"
+            }
+          ],
+          "client_secret_ref": "OIDC_CLIENT_SECRET",
+          "session_ttl_seconds": 3600,
+          "id_token_algorithms": [
+            "RS256"
+          ],
+          "reviewed_oidc_endpoints": {
+            "authorization_endpoint": "https://identity.example.invalid/authorize",
+            "token_endpoint": "https://identity.example.invalid/token",
+            "jwks_uri": "https://identity.example.invalid/jwks"
+          }
+        },
+        "static_participants": [
+          {
+            "workspace_id": "ws_example",
+            "agent_id": "agent_research",
+            "display_name": "Research participant"
+          }
+        ],
+        "human_grants": [
+          {
+            "workspace_id": "ws_example",
+            "principal_id": "human_operator",
+            "issuer": "https://identity.example.invalid",
+            "subject": "synthetic-subject",
+            "scopes": [
+              "workspace:read",
+              "messages:send",
+              "messages:read",
+              "messages:review",
+              "events:read",
+              "profile:edit",
+              "operations:read"
+            ],
+            "project_ids": null,
+            "enabled": true
+          }
+        ],
+        "static_credential_refs": [
+          {
+            "workspace_id": "ws_example",
+            "credential_id": "credential_research_1",
+            "agent_id": "agent_research",
+            "scopes": [
+              "workspace:read",
+              "messages:send",
+              "messages:read",
+              "messages:ack",
+              "events:read"
+            ],
+            "project_ids": null,
+            "expires_at": "2026-11-23T00:00:00Z",
+            "enabled": true
+          }
+        ],
+        "workspace_policies": [
+          {
+            "workspace_id": "ws_example",
+            "allowed_user_overrides": [
+              "theme",
+              "density",
+              "default_view"
+            ],
+            "notification_destinations": [
+              {
+                "destination_id": "research",
+                "agent_id": "agent_research",
+                "url": "https://receiver.example.invalid/cfhub",
+                "signing_key_ref": "NOTIFICATION_SIGNING_KEY",
+                "enabled": true
+              }
+            ],
+            "retry_after_max_seconds": 3600
+          }
+        ]
+      }
+    },
+    {
+      "name": "wrong callback workspace",
+      "schema": "spec/deployment-config.schema.json",
+      "field": "authentication.redirect_uris.redirect_uri",
+      "value": {
+        "contract_revision": "0.2",
+        "config_epoch": 1,
+        "workspace_catalog": [
+          {
+            "workspace_id": "ws_example",
+            "object_name": "workspace-example"
+          }
+        ],
+        "authentication": {
+          "mode": "verified-oidc",
+          "issuer": "https://identity.example.invalid",
+          "audience": "cfhub-client",
+          "client_id": "cfhub-client",
+          "allowed_origins": [
+            "https://hub.example.invalid"
+          ],
+          "redirect_uris": [
+            {
+              "workspace_id": "ws_example",
+              "redirect_uri": "https://hub.example.invalid/v2/workspaces/ws_other/auth/callback"
+            }
+          ],
+          "client_secret_ref": "OIDC_CLIENT_SECRET",
+          "session_ttl_seconds": 3600,
+          "id_token_algorithms": [
+            "RS256"
+          ],
+          "reviewed_oidc_endpoints": {
+            "authorization_endpoint": "https://identity.example.invalid/authorize",
+            "token_endpoint": "https://identity.example.invalid/token",
+            "jwks_uri": "https://identity.example.invalid/jwks"
+          }
+        },
+        "static_participants": [
+          {
+            "workspace_id": "ws_example",
+            "agent_id": "agent_research",
+            "display_name": "Research participant"
+          }
+        ],
+        "human_grants": [
+          {
+            "workspace_id": "ws_example",
+            "principal_id": "human_operator",
+            "issuer": "https://identity.example.invalid",
+            "subject": "synthetic-subject",
+            "scopes": [
+              "workspace:read",
+              "messages:send",
+              "messages:read",
+              "messages:review",
+              "events:read",
+              "profile:edit",
+              "operations:read"
+            ],
+            "project_ids": null,
+            "enabled": true
+          }
+        ],
+        "static_credential_refs": [
+          {
+            "workspace_id": "ws_example",
+            "credential_id": "credential_research_1",
+            "agent_id": "agent_research",
+            "scopes": [
+              "workspace:read",
+              "messages:send",
+              "messages:read",
+              "messages:ack",
+              "events:read"
+            ],
+            "project_ids": null,
+            "expires_at": "2026-11-23T00:00:00Z",
+            "enabled": true
+          }
+        ],
+        "workspace_policies": [
+          {
+            "workspace_id": "ws_example",
+            "allowed_user_overrides": [
+              "theme",
+              "density",
+              "default_view"
+            ],
+            "notification_destinations": [
+              {
+                "destination_id": "research",
+                "agent_id": "agent_research",
+                "url": "https://receiver.example.invalid/cfhub",
+                "signing_key_ref": "NOTIFICATION_SIGNING_KEY",
+                "enabled": true
+              }
+            ],
+            "retry_after_max_seconds": 3600
+          }
+        ]
+      }
+    },
+    {
+      "name": "private metadata destination",
+      "schema": "spec/deployment-config.schema.json",
+      "field": "workspace_policies.notification_destinations.url",
+      "value": {
+        "contract_revision": "0.2",
+        "config_epoch": 1,
+        "workspace_catalog": [
+          {
+            "workspace_id": "ws_example",
+            "object_name": "workspace-example"
+          }
+        ],
+        "authentication": {
+          "mode": "verified-oidc",
+          "issuer": "https://identity.example.invalid",
+          "audience": "cfhub-client",
+          "client_id": "cfhub-client",
+          "allowed_origins": [
+            "https://hub.example.invalid"
+          ],
+          "redirect_uris": [
+            {
+              "workspace_id": "ws_example",
+              "redirect_uri": "https://hub.example.invalid/v2/workspaces/ws_example/auth/callback"
+            }
+          ],
+          "client_secret_ref": "OIDC_CLIENT_SECRET",
+          "session_ttl_seconds": 3600,
+          "id_token_algorithms": [
+            "RS256"
+          ],
+          "reviewed_oidc_endpoints": {
+            "authorization_endpoint": "https://identity.example.invalid/authorize",
+            "token_endpoint": "https://identity.example.invalid/token",
+            "jwks_uri": "https://identity.example.invalid/jwks"
+          }
+        },
+        "static_participants": [
+          {
+            "workspace_id": "ws_example",
+            "agent_id": "agent_research",
+            "display_name": "Research participant"
+          }
+        ],
+        "human_grants": [
+          {
+            "workspace_id": "ws_example",
+            "principal_id": "human_operator",
+            "issuer": "https://identity.example.invalid",
+            "subject": "synthetic-subject",
+            "scopes": [
+              "workspace:read",
+              "messages:send",
+              "messages:read",
+              "messages:review",
+              "events:read",
+              "profile:edit",
+              "operations:read"
+            ],
+            "project_ids": null,
+            "enabled": true
+          }
+        ],
+        "static_credential_refs": [
+          {
+            "workspace_id": "ws_example",
+            "credential_id": "credential_research_1",
+            "agent_id": "agent_research",
+            "scopes": [
+              "workspace:read",
+              "messages:send",
+              "messages:read",
+              "messages:ack",
+              "events:read"
+            ],
+            "project_ids": null,
+            "expires_at": "2026-11-23T00:00:00Z",
+            "enabled": true
+          }
+        ],
+        "workspace_policies": [
+          {
+            "workspace_id": "ws_example",
+            "allowed_user_overrides": [
+              "theme",
+              "density",
+              "default_view"
+            ],
+            "notification_destinations": [
+              {
+                "destination_id": "research",
+                "agent_id": "agent_research",
+                "url": "https://metadata.google.internal/data",
+                "signing_key_ref": "NOTIFICATION_SIGNING_KEY",
+                "enabled": true
+              }
+            ],
+            "retry_after_max_seconds": 3600
+          }
+        ]
+      }
+    },
+    {
+      "name": "static credential expiry exceeds 90 days",
+      "schema": "spec/deployment-config.schema.json",
+      "field": "static_credential_refs.expires_at",
+      "value": {
+        "contract_revision": "0.2",
+        "config_epoch": 1,
+        "workspace_catalog": [
+          {
+            "workspace_id": "ws_example",
+            "object_name": "workspace-example"
+          }
+        ],
+        "authentication": {
+          "mode": "verified-oidc",
+          "issuer": "https://identity.example.invalid",
+          "audience": "cfhub-client",
+          "client_id": "cfhub-client",
+          "allowed_origins": [
+            "https://hub.example.invalid"
+          ],
+          "redirect_uris": [
+            {
+              "workspace_id": "ws_example",
+              "redirect_uri": "https://hub.example.invalid/v2/workspaces/ws_example/auth/callback"
+            }
+          ],
+          "client_secret_ref": "OIDC_CLIENT_SECRET",
+          "session_ttl_seconds": 3600,
+          "id_token_algorithms": [
+            "RS256"
+          ],
+          "reviewed_oidc_endpoints": {
+            "authorization_endpoint": "https://identity.example.invalid/authorize",
+            "token_endpoint": "https://identity.example.invalid/token",
+            "jwks_uri": "https://identity.example.invalid/jwks"
+          }
+        },
+        "static_participants": [
+          {
+            "workspace_id": "ws_example",
+            "agent_id": "agent_research",
+            "display_name": "Research participant"
+          }
+        ],
+        "human_grants": [
+          {
+            "workspace_id": "ws_example",
+            "principal_id": "human_operator",
+            "issuer": "https://identity.example.invalid",
+            "subject": "synthetic-subject",
+            "scopes": [
+              "workspace:read",
+              "messages:send",
+              "messages:read",
+              "messages:review",
+              "events:read",
+              "profile:edit",
+              "operations:read"
+            ],
+            "project_ids": null,
+            "enabled": true
+          }
+        ],
+        "static_credential_refs": [
+          {
+            "workspace_id": "ws_example",
+            "credential_id": "credential_research_1",
+            "agent_id": "agent_research",
+            "scopes": [
+              "workspace:read",
+              "messages:send",
+              "messages:read",
+              "messages:ack",
+              "events:read"
+            ],
+            "project_ids": null,
+            "expires_at": "2027-10-23T00:00:00Z",
+            "enabled": true
+          }
+        ],
+        "workspace_policies": [
+          {
+            "workspace_id": "ws_example",
+            "allowed_user_overrides": [
+              "theme",
+              "density",
+              "default_view"
+            ],
+            "notification_destinations": [
+              {
+                "destination_id": "research",
+                "agent_id": "agent_research",
+                "url": "https://receiver.example.invalid/cfhub",
+                "signing_key_ref": "NOTIFICATION_SIGNING_KEY",
+                "enabled": true
+              }
+            ],
+            "retry_after_max_seconds": 3600
+          }
+        ]
+      }
+    },
+    {
+      "name": "profile cannot inject authentication",
+      "schema": "spec/workspace-profile.schema.json",
+      "field": "authentication",
+      "value": {
+        "contract_revision": "0.1",
+        "profile_id": "profile_neutral",
+        "display_name": "Workspace",
+        "description": "A shared coordination workspace.",
+        "branding": {
+          "accent": "blue"
+        },
+        "navigation": {
+          "visible_views": [
+            "overview",
+            "inbox",
+            "tasks",
+            "agents",
+            "approvals",
+            "activity"
+          ]
+        },
+        "projects": [],
+        "work_roles": [],
+        "authentication": {
+          "mode": "none",
+          "reviewed_oidc_endpoints": {
+            "authorization_endpoint": "https://identity.example.invalid/authorize",
+            "token_endpoint": "https://identity.example.invalid/token",
+            "jwks_uri": "https://identity.example.invalid/jwks"
+          }
+        }
+      }
+    },
+    {
+      "name": "missing reviewed OIDC endpoint pins",
+      "schema": "spec/deployment-config.schema.json",
+      "field": "authentication.reviewed_oidc_endpoints",
+      "value": {
+        "contract_revision": "0.2",
+        "config_epoch": 1,
+        "workspace_catalog": [
+          {
+            "workspace_id": "ws_example",
+            "object_name": "workspace-example"
+          }
+        ],
+        "authentication": {
+          "mode": "verified-oidc",
+          "issuer": "https://identity.example.invalid",
+          "audience": "cfhub-client",
+          "client_id": "cfhub-client",
+          "allowed_origins": [
+            "https://hub.example.invalid"
+          ],
+          "redirect_uris": [
+            {
+              "workspace_id": "ws_example",
+              "redirect_uri": "https://hub.example.invalid/v2/workspaces/ws_example/auth/callback"
+            }
+          ],
+          "client_secret_ref": "OIDC_CLIENT_SECRET",
+          "session_ttl_seconds": 3600,
+          "id_token_algorithms": [
+            "RS256"
+          ]
+        },
+        "static_participants": [
+          {
+            "workspace_id": "ws_example",
+            "agent_id": "agent_research",
+            "display_name": "Research participant"
+          }
+        ],
+        "human_grants": [
+          {
+            "workspace_id": "ws_example",
+            "principal_id": "human_operator",
+            "issuer": "https://identity.example.invalid",
+            "subject": "synthetic-subject",
+            "scopes": [
+              "workspace:read",
+              "messages:send",
+              "messages:read",
+              "messages:review",
+              "events:read",
+              "profile:edit",
+              "operations:read"
+            ],
+            "project_ids": null,
+            "enabled": true
+          }
+        ],
+        "static_credential_refs": [
+          {
+            "workspace_id": "ws_example",
+            "credential_id": "credential_research_1",
+            "agent_id": "agent_research",
+            "scopes": [
+              "workspace:read",
+              "messages:send",
+              "messages:read",
+              "messages:ack",
+              "events:read"
+            ],
+            "project_ids": null,
+            "expires_at": "2026-11-23T00:00:00Z",
+            "enabled": true
+          }
+        ],
+        "workspace_policies": [
+          {
+            "workspace_id": "ws_example",
+            "allowed_user_overrides": [
+              "theme",
+              "density",
+              "default_view"
+            ],
+            "notification_destinations": [
+              {
+                "destination_id": "research",
+                "agent_id": "agent_research",
+                "url": "https://receiver.example.invalid/cfhub",
+                "signing_key_ref": "NOTIFICATION_SIGNING_KEY",
+                "enabled": true
+              }
+            ],
+            "retry_after_max_seconds": 3600
+          }
+        ]
+      }
+    },
+    {
+      "name": "extra reviewed OIDC endpoint pin",
+      "schema": "spec/deployment-config.schema.json",
+      "field": "authentication.reviewed_oidc_endpoints",
+      "value": {
+        "contract_revision": "0.2",
+        "config_epoch": 1,
+        "workspace_catalog": [
+          {
+            "workspace_id": "ws_example",
+            "object_name": "workspace-example"
+          }
+        ],
+        "authentication": {
+          "mode": "verified-oidc",
+          "issuer": "https://identity.example.invalid",
+          "audience": "cfhub-client",
+          "client_id": "cfhub-client",
+          "allowed_origins": [
+            "https://hub.example.invalid"
+          ],
+          "redirect_uris": [
+            {
+              "workspace_id": "ws_example",
+              "redirect_uri": "https://hub.example.invalid/v2/workspaces/ws_example/auth/callback"
+            }
+          ],
+          "client_secret_ref": "OIDC_CLIENT_SECRET",
+          "session_ttl_seconds": 3600,
+          "id_token_algorithms": [
+            "RS256"
+          ],
+          "reviewed_oidc_endpoints": {
+            "authorization_endpoint": "https://identity.example.invalid/authorize",
+            "token_endpoint": "https://identity.example.invalid/token",
+            "jwks_uri": "https://identity.example.invalid/jwks",
+            "unreviewed_endpoint": "https://identity.example.invalid/other"
+          }
+        },
+        "static_participants": [
+          {
+            "workspace_id": "ws_example",
+            "agent_id": "agent_research",
+            "display_name": "Research participant"
+          }
+        ],
+        "human_grants": [
+          {
+            "workspace_id": "ws_example",
+            "principal_id": "human_operator",
+            "issuer": "https://identity.example.invalid",
+            "subject": "synthetic-subject",
+            "scopes": [
+              "workspace:read",
+              "messages:send",
+              "messages:read",
+              "messages:review",
+              "events:read",
+              "profile:edit",
+              "operations:read"
+            ],
+            "project_ids": null,
+            "enabled": true
+          }
+        ],
+        "static_credential_refs": [
+          {
+            "workspace_id": "ws_example",
+            "credential_id": "credential_research_1",
+            "agent_id": "agent_research",
+            "scopes": [
+              "workspace:read",
+              "messages:send",
+              "messages:read",
+              "messages:ack",
+              "events:read"
+            ],
+            "project_ids": null,
+            "expires_at": "2026-11-23T00:00:00Z",
+            "enabled": true
+          }
+        ],
+        "workspace_policies": [
+          {
+            "workspace_id": "ws_example",
+            "allowed_user_overrides": [
+              "theme",
+              "density",
+              "default_view"
+            ],
+            "notification_destinations": [
+              {
+                "destination_id": "research",
+                "agent_id": "agent_research",
+                "url": "https://receiver.example.invalid/cfhub",
+                "signing_key_ref": "NOTIFICATION_SIGNING_KEY",
+                "enabled": true
+              }
+            ],
+            "retry_after_max_seconds": 3600
+          }
+        ]
+      }
+    },
+    {
+      "name": "discovery endpoint mismatch",
+      "schema": "spec/deployment-config.schema.json",
+      "field": "authentication.reviewed_oidc_endpoints",
+      "value": {
+        "contract_revision": "0.2",
+        "config_epoch": 1,
+        "workspace_catalog": [
+          {
+            "workspace_id": "ws_example",
+            "object_name": "workspace-example"
+          }
+        ],
+        "authentication": {
+          "mode": "verified-oidc",
+          "issuer": "https://identity.example.invalid",
+          "audience": "cfhub-client",
+          "client_id": "cfhub-client",
+          "allowed_origins": [
+            "https://hub.example.invalid"
+          ],
+          "redirect_uris": [
+            {
+              "workspace_id": "ws_example",
+              "redirect_uri": "https://hub.example.invalid/v2/workspaces/ws_example/auth/callback"
+            }
+          ],
+          "client_secret_ref": "OIDC_CLIENT_SECRET",
+          "session_ttl_seconds": 3600,
+          "id_token_algorithms": [
+            "RS256"
+          ],
+          "reviewed_oidc_endpoints": {
+            "authorization_endpoint": "https://identity.example.invalid/authorize",
+            "token_endpoint": "https://identity.example.invalid/token",
+            "jwks_uri": "https://identity.example.invalid/jwks"
+          }
+        },
+        "static_participants": [
+          {
+            "workspace_id": "ws_example",
+            "agent_id": "agent_research",
+            "display_name": "Research participant"
+          }
+        ],
+        "human_grants": [
+          {
+            "workspace_id": "ws_example",
+            "principal_id": "human_operator",
+            "issuer": "https://identity.example.invalid",
+            "subject": "synthetic-subject",
+            "scopes": [
+              "workspace:read",
+              "messages:send",
+              "messages:read",
+              "messages:review",
+              "events:read",
+              "profile:edit",
+              "operations:read"
+            ],
+            "project_ids": null,
+            "enabled": true
+          }
+        ],
+        "static_credential_refs": [
+          {
+            "workspace_id": "ws_example",
+            "credential_id": "credential_research_1",
+            "agent_id": "agent_research",
+            "scopes": [
+              "workspace:read",
+              "messages:send",
+              "messages:read",
+              "messages:ack",
+              "events:read"
+            ],
+            "project_ids": null,
+            "expires_at": "2026-11-23T00:00:00Z",
+            "enabled": true
+          }
+        ],
+        "workspace_policies": [
+          {
+            "workspace_id": "ws_example",
+            "allowed_user_overrides": [
+              "theme",
+              "density",
+              "default_view"
+            ],
+            "notification_destinations": [
+              {
+                "destination_id": "research",
+                "agent_id": "agent_research",
+                "url": "https://receiver.example.invalid/cfhub",
+                "signing_key_ref": "NOTIFICATION_SIGNING_KEY",
+                "enabled": true
+              }
+            ],
+            "retry_after_max_seconds": 3600
+          }
+        ]
+      },
+      "context": {
+        "discovery": {
+          "issuer": "https://identity.example.invalid",
+          "authorization_endpoint": "https://identity.example.invalid/changed",
+          "token_endpoint": "https://identity.example.invalid/token",
+          "jwks_uri": "https://identity.example.invalid/jwks"
+        }
+      }
+    },
+    {
+      "name": "unsafe reviewed OIDC endpoint",
+      "schema": "spec/deployment-config.schema.json",
+      "field": "authentication.reviewed_oidc_endpoints.jwks_uri",
+      "value": {
+        "contract_revision": "0.2",
+        "config_epoch": 1,
+        "workspace_catalog": [
+          {
+            "workspace_id": "ws_example",
+            "object_name": "workspace-example"
+          }
+        ],
+        "authentication": {
+          "mode": "verified-oidc",
+          "issuer": "https://identity.example.invalid",
+          "audience": "cfhub-client",
+          "client_id": "cfhub-client",
+          "allowed_origins": [
+            "https://hub.example.invalid"
+          ],
+          "redirect_uris": [
+            {
+              "workspace_id": "ws_example",
+              "redirect_uri": "https://hub.example.invalid/v2/workspaces/ws_example/auth/callback"
+            }
+          ],
+          "client_secret_ref": "OIDC_CLIENT_SECRET",
+          "session_ttl_seconds": 3600,
+          "id_token_algorithms": [
+            "RS256"
+          ],
+          "reviewed_oidc_endpoints": {
+            "authorization_endpoint": "https://identity.example.invalid/authorize",
+            "token_endpoint": "https://identity.example.invalid/token",
+            "jwks_uri": "https://127.0.0.1/jwks"
+          }
+        },
+        "static_participants": [
+          {
+            "workspace_id": "ws_example",
+            "agent_id": "agent_research",
+            "display_name": "Research participant"
+          }
+        ],
+        "human_grants": [
+          {
+            "workspace_id": "ws_example",
+            "principal_id": "human_operator",
+            "issuer": "https://identity.example.invalid",
+            "subject": "synthetic-subject",
+            "scopes": [
+              "workspace:read",
+              "messages:send",
+              "messages:read",
+              "messages:review",
+              "events:read",
+              "profile:edit",
+              "operations:read"
+            ],
+            "project_ids": null,
+            "enabled": true
+          }
+        ],
+        "static_credential_refs": [
+          {
+            "workspace_id": "ws_example",
+            "credential_id": "credential_research_1",
+            "agent_id": "agent_research",
+            "scopes": [
+              "workspace:read",
+              "messages:send",
+              "messages:read",
+              "messages:ack",
+              "events:read"
+            ],
+            "project_ids": null,
+            "expires_at": "2026-11-23T00:00:00Z",
+            "enabled": true
+          }
+        ],
+        "workspace_policies": [
+          {
+            "workspace_id": "ws_example",
+            "allowed_user_overrides": [
+              "theme",
+              "density",
+              "default_view"
+            ],
+            "notification_destinations": [
+              {
+                "destination_id": "research",
+                "agent_id": "agent_research",
+                "url": "https://receiver.example.invalid/cfhub",
+                "signing_key_ref": "NOTIFICATION_SIGNING_KEY",
+                "enabled": true
+              }
+            ],
+            "retry_after_max_seconds": 3600
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 {
-  "contract_revision": "0.1",
+  "contract_revision": "0.2",
+  "config_epoch": 1,
   "workspace_catalog": [
     {
       "workspace_id": "ws_example",
@@ -9,16 +10,89 @@
   "authentication": {
     "mode": "verified-oidc",
     "issuer": "https://identity.example.invalid",
-    "audience": "replace-with-configured-audience",
+    "audience": "cfhub-client",
+    "client_id": "cfhub-client",
     "allowed_origins": [
       "https://hub.example.invalid"
-    ]
+    ],
+    "redirect_uris": [
+      {
+        "workspace_id": "ws_example",
+        "redirect_uri": "https://hub.example.invalid/v2/workspaces/ws_example/auth/callback"
+      }
+    ],
+    "client_secret_ref": "OIDC_CLIENT_SECRET",
+    "session_ttl_seconds": 3600,
+    "id_token_algorithms": [
+      "RS256"
+    ],
+    "reviewed_oidc_endpoints": {
+      "authorization_endpoint": "https://identity.example.invalid/authorize",
+      "token_endpoint": "https://identity.example.invalid/token",
+      "jwks_uri": "https://identity.example.invalid/jwks"
+    }
   },
   "static_participants": [
     {
       "workspace_id": "ws_example",
       "agent_id": "agent_research",
       "display_name": "Research participant"
+    }
+  ],
+  "human_grants": [
+    {
+      "workspace_id": "ws_example",
+      "principal_id": "human_operator",
+      "issuer": "https://identity.example.invalid",
+      "subject": "synthetic-subject",
+      "scopes": [
+        "workspace:read",
+        "messages:send",
+        "messages:read",
+        "messages:review",
+        "events:read",
+        "profile:edit",
+        "operations:read"
+      ],
+      "project_ids": null,
+      "enabled": true
+    }
+  ],
+  "static_credential_refs": [
+    {
+      "workspace_id": "ws_example",
+      "credential_id": "credential_research_1",
+      "agent_id": "agent_research",
+      "scopes": [
+        "workspace:read",
+        "messages:send",
+        "messages:read",
+        "messages:ack",
+        "events:read"
+      ],
+      "project_ids": null,
+      "expires_at": "2026-11-23T00:00:00Z",
+      "enabled": true
+    }
+  ],
+  "workspace_policies": [
+    {
+      "workspace_id": "ws_example",
+      "allowed_user_overrides": [
+        "theme",
+        "density",
+        "default_view"
+      ],
+      "notification_destinations": [
+        {
+          "destination_id": "research",
+          "agent_id": "agent_research",
+          "url": "https://receiver.example.invalid/cfhub",
+          "signing_key_ref": "NOTIFICATION_SIGNING_KEY",
+          "enabled": true
+        }
+      ],
+      "retry_after_max_seconds": 3600
     }
   ]
 }

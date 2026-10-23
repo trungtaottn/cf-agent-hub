@@ -1,0 +1,2810 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "commands": {
+      "type": "array",
+      "minItems": 11,
+      "maxItems": 11,
+      "items": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "title": "Separate operator Worker finite recovery envelope",
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "operation": {
+                "const": "install"
+              },
+              "workspace_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "capture_id": {
+                "type": "null"
+              },
+              "expected_authority_epoch": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "operation_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024
+              },
+              "payload": {
+                "type": "object",
+                "properties": {
+                  "config": {
+                    "$ref": "#/$defs/DeploymentConfig"
+                  },
+                  "verification_bundle": {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "title": "Protected bootstrap verification bundle",
+                    "type": "object",
+                    "properties": {
+                      "contract_revision": {
+                        "const": "0.1"
+                      },
+                      "config_epoch": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 9007199254740991
+                      },
+                      "config_digest": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "credentials": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "workspace_id": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 128,
+                              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                            },
+                            "credential_id": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 128,
+                              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                            },
+                            "token_sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            }
+                          },
+                          "required": [
+                            "workspace_id",
+                            "credential_id",
+                            "token_sha256"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "maxItems": 1000
+                      },
+                      "retired_credentials": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "workspace_id": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 128,
+                              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                            },
+                            "credential_id": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 128,
+                              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                            },
+                            "agent_id": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 128,
+                              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                            },
+                            "token_sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "retired_at_epoch": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "workspace_id",
+                            "credential_id",
+                            "agent_id",
+                            "token_sha256",
+                            "retired_at_epoch"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "maxItems": 1000
+                      },
+                      "auth": {
+                        "type": "object",
+                        "properties": {
+                          "key_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                          },
+                          "algorithm": {
+                            "const": "HMAC-SHA256"
+                          },
+                          "tag": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          }
+                        },
+                        "required": [
+                          "key_id",
+                          "algorithm",
+                          "tag"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "contract_revision",
+                      "config_epoch",
+                      "config_digest",
+                      "credentials",
+                      "retired_credentials",
+                      "auth"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "config",
+                  "verification_bundle"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "operation",
+              "workspace_id",
+              "capture_id",
+              "expected_authority_epoch",
+              "operation_id",
+              "reason",
+              "payload"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "operation": {
+                "const": "capture"
+              },
+              "workspace_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "capture_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "expected_authority_epoch": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "operation_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024
+              },
+              "payload": {
+                "type": "object",
+                "properties": {
+                  "budget": {
+                    "type": "object",
+                    "properties": {
+                      "max_rows": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1000000
+                      },
+                      "max_artifacts": {
+                        "const": 0
+                      },
+                      "max_total_bytes": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 268435456
+                      }
+                    },
+                    "required": [
+                      "max_rows",
+                      "max_artifacts",
+                      "max_total_bytes"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "budget"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "operation",
+              "workspace_id",
+              "capture_id",
+              "expected_authority_epoch",
+              "operation_id",
+              "reason",
+              "payload"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "operation": {
+                "const": "read-chunk"
+              },
+              "workspace_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "capture_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "expected_authority_epoch": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "operation_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024
+              },
+              "payload": {
+                "type": "object",
+                "properties": {
+                  "index": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 255
+                  }
+                },
+                "required": [
+                  "index"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "operation",
+              "workspace_id",
+              "capture_id",
+              "expected_authority_epoch",
+              "operation_id",
+              "reason",
+              "payload"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "operation": {
+                "const": "restore"
+              },
+              "workspace_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "capture_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "expected_authority_epoch": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "operation_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024
+              },
+              "payload": {
+                "type": "object",
+                "properties": {
+                  "manifest": {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "title": "R1 typed logical recovery manifest format 1",
+                    "type": "object",
+                    "properties": {
+                      "format_version": {
+                        "const": 1
+                      },
+                      "capture_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128,
+                        "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                      },
+                      "workspace_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128,
+                        "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                      },
+                      "environment_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128,
+                        "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                      },
+                      "started_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "ended_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "checkpoint": {
+                        "type": "object",
+                        "properties": {
+                          "barrier_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                          },
+                          "event_sequence": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "schema_version": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 9007199254740991
+                          },
+                          "contract_revision": {
+                            "const": "0.1"
+                          },
+                          "authority_epoch": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "barrier_id",
+                          "event_sequence",
+                          "schema_version",
+                          "contract_revision",
+                          "authority_epoch"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "release": {
+                        "type": "object",
+                        "properties": {
+                          "revision": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 2048
+                          },
+                          "worker_version": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 2048
+                          },
+                          "binding_ids": {
+                            "type": "array",
+                            "minItems": 1,
+                            "maxItems": 32,
+                            "uniqueItems": true,
+                            "items": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 256
+                            }
+                          },
+                          "catalog_mapping": {
+                            "type": "object",
+                            "properties": {
+                              "workspace_id": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 128,
+                                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                              },
+                              "object_name": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 128,
+                                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                              }
+                            },
+                            "required": [
+                              "workspace_id",
+                              "object_name"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "revision",
+                          "worker_version",
+                          "binding_ids",
+                          "catalog_mapping"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "database": {
+                        "type": "object",
+                        "properties": {
+                          "sha256": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          },
+                          "byte_size": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 268435456
+                          },
+                          "table_counts": {
+                            "type": "object",
+                            "properties": {
+                              "schema_migrations": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "workspace_metadata": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "human_grants": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "static_agents": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "native_credentials": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "login_attempts": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "sessions": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "profiles": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "preferences": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "threads": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "thread_participants": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "messages": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "inbox": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "events": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "idempotency_outcomes": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "outbox": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "scheduler_state": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "maintenance_state": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "recovery_jobs": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "recovery_chunks": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "probe_receipts": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              }
+                            },
+                            "required": [
+                              "schema_migrations",
+                              "workspace_metadata",
+                              "human_grants",
+                              "static_agents",
+                              "native_credentials",
+                              "login_attempts",
+                              "sessions",
+                              "profiles",
+                              "preferences",
+                              "threads",
+                              "thread_participants",
+                              "messages",
+                              "inbox",
+                              "events",
+                              "idempotency_outcomes",
+                              "outbox",
+                              "scheduler_state",
+                              "maintenance_state",
+                              "recovery_jobs",
+                              "recovery_chunks",
+                              "probe_receipts"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "chunks": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "index": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 255
+                                },
+                                "table": {
+                                  "enum": [
+                                    "schema_migrations",
+                                    "workspace_metadata",
+                                    "human_grants",
+                                    "static_agents",
+                                    "native_credentials",
+                                    "login_attempts",
+                                    "sessions",
+                                    "profiles",
+                                    "preferences",
+                                    "threads",
+                                    "thread_participants",
+                                    "messages",
+                                    "inbox",
+                                    "events",
+                                    "idempotency_outcomes",
+                                    "outbox",
+                                    "scheduler_state",
+                                    "maintenance_state",
+                                    "recovery_jobs",
+                                    "recovery_chunks",
+                                    "probe_receipts"
+                                  ]
+                                },
+                                "sha256": {
+                                  "type": "string",
+                                  "pattern": "^[a-f0-9]{64}$"
+                                },
+                                "byte_size": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 1048576
+                                },
+                                "row_count": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 200
+                                }
+                              },
+                              "required": [
+                                "index",
+                                "table",
+                                "sha256",
+                                "byte_size",
+                                "row_count"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "maxItems": 256
+                          }
+                        },
+                        "required": [
+                          "sha256",
+                          "byte_size",
+                          "table_counts",
+                          "chunks"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "artifacts": {
+                        "type": "array",
+                        "maxItems": 0
+                      },
+                      "unfinished_artifact_ids": {
+                        "type": "array",
+                        "maxItems": 0
+                      },
+                      "auth": {
+                        "type": "object",
+                        "properties": {
+                          "key_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                          },
+                          "algorithm": {
+                            "const": "HMAC-SHA256"
+                          },
+                          "tag": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          }
+                        },
+                        "required": [
+                          "key_id",
+                          "algorithm",
+                          "tag"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "format_version",
+                      "capture_id",
+                      "workspace_id",
+                      "environment_id",
+                      "started_at",
+                      "ended_at",
+                      "checkpoint",
+                      "release",
+                      "database",
+                      "artifacts",
+                      "unfinished_artifact_ids",
+                      "auth"
+                    ],
+                    "additionalProperties": false,
+                    "description": "Maximum canonical UTF-8 size 65536 bytes. Complete registry, sum/count/digest checks, relationships, 200-row pages, 1MiB chunks and 1000000 total rows are semantic requirements before signing. Empty artifact arrays are mandatory in R1."
+                  },
+                  "ledger": {
+                    "type": "object",
+                    "properties": {
+                      "workspace_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128,
+                        "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                      },
+                      "environment_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128,
+                        "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                      },
+                      "authority_epoch": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 9007199254740991
+                      },
+                      "config": {
+                        "$ref": "#/$defs/DeploymentConfig"
+                      },
+                      "verification_bundle": {
+                        "$schema": "https://json-schema.org/draft/2020-12/schema",
+                        "title": "Protected bootstrap verification bundle",
+                        "type": "object",
+                        "properties": {
+                          "contract_revision": {
+                            "const": "0.1"
+                          },
+                          "config_epoch": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 9007199254740991
+                          },
+                          "config_digest": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          },
+                          "credentials": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "workspace_id": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 128,
+                                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                                },
+                                "credential_id": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 128,
+                                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                                },
+                                "token_sha256": {
+                                  "type": "string",
+                                  "pattern": "^[a-f0-9]{64}$"
+                                }
+                              },
+                              "required": [
+                                "workspace_id",
+                                "credential_id",
+                                "token_sha256"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "maxItems": 1000
+                          },
+                          "retired_credentials": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "workspace_id": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 128,
+                                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                                },
+                                "credential_id": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 128,
+                                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                                },
+                                "agent_id": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 128,
+                                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                                },
+                                "token_sha256": {
+                                  "type": "string",
+                                  "pattern": "^[a-f0-9]{64}$"
+                                },
+                                "retired_at_epoch": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "workspace_id",
+                                "credential_id",
+                                "agent_id",
+                                "token_sha256",
+                                "retired_at_epoch"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "maxItems": 1000
+                          },
+                          "auth": {
+                            "type": "object",
+                            "properties": {
+                              "key_id": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 128,
+                                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                              },
+                              "algorithm": {
+                                "const": "HMAC-SHA256"
+                              },
+                              "tag": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{64}$"
+                              }
+                            },
+                            "required": [
+                              "key_id",
+                              "algorithm",
+                              "tag"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "contract_revision",
+                          "config_epoch",
+                          "config_digest",
+                          "credentials",
+                          "retired_credentials",
+                          "auth"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "installation_digest": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "retired_authorities": {
+                        "type": "array",
+                        "maxItems": 1000,
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 128,
+                              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                            },
+                            "capture_id": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 128,
+                              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                            },
+                            "workspace_id": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 128,
+                              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                            },
+                            "environment_id": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 128,
+                              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                            },
+                            "authority_epoch": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 9007199254740991
+                            },
+                            "barrier_id": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 128,
+                              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                            },
+                            "retired_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "auth": {
+                              "type": "object",
+                              "properties": {
+                                "key_id": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 128,
+                                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                                },
+                                "algorithm": {
+                                  "const": "HMAC-SHA256"
+                                },
+                                "tag": {
+                                  "type": "string",
+                                  "pattern": "^[a-f0-9]{64}$"
+                                }
+                              },
+                              "required": [
+                                "key_id",
+                                "algorithm",
+                                "tag"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "capture_id",
+                            "workspace_id",
+                            "environment_id",
+                            "authority_epoch",
+                            "barrier_id",
+                            "retired_at",
+                            "auth"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "auth": {
+                        "type": "object",
+                        "properties": {
+                          "key_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                          },
+                          "algorithm": {
+                            "const": "HMAC-SHA256"
+                          },
+                          "tag": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          }
+                        },
+                        "required": [
+                          "key_id",
+                          "algorithm",
+                          "tag"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "workspace_id",
+                      "environment_id",
+                      "authority_epoch",
+                      "config",
+                      "verification_bundle",
+                      "installation_digest",
+                      "retired_authorities",
+                      "auth"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "manifest",
+                  "ledger"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "operation",
+              "workspace_id",
+              "capture_id",
+              "expected_authority_epoch",
+              "operation_id",
+              "reason",
+              "payload"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "operation": {
+                "const": "write-chunk"
+              },
+              "workspace_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "capture_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "expected_authority_epoch": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "operation_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024
+              },
+              "payload": {
+                "type": "object",
+                "properties": {
+                  "index": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 255
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "byte_size": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1048576
+                  }
+                },
+                "required": [
+                  "index",
+                  "sha256",
+                  "byte_size"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "operation",
+              "workspace_id",
+              "capture_id",
+              "expected_authority_epoch",
+              "operation_id",
+              "reason",
+              "payload"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "operation": {
+                "const": "verify"
+              },
+              "workspace_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "capture_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "expected_authority_epoch": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "operation_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024
+              },
+              "payload": {
+                "type": "object",
+                "properties": {
+                  "manifest": {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "title": "R1 typed logical recovery manifest format 1",
+                    "type": "object",
+                    "properties": {
+                      "format_version": {
+                        "const": 1
+                      },
+                      "capture_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128,
+                        "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                      },
+                      "workspace_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128,
+                        "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                      },
+                      "environment_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128,
+                        "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                      },
+                      "started_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "ended_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "checkpoint": {
+                        "type": "object",
+                        "properties": {
+                          "barrier_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                          },
+                          "event_sequence": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "schema_version": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 9007199254740991
+                          },
+                          "contract_revision": {
+                            "const": "0.1"
+                          },
+                          "authority_epoch": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "barrier_id",
+                          "event_sequence",
+                          "schema_version",
+                          "contract_revision",
+                          "authority_epoch"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "release": {
+                        "type": "object",
+                        "properties": {
+                          "revision": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 2048
+                          },
+                          "worker_version": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 2048
+                          },
+                          "binding_ids": {
+                            "type": "array",
+                            "minItems": 1,
+                            "maxItems": 32,
+                            "uniqueItems": true,
+                            "items": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 256
+                            }
+                          },
+                          "catalog_mapping": {
+                            "type": "object",
+                            "properties": {
+                              "workspace_id": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 128,
+                                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                              },
+                              "object_name": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 128,
+                                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                              }
+                            },
+                            "required": [
+                              "workspace_id",
+                              "object_name"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "revision",
+                          "worker_version",
+                          "binding_ids",
+                          "catalog_mapping"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "database": {
+                        "type": "object",
+                        "properties": {
+                          "sha256": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          },
+                          "byte_size": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 268435456
+                          },
+                          "table_counts": {
+                            "type": "object",
+                            "properties": {
+                              "schema_migrations": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "workspace_metadata": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "human_grants": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "static_agents": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "native_credentials": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "login_attempts": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "sessions": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "profiles": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "preferences": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "threads": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "thread_participants": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "messages": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "inbox": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "events": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "idempotency_outcomes": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "outbox": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "scheduler_state": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "maintenance_state": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "recovery_jobs": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "recovery_chunks": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "probe_receipts": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              }
+                            },
+                            "required": [
+                              "schema_migrations",
+                              "workspace_metadata",
+                              "human_grants",
+                              "static_agents",
+                              "native_credentials",
+                              "login_attempts",
+                              "sessions",
+                              "profiles",
+                              "preferences",
+                              "threads",
+                              "thread_participants",
+                              "messages",
+                              "inbox",
+                              "events",
+                              "idempotency_outcomes",
+                              "outbox",
+                              "scheduler_state",
+                              "maintenance_state",
+                              "recovery_jobs",
+                              "recovery_chunks",
+                              "probe_receipts"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "chunks": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "index": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 255
+                                },
+                                "table": {
+                                  "enum": [
+                                    "schema_migrations",
+                                    "workspace_metadata",
+                                    "human_grants",
+                                    "static_agents",
+                                    "native_credentials",
+                                    "login_attempts",
+                                    "sessions",
+                                    "profiles",
+                                    "preferences",
+                                    "threads",
+                                    "thread_participants",
+                                    "messages",
+                                    "inbox",
+                                    "events",
+                                    "idempotency_outcomes",
+                                    "outbox",
+                                    "scheduler_state",
+                                    "maintenance_state",
+                                    "recovery_jobs",
+                                    "recovery_chunks",
+                                    "probe_receipts"
+                                  ]
+                                },
+                                "sha256": {
+                                  "type": "string",
+                                  "pattern": "^[a-f0-9]{64}$"
+                                },
+                                "byte_size": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 1048576
+                                },
+                                "row_count": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 200
+                                }
+                              },
+                              "required": [
+                                "index",
+                                "table",
+                                "sha256",
+                                "byte_size",
+                                "row_count"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "maxItems": 256
+                          }
+                        },
+                        "required": [
+                          "sha256",
+                          "byte_size",
+                          "table_counts",
+                          "chunks"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "artifacts": {
+                        "type": "array",
+                        "maxItems": 0
+                      },
+                      "unfinished_artifact_ids": {
+                        "type": "array",
+                        "maxItems": 0
+                      },
+                      "auth": {
+                        "type": "object",
+                        "properties": {
+                          "key_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                          },
+                          "algorithm": {
+                            "const": "HMAC-SHA256"
+                          },
+                          "tag": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          }
+                        },
+                        "required": [
+                          "key_id",
+                          "algorithm",
+                          "tag"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "format_version",
+                      "capture_id",
+                      "workspace_id",
+                      "environment_id",
+                      "started_at",
+                      "ended_at",
+                      "checkpoint",
+                      "release",
+                      "database",
+                      "artifacts",
+                      "unfinished_artifact_ids",
+                      "auth"
+                    ],
+                    "additionalProperties": false,
+                    "description": "Maximum canonical UTF-8 size 65536 bytes. Complete registry, sum/count/digest checks, relationships, 200-row pages, 1MiB chunks and 1000000 total rows are semantic requirements before signing. Empty artifact arrays are mandatory in R1."
+                  }
+                },
+                "required": [
+                  "manifest"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "operation",
+              "workspace_id",
+              "capture_id",
+              "expected_authority_epoch",
+              "operation_id",
+              "reason",
+              "payload"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "operation": {
+                "const": "probe"
+              },
+              "workspace_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "capture_id": {
+                "type": "null"
+              },
+              "expected_authority_epoch": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "operation_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024
+              },
+              "payload": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "operation",
+              "workspace_id",
+              "capture_id",
+              "expected_authority_epoch",
+              "operation_id",
+              "reason",
+              "payload"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "operation": {
+                "const": "resolve-delivery"
+              },
+              "workspace_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "capture_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "expected_authority_epoch": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "operation_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024
+              },
+              "payload": {
+                "type": "object",
+                "properties": {
+                  "delivery_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                  },
+                  "disposition": {
+                    "enum": [
+                      "confirmed_delivered",
+                      "failed_without_redrive"
+                    ]
+                  },
+                  "evidence_sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                },
+                "required": [
+                  "delivery_id",
+                  "disposition",
+                  "evidence_sha256"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "operation",
+              "workspace_id",
+              "capture_id",
+              "expected_authority_epoch",
+              "operation_id",
+              "reason",
+              "payload"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "operation": {
+                "const": "retire"
+              },
+              "workspace_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "capture_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "expected_authority_epoch": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "operation_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024
+              },
+              "payload": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "operation",
+              "workspace_id",
+              "capture_id",
+              "expected_authority_epoch",
+              "operation_id",
+              "reason",
+              "payload"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "operation": {
+                "const": "resume"
+              },
+              "workspace_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "capture_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "expected_authority_epoch": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "operation_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024
+              },
+              "payload": {
+                "type": "object",
+                "properties": {
+                  "receipt_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                  },
+                  "ledger": {
+                    "type": "object",
+                    "properties": {
+                      "workspace_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128,
+                        "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                      },
+                      "environment_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128,
+                        "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                      },
+                      "authority_epoch": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 9007199254740991
+                      },
+                      "config": {
+                        "$ref": "#/$defs/DeploymentConfig"
+                      },
+                      "verification_bundle": {
+                        "$schema": "https://json-schema.org/draft/2020-12/schema",
+                        "title": "Protected bootstrap verification bundle",
+                        "type": "object",
+                        "properties": {
+                          "contract_revision": {
+                            "const": "0.1"
+                          },
+                          "config_epoch": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 9007199254740991
+                          },
+                          "config_digest": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          },
+                          "credentials": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "workspace_id": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 128,
+                                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                                },
+                                "credential_id": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 128,
+                                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                                },
+                                "token_sha256": {
+                                  "type": "string",
+                                  "pattern": "^[a-f0-9]{64}$"
+                                }
+                              },
+                              "required": [
+                                "workspace_id",
+                                "credential_id",
+                                "token_sha256"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "maxItems": 1000
+                          },
+                          "retired_credentials": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "workspace_id": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 128,
+                                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                                },
+                                "credential_id": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 128,
+                                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                                },
+                                "agent_id": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 128,
+                                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                                },
+                                "token_sha256": {
+                                  "type": "string",
+                                  "pattern": "^[a-f0-9]{64}$"
+                                },
+                                "retired_at_epoch": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "workspace_id",
+                                "credential_id",
+                                "agent_id",
+                                "token_sha256",
+                                "retired_at_epoch"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "maxItems": 1000
+                          },
+                          "auth": {
+                            "type": "object",
+                            "properties": {
+                              "key_id": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 128,
+                                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                              },
+                              "algorithm": {
+                                "const": "HMAC-SHA256"
+                              },
+                              "tag": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{64}$"
+                              }
+                            },
+                            "required": [
+                              "key_id",
+                              "algorithm",
+                              "tag"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "contract_revision",
+                          "config_epoch",
+                          "config_digest",
+                          "credentials",
+                          "retired_credentials",
+                          "auth"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "installation_digest": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "retired_authorities": {
+                        "type": "array",
+                        "maxItems": 1000,
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 128,
+                              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                            },
+                            "capture_id": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 128,
+                              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                            },
+                            "workspace_id": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 128,
+                              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                            },
+                            "environment_id": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 128,
+                              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                            },
+                            "authority_epoch": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 9007199254740991
+                            },
+                            "barrier_id": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 128,
+                              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                            },
+                            "retired_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "auth": {
+                              "type": "object",
+                              "properties": {
+                                "key_id": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 128,
+                                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                                },
+                                "algorithm": {
+                                  "const": "HMAC-SHA256"
+                                },
+                                "tag": {
+                                  "type": "string",
+                                  "pattern": "^[a-f0-9]{64}$"
+                                }
+                              },
+                              "required": [
+                                "key_id",
+                                "algorithm",
+                                "tag"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "capture_id",
+                            "workspace_id",
+                            "environment_id",
+                            "authority_epoch",
+                            "barrier_id",
+                            "retired_at",
+                            "auth"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "auth": {
+                        "type": "object",
+                        "properties": {
+                          "key_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                          },
+                          "algorithm": {
+                            "const": "HMAC-SHA256"
+                          },
+                          "tag": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          }
+                        },
+                        "required": [
+                          "key_id",
+                          "algorithm",
+                          "tag"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "workspace_id",
+                      "environment_id",
+                      "authority_epoch",
+                      "config",
+                      "verification_bundle",
+                      "installation_digest",
+                      "retired_authorities",
+                      "auth"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "source_retirement_receipt": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                          },
+                          "capture_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                          },
+                          "workspace_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                          },
+                          "environment_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                          },
+                          "authority_epoch": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 9007199254740991
+                          },
+                          "barrier_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                          },
+                          "retired_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "auth": {
+                            "type": "object",
+                            "properties": {
+                              "key_id": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 128,
+                                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                              },
+                              "algorithm": {
+                                "const": "HMAC-SHA256"
+                              },
+                              "tag": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{64}$"
+                              }
+                            },
+                            "required": [
+                              "key_id",
+                              "algorithm",
+                              "tag"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "capture_id",
+                          "workspace_id",
+                          "environment_id",
+                          "authority_epoch",
+                          "barrier_id",
+                          "retired_at",
+                          "auth"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "cutover_record": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                          },
+                          "capture_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                          },
+                          "workspace_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                          },
+                          "source_environment_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                          },
+                          "source_authority_epoch": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 9007199254740991
+                          },
+                          "target_environment_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                          },
+                          "target_authority_epoch": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 9007199254740991
+                          },
+                          "source_retirement_receipt_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                          },
+                          "target_catalog_mapping": {
+                            "type": "object",
+                            "properties": {
+                              "workspace_id": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 128,
+                                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                              },
+                              "object_name": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 128,
+                                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                              }
+                            },
+                            "required": [
+                              "workspace_id",
+                              "object_name"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "cutover_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "auth": {
+                            "type": "object",
+                            "properties": {
+                              "key_id": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 128,
+                                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                              },
+                              "algorithm": {
+                                "const": "HMAC-SHA256"
+                              },
+                              "tag": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{64}$"
+                              }
+                            },
+                            "required": [
+                              "key_id",
+                              "algorithm",
+                              "tag"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "capture_id",
+                          "workspace_id",
+                          "source_environment_id",
+                          "source_authority_epoch",
+                          "target_environment_id",
+                          "target_authority_epoch",
+                          "source_retirement_receipt_id",
+                          "target_catalog_mapping",
+                          "cutover_at",
+                          "auth"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "receipt_id",
+                  "ledger",
+                  "source_retirement_receipt",
+                  "cutover_record"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "operation",
+              "workspace_id",
+              "capture_id",
+              "expected_authority_epoch",
+              "operation_id",
+              "reason",
+              "payload"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "operation": {
+                "const": "status"
+              },
+              "workspace_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "capture_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "expected_authority_epoch": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "operation_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024
+              },
+              "payload": {
+                "type": "object",
+                "properties": {
+                  "job_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                  }
+                },
+                "required": [
+                  "job_id"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "operation",
+              "workspace_id",
+              "capture_id",
+              "expected_authority_epoch",
+              "operation_id",
+              "reason",
+              "payload"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "description": "POST /operator/recovery on separate authenticated Service Auth operator gateway only. JSON envelope <=65536 UTF-8 bytes. write-chunk uses application/octet-stream and X-CFHub-Recovery-Control: unpadded base64url canonical JSON of this same envelope (<=8192 ASCII bytes). Stream <=1MiB; measure actual bytes and match declared byte_size and SHA256. No Content-Length trust. Read chunk JSON index returns binary plus X-CFHub-Recovery-Chunk encoding closed {capture_id,index,sha256,byte_size}, same header bound. No arbitrary SQL, destination, table or object key."
+      }
+    }
+  },
+  "required": [
+    "commands"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "DeploymentConfig": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "CF Agent Hub deployment configuration contract revision 0.2",
+      "type": "object",
+      "properties": {
+        "contract_revision": {
+          "const": "0.2"
+        },
+        "workspace_catalog": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "properties": {
+              "workspace_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "object_name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              }
+            },
+            "required": [
+              "workspace_id",
+              "object_name"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "authentication": {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "const": "verified-oidc"
+            },
+            "issuer": {
+              "type": "string",
+              "minLength": 9,
+              "maxLength": 2048,
+              "format": "uri",
+              "pattern": "^https://[a-zA-Z0-9](?:[a-zA-Z0-9.-]*[a-zA-Z0-9])?(?:/[a-zA-Z0-9._~!$&\\x27()*+,;=:@%/-]*)?$"
+            },
+            "audience": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "allowed_origins": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 9,
+                "maxLength": 2048,
+                "format": "uri",
+                "pattern": "^https://[a-zA-Z0-9](?:[a-zA-Z0-9.-]*[a-zA-Z0-9])?$"
+              }
+            },
+            "client_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            },
+            "redirect_uris": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "workspace_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                  },
+                  "redirect_uri": {
+                    "type": "string",
+                    "format": "uri",
+                    "maxLength": 2048,
+                    "pattern": "^https://[a-zA-Z0-9.-]+/v2/workspaces/[a-z][a-z0-9_-]*/auth/callback$"
+                  }
+                },
+                "required": [
+                  "workspace_id",
+                  "redirect_uri"
+                ],
+                "additionalProperties": false
+              },
+              "maxItems": 1000
+            },
+            "client_secret_ref": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9_]{0,127}$"
+            },
+            "session_ttl_seconds": {
+              "type": "integer",
+              "minimum": 300,
+              "maximum": 28800
+            },
+            "id_token_algorithms": {
+              "const": [
+                "RS256"
+              ]
+            },
+            "reviewed_oidc_endpoints": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "authorization_endpoint": {
+                  "type": "string",
+                  "minLength": 9,
+                  "maxLength": 2048,
+                  "format": "uri",
+                  "pattern": "^https://[a-zA-Z0-9](?:[a-zA-Z0-9.-]*[a-zA-Z0-9])?(?:/[a-zA-Z0-9._~!$&'()*+,;=:@%/-]*)?$"
+                },
+                "token_endpoint": {
+                  "type": "string",
+                  "minLength": 9,
+                  "maxLength": 2048,
+                  "format": "uri",
+                  "pattern": "^https://[a-zA-Z0-9](?:[a-zA-Z0-9.-]*[a-zA-Z0-9])?(?:/[a-zA-Z0-9._~!$&'()*+,;=:@%/-]*)?$"
+                },
+                "jwks_uri": {
+                  "type": "string",
+                  "minLength": 9,
+                  "maxLength": 2048,
+                  "format": "uri",
+                  "pattern": "^https://[a-zA-Z0-9](?:[a-zA-Z0-9.-]*[a-zA-Z0-9])?(?:/[a-zA-Z0-9._~!$&'()*+,;=:@%/-]*)?$"
+                }
+              },
+              "required": [
+                "authorization_endpoint",
+                "token_endpoint",
+                "jwks_uri"
+              ]
+            }
+          },
+          "required": [
+            "mode",
+            "issuer",
+            "audience",
+            "allowed_origins",
+            "client_id",
+            "redirect_uris",
+            "client_secret_ref",
+            "session_ttl_seconds",
+            "id_token_algorithms",
+            "reviewed_oidc_endpoints"
+          ],
+          "additionalProperties": false
+        },
+        "static_participants": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "workspace_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "agent_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "display_name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              }
+            },
+            "required": [
+              "workspace_id",
+              "agent_id",
+              "display_name"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "config_epoch": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "human_grants": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "workspace_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "principal_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "issuer": {
+                "type": "string",
+                "format": "uri",
+                "maxLength": 2048,
+                "pattern": "^https://[a-zA-Z0-9](?:[a-zA-Z0-9.-]*[a-zA-Z0-9])?(?::443)?(?:/[^#]*)?$"
+              },
+              "subject": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2048
+              },
+              "scopes": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "workspace:read",
+                    "messages:send",
+                    "messages:read",
+                    "messages:review",
+                    "events:read",
+                    "profile:edit",
+                    "operations:read"
+                  ]
+                },
+                "maxItems": 1000,
+                "uniqueItems": true
+              },
+              "project_ids": {
+                "anyOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128,
+                      "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                    },
+                    "maxItems": 1000,
+                    "uniqueItems": true
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "enabled": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "workspace_id",
+              "principal_id",
+              "issuer",
+              "subject",
+              "scopes",
+              "project_ids",
+              "enabled"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 1000
+        },
+        "static_credential_refs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "workspace_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "credential_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "agent_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "scopes": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "workspace:read",
+                    "messages:send",
+                    "messages:read",
+                    "messages:ack",
+                    "events:read"
+                  ]
+                },
+                "maxItems": 1000,
+                "uniqueItems": true
+              },
+              "project_ids": {
+                "anyOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128,
+                      "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                    },
+                    "maxItems": 1000,
+                    "uniqueItems": true
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "expires_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "enabled": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "workspace_id",
+              "credential_id",
+              "agent_id",
+              "scopes",
+              "project_ids",
+              "expires_at",
+              "enabled"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 1000
+        },
+        "workspace_policies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "workspace_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "allowed_user_overrides": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "theme",
+                    "density",
+                    "default_view"
+                  ]
+                },
+                "maxItems": 1000,
+                "uniqueItems": true
+              },
+              "notification_destinations": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "destination_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128,
+                      "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                    },
+                    "agent_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128,
+                      "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                    },
+                    "url": {
+                      "type": "string",
+                      "format": "uri",
+                      "maxLength": 2048,
+                      "pattern": "^https://[a-zA-Z0-9](?:[a-zA-Z0-9.-]*[a-zA-Z0-9])?(?::443)?(?:/[^#]*)?$"
+                    },
+                    "signing_key_ref": {
+                      "type": "string",
+                      "pattern": "^[A-Z][A-Z0-9_]{0,127}$"
+                    },
+                    "enabled": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "destination_id",
+                    "agent_id",
+                    "url",
+                    "signing_key_ref",
+                    "enabled"
+                  ],
+                  "additionalProperties": false
+                },
+                "maxItems": 1000
+              },
+              "retry_after_max_seconds": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 3600,
+                "default": 3600
+              }
+            },
+            "required": [
+              "workspace_id",
+              "allowed_user_overrides",
+              "notification_destinations",
+              "retry_after_max_seconds"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 1000
+        }
+      },
+      "required": [
+        "contract_revision",
+        "workspace_catalog",
+        "authentication",
+        "static_participants",
+        "config_epoch",
+        "human_grants",
+        "static_credential_refs",
+        "workspace_policies"
+      ],
+      "additionalProperties": false,
+      "description": "Shape validation is necessary, never authorization. Semantic validation additionally requires exact issuer/subject grants, stable actor/hash mappings, one policy and callback per workspace, immutable unique catalog mappings, client_id=audience, safe operator-approved notification host/path, and <=90-day credential expiry at provisioning. Unknown fields fail with field paths and no values."
+    }
+  }
+}

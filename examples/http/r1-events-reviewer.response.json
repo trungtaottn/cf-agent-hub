@@ -1,0 +1,51 @@
+{
+  "data": [
+    {
+      "id": "event_2",
+      "workspace_id": "ws_example",
+      "sequence": 2,
+      "type": "profile.updated",
+      "actor": {
+        "kind": "human",
+        "principal_id": "human_operator",
+        "agent_id": null
+      },
+      "resource_type": "profile",
+      "resource_id": "ws_example",
+      "task_version": null,
+      "run_id": null,
+      "fence": null,
+      "occurred_at": "2026-10-23T00:00:00Z",
+      "summary": "Workspace profile updated.",
+      "request_id": "req_original_2",
+      "resource_version": 1,
+      "thread_id": null
+    },
+    {
+      "id": "event_4",
+      "workspace_id": "ws_example",
+      "sequence": 4,
+      "type": "message.accepted",
+      "actor": {
+        "kind": "agent",
+        "principal_id": "agent_research",
+        "agent_id": "agent_research"
+      },
+      "resource_type": "message",
+      "resource_id": "message_example",
+      "task_version": null,
+      "run_id": null,
+      "fence": null,
+      "occurred_at": "2026-10-23T00:00:00Z",
+      "summary": "Message accepted.",
+      "request_id": "req_original_4",
+      "resource_version": null,
+      "thread_id": "thread_example"
+    }
+  ],
+  "request_id": "req_reviewer_navigation",
+  "page": {
+    "next_cursor": null,
+    "has_more": false
+  }
+}

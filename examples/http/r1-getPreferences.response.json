@@ -1,0 +1,23 @@
+{
+  "data": {
+    "preferences_revision": 1,
+    "preferences": {
+      "contract_revision": "0.1",
+      "theme": "system",
+      "density": "comfortable",
+      "default_view": "tasks"
+    },
+    "effective": {
+      "contract_revision": "0.1",
+      "theme": "system",
+      "density": "comfortable",
+      "default_view": "tasks"
+    },
+    "allowed_user_overrides": [
+      "theme",
+      "density",
+      "default_view"
+    ]
+  },
+  "request_id": "req_synthetic_getPreferences"
+}

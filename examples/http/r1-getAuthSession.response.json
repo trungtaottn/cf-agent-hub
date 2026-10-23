@@ -1,0 +1,12 @@
+{
+  "data": {
+    "actor": {
+      "kind": "human",
+      "principal_id": "human_operator",
+      "agent_id": null
+    },
+    "csrf_token": "synthetic-nonfunctional-csrf",
+    "expires_at": "2026-10-23T01:00:00Z"
+  },
+  "request_id": "req_synthetic_getAuthSession"
+}

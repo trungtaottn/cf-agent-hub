@@ -1,0 +1,32 @@
+{
+  "data": {
+    "observed_at": "2026-10-23T00:00:00Z",
+    "config_epoch": 1,
+    "schema_version": 1,
+    "readiness": {
+      "observed_at": "2026-10-23T00:00:00Z",
+      "ready": false,
+      "checks": [
+        {
+          "name": "operator_probe",
+          "status": "unknown",
+          "code": "PROBE_REQUIRED",
+          "checked_at": null
+        }
+      ]
+    },
+    "outbox": {
+      "pending_count": 0,
+      "in_flight_count": 0,
+      "failed_count": 0,
+      "suppressed_count": 0,
+      "oldest_due_at": null,
+      "next_due_at": null
+    },
+    "scheduler": {
+      "last_run_at": null,
+      "last_error_code": null
+    }
+  },
+  "request_id": "req_synthetic_getOperations"
+}

@@ -6,6 +6,7 @@ import argparse
 import copy
 import hashlib
 import importlib.metadata
+import ipaddress
 import json
 import platform
 import re
@@ -129,6 +130,11 @@ def validate_schemas_and_fixtures(spec: dict) -> tuple[int, int]:
             elif operation and direction == "response":
                 response = resolve(operation["responses"][str(entry["http_status"])])
                 expected = response["content"]["application/json"]["schema"].get("$ref")
+            elif operation and direction == "query":
+                expected = operation.get("x-query-fixture-schema")
+            elif operation and direction == "response-headers":
+                response = resolve(operation["responses"][str(entry["http_status"])])
+                expected = response.get("x-header-fixture-schema")
             check(expected == entry["schema"], f"{entry['file']}: mapped schema differs from actual {direction} operation contract", "fixture_operation_mapping")
         mappings.append({"file": "examples/http/" + entry["file"], "openapi_schema": entry["schema"]})
     actual = {p.relative_to(ROOT).as_posix() for p in (ROOT / "examples").rglob("*.json") if p.name != "fixture-map.json"}
@@ -192,7 +198,115 @@ def validate_schemas_and_fixtures(spec: dict) -> tuple[int, int]:
     validator = Draft202012Validator(profile, format_checker=FormatChecker())
     for index, value in enumerate(negative, 1):
         check(not validator.is_valid(value), f"Profile negative case {index} unexpectedly accepted", "negative_schema_cases")
+    for case in read_json(ROOT / "examples/http/r1-contract-negative.json")["cases"]:
+        schema = schemas[case["schema"]]
+        schema_errors = list(Draft202012Validator(schema, format_checker=FormatChecker()).iter_errors(case["value"]))
+        semantic = deployment_semantic_errors(case["value"], case.get("context", {})) if case["schema"] == "spec/deployment-config.schema.json" else []
+        paths = []
+        for error in schema_errors:
+            path = ".".join(str(p) for p in error.path)
+            if error.validator in {"required", "additionalProperties"}:
+                match = re.search(r"'([^']+)'", error.message)
+                if match:
+                    path += "." + match.group(1)
+            paths.append(path)
+        paths.extend(semantic)
+        check(any(case["field"] in path for path in paths), f"R1 negative case {case['name']}: expected field {case['field']}; got {paths}", "negative_schema_cases")
     return len(schemas), len(mappings)
+
+
+def safe_operator_url(value: str) -> bool:
+    try:
+        url = urlsplit(value)
+        host = (url.hostname or "").lower()
+        if url.scheme != "https" or url.port not in (None, 443) or url.username or url.password or url.query or url.fragment or not host or "." not in host or url.geturl() != value or url.netloc != host or not url.path.startswith("/"):
+            return False
+        try:
+            ipaddress.ip_address(host)
+            return False
+        except ValueError:
+            pass
+        return not any(host == part or host.endswith("." + part) for part in ("localhost", "local", "internal", "metadata", "home", "lan", "test"))
+    except ValueError:
+        return False
+
+
+def deployment_semantic_errors(config: dict, context: dict) -> list[str]:
+    """Cross-record rejections that JSON Schema cannot express; return field names only."""
+    errors: list[str] = []
+    def unique(items, key, field):
+        values = [key(item) for item in items]
+        if len(values) != len(set(values)):
+            errors.append(field)
+    catalog = config.get("workspace_catalog", [])
+    workspaces = {x["workspace_id"] for x in catalog}
+    unique(catalog, lambda x: x["workspace_id"], "workspace_catalog.workspace_id")
+    unique(catalog, lambda x: x["object_name"], "workspace_catalog.object_name")
+    grants = config.get("human_grants", [])
+    unique(grants, lambda x: (x["workspace_id"], x["issuer"], x["subject"]), "human_grants.subject")
+    unique(grants, lambda x: (x["workspace_id"], x["principal_id"]), "human_grants.principal_id")
+    by_subject, by_principal = {}, {}
+    for grant in grants:
+        subject = (grant["issuer"], grant["subject"])
+        principal = grant["principal_id"]
+        if (subject in by_subject and by_subject[subject] != principal) or (principal in by_principal and by_principal[principal] != subject):
+            errors.append("human_grants.principal_id")
+        by_subject[subject] = principal
+        by_principal[principal] = subject
+    identity = context.get("identity")
+    if identity and not any(g["workspace_id"] == identity["workspace_id"] and g["issuer"] == identity["issuer"] and g["subject"] == identity["subject"] and g["enabled"] for g in grants):
+        errors.append("human_grants")
+    if config.get("config_epoch", 0) <= context.get("installedEpoch", 0):
+        errors.append("config_epoch")
+    auth = config.get("authentication", {})
+    if auth.get("client_id") != auth.get("audience"):
+        errors.append("authentication.client_id")
+    pins = auth.get("reviewed_oidc_endpoints", {})
+    for key in ("authorization_endpoint", "token_endpoint", "jwks_uri"):
+        if not safe_operator_url(pins.get(key, "")):
+            errors.append("authentication.reviewed_oidc_endpoints." + key)
+    discovery = context.get("discovery")
+    if discovery and (discovery.get("issuer") != auth.get("issuer") or any(discovery.get(key) != pins.get(key) for key in ("authorization_endpoint", "token_endpoint", "jwks_uri"))):
+        errors.append("authentication.reviewed_oidc_endpoints")
+    redirects = auth.get("redirect_uris", [])
+    unique(redirects, lambda x: x["workspace_id"], "authentication.redirect_uris.workspace_id")
+    if len(redirects) != len(catalog):
+        errors.append("authentication.redirect_uris")
+    for item in redirects:
+        uri = urlsplit(item["redirect_uri"])
+        expected = f"/v2/workspaces/{item['workspace_id']}/auth/callback"
+        if item["workspace_id"] not in workspaces or uri.path != expected or uri.query or uri.fragment or not safe_operator_url(item["redirect_uri"]) or f"{uri.scheme}://{uri.netloc}" not in auth.get("allowed_origins", []):
+            errors.append("authentication.redirect_uris.redirect_uri")
+    participants = config.get("static_participants", [])
+    participant_ids = {(x["workspace_id"], x["agent_id"]) for x in participants}
+    unique(participants, lambda x: (x["workspace_id"], x["agent_id"]), "static_participants.agent_id")
+    refs = config.get("static_credential_refs", [])
+    unique(refs, lambda x: (x["workspace_id"], x["credential_id"]), "static_credential_refs.credential_id")
+    now = datetime.fromisoformat("2026-10-23T00:00:00+00:00").timestamp()
+    for item in refs:
+        if (item["workspace_id"], item["agent_id"]) not in participant_ids:
+            errors.append("static_credential_refs.agent_id")
+        try:
+            expiry = datetime.fromisoformat(item["expires_at"].replace("Z", "+00:00")).timestamp()
+            if not now < expiry <= now + 90 * 86400:
+                errors.append("static_credential_refs.expires_at")
+        except ValueError:
+            errors.append("static_credential_refs.expires_at")
+    policies = config.get("workspace_policies", [])
+    unique(policies, lambda x: x["workspace_id"], "workspace_policies.workspace_id")
+    if len(policies) != len(catalog):
+        errors.append("workspace_policies")
+    for policy in policies:
+        unique(policy.get("notification_destinations", []), lambda x: x["destination_id"], "workspace_policies.notification_destinations.destination_id")
+        for item in policy.get("notification_destinations", []):
+            if not safe_operator_url(item["url"]):
+                errors.append("workspace_policies.notification_destinations.url")
+            if (policy["workspace_id"], item["agent_id"]) not in participant_ids:
+                errors.append("workspace_policies.notification_destinations.agent_id")
+    for name, items in (("human_grants", grants), ("static_participants", participants), ("static_credential_refs", refs), ("workspace_policies", policies)):
+        if any(item["workspace_id"] not in workspaces for item in items):
+            errors.append(name + ".workspace_id")
+    return sorted(set(errors))
 
 
 def validate_api(spec: dict) -> int:
@@ -202,15 +316,43 @@ def validate_api(spec: dict) -> int:
     except Exception as error:
         check(False, f"OpenAPI structural validation: {error}", "openapi_structure")
     operations: dict[str, dict] = {}
+    base = "/v2/workspaces/{workspace_id}"
+    unauthenticated = {
+        ("post", base + "/auth/start", "startAuth", "protocol"),
+        ("get", base + "/auth/callback", "callbackAuth", "protocol"),
+        ("get", "/health/live", "getLiveness", "public"),
+    }
+    scoped_protocol = {
+        ("get", base + "/auth/session", "getAuthSession"),
+        ("post", base + "/auth/logout", "logoutAuth"),
+    }
+    observed_unauthenticated: set[tuple[str, str, str, str]] = set()
+    observed_scoped_protocol: set[tuple[str, str, str]] = set()
     for path, item in spec["paths"].items():
-        check(path.startswith("/v2/workspaces/{workspace_id}"), f"Unscoped API route: {path}", "openapi_contract")
+        check(path.startswith(base) or path == "/health/live", f"Unscoped API route: {path}", "openapi_contract")
         for method, operation in item.items():
             if method not in {"get", "post", "patch", "put", "delete"}:
                 continue
             name = operation["operationId"]
             check(name not in operations, f"Duplicate operationId: {name}", "openapi_contract")
             operations[name] = operation
-            check(bool(operation.get("security", spec.get("security"))), f"Unauthenticated operation: {name}", "openapi_contract")
+            security = operation.get("security", spec.get("security"))
+            scopes = operation.get("x-required-scopes")
+            actor = operation.get("x-actor-kind")
+            unauth_key = (method, path, name, actor)
+            scoped_key = (method, path, name)
+            if unauth_key in unauthenticated:
+                observed_unauthenticated.add(unauth_key)
+                check(security == [] and scopes == [], f"{name}: unauthenticated protocol/public contract changed", "openapi_contract")
+            elif scoped_key in scoped_protocol:
+                observed_scoped_protocol.add(scoped_key)
+                check(security == [{"HumanSession": []}] and actor == "human" and scopes == [] and operation.get("x-auth-protocol") is True, f"{name}: authenticated scope-free session protocol changed", "openapi_contract")
+            else:
+                check(bool(security) and bool(scopes), f"Unauthenticated or unscoped domain operation: {name}", "openapi_contract")
+                check(operation.get("x-auth-protocol") is not True, f"{name}: copied auth-protocol marker", "openapi_contract")
+                check(actor in {"human", "agent", "both"}, f"{name}: missing domain actor lane", "openapi_contract")
+    check(observed_unauthenticated == unauthenticated, "R1 unauthenticated protocol/public allowlist differs", "openapi_contract")
+    check(observed_scoped_protocol == scoped_protocol, "R1 authenticated scope-free protocol allowlist differs", "openapi_contract")
     for name in ["approveApproval", "rejectApproval", "createAgent", "patchAgent", "archiveAgent", "createCredential", "revokeCredential", "listCredentials"]:
         check(operations[name]["security"] == [{"HumanSession": []}], f"{name}: human-only route permits a different actor kind", "openapi_contract")
     for name in ["claimTask", "requestTaskDecision", "submitTaskResult", "failTask", "heartbeatRun", "heartbeatRuntime"]:
@@ -254,7 +396,7 @@ def main() -> int:
         md_count = external_count = operation_count = schema_count = fixture_count = 0
     report = {
         "package": "CF Agent Hub documentation baseline",
-        "contract_revision": "0.1",
+        "contract_revision": "r1-foundation-1",
         "checked_at": datetime.now(timezone.utc).isoformat(),
         "status": "passed" if not ERRORS else "failed",
         "environment": {"python": platform.python_version(), **{p: importlib.metadata.version(p) for p in ["jsonschema", "openapi-spec-validator", "markdown-it-py"]}},

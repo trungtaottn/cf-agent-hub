@@ -1,0 +1,21 @@
+{
+  "data": {
+    "config_epoch": 1,
+    "profile_revision": 1,
+    "preferences_revision": 1,
+    "allowed_user_overrides": [
+      "theme",
+      "density",
+      "default_view"
+    ],
+    "enabled_features": [
+      "workspace",
+      "messages",
+      "events",
+      "profile",
+      "preferences",
+      "operations"
+    ]
+  },
+  "request_id": "req_synthetic_getConfiguration"
+}

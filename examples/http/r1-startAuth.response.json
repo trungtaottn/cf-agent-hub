@@ -1,0 +1,6 @@
+{
+  "data": {
+    "authorization_url": "https://identity.example.invalid/authorize?state=synthetic"
+  },
+  "request_id": "req_synthetic_startAuth"
+}

@@ -1,0 +1,18 @@
+{
+  "contract_revision": "0.1",
+  "config_epoch": 1,
+  "config_digest": "7073eb94446b8bf8f49ce0c37b5b3adcf840d96594d345f241df2408b6260091",
+  "credentials": [
+    {
+      "workspace_id": "ws_example",
+      "credential_id": "credential_research_1",
+      "token_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+    }
+  ],
+  "retired_credentials": [],
+  "auth": {
+    "key_id": "synthetic_key",
+    "algorithm": "HMAC-SHA256",
+    "tag": "0000000000000000000000000000000000000000000000000000000000000000"
+  }
+}
