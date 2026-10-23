@@ -1,0 +1,24 @@
+{
+  "contract_revision": "0.1",
+  "workspace_catalog": [
+    {
+      "workspace_id": "ws_example",
+      "object_name": "workspace-example"
+    }
+  ],
+  "authentication": {
+    "mode": "verified-oidc",
+    "issuer": "https://identity.example.invalid",
+    "audience": "replace-with-configured-audience",
+    "allowed_origins": [
+      "https://hub.example.invalid"
+    ]
+  },
+  "static_participants": [
+    {
+      "workspace_id": "ws_example",
+      "agent_id": "agent_research",
+      "display_name": "Research participant"
+    }
+  ]
+}

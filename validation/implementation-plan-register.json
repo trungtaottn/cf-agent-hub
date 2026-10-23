@@ -1,0 +1,806 @@
+{
+  "scope": "implementation-plans-only",
+  "implementation_status": "pending",
+  "dependency_semantics": "Task dependencies include preceding round acceptance; branch-level contract records in R4 Task 1 may be independently accepted as specified in that plan. Orchestration O1 precedes R1; O2/O3 are executed within R1 Task 11 and extended at later round gates; O4 follows each complete gate.",
+  "rounds": {
+    "R1": {
+      "path": "docs/superpowers/plans/2026-10-23-r1-foundation.md",
+      "tasks": [
+        {
+          "id": "R1-T01",
+          "heading": "## Task 1: Close the R1 contract gaps before implementation",
+          "depends_on": []
+        },
+        {
+          "id": "R1-T02",
+          "heading": "## Task 2: Build a real transactional workspace and validate installed configuration",
+          "depends_on": [
+            "R1-T01"
+          ]
+        },
+        {
+          "id": "R1-T03",
+          "heading": "## Task 3: Verify humans and issue secure workspace sessions",
+          "depends_on": [
+            "R1-T01",
+            "R1-T02"
+          ]
+        },
+        {
+          "id": "R1-T04",
+          "heading": "## Task 4: Provision static credentials and enforce current grants",
+          "depends_on": [
+            "R1-T02",
+            "R1-T03"
+          ]
+        },
+        {
+          "id": "R1-T05",
+          "heading": "## Task 5: Centralize bounded commands, atomic replay and redacted audit",
+          "depends_on": [
+            "R1-T02",
+            "R1-T03",
+            "R1-T04"
+          ]
+        },
+        {
+          "id": "R1-T06",
+          "heading": "## Task 6: Deliver versioned profile and personal preference transport",
+          "depends_on": [
+            "R1-T01",
+            "R1-T02",
+            "R1-T03",
+            "R1-T04",
+            "R1-T05"
+          ]
+        },
+        {
+          "id": "R1-T07",
+          "heading": "## Task 7: Accept messages with atomic inbox, event, outbox and outcome",
+          "depends_on": [
+            "R1-T02",
+            "R1-T03",
+            "R1-T04",
+            "R1-T05",
+            "R1-T06"
+          ]
+        },
+        {
+          "id": "R1-T08",
+          "heading": "## Task 8: Add authorization-bound pagination and recipient ACK",
+          "depends_on": [
+            "R1-T05",
+            "R1-T06",
+            "R1-T07"
+          ]
+        },
+        {
+          "id": "R1-T09",
+          "heading": "## Task 9: Recover persisted notification work across alarms and crashes",
+          "depends_on": [
+            "R1-T04",
+            "R1-T05",
+            "R1-T06",
+            "R1-T07",
+            "R1-T08"
+          ]
+        },
+        {
+          "id": "R1-T10",
+          "heading": "## Task 10: Build the neutral, truthful read dashboard and settings UI",
+          "depends_on": [
+            "R1-T03",
+            "R1-T04",
+            "R1-T05",
+            "R1-T06",
+            "R1-T07",
+            "R1-T08",
+            "R1-T09"
+          ]
+        },
+        {
+          "id": "R1-T11",
+          "heading": "## Task 11: Prove readiness, recovery and the R1 release boundary",
+          "depends_on": [
+            "R1-T01",
+            "R1-T02",
+            "R1-T03",
+            "R1-T04",
+            "R1-T05",
+            "R1-T06",
+            "R1-T07",
+            "R1-T08",
+            "R1-T09",
+            "R1-T10"
+          ]
+        }
+      ]
+    },
+    "R2": {
+      "path": "docs/superpowers/plans/2026-10-23-r2-durable-work.md",
+      "tasks": [
+        {
+          "id": "R2-T01",
+          "heading": "### Task 1: Close the R2 contract gaps with bounded schemas and fixtures",
+          "depends_on": [
+            "R1-T11"
+          ]
+        },
+        {
+          "id": "R2-T02",
+          "heading": "### Task 2: Implement durable agents, native credential lifecycle and runtime enrollment",
+          "depends_on": [
+            "R2-T01"
+          ]
+        },
+        {
+          "id": "R2-T03",
+          "heading": "### Task 3: Implement project/role lifecycle and versioned task metadata",
+          "depends_on": [
+            "R2-T01",
+            "R2-T02"
+          ]
+        },
+        {
+          "id": "R2-T04",
+          "heading": "### Task 4: Make claims, WIP and run heartbeats atomic and fenced",
+          "depends_on": [
+            "R2-T02",
+            "R2-T03"
+          ]
+        },
+        {
+          "id": "R2-T05",
+          "heading": "### Task 5: Implement conservative expiry, failure, requeue and cancellation",
+          "depends_on": [
+            "R2-T01",
+            "R2-T04"
+          ]
+        },
+        {
+          "id": "R2-T06",
+          "heading": "### Task 6: Build immutable artifacts with cleanup exclusion and bounded streaming",
+          "depends_on": [
+            "R2-T02",
+            "R2-T04",
+            "R2-T05"
+          ]
+        },
+        {
+          "id": "R2-T07",
+          "heading": "### Task 7: Submit results and enforce independent acceptance",
+          "depends_on": [
+            "R2-T04",
+            "R2-T05",
+            "R2-T06"
+          ]
+        },
+        {
+          "id": "R2-T08",
+          "heading": "### Task 8: Add permission-filtered bounded search and isolation coverage",
+          "depends_on": [
+            "R2-T03",
+            "R2-T06",
+            "R2-T07"
+          ]
+        },
+        {
+          "id": "R2-T09",
+          "heading": "### Task 9: Import external tasks through reviewed provenance plans",
+          "depends_on": [
+            "R2-T01",
+            "R2-T03",
+            "R2-T05",
+            "R2-T08"
+          ]
+        },
+        {
+          "id": "R2-T10",
+          "heading": "### Task 10: Deliver the native client and CLI with durable mutation identity",
+          "depends_on": [
+            "R2-T02",
+            "R2-T03",
+            "R2-T04",
+            "R2-T05",
+            "R2-T06",
+            "R2-T07",
+            "R2-T08",
+            "R2-T09"
+          ]
+        },
+        {
+          "id": "R2-T11",
+          "heading": "### Task 11: Add the accessible six-column board and conflict-safe commands",
+          "depends_on": [
+            "R2-T03",
+            "R2-T04",
+            "R2-T05",
+            "R2-T06",
+            "R2-T07",
+            "R2-T08",
+            "R2-T10"
+          ]
+        },
+        {
+          "id": "R2-T12",
+          "heading": "### Task 12: Rehearse full recovery and close the R2 acceptance gate",
+          "depends_on": [
+            "R2-T01",
+            "R2-T02",
+            "R2-T03",
+            "R2-T04",
+            "R2-T05",
+            "R2-T06",
+            "R2-T07",
+            "R2-T08",
+            "R2-T09",
+            "R2-T10",
+            "R2-T11"
+          ]
+        }
+      ]
+    },
+    "R3": {
+      "path": "docs/superpowers/plans/2026-10-23-r3-decisions-mcp.md",
+      "tasks": [
+        {
+          "id": "R3-T01",
+          "heading": "### Task 1: Finalize decision policy and the R2 bridge",
+          "depends_on": [
+            "R2-T12"
+          ]
+        },
+        {
+          "id": "R3-T02",
+          "heading": "### Task 2: Persist checkpoints and immutable proposals atomically",
+          "depends_on": [
+            "R3-T01"
+          ]
+        },
+        {
+          "id": "R3-T03",
+          "heading": "### Task 3: Enforce human decisions, conflicts and expiry",
+          "depends_on": [
+            "R3-T02"
+          ]
+        },
+        {
+          "id": "R3-T04",
+          "heading": "### Task 4: Bind approved intent to a fresh claim",
+          "depends_on": [
+            "R3-T01",
+            "R3-T02",
+            "R3-T03"
+          ]
+        },
+        {
+          "id": "R3-T05",
+          "heading": "### Task 5: Add safe message and task composition",
+          "depends_on": [
+            "R3-T01"
+          ]
+        },
+        {
+          "id": "R3-T06",
+          "heading": "### Task 6: Show exact human decisions and recover conflicts accessibly",
+          "depends_on": [
+            "R3-T02",
+            "R3-T03",
+            "R3-T04"
+          ]
+        },
+        {
+          "id": "R3-T07",
+          "heading": "### Task 7: Implement pinned MCP STDIO and complete parity tests",
+          "depends_on": [
+            "R3-T02",
+            "R3-T03",
+            "R3-T04"
+          ]
+        },
+        {
+          "id": "R3-T08",
+          "heading": "### Task 8: Rehearse and independently review the R3 gate",
+          "depends_on": [
+            "R3-T01",
+            "R3-T02",
+            "R3-T03",
+            "R3-T04",
+            "R3-T05",
+            "R3-T06",
+            "R3-T07"
+          ]
+        }
+      ]
+    },
+    "R4": {
+      "path": "docs/superpowers/plans/2026-10-23-r4-teams-extensions.md",
+      "tasks": [
+        {
+          "id": "R4-T01",
+          "heading": "### Task 1: Finalize the five bounded extension contracts",
+          "depends_on": [
+            "R3-T08"
+          ]
+        },
+        {
+          "id": "R4-T02",
+          "heading": "### Task 2: Enforce membership revisions, revocation and last-admin recovery",
+          "depends_on": [
+            "R4-T01"
+          ]
+        },
+        {
+          "id": "R4-T03",
+          "heading": "### Task 3: Implement recipient-bound invitations and team UI",
+          "depends_on": [
+            "R4-T01",
+            "R4-T02"
+          ]
+        },
+        {
+          "id": "R4-T04",
+          "heading": "### Task 4: Implement remote MCP authorization and transport",
+          "depends_on": [
+            "R4-T01",
+            "R4-T02"
+          ]
+        },
+        {
+          "id": "R4-T05",
+          "heading": "### Task 5: Implement bounded A2A correlation and native state projection",
+          "depends_on": [
+            "R4-T01",
+            "R4-T02"
+          ]
+        },
+        {
+          "id": "R4-T06",
+          "heading": "### Task 6: Implement and verify one selected real connector",
+          "depends_on": [
+            "R4-T01"
+          ]
+        },
+        {
+          "id": "R4-T07",
+          "heading": "### Task 7: Implement recoverable retention across SQL, R2 and backups",
+          "depends_on": [
+            "R4-T01"
+          ]
+        },
+        {
+          "id": "R4-T08",
+          "heading": "### Task 8: Enforce resource quotas and truthful operational dashboards",
+          "depends_on": [
+            "R4-T01",
+            "R4-T07"
+          ]
+        },
+        {
+          "id": "R4-T09",
+          "heading": "### Task 9: Rehearse restoration, revocation and measured load tuning",
+          "depends_on": [
+            "R4-T02",
+            "R4-T03",
+            "R4-T04",
+            "R4-T05",
+            "R4-T06",
+            "R4-T07",
+            "R4-T08"
+          ]
+        },
+        {
+          "id": "R4-T10",
+          "heading": "### Task 10: Independently verify each extension and the R4 release gate",
+          "depends_on": [
+            "R4-T01",
+            "R4-T02",
+            "R4-T03",
+            "R4-T04",
+            "R4-T05",
+            "R4-T06",
+            "R4-T07",
+            "R4-T08",
+            "R4-T09"
+          ]
+        }
+      ]
+    }
+  },
+  "feature_coverage": [
+    {
+      "feature_id": "F01",
+      "round": "R1",
+      "tasks": [
+        "R1-T01",
+        "R1-T03",
+        "R1-T11"
+      ],
+      "acceptance": "Invalid issuer/audience/signature, expired session and CSRF denial; no credential in browser storage"
+    },
+    {
+      "feature_id": "F02",
+      "round": "R1",
+      "tasks": [
+        "R1-T01",
+        "R1-T02",
+        "R1-T11"
+      ],
+      "acceptance": "Rename preserves object identity; unknown workspace denied; profile cannot reroute storage"
+    },
+    {
+      "feature_id": "F03",
+      "round": "R1",
+      "tasks": [
+        "R1-T01",
+        "R1-T04",
+        "R1-T11"
+      ],
+      "acceptance": "Validated deployment registry and grants; no hidden demo participant or fallback identity"
+    },
+    {
+      "feature_id": "F04",
+      "round": "R1",
+      "tasks": [
+        "R1-T05",
+        "R1-T07"
+      ],
+      "acceptance": "Atomic persistence/outbox; lost response replay returns original outcome"
+    },
+    {
+      "feature_id": "F05",
+      "round": "R1",
+      "tasks": [
+        "R1-T08",
+        "R1-T10"
+      ],
+      "acceptance": "Authorized bounded pagination; stable order, empty/stale/failure states"
+    },
+    {
+      "feature_id": "F06",
+      "round": "R1",
+      "tasks": [
+        "R1-T08"
+      ],
+      "acceptance": "Idempotent recipient-scoped ACK; foreign message denied; ACK never changes task state"
+    },
+    {
+      "feature_id": "F07",
+      "round": "R1",
+      "tasks": [
+        "R1-T09",
+        "R1-T11"
+      ],
+      "acceptance": "Restart preserves due time/budget; duplicate alarm safe; exhausted delivery visible"
+    },
+    {
+      "feature_id": "F08",
+      "round": "R1",
+      "tasks": [
+        "R1-T05",
+        "R1-T07",
+        "R1-T08"
+      ],
+      "acceptance": "UTF-8 and aggregate-size boundaries; oversized batch rejected before mutation"
+    },
+    {
+      "feature_id": "F09",
+      "round": "R1",
+      "tasks": [
+        "R1-T10"
+      ],
+      "acceptance": "Real source and freshness; disconnected/partial/forbidden distinct; no fabricated activity"
+    },
+    {
+      "feature_id": "F10",
+      "round": "R1",
+      "tasks": [
+        "R1-T05",
+        "R1-T11"
+      ],
+      "acceptance": "Stable request/event linkage; secrets absent; failed authorization recorded appropriately"
+    },
+    {
+      "feature_id": "F11",
+      "round": "R2",
+      "tasks": [
+        "R2-T02"
+      ],
+      "acceptance": "Human-authorized creation/edit/archive; archived identity retained in history"
+    },
+    {
+      "feature_id": "F12",
+      "round": "R2",
+      "tasks": [
+        "R2-T02"
+      ],
+      "acceptance": "One-time reveal, verification hashes, scope ceiling, revocation and rotation"
+    },
+    {
+      "feature_id": "F13",
+      "round": "R2",
+      "tasks": [
+        "R2-T02"
+      ],
+      "acceptance": "Agent binding and expiry; runtime heartbeat cannot renew a task lease"
+    },
+    {
+      "feature_id": "F14",
+      "round": "R2",
+      "tasks": [
+        "R2-T08"
+      ],
+      "acceptance": "Two-workspace deny matrix for tasks/messages/artifacts/search/cursors and adapter calls"
+    },
+    {
+      "feature_id": "F15",
+      "round": "R2",
+      "tasks": [
+        "R2-T03"
+      ],
+      "acceptance": "Valid references, explicit versions, forbidden field/state patches denied"
+    },
+    {
+      "feature_id": "F16",
+      "round": "R2",
+      "tasks": [
+        "R2-T11"
+      ],
+      "acceptance": "Persisted state after restart; permitted command actions; cancelled tasks retained"
+    },
+    {
+      "feature_id": "F17",
+      "round": "R2",
+      "tasks": [
+        "R2-T03",
+        "R2-T04",
+        "R2-T05"
+      ],
+      "acceptance": "Competing claims yield one owner; stale runtime cannot submit or renew"
+    },
+    {
+      "feature_id": "F18",
+      "round": "R2",
+      "tasks": [
+        "R2-T03",
+        "R2-T04",
+        "R2-T05"
+      ],
+      "acceptance": "Last-slot race enforces policy; labels do not grant permission"
+    },
+    {
+      "feature_id": "F19",
+      "round": "R2",
+      "tasks": [
+        "R2-T03",
+        "R2-T04",
+        "R2-T05"
+      ],
+      "acceptance": "Clock-boundary tests; only run_version changes on renewal; expiry checked on command"
+    },
+    {
+      "feature_id": "F20",
+      "round": "R2",
+      "tasks": [
+        "R2-T02",
+        "R2-T03",
+        "R2-T04",
+        "R2-T05",
+        "R2-T06",
+        "R2-T07",
+        "R2-T08",
+        "R2-T09",
+        "R2-T10"
+      ],
+      "acceptance": "Identical replay, changed-payload conflict, cross-principal scoping and lost-response recovery"
+    },
+    {
+      "feature_id": "F21",
+      "round": "R2",
+      "tasks": [
+        "R2-T07"
+      ],
+      "acceptance": "Review before Done; alternate credential/runtime cannot bypass submitter exclusion"
+    },
+    {
+      "feature_id": "F22",
+      "round": "R2",
+      "tasks": [
+        "R2-T05"
+      ],
+      "acceptance": "Bounded retries, exhaustion flag, no reset through requeue; cancellation wins against stale owner"
+    },
+    {
+      "feature_id": "F23",
+      "round": "R2",
+      "tasks": [
+        "R2-T06"
+      ],
+      "acceptance": "Size/digest/access checks, committed-only association and orphan reconciliation"
+    },
+    {
+      "feature_id": "F24",
+      "round": "R2",
+      "tasks": [
+        "R2-T10"
+      ],
+      "acceptance": "Request/response conformance and failure exit behavior against a real isolated deployment"
+    },
+    {
+      "feature_id": "F25",
+      "round": "R2",
+      "tasks": [
+        "R2-T08"
+      ],
+      "acceptance": "Underlying read scopes enforced; no hidden-resource snippets, counts or cross-workspace results"
+    },
+    {
+      "feature_id": "F26",
+      "round": "R2",
+      "tasks": [
+        "R2-T09"
+      ],
+      "acceptance": "Dry run, provenance map, repeated-import behavior, rejected rows and post-import counts"
+    },
+    {
+      "feature_id": "F27",
+      "round": "R1",
+      "tasks": [
+        "R1-T02",
+        "R1-T06",
+        "R1-T10"
+      ],
+      "acceptance": "Fresh workspace has no personal branding/activity; examples require explicit import"
+    },
+    {
+      "feature_id": "F28",
+      "round": "R1",
+      "tasks": [
+        "R1-T01",
+        "R1-T06"
+      ],
+      "acceptance": "Closed schema; forbidden policy/auth keys rejected; last valid profile survives invalid input"
+    },
+    {
+      "feature_id": "F29",
+      "round": "R2",
+      "tasks": [
+        "R2-T03"
+      ],
+      "acceptance": "Upsert preserves omitted records; referenced archive/remap explicit and audited"
+    },
+    {
+      "feature_id": "F30",
+      "round": "R1",
+      "tasks": [
+        "R1-T01",
+        "R1-T06",
+        "R1-T10"
+      ],
+      "acceptance": "Allowlisted override; forbidden resources remain inaccessible; keyboard access preserved"
+    },
+    {
+      "feature_id": "F31",
+      "round": "R3",
+      "tasks": [
+        "R3-T05",
+        "R3-T08"
+      ],
+      "acceptance": "Same domain validation as API; duplicate submit/lost response safe; draft recovery without secrets"
+    },
+    {
+      "feature_id": "F32",
+      "round": "R3",
+      "tasks": [
+        "R3-T01",
+        "R3-T02",
+        "R3-T03",
+        "R3-T04",
+        "R3-T08"
+      ],
+      "acceptance": "Waiting releases run; checkpoint retained; only current human-scoped decision accepted"
+    },
+    {
+      "feature_id": "F33",
+      "round": "R3",
+      "tasks": [
+        "R3-T03",
+        "R3-T06",
+        "R3-T08"
+      ],
+      "acceptance": "Exact scope/version shown; stale decision denied; expiry never auto-approves"
+    },
+    {
+      "feature_id": "F34",
+      "round": "R2",
+      "tasks": [
+        "R2-T11"
+      ],
+      "acceptance": "Keyboard alternatives to drag, focus recovery and preserved input on version conflict"
+    },
+    {
+      "feature_id": "F35",
+      "round": "R3",
+      "tasks": [
+        "R3-T07",
+        "R3-T08"
+      ],
+      "acceptance": "Pinned target, tool mapping, per-tool scope denial and native-semantic parity"
+    },
+    {
+      "feature_id": "F36",
+      "round": "R4",
+      "tasks": [
+        "R4-T01",
+        "R4-T04",
+        "R4-T09",
+        "R4-T10"
+      ],
+      "acceptance": "Resource audience, discovery/consent/token handling and transport lifecycle tests"
+    },
+    {
+      "feature_id": "F37",
+      "round": "R4",
+      "tasks": [
+        "R4-T01",
+        "R4-T05",
+        "R4-T09",
+        "R4-T10"
+      ],
+      "acceptance": "Exact version/subset, task mapping, authentication and unsupported-operation behavior"
+    },
+    {
+      "feature_id": "F38",
+      "round": "R4",
+      "tasks": [
+        "R4-T01",
+        "R4-T02",
+        "R4-T03",
+        "R4-T09",
+        "R4-T10"
+      ],
+      "acceptance": "Recipient-bound single-use invitation, expiry, revocation, last-admin recovery and isolation"
+    },
+    {
+      "feature_id": "F39",
+      "round": "R4",
+      "tasks": [
+        "R4-T01",
+        "R4-T06",
+        "R4-T09",
+        "R4-T10"
+      ],
+      "acceptance": "Provider permissions, genuine source IDs/timestamps, disconnect and stale-source handling"
+    },
+    {
+      "feature_id": "F40",
+      "round": "R2",
+      "tasks": [
+        "R2-T09",
+        "R2-T12"
+      ],
+      "acceptance": "Rehearsed coordinated metadata/artifact restoration with reconciliation report"
+    },
+    {
+      "feature_id": "F41",
+      "round": "R1",
+      "tasks": [
+        "R1-T09",
+        "R1-T11"
+      ],
+      "acceptance": "Distinct liveness/readiness, redacted diagnostics, due-work visibility and failure recovery"
+    },
+    {
+      "feature_id": "F42",
+      "round": "R4",
+      "tasks": [
+        "R4-T01",
+        "R4-T07",
+        "R4-T08",
+        "R4-T09",
+        "R4-T10"
+      ],
+      "acceptance": "Enforced policy, recoverable maintenance, load evidence and documented capacity limits"
+    }
+  ]
+}

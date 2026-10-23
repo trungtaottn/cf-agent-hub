@@ -1,0 +1,37 @@
+# Customization and portable profiles
+
+Status: Design baseline · Contract revision 0.1 · Implementation pending.
+
+Workspace profiles let an operator adapt CF Agent Hub to a team's vocabulary and visual identity without changing the coordination contract. A workspace may present a delivery board, a research queue, or an operations desk while using the same task state machine, agent identities, and review boundaries. All profile import, preview, and export behavior described here is planned.
+
+## What a profile can express
+
+A portable profile contains a stable profile identifier, a display name, descriptive copy, branding tokens, visible navigation, projects, and work roles. Projects organize work. Work roles describe responsibilities such as Researcher or Reviewer; the label Reviewer does not grant permission to accept a result. Both use stable IDs so display names can change safely.
+
+The [neutral fixture](../examples/profiles/neutral.json) is intentionally empty of projects and work roles. The [delivery demonstration](../examples/profiles/delivery-demo.json) is opt-in example content. Neither fixture asserts that tasks, users, or agents already exist. A profile ID identifies the portable preset, not a workspace and not an authorization scope.
+
+Branding is limited to validated product surfaces: a short workspace label, approved color tokens, and an administrator-controlled asset reference in a later contract revision. Arbitrary HTML, JavaScript, stylesheet injection, remote tracking pixels, and executable theme templates are outside the baseline. The profile must never replace security warnings, actor-kind labels, provenance indicators, or canonical state labels. See [design guidelines](design-guidelines.md).
+
+## Import flow
+
+An authorized editor selects a profile and the destination workspace. The server must validate the closed contract, then prepare a preview showing proposed changes and conflicts. Previewing must not modify state. The editor reviews the destination workspace identity, current revision, stable IDs, and any archive effects before applying the change through the domain service described by the [HTTP API](http-api.md).
+
+Application must atomically commit the permitted profile changes and audit event against the expected profile revision. Stable IDs are upserted; missing existing IDs are preserved. If a preset renames `role_research`, assignments keep that ID and show its new label. A preset introducing `role_analysis` creates a separate work role even if its label matches an existing one. The importer must surface that possible duplication rather than merge by name.
+
+Archiving a project prevents new selection while retaining historical task references. Archiving a work role requires an explicit review of current agent metadata and task eligibility configuration. If references require remapping, an authorized actor must choose the destination explicitly. A profile import cannot rewrite the workspace's policy layer as a side effect.
+
+## User preferences
+
+A user's theme, density, and default view can override only fields allowed by the workspace. The [preferences fixture](../examples/config/user-preferences.json) is a separate contract; it must not be embedded in a shared preset. Workspace policy and permission checks remain in effect regardless of a preference. If a previously selected view becomes unavailable, navigation must explain the fallback and offer an allowed destination.
+
+Workspace branding must remain legible in light and dark themes. User preference controls should identify when a workspace policy restricts a choice. A profile may hide a navigation entry to reduce clutter, but the interface must still surface authorized urgent approvals or lease failures requiring attention.
+
+## Export and recovery
+
+Export includes portable profile data only. It excludes secrets, verification hashes, runtime endpoints, memberships, invitations, agent enrollment credentials, task content, activity history, user preferences, and deployment catalog mappings. An export preview must list its included categories so an editor understands what will be shared. If a later contract adds asset references, their export must not grant access to otherwise private artifact bytes. The current profile schema has no asset field.
+
+Validation failure leaves the current profile intact. An apply conflict requires refreshing and comparing revisions. A lost response must be retried with the original idempotency key and identical body, not by generating another import. An explicit restore of a previous profile creates a new audited revision; it must preserve later-created projects and roles unless archival or remapping is separately approved.
+
+## Acceptance criteria
+
+A fresh workspace must render coherently with no demo data. The demo preset must be visibly optional. Export/import between two workspaces must reproduce permitted presentation settings without transferring access. A stale preview must fail safely. Omitted projects must survive import. Every invalid field must receive a useful validation message. A rejected import must produce no partial settings changes. All canonical task states must retain recognizable labels and semantics across profiles.

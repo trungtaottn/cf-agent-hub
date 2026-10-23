@@ -1,0 +1,14 @@
+{
+  "contract_revision": "0.1",
+  "description": "Schema mappings for non-HTTP synthetic documentation fixtures. HTTP mappings live in examples/http/fixture-map.json.",
+  "fixtures": [
+    {"file": "examples/config/deployment.example.json", "schema": "spec/deployment-config.schema.json"},
+    {"file": "examples/config/user-preferences.json", "schema": "spec/user-preferences.schema.json"},
+    {"file": "examples/profiles/neutral.json", "schema": "spec/workspace-profile.schema.json"},
+    {"file": "examples/profiles/delivery-demo.json", "schema": "spec/workspace-profile.schema.json"},
+    {"file": "examples/tasks/independent-review.json", "schema": "spec/task-scenario.schema.json"},
+    {"file": "examples/tasks/human-decision.json", "schema": "spec/task-scenario.schema.json"},
+    {"file": "examples/tasks/uncertain-external-effect.json", "schema": "spec/task-scenario.schema.json"},
+    {"file": "examples/tasks/claim-contention.json", "schema": "spec/task-scenario.schema.json"}
+  ]
+}

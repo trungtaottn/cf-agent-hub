@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CF Agent Hub workspace profile contract revision 0.1",
+  "type": "object",
+  "properties": {
+    "contract_revision": {
+      "const": "0.1"
+    },
+    "profile_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+    },
+    "display_name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "description": {
+      "type": "string",
+      "minLength": 0,
+      "maxLength": 2048
+    },
+    "branding": {
+      "type": "object",
+      "properties": {
+        "accent": {
+          "enum": [
+            "blue",
+            "teal",
+            "indigo",
+            "violet",
+            "amber",
+            "slate"
+          ]
+        }
+      },
+      "required": [
+        "accent"
+      ],
+      "additionalProperties": false
+    },
+    "navigation": {
+      "type": "object",
+      "properties": {
+        "visible_views": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "overview",
+              "inbox",
+              "tasks",
+              "kanban",
+              "agents",
+              "approvals",
+              "activity"
+            ]
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "visible_views"
+      ],
+      "additionalProperties": false
+    },
+    "projects": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/named_record"
+      }
+    },
+    "work_roles": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/named_record"
+      }
+    }
+  },
+  "required": [
+    "contract_revision",
+    "profile_id",
+    "display_name",
+    "description",
+    "branding",
+    "navigation",
+    "projects",
+    "work_roles"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "named_record": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+        },
+        "display_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "description": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 2048
+        },
+        "archived": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "display_name",
+        "description",
+        "archived"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

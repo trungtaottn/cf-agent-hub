@@ -1,0 +1,17 @@
+{
+  "scope": "implementation-plans-only",
+  "checked_at": "2026-10-23T07:41:29.733750+00:00",
+  "status": "passed",
+  "counts": {
+    "rounds": 4,
+    "tasks": 41,
+    "features": 42,
+    "checks": 590
+  },
+  "errors": [],
+  "limitations": [
+    "Checks coverage, dependency identities, required structure and reviewed file digests.",
+    "Does not execute future commands, prove design completeness or replace independent review.",
+    "Does not run product tests, create a repository, deploy software or verify recovery."
+  ]
+}

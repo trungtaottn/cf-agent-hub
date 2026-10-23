@@ -1,0 +1,47 @@
+{
+  "contract_revision": "0.1",
+  "kind": "acceptance_scenario",
+  "scenario_id": "uncertain-external-effect",
+  "gate": "R2",
+  "description": "An unknown external outcome creates a recovery hold instead of an automatic retry.",
+  "steps": [
+    {
+      "actor": "agent_writer/runtime_a",
+      "action": "Claim an eligible Ready task",
+      "outcome": "accepted",
+      "task_state_after": "doing",
+      "assertions": [
+        "Runtime owns current lease/fence."
+      ]
+    },
+    {
+      "actor": "agent_writer/runtime_a",
+      "action": "Report failure with outcome_unknown after losing external response",
+      "outcome": "accepted",
+      "task_state_after": "backlog",
+      "assertions": [
+        "outcome_unknown flag is durable.",
+        "No automatic additional execution is scheduled."
+      ]
+    },
+    {
+      "actor": "human_scheduler",
+      "action": "Try Ready or Requeue without resolving the uncertainty",
+      "outcome": "rejected",
+      "task_state_after": "backlog",
+      "assertions": [
+        "Hold cannot be bypassed by a new idempotency key."
+      ]
+    },
+    {
+      "actor": "operator",
+      "action": "Reconcile the external operation through its durable operation identity",
+      "outcome": "external",
+      "task_state_after": "backlog",
+      "assertions": [
+        "No hub hold-clear command is implied by this fixture.",
+        "Only reviewed replacement work after reconciliation may proceed, with provenance linking the original task."
+      ]
+    }
+  ]
+}

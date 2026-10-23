@@ -1,0 +1,7 @@
+{
+  "expected_version": 3,
+  "run_id": "run_example_1",
+  "fence": 1,
+  "reason": "External operation response was lost; outcome requires reconciliation.",
+  "outcome_unknown": true
+}

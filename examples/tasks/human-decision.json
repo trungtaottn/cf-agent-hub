@@ -1,0 +1,63 @@
+{
+  "contract_revision": "0.1",
+  "kind": "acceptance_scenario",
+  "scenario_id": "human-decision",
+  "gate": "R3",
+  "description": "A proposal freezes exact inputs and yields execution until an authorized current human decision.",
+  "steps": [
+    {
+      "actor": "agent_planner/runtime_a",
+      "action": "Claim an eligible Ready task",
+      "outcome": "accepted",
+      "task_state_after": "doing",
+      "assertions": [
+        "Runtime proof is bound to issuing credential and runtime."
+      ]
+    },
+    {
+      "actor": "agent_planner/runtime_a",
+      "action": "Request decision with committed input artifact and checkpoint",
+      "outcome": "accepted",
+      "task_state_after": "waiting",
+      "assertions": [
+        "Run ends paused; proposal input digest and versions are fixed."
+      ]
+    },
+    {
+      "actor": "agent_planner/runtime_a",
+      "action": "Approve with native credential",
+      "outcome": "rejected",
+      "task_state_after": "waiting",
+      "assertions": [
+        "Human session is required regardless of token scope labels."
+      ]
+    },
+    {
+      "actor": "assigned_human",
+      "action": "Approve exact current proposal",
+      "outcome": "accepted",
+      "task_state_after": "ready",
+      "assertions": [
+        "Approval is preserved; no execution lease exists yet."
+      ]
+    },
+    {
+      "actor": "human_scheduler",
+      "action": "Change approved execution intent through metadata PATCH",
+      "outcome": "rejected",
+      "task_state_after": "ready",
+      "assertions": [
+        "Approval cannot apply to different inputs or scope."
+      ]
+    },
+    {
+      "actor": "agent_planner/runtime_b",
+      "action": "Claim and verify approved input digest/current policy",
+      "outcome": "accepted",
+      "task_state_after": "doing",
+      "assertions": [
+        "New run/fence; a prior paused attempt never resumes."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "data": {
+    "acknowledged_ids": [
+      "message_example"
+    ],
+    "already_acknowledged_ids": []
+  },
+  "request_id": "req_ack"
+}

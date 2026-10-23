@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CF Agent Hub semantic acceptance scenario",
+  "description": "Documentation fixture, not an HTTP request or executed product test.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_revision", "kind", "scenario_id", "gate", "description", "steps"],
+  "properties": {
+    "contract_revision": {"const": "0.1"},
+    "kind": {"const": "acceptance_scenario"},
+    "scenario_id": {"type": "string", "pattern": "^[a-z][a-z0-9_-]{1,79}$"},
+    "gate": {"enum": ["R1", "R2", "R3", "R4"]},
+    "description": {"type": "string", "minLength": 1, "maxLength": 2000},
+    "steps": {
+      "type": "array", "minItems": 1, "maxItems": 30,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["actor", "action", "outcome", "task_state_after", "assertions"],
+        "properties": {
+          "actor": {"type": "string", "minLength": 1, "maxLength": 160},
+          "action": {"type": "string", "minLength": 1, "maxLength": 500},
+          "outcome": {"enum": ["accepted", "rejected", "external"]},
+          "task_state_after": {"enum": ["backlog", "ready", "doing", "waiting", "review", "done", "cancelled"]},
+          "assertions": {"type": "array", "minItems": 1, "maxItems": 20, "items": {"type": "string", "minLength": 1, "maxLength": 1000}}
+        }
+      }
+    }
+  }
+}

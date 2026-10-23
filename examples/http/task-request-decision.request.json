@@ -1,0 +1,28 @@
+{
+  "expected_version": 3,
+  "run_id": "run_example_1",
+  "fence": 1,
+  "checkpoint": {
+    "summary": "Checklist outline is ready; confirm the draft-only scope.",
+    "artifact_ids": [
+      "artifact_inputs"
+    ]
+  },
+  "proposal": {
+    "summary": "Prepare a draft checklist for human review without publication.",
+    "action": "document.prepare_draft",
+    "scope": {
+      "project_id": null,
+      "resource_ids": [
+        "task_example"
+      ]
+    },
+    "artifact_ids": [
+      "artifact_inputs"
+    ],
+    "inputs": {
+      "artifact_id": "artifact_inputs",
+      "sha256": "c8b3ab48bcb4c59611b312aa29637881aa7b2696aa497ed17b22e31369f596c5"
+    }
+  }
+}

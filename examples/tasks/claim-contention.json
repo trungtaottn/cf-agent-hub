@@ -1,0 +1,56 @@
+{
+  "contract_revision": "0.1",
+  "kind": "acceptance_scenario",
+  "scenario_id": "claim-contention",
+  "gate": "R2",
+  "description": "Two eligible runtimes race for one task; stale ownership cannot mutate the result.",
+  "steps": [
+    {
+      "actor": "agent_a/runtime_a and agent_b/runtime_b",
+      "action": "Submit simultaneous claims against the same Ready version",
+      "outcome": "accepted",
+      "task_state_after": "doing",
+      "assertions": [
+        "Exactly one claim wins and one conflicts.",
+        "Only the winning proof/run/fence may execute.",
+        "Trusted workspace policy classified this task replay-safe before execution; the claim audit retains that decision."
+      ]
+    },
+    {
+      "actor": "different_runtime_of_winning_agent",
+      "action": "Attempt run heartbeat with readable run ID and fence but wrong runtime proof",
+      "outcome": "rejected",
+      "task_state_after": "doing",
+      "assertions": [
+        "Agent membership alone cannot authenticate this runtime ownership."
+      ]
+    },
+    {
+      "actor": "server_clock",
+      "action": "Expire the active run with known retry eligibility and budget",
+      "outcome": "external",
+      "task_state_after": "ready",
+      "assertions": [
+        "Old run ends expired; retry budget advances atomically."
+      ]
+    },
+    {
+      "actor": "new_authorized_runtime",
+      "action": "Claim using current task version",
+      "outcome": "accepted",
+      "task_state_after": "doing",
+      "assertions": [
+        "A new fence is strictly greater than the expired attempt."
+      ]
+    },
+    {
+      "actor": "old_runtime",
+      "action": "Submit a late result using expired ownership",
+      "outcome": "rejected",
+      "task_state_after": "doing",
+      "assertions": [
+        "Current run and result remain unchanged."
+      ]
+    }
+  ]
+}

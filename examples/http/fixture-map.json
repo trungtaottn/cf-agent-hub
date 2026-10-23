@@ -1,0 +1,247 @@
+{
+  "contract_revision": "0.1",
+  "status": "design-baseline",
+  "fixtures": [
+    {
+      "file": "task-create.request.json",
+      "schema": "#/components/schemas/TaskCreateRequest",
+      "operation_id": "createTask",
+      "direction": "request"
+    },
+    {
+      "file": "task-patch.request.json",
+      "schema": "#/components/schemas/TaskPatchRequest",
+      "operation_id": "patchTask",
+      "direction": "request"
+    },
+    {
+      "file": "task-ready.request.json",
+      "schema": "#/components/schemas/TaskVersionRequest",
+      "operation_id": "readyTask",
+      "direction": "request"
+    },
+    {
+      "file": "task-ready.response.json",
+      "schema": "#/components/schemas/TaskCommandResultResponse",
+      "operation_id": "readyTask",
+      "direction": "response",
+      "http_status": 200
+    },
+    {
+      "file": "task-claim.request.json",
+      "schema": "#/components/schemas/TaskClaimRequest",
+      "operation_id": "claimTask",
+      "direction": "request"
+    },
+    {
+      "file": "task-claim.response.json",
+      "schema": "#/components/schemas/TaskCommandResultResponse",
+      "operation_id": "claimTask",
+      "direction": "response",
+      "http_status": 200
+    },
+    {
+      "file": "run-heartbeat.request.json",
+      "schema": "#/components/schemas/RunHeartbeatRequest",
+      "operation_id": "heartbeatRun",
+      "direction": "request"
+    },
+    {
+      "file": "runtime-enroll.request.json",
+      "schema": "#/components/schemas/RuntimeCreateRequest",
+      "operation_id": "createRuntime",
+      "direction": "request"
+    },
+    {
+      "file": "runtime-enroll.response.json",
+      "schema": "#/components/schemas/RuntimeIssueResponse",
+      "operation_id": "createRuntime",
+      "direction": "response",
+      "http_status": 201
+    },
+    {
+      "file": "runtime-enroll-replay.response.json",
+      "schema": "#/components/schemas/RuntimeIssueResponse",
+      "operation_id": "createRuntime",
+      "direction": "response",
+      "http_status": 201
+    },
+    {
+      "file": "runtime-heartbeat.request.json",
+      "schema": "#/components/schemas/RuntimeHeartbeatRequest",
+      "operation_id": "heartbeatRuntime",
+      "direction": "request"
+    },
+    {
+      "file": "approval-inputs.artifact.json",
+      "schema": "#/components/schemas/ExampleApprovalInputs",
+      "kind": "artifact-content",
+      "sha256": "c8b3ab48bcb4c59611b312aa29637881aa7b2696aa497ed17b22e31369f596c5",
+      "byte_size": 104,
+      "direction": "artifact"
+    },
+    {
+      "file": "artifact-stage.request.json",
+      "schema": "#/components/schemas/ArtifactStageRequest",
+      "operation_id": "stageArtifact",
+      "direction": "request"
+    },
+    {
+      "file": "artifact-commit.request.json",
+      "schema": "#/components/schemas/ArtifactCommitRequest",
+      "operation_id": "commitArtifact",
+      "direction": "request"
+    },
+    {
+      "file": "artifact-committed.response.json",
+      "schema": "#/components/schemas/ArtifactResponse",
+      "operation_id": "commitArtifact",
+      "direction": "response",
+      "http_status": 200
+    },
+    {
+      "file": "task-request-decision.request.json",
+      "schema": "#/components/schemas/TaskRequestDecisionRequest",
+      "operation_id": "requestTaskDecision",
+      "direction": "request"
+    },
+    {
+      "file": "task-request-decision.response.json",
+      "schema": "#/components/schemas/TaskCommandResultResponse",
+      "operation_id": "requestTaskDecision",
+      "direction": "response",
+      "http_status": 200
+    },
+    {
+      "file": "approval-approve.request.json",
+      "schema": "#/components/schemas/ApprovalDecisionRequest",
+      "operation_id": "approveApproval",
+      "direction": "request"
+    },
+    {
+      "file": "approval-reject.request.json",
+      "schema": "#/components/schemas/ApprovalDecisionRequest",
+      "operation_id": "rejectApproval",
+      "direction": "request"
+    },
+    {
+      "file": "approval-approve.response.json",
+      "schema": "#/components/schemas/TaskCommandResultResponse",
+      "operation_id": "approveApproval",
+      "direction": "response",
+      "http_status": 200
+    },
+    {
+      "file": "task-submit-result.request.json",
+      "schema": "#/components/schemas/TaskSubmitResultRequest",
+      "operation_id": "submitTaskResult",
+      "direction": "request"
+    },
+    {
+      "file": "task-submit-result.response.json",
+      "schema": "#/components/schemas/TaskCommandResultResponse",
+      "operation_id": "submitTaskResult",
+      "direction": "response",
+      "http_status": 200
+    },
+    {
+      "file": "task-accept-result.request.json",
+      "schema": "#/components/schemas/TaskReasonRequest",
+      "operation_id": "acceptTaskResult",
+      "direction": "request"
+    },
+    {
+      "file": "task-accept-result.response.json",
+      "schema": "#/components/schemas/TaskCommandResultResponse",
+      "operation_id": "acceptTaskResult",
+      "direction": "response",
+      "http_status": 200
+    },
+    {
+      "file": "task-fail-uncertain.request.json",
+      "schema": "#/components/schemas/TaskFailRequest",
+      "operation_id": "failTask",
+      "direction": "request"
+    },
+    {
+      "file": "task-fail-uncertain.response.json",
+      "schema": "#/components/schemas/TaskCommandResultResponse",
+      "operation_id": "failTask",
+      "direction": "response",
+      "http_status": 200
+    },
+    {
+      "file": "task-cancel.request.json",
+      "schema": "#/components/schemas/TaskReasonRequest",
+      "operation_id": "cancelTask",
+      "direction": "request"
+    },
+    {
+      "file": "message-send.request.json",
+      "schema": "#/components/schemas/MessageCreateRequest",
+      "operation_id": "createMessage",
+      "direction": "request"
+    },
+    {
+      "file": "message-send.response.json",
+      "schema": "#/components/schemas/MessageResponse",
+      "operation_id": "createMessage",
+      "direction": "response",
+      "http_status": 201
+    },
+    {
+      "file": "inbox-page.response.json",
+      "schema": "#/components/schemas/MessageListResponse",
+      "operation_id": "getInbox",
+      "direction": "response",
+      "http_status": 200
+    },
+    {
+      "file": "thread-final-page.response.json",
+      "schema": "#/components/schemas/MessageListResponse",
+      "operation_id": "getThread",
+      "direction": "response",
+      "http_status": 200
+    },
+    {
+      "file": "messages-ack.request.json",
+      "schema": "#/components/schemas/MessageAckRequest",
+      "operation_id": "ackMessages",
+      "direction": "request"
+    },
+    {
+      "file": "messages-ack.response.json",
+      "schema": "#/components/schemas/AckResultResponse",
+      "operation_id": "ackMessages",
+      "direction": "response",
+      "http_status": 200
+    },
+    {
+      "file": "credential-create.request.json",
+      "schema": "#/components/schemas/CredentialCreateRequest",
+      "operation_id": "createCredential",
+      "direction": "request"
+    },
+    {
+      "file": "conflict.response.json",
+      "schema": "#/components/schemas/Error",
+      "operation_id": "claimTask",
+      "direction": "response",
+      "http_status": 409
+    },
+    {
+      "file": "runtime-proof-denied.response.json",
+      "schema": "#/components/schemas/Error",
+      "operation_id": "claimTask",
+      "direction": "response",
+      "http_status": 403
+    },
+    {
+      "file": "human-only-denied.response.json",
+      "schema": "#/components/schemas/Error",
+      "operation_id": "approveApproval",
+      "direction": "response",
+      "http_status": 403
+    }
+  ]
+}

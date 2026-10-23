@@ -1,0 +1,8 @@
+{
+  "error": {
+    "code": "FORBIDDEN",
+    "message": "A verified authorized human session is required.",
+    "retryable": false,
+    "request_id": "req_human_required"
+  }
+}

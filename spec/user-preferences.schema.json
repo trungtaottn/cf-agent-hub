@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CF Agent Hub user preferences contract revision 0.1",
+  "type": "object",
+  "properties": {
+    "contract_revision": {
+      "const": "0.1"
+    },
+    "theme": {
+      "enum": [
+        "system",
+        "light",
+        "dark"
+      ]
+    },
+    "density": {
+      "enum": [
+        "comfortable",
+        "compact"
+      ]
+    },
+    "default_view": {
+      "enum": [
+        "overview",
+        "inbox",
+        "tasks",
+        "kanban",
+        "agents",
+        "approvals",
+        "activity"
+      ]
+    }
+  },
+  "required": [
+    "contract_revision",
+    "theme",
+    "density",
+    "default_view"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,23 @@
+{
+  "data": {
+    "id": "artifact_inputs",
+    "workspace_id": "ws_example",
+    "task_id": "task_example",
+    "run_id": "run_example_1",
+    "owner": {
+      "kind": "agent",
+      "principal_id": "principal_agent_writer",
+      "agent_id": "agent_writer"
+    },
+    "artifact_version": 3,
+    "filename": "approval-inputs.json",
+    "media_type": "application/json",
+    "byte_size": 104,
+    "sha256": "c8b3ab48bcb4c59611b312aa29637881aa7b2696aa497ed17b22e31369f596c5",
+    "status": "committed",
+    "created_at": "2026-10-23T10:00:00Z",
+    "committed_at": "2026-10-23T10:00:00Z",
+    "expires_at": null
+  },
+  "request_id": "req_artifact_commit"
+}

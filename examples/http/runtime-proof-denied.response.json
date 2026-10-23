@@ -1,0 +1,8 @@
+{
+  "error": {
+    "code": "FORBIDDEN",
+    "message": "Runtime proof does not authorize this run.",
+    "retryable": false,
+    "request_id": "req_proof_denied"
+  }
+}

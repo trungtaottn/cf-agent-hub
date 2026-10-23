@@ -1,0 +1,11 @@
+{
+  "error": {
+    "code": "VERSION_CONFLICT",
+    "message": "The task changed; read its current version before retrying.",
+    "retryable": false,
+    "request_id": "req_conflict",
+    "details": {
+      "current_version": 3
+    }
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "contract_revision": "0.1",
+  "profile_id": "profile_delivery_demo",
+  "display_name": "Delivery workspace",
+  "description": "Optional demonstration preset for research and delivery coordination.",
+  "branding": {
+    "accent": "teal"
+  },
+  "navigation": {
+    "visible_views": [
+      "overview",
+      "inbox",
+      "tasks",
+      "kanban",
+      "agents",
+      "approvals",
+      "activity"
+    ]
+  },
+  "projects": [
+    {
+      "id": "project_delivery",
+      "display_name": "Delivery",
+      "description": "Optional example project.",
+      "archived": false
+    }
+  ],
+  "work_roles": [
+    {
+      "id": "role_research",
+      "display_name": "Researcher",
+      "description": "Collect evidence and propose findings.",
+      "archived": false
+    },
+    {
+      "id": "role_review",
+      "display_name": "Reviewer",
+      "description": "Describe review responsibilities; grants are managed separately.",
+      "archived": false
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "package": "CF Agent Hub documentation baseline",
+  "contract_revision": "0.1",
+  "checked_at": "2026-10-23T07:41:32.272536+00:00",
+  "status": "passed",
+  "environment": {
+    "python": "3.12.14",
+    "jsonschema": "4.26.0",
+    "openapi-spec-validator": "0.9.0",
+    "markdown-it-py": "4.2.0"
+  },
+  "counts": {
+    "markdown_documents": 50,
+    "json_files_parsed": 58,
+    "json_schemas": 4,
+    "openapi_operations": 41,
+    "openapi_component_schemas": 70,
+    "mapped_fixtures": 45,
+    "external_link_occurrences_not_fetched": 49
+  },
+  "checks": {
+    "json_syntax": 58,
+    "markdown_structure": 156,
+    "local_links": 642,
+    "link_schemes": 49,
+    "openapi_structure": 1,
+    "openapi_contract": 136,
+    "json_schemas": 4,
+    "fixture_operation_mapping": 73,
+    "fixture_coverage": 2,
+    "fixture_validation": 45,
+    "fixture_semantics": 6,
+    "fixture_integrity": 4,
+    "negative_schema_cases": 7
+  },
+  "errors": [],
+  "limitations": [
+    "No product runtime tests were run.",
+    "No deployment, agent execution or recovery guarantee is verified by this script.",
+    "External URLs are not fetched.",
+    "Mermaid diagrams are parsed as fences, not rendered.",
+    "Schema checks do not prove authorization, transaction semantics, UTF-8 byte limits or all semantic constraints.",
+    "Public-content review and independent contract review are separate from these automated checks."
+  ]
+}

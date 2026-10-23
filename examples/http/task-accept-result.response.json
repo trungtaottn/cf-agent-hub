@@ -1,0 +1,38 @@
+{
+  "data": {
+    "task": {
+      "id": "task_example",
+      "workspace_id": "ws_example",
+      "title": "Draft the release checklist",
+      "description": "Prepare a reviewable checklist with explicit acceptance evidence.",
+      "state": "done",
+      "task_version": 8,
+      "proposal_version": 1,
+      "project_id": null,
+      "work_role_id": null,
+      "assigned_agent_id": "agent_writer",
+      "active_run_id": null,
+      "latest_run_id": "run_example_2",
+      "approval_id": "approval_example",
+      "result": {
+        "summary": "Draft checklist prepared for independent review.",
+        "artifact_ids": [],
+        "run_id": "run_example_2",
+        "submitted_by": {
+          "kind": "agent",
+          "principal_id": "principal_agent_writer",
+          "agent_id": "agent_writer"
+        },
+        "submitted_at": "2026-10-23T10:00:00Z"
+      },
+      "retry_count": 0,
+      "retry_limit": 2,
+      "flags": [],
+      "created_at": "2026-10-23T10:00:00Z",
+      "updated_at": "2026-10-23T10:00:00Z"
+    },
+    "run": null,
+    "approval": null
+  },
+  "request_id": "req_accept"
+}

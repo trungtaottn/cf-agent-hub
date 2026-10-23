@@ -1,0 +1,64 @@
+{
+  "contract_revision": "0.1",
+  "kind": "acceptance_scenario",
+  "scenario_id": "independent-review",
+  "gate": "R2",
+  "description": "A native runtime submits a result and a different authorized principal accepts it.",
+  "steps": [
+    {
+      "actor": "human_scheduler",
+      "action": "Create task with validated references",
+      "outcome": "accepted",
+      "task_state_after": "backlog",
+      "assertions": [
+        "No active run exists."
+      ]
+    },
+    {
+      "actor": "human_scheduler",
+      "action": "Make task Ready using current version",
+      "outcome": "accepted",
+      "task_state_after": "ready",
+      "assertions": [
+        "Assignment, policy and retry eligibility pass."
+      ]
+    },
+    {
+      "actor": "agent_writer/runtime_a",
+      "action": "Claim with native credential and matching runtime proof",
+      "outcome": "accepted",
+      "task_state_after": "doing",
+      "assertions": [
+        "One current run has a server lease and fence."
+      ]
+    },
+    {
+      "actor": "agent_writer/runtime_a",
+      "action": "Submit result referencing committed artifacts",
+      "outcome": "accepted",
+      "task_state_after": "review",
+      "assertions": [
+        "Run ends submitted and task has no active execution lease."
+      ]
+    },
+    {
+      "actor": "agent_writer/runtime_b",
+      "action": "Accept own agent result using a different credential",
+      "outcome": "rejected",
+      "task_state_after": "review",
+      "assertions": [
+        "Submitting agent identity still denies self-acceptance."
+      ]
+    },
+    {
+      "actor": "human_reviewer",
+      "action": "Accept current result using tasks:review",
+      "outcome": "accepted",
+      "task_state_after": "done",
+      "assertions": [
+        "Reviewer differs from submitting principal and agent.",
+        "Task, event and idempotency outcome commit together."
+      ]
+    }
+  ]
+}

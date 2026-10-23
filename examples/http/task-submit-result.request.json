@@ -1,0 +1,9 @@
+{
+  "expected_version": 6,
+  "run_id": "run_example_2",
+  "fence": 2,
+  "result": {
+    "summary": "Draft checklist prepared for independent review.",
+    "artifact_ids": []
+  }
+}

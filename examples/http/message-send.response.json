@@ -1,0 +1,26 @@
+{
+  "data": {
+    "id": "message_example",
+    "workspace_id": "ws_example",
+    "thread_id": "thread_example",
+    "sender": {
+      "kind": "agent",
+      "principal_id": "principal_agent_writer",
+      "agent_id": "agent_writer"
+    },
+    "recipient_agent_ids": [
+      "agent_reviewer"
+    ],
+    "body": "The checklist task is ready for independent review.",
+    "refs": [
+      {
+        "kind": "task",
+        "id": "task_example"
+      }
+    ],
+    "artifact_ids": [],
+    "created_at": "2026-10-23T10:00:00Z",
+    "acknowledged_at": null
+  },
+  "request_id": "req_message"
+}

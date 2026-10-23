@@ -1,0 +1,28 @@
+{
+  "data": {
+    "task": {
+      "id": "task_example",
+      "workspace_id": "ws_example",
+      "title": "Draft the release checklist",
+      "description": "Prepare a reviewable checklist with explicit acceptance evidence.",
+      "state": "ready",
+      "task_version": 2,
+      "proposal_version": 0,
+      "project_id": null,
+      "work_role_id": null,
+      "assigned_agent_id": "agent_writer",
+      "active_run_id": null,
+      "latest_run_id": null,
+      "approval_id": null,
+      "result": null,
+      "retry_count": 0,
+      "retry_limit": 2,
+      "flags": [],
+      "created_at": "2026-10-23T10:00:00Z",
+      "updated_at": "2026-10-23T10:00:00Z"
+    },
+    "run": null,
+    "approval": null
+  },
+  "request_id": "req_ready"
+}

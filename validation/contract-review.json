@@ -1,0 +1,91 @@
+{
+  "contract_revision": "0.1",
+  "review_scope": "Documentation and proposed contracts only",
+  "review_date": "2026-10-23",
+  "status": "completed",
+  "implementation_status": "pending",
+  "unresolved_substantive_findings": 0,
+  "resolved_findings": [
+    {
+      "id": "CR-01",
+      "topic": "Runtime ownership authentication",
+      "resolution": "Runtime proof is bound to issuing credential, workspace, agent and runtime; execution checks require native authentication and proof.",
+      "status": "resolved"
+    },
+    {
+      "id": "CR-02",
+      "topic": "Approved intent changes",
+      "resolution": "Current approved proposals prevent metadata edits that change execution intent.",
+      "status": "resolved"
+    },
+    {
+      "id": "CR-03",
+      "topic": "Uncertain or exhausted execution",
+      "resolution": "Explicit holds prevent Ready, Requeue and Claim; recovery requires external reconciliation and reviewed replacement work.",
+      "status": "resolved"
+    },
+    {
+      "id": "CR-04",
+      "topic": "Artifact cleanup race",
+      "resolution": "An atomic expired tombstone excludes commit before R2 deletion; late uploads remain orphans.",
+      "status": "resolved"
+    },
+    {
+      "id": "CR-05",
+      "topic": "Thread review and membership",
+      "resolution": "Human message-review authority is explicit and thread participants cannot expand through replies.",
+      "status": "resolved"
+    },
+    {
+      "id": "CR-06",
+      "topic": "Approval input binding",
+      "resolution": "Decisions bind immutable committed JSON input artifact identity and verified digest.",
+      "status": "resolved"
+    },
+    {
+      "id": "CR-07",
+      "topic": "Release gate alignment",
+      "resolution": "CSRF/origin and durable outbox checks apply from the first release exposing those operations.",
+      "status": "resolved"
+    },
+    {
+      "id": "CR-08",
+      "topic": "Profile schema alignment",
+      "resolution": "Assets outside the current closed profile schema are explicitly deferred.",
+      "status": "resolved"
+    },
+    {
+      "id": "CR-09",
+      "topic": "Expired proposal recovery",
+      "resolution": "No unavailable renewal command is implied; recovery is triage and authorized cancellation/replacement.",
+      "status": "resolved"
+    },
+    {
+      "id": "CR-10",
+      "topic": "CLI context and secret output",
+      "resolution": "Machine output remains the native envelope; context is separate and one-time enrollment secrets are securely captured then redacted.",
+      "status": "resolved"
+    },
+    {
+      "id": "CR-11",
+      "topic": "Ready response fixture",
+      "resolution": "The fixture uses the actual task-command envelope and its mapping is checked against the operation response schema.",
+      "status": "resolved"
+    }
+  ],
+  "additional_reviewed_rules": [
+    "Lease expiry defaults to an uncertainty hold unless trusted replay-safe policy was established before execution and recorded at claim/audit; stale runtimes cannot mutate expired attempts.",
+    "Kanban personalization wording follows the closed profile schema; arbitrary navigation/column overrides are deferred."
+  ],
+  "independent_validation": {
+    "result": "passed",
+    "exit_code": 0,
+    "command": "python -B scripts/validate_docs.py",
+    "report": "report.json"
+  },
+  "limitations": [
+    "This is a contract review, not runtime security certification.",
+    "No product execution, deployment or restoration was performed.",
+    "External link availability and rendered diagrams are not covered by the validator."
+  ]
+}

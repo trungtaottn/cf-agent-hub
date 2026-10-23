@@ -1,0 +1,85 @@
+{
+  "data": {
+    "task": {
+      "id": "task_example",
+      "workspace_id": "ws_example",
+      "title": "Draft the release checklist",
+      "description": "Prepare a reviewable checklist with explicit acceptance evidence.",
+      "state": "waiting",
+      "task_version": 4,
+      "proposal_version": 1,
+      "project_id": null,
+      "work_role_id": null,
+      "assigned_agent_id": "agent_writer",
+      "active_run_id": null,
+      "latest_run_id": "run_example_1",
+      "approval_id": "approval_example",
+      "result": null,
+      "retry_count": 0,
+      "retry_limit": 2,
+      "flags": [],
+      "created_at": "2026-10-23T10:00:00Z",
+      "updated_at": "2026-10-23T10:00:00Z"
+    },
+    "run": {
+      "id": "run_example_1",
+      "workspace_id": "ws_example",
+      "task_id": "task_example",
+      "agent_id": "agent_writer",
+      "runtime_instance_id": "runtime_example",
+      "status": "paused",
+      "run_version": 2,
+      "fence": 1,
+      "lease_expires_at": "2026-10-23T10:01:00Z",
+      "started_at": "2026-10-23T10:00:00Z",
+      "ended_at": "2026-10-23T10:00:00Z"
+    },
+    "approval": {
+      "id": "approval_example",
+      "workspace_id": "ws_example",
+      "task_id": "task_example",
+      "run_id": "run_example_1",
+      "approval_version": 1,
+      "proposal_version": 1,
+      "task_version_at_request": 4,
+      "status": "pending",
+      "checkpoint": {
+        "summary": "Checklist outline is ready; confirm the draft-only scope.",
+        "artifact_ids": [
+          "artifact_inputs"
+        ]
+      },
+      "proposal": {
+        "summary": "Prepare a draft checklist for human review without publication.",
+        "action": "document.prepare_draft",
+        "scope": {
+          "project_id": null,
+          "resource_ids": [
+            "task_example"
+          ]
+        },
+        "artifact_ids": [
+          "artifact_inputs"
+        ],
+        "inputs": {
+          "artifact_id": "artifact_inputs",
+          "sha256": "c8b3ab48bcb4c59611b312aa29637881aa7b2696aa497ed17b22e31369f596c5"
+        }
+      },
+      "assigned_human_principal_ids": [
+        "principal_reviewer"
+      ],
+      "requested_by": {
+        "kind": "agent",
+        "principal_id": "principal_agent_writer",
+        "agent_id": "agent_writer"
+      },
+      "created_at": "2026-10-23T10:00:00Z",
+      "expires_at": "2026-10-23T11:00:00Z",
+      "decided_at": null,
+      "decided_by": null,
+      "decision_reason": null
+    }
+  },
+  "request_id": "req_decision"
+}
