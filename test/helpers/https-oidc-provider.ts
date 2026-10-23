@@ -20,15 +20,16 @@ export interface FixtureWorker {fetch(input:Request|string,init?:RequestInit):Pr
 export interface HttpsFixture {
  proxyPort:number;negativeProxyPort:number;appPort:number;pins:[string,string];
  dispatch:typeof fetch; discovery:Record<string,unknown>;
- selfCheck():Promise<void>;close():Promise<void>;
+ selfCheck(transport?:typeof fetch):Promise<void>;close():Promise<void>;
 }
 async function certificate(directory:string,label:string,hostname:string):Promise<Certificate> {
  const keyPath=join(directory,label+'.key'),certPath=join(directory,label+'.crt');
  await execute('openssl',['req','-x509','-newkey','rsa:2048','-nodes','-days','1','-subj','/CN='+hostname,
-  '-addext','subjectAltName=DNS:'+hostname,'-keyout',keyPath,'-out',certPath],{maxBuffer:65536});
+  '-addext','subjectAltName=DNS:'+hostname,'-addext','basicConstraints=critical,CA:FALSE','-addext','keyUsage=critical,digitalSignature,keyEncipherment','-addext','extendedKeyUsage=serverAuth','-keyout',keyPath,'-out',certPath],{maxBuffer:65536});
  await chmod(keyPath,0o600);
  const key=await readFile(keyPath),cert=await readFile(certPath);
- const spki=new X509Certificate(cert).publicKey.export({type:'spki',format:'der'});
+ const certificate=new X509Certificate(cert);if(certificate.ca)throw Error('FIXTURE_CERTIFICATE_IS_CA');
+ const spki=certificate.publicKey.export({type:'spki',format:'der'});
  return {key,cert,pin:createHash('sha256').update(spki).digest('base64')};
 }
 async function body(request:IncomingMessage,limit=65536):Promise<Buffer> {
@@ -132,16 +133,17 @@ export async function startHttpsFixture(worker:FixtureWorker):Promise<HttpsFixtu
    });
   };
   const allowed=new Map([[ISSUER_ORIGIN+'/.well-known/openid-configuration','GET'],[ISSUER_ORIGIN+'/jwks','GET'],[ISSUER_ORIGIN+'/token','POST']]);
+  const deniedUrls=new Set<string>();
   const dispatch:typeof fetch=async(input,init)=>{
    const request=new Request(input,init);
-   if(allowed.get(request.url)!==request.method)throw Error('FIXTURE_EGRESS_DENIED');
+   if(allowed.get(request.url)!==request.method){deniedUrls.add(request.url);throw Error('FIXTURE_EGRESS_DENIED');}
    return relay(request);
   };
   return {proxyPort,negativeProxyPort,appPort,pins:[app.pin,issuer.pin],dispatch,discovery,close,
-   async selfCheck() {
-    const actual=await (await dispatch(ISSUER_ORIGIN+'/.well-known/openid-configuration')).json();
+   async selfCheck(transport:typeof fetch=dispatch) {
+    const actual=await (await transport(ISSUER_ORIGIN+'/.well-known/openid-configuration')).json();
     if(JSON.stringify(actual)!==JSON.stringify(discovery))throw Error('DISCOVERY_NOT_READY');
-    const jwks=await (await dispatch(ISSUER_ORIGIN+'/jwks')).json() as {keys:typeof jwk[]};
+    const jwks=await (await transport(ISSUER_ORIGIN+'/jwks')).json() as {keys:typeof jwk[]};
     const verifier=randomBytes(32).toString('base64url'),challenge=createHash('sha256').update(verifier).digest('base64url'),nonce='fixture_nonce';
     const url=new URL(ISSUER_ORIGIN+'/authorize');
     for(const [key,value]of Object.entries({client_id:clientId,redirect_uri:redirectUri,response_type:'code',response_mode:'query',scope:'openid',state:'fixture_state',nonce,code_challenge:challenge,code_challenge_method:'S256'}))url.searchParams.set(key,value);
@@ -152,15 +154,16 @@ export async function startHttpsFixture(worker:FixtureWorker):Promise<HttpsFixtu
     if(authorization.status!==302)throw Error('AUTHORIZATION_FIXTURE_FAILED');
     const code=new URL(authorization.headers.get('location')!).searchParams.get('code')!;
     const form=new URLSearchParams({grant_type:'authorization_code',code,redirect_uri:redirectUri,code_verifier:verifier});
-    const denied=await dispatch(ISSUER_ORIGIN+'/token',{method:'POST',headers:{authorization:'Basic invalid','content-type':'application/x-www-form-urlencoded'},body:form});
+    const denied=await transport(ISSUER_ORIGIN+'/token',{method:'POST',headers:{authorization:'Basic invalid','content-type':'application/x-www-form-urlencoded'},body:form});
     if(denied.status!==401)throw Error('BASIC_AUTH_NOT_ENFORCED');
     const request={method:'POST',headers:{authorization:basic,'content-type':'application/x-www-form-urlencoded'},body:form};
-    const tokens=await (await dispatch(ISSUER_ORIGIN+'/token',request)).json() as {id_token:string};
+    const tokens=await (await transport(ISSUER_ORIGIN+'/token',request)).json() as {id_token:string};
     const verified=await jwtVerify(tokens.id_token,createLocalJWKSet(jwks),{issuer:ISSUER_ORIGIN,audience:clientId,algorithms:['RS256'],clockTolerance:0});
     if(verified.payload.nonce!==nonce||typeof verified.payload.iat!=='number'||typeof verified.payload.exp!=='number')throw Error('SIGNED_PROVIDER_NOT_READY');
-    if((await dispatch(ISSUER_ORIGIN+'/token',request)).status!==400)throw Error('CODE_REPLAY_NOT_REJECTED');
+    if((await transport(ISSUER_ORIGIN+'/token',request)).status!==400)throw Error('CODE_REPLAY_NOT_REJECTED');
     for(const url of [ISSUER_ORIGIN+'/other',ISSUER_ORIGIN+'/jwks?redirect=1','https://unknown.example.invalid/jwks']) {
-     let blocked=false;try{await dispatch(url);}catch{blocked=true;}if(!blocked)throw Error('EGRESS_NOT_CLOSED');
+     try{await transport(url);}catch{/* Direct dispatcher throws; harness converts outbound failures to 500. */}
+     if(!deniedUrls.has(url))throw Error('EGRESS_NOT_CLOSED');
     }
    }
   };

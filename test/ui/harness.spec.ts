@@ -10,8 +10,9 @@ test('invalid unpinned key fails even for an allowed authority',async()=>{
  finally {await browser.close();}
 });
 test('unknown hosts, alternate ports and loopback cannot bypass the proxy',async({page})=>{
- for(const url of ['https://unknown.example.invalid/','https://hub.fixture.example.invalid:444/','https://127.0.0.1:'+captures().appPort+'/health/live','http://127.0.0.1:'+captures().appPort+'/health/live'])
-  await expect(page.goto(url)).rejects.toThrow();
+ for(const url of ['https://unknown.example.invalid/','https://hub.fixture.example.invalid:444/','https://127.0.0.1:'+captures().appPort+'/health/live'])
+  await expect(page.goto(url)).rejects.toThrow(/ERR_TUNNEL_CONNECTION_FAILED/);
+ const denied=await page.goto('http://127.0.0.1:'+captures().appPort+'/health/live');expect(denied?.status()).toBe(403);
 });
 test('fixture listeners do not turn public installation into authority',async({page})=>{
  await page.goto(appOrigin+'/health/live');

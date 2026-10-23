@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, rm, readFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, rm, readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { randomBytes, createHmac } from 'node:crypto';
@@ -29,7 +29,9 @@ try {
  let worker;
  fixture=await startHttpsFixture({fetch:(input,init)=>worker.fetch(input,init)});
  globalThis.fetch=fixture.dispatch;
- harness=createTestHarness({workers:[{configPath:'./wrangler.jsonc',env:'test'}]});
+ const probePath=join(buildDirectory,'egress-probe.mjs');
+ await writeFile(probePath,"export default {async fetch(request){try{return await fetch(request);}catch{return new Response(null,{status:599,headers:{'x-fixture-egress-denied':'1'}});}}};\n");
+ harness=createTestHarness({workers:[{configPath:'./wrangler.jsonc',env:'test'},{config:{name:'cf-agent-hub-egress-fixture',main:probePath,compatibility_date:'2026-10-19'}}]});
  await harness.listen();
  worker=harness.getWorker();
  const input=await configurationFixture('ui-fixture');
@@ -60,7 +62,8 @@ try {
  assert.equal(credentials[0].count,1);
  const live=await worker.fetch(APP_ORIGIN+'/health/live');
  assert.equal(live.status,200);assert.equal(await live.text(),'alive');
- await fixture.selfCheck();
+ const probe=harness.getWorker('cf-agent-hub-egress-fixture');
+ await fixture.selfCheck(async(input,init)=>{const request=new Request(input,init);const response=await probe.fetch(request.url,{method:request.method,headers:Object.fromEntries(request.headers),body:request.body?await request.arrayBuffer():undefined,redirect:'manual'});if(response.headers.get('x-fixture-egress-denied')==='1')throw Error('FIXTURE_EGRESS_DENIED');return response;});
  if(process.argv.includes('--self-check')) {
   const proxy=fixture.proxyPort,negativeProxy=fixture.negativeProxyPort;
   await dispose();

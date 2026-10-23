@@ -1,6 +1,6 @@
 # Toolchain and local verification
 
-CF Agent Hub uses exact project dependencies and a committed npm lockfile. Run `npm ci`, not an unpinned installer. The implementation runtime is Node 24.11.0 with npm 11.6.1; Node 24.19.0/npm 11.9.0 is the separately recorded browser validation host. The engine declaration records the original runtime exactly; a newer Node 24 patch is reported explicitly when validating.
+CF Agent Hub uses exact project dependencies and a committed npm lockfile. Run `npm ci`, not an unpinned installer. The implementation runtime is Node 24.11.0 with npm 11.6.1; the independent browser validation host uses the same hash-verified official Node 24.11.0 and bundled npm 11.6.1. A preinstalled newer Node patch does not satisfy the exact declared engine.
 
 | Component | Locked version |
 | --- | --- |
@@ -51,7 +51,7 @@ Worker storage isolation is per test file. Ordinary tests use distinct named obj
 
 Configured HTTPS origins are `https://hub.fixture.example.invalid` and `https://issuer.fixture.example.invalid`, without ports. Browser routing admits only those two exact authorities on logical port 443; unknown hosts, alternate ports, direct loopback and ordinary HTTP proxy requests are rejected. Worker outbound requests use a separate exact discovery/token/JWKS URL and method dispatcher. Its Node TLS connection explicitly trusts the temporary provider certificate, verifies issuer hostname/SNI, and never follows redirects.
 
-The provider implements authorization code/query mode, PKCE S256 and confidential `client_secret_basic`; codes are short lived and single use. It uses ephemeral RSA keys and signed RS256 ID tokens. These helpers never enter the deployed source graph.
+A temporary test-only Worker probe exercises the same harness outbound transport against the signed provider before readiness. The provider implements authorization code/query mode, PKCE S256 and confidential `client_secret_basic`; codes are short lived and single use. It uses ephemeral RSA keys and signed RS256 ID tokens. These helpers never enter the deployed source graph.
 
 The disposable bundled default Chromium headless shell receives only the fresh application/provider leaf SHA-256 SPKI values in `--ignore-certificate-errors-spki-list`. This is a key-scoped process-wide certificate-error exception. It is not general CA/hostname trust or universal pin enforcement: an ordinarily valid unpinned certificate can still pass the normal verifier. Exact CONNECT routing is mandatory. No blanket certificate exception, shared browser profile or system trust changes are used. A separate proxy presents a fresh invalid unpinned key at an otherwise allowed authority for the negative browser gate.
 
