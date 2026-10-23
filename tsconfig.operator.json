@@ -1,0 +1,4 @@
+{
+ "compilerOptions":{"target":"ES2023","module":"ESNext","moduleResolution":"bundler","strict":true,"noEmit":true,"skipLibCheck":true,"resolveJsonModule":true,"allowImportingTsExtensions":true,"types":[],"lib":["ES2023"]},
+ "include":["workers/operator/src/**/*.ts","workers/operator/worker-configuration.d.ts"]
+}

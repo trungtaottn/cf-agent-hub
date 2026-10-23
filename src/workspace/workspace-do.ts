@@ -5,15 +5,15 @@ import { migrate } from '../storage/migrations';
 import { withTransaction } from '../storage/transaction';
 import { installConfiguration, prepareBootstrap, canonicalJson, type ValidatedBootstrap } from '../config/bootstrap';
 import { resolveWorkspace } from '../config/deployment';
-import { systemClock, systemEntropy, type InstallReceipt, type InternalRequest, type InternalResponse, type RecoveryOperatorContext } from './context';
+import { systemClock, systemEntropy, type InstallReceipt, type InternalRequest, type InternalResponse, type RecoveryOperatorContext,type InstallOperationContext,type OperatorInstallReceipt,type WorkspaceEnvironment,type InstallOperationResult } from './context';
 const identifier=(value:unknown)=>typeof value==='string'&&/^[a-zA-Z0-9_-]{1,128}$/.test(value);
 function closed(value:unknown,keys:readonly string[]):value is Record<string,unknown> {
  return value!==null&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).length===keys.length&&keys.every(k=>Object.hasOwn(value,k));
 }
 /** Only the authenticated operator Worker receives a production binding to this method.
  * Neither a structural context nor a TypeScript type is authentication on public HTTP. */
-export class WorkspaceDO extends DurableObject<Env> {
- constructor(ctx:DurableObjectState,env:Env) {super(ctx,env);migrate(ctx.storage);}
+export class WorkspaceDO extends DurableObject<WorkspaceEnvironment> {
+ constructor(ctx:DurableObjectState,env:WorkspaceEnvironment) {super(ctx,env);migrate(ctx.storage);}
  async reconcileConfiguration(operator:RecoveryOperatorContext,input:ValidatedBootstrap):Promise<InstallReceipt> {
   if(!closed(operator,['principalId','workspaceId','requestId','operation','expectedEpoch','expectedInstallationDigest'])||
    !identifier(operator.principalId)||!identifier(operator.workspaceId)||!identifier(operator.requestId)||operator.operation!=='install'||
@@ -33,9 +33,67 @@ export class WorkspaceDO extends DurableObject<Env> {
    if(current?.config_epoch!==receipt.epoch)
     tx.exec('INSERT INTO events (id,workspace_id,type,actor_json,resource_type,resource_id,resource_version,thread_id,request_id,occurred_at,summary) VALUES (?,?,?,?,?,?,?,?,?,?,?)',[
      'configuration_'+receipt.epoch,validated.workspaceId,'configuration.installed',canonicalJson({kind:'system',principal_id:operator.principalId,agent_id:null}),
-     'configuration',validated.workspaceId,receipt.epoch,null,operator.requestId,nowMs,'Configuration installed'
+     'configuration',validated.workspaceId,receipt.epoch,null,operator.requestId,nowMs,'Workspace configuration installed.'
     ]);
    return {...receipt,...mapping};
+  });
+ }
+ /** Trusted binding snapshot. Never gates stale expected epochs ahead of original replay. */
+ async authoritySnapshot(target:{workspaceId:string;objectName:string}):Promise<{epoch:number;installationDigest:string|null}> {
+  if(!closed(target,['workspaceId','objectName'])||!identifier(target.workspaceId)||!identifier(target.objectName)||
+   this.env.WORKSPACE.idFromName(target.objectName).toString()!==this.ctx.id.toString())throw Error('WORKSPACE_IDENTITY_MISMATCH');
+  return withTransaction(this.ctx.storage,tx=>{
+   const row=tx.one<{workspace_id:string;object_name:string;config_epoch:number;installation_digest:string}>('SELECT workspace_id,object_name,config_epoch,installation_digest FROM workspace_metadata WHERE id=1');
+   if(row&&(row.workspace_id!==target.workspaceId||row.object_name!==target.objectName))throw Error('WORKSPACE_IDENTITY_MISMATCH');
+   return {epoch:row?.config_epoch??0,installationDigest:row?.installation_digest??null};
+  });
+ }
+ /** Only the authenticated operator gateway calls this strict public-operator adapter.
+  * The receipt namespace is permanent control state, never restored domain idempotency. */
+ async installOperation(operator:InstallOperationContext,input:ValidatedBootstrap):Promise<InstallOperationResult> {
+  try{return {ok:true,receipt:await this.#executeInstallOperation(operator,input)};}
+  catch(error){
+   const message=error instanceof Error?error.message:'';
+   const conflicts=['CAS_CONFLICT','STALE_EPOCH','EPOCH_CONFLICT','OPERATION_CONFLICT','CREDENTIAL_IMMUTABLE','RETIREMENT_REQUIRED','ADMISSION_CLOSED','NONADVANCING_INSTALL','PRINCIPAL_IMMUTABLE'];
+   const invalid=['INVALID_OPERATOR_CONTEXT','WORKSPACE_IDENTITY_MISMATCH','INSTALLATION_DIGEST_MISMATCH','INVALID_BUNDLE','CONFIG_DIGEST_MISMATCH','DUPLICATE_CREDENTIAL','CREDENTIAL_SET_MISMATCH','INVALID_RETIREMENT','CREDENTIAL_EXPIRY'];
+   return {ok:false,code:message==='OPERATOR_PROOF_EXPIRED'?'UNAUTHENTICATED':conflicts.includes(message)?'CONFLICT':invalid.includes(message)||message.startsWith('INVALID_CONFIGURATION:')?'INVALID_INSTALL':'INSTALL_UNAVAILABLE'};
+  }
+ }
+ async #executeInstallOperation(operator:InstallOperationContext,input:ValidatedBootstrap):Promise<OperatorInstallReceipt> {
+  if(!closed(operator,['principalId','workspaceId','requestId','operation','expectedEpoch','expectedInstallationDigest','operationId','requestFingerprint','proofExpiresAt'])||
+   !identifier(operator.principalId)||!identifier(operator.workspaceId)||!identifier(operator.requestId)||operator.operation!=='install'||
+   !Number.isSafeInteger(operator.proofExpiresAt)||operator.proofExpiresAt<=0||!identifier(operator.operationId)||typeof operator.requestFingerprint!=='string'||!/^[a-f0-9]{64}$/.test(operator.requestFingerprint)||
+   !Number.isSafeInteger(operator.expectedEpoch)||operator.expectedEpoch<0||
+   !(operator.expectedInstallationDigest===null||typeof operator.expectedInstallationDigest==='string'&&/^[a-f0-9]{64}$/.test(operator.expectedInstallationDigest)))throw Error('INVALID_OPERATOR_CONTEXT');
+  if(!closed(input,['config','bundle','workspaceId','installationDigest'])||input.workspaceId!==operator.workspaceId)throw Error('WORKSPACE_IDENTITY_MISMATCH');
+  const validated=await prepareBootstrap(input.config,input.bundle,input.workspaceId);
+  if(validated.installationDigest!==input.installationDigest)throw Error('INSTALLATION_DIGEST_MISMATCH');
+  const mapping=resolveWorkspace(validated.config,validated.workspaceId);
+  if(this.env.WORKSPACE.idFromName(mapping.objectName).toString()!==this.ctx.id.toString())throw Error('WORKSPACE_IDENTITY_MISMATCH');
+  const now=systemClock.nowMs();
+  return withTransaction(this.ctx.storage,tx=>{
+   if(operator.proofExpiresAt<=systemClock.nowMs())throw Error('OPERATOR_PROOF_EXPIRED');
+   const current=tx.one<{workspace_id:string;object_name:string;config_epoch:number;installation_digest:string;admission_state:string}>('SELECT workspace_id,object_name,config_epoch,installation_digest,admission_state FROM workspace_metadata WHERE id=1');
+   if(current&&(current.workspace_id!==operator.workspaceId||current.object_name!==mapping.objectName))throw Error('WORKSPACE_IDENTITY_MISMATCH');
+   if(current&&current.admission_state!=='installed'||tx.one('SELECT id FROM maintenance_state WHERE id=1'))throw Error('ADMISSION_CLOSED');
+   const prior=tx.one<{fingerprint:string;outcome_json:string}>("SELECT fingerprint,outcome_json FROM idempotency_outcomes WHERE principal_id=? AND operation='operator.install' AND target=? AND key=? AND workspace_id=?",[operator.principalId,operator.workspaceId,operator.operationId,operator.workspaceId]);
+   if(prior){
+    if(prior.fingerprint!==operator.requestFingerprint)throw Error('OPERATION_CONFLICT');
+    return JSON.parse(prior.outcome_json) as OperatorInstallReceipt;
+   }
+   if((current?.config_epoch??0)!==operator.expectedEpoch||(current?.installation_digest??null)!==operator.expectedInstallationDigest)throw Error('CAS_CONFLICT');
+   if(validated.config.config_epoch<=(current?.config_epoch??0))throw Error('NONADVANCING_INSTALL');
+   const installed=installConfiguration(tx,validated.config,validated,now);
+   const receipt:OperatorInstallReceipt={...installed,...mapping,operatorPrincipalId:operator.principalId,operationId:operator.operationId,originalRequestId:operator.requestId};
+   const eventId='configuration_'+receipt.epoch;
+   tx.exec('INSERT INTO events (id,workspace_id,type,actor_json,resource_type,resource_id,resource_version,thread_id,request_id,occurred_at,summary) VALUES (?,?,?,?,?,?,?,?,?,?,?)',[
+    eventId,operator.workspaceId,'configuration.installed',canonicalJson({kind:'system',principal_id:operator.principalId,agent_id:null}),
+    'configuration',operator.workspaceId,receipt.epoch,null,operator.requestId,now,'Workspace configuration installed.'
+   ]);
+   tx.exec('INSERT INTO idempotency_outcomes (principal_id,operation,target,key,workspace_id,fingerprint,status,outcome_json,original_request_id,event_id,created_at,expires_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',[
+    operator.principalId,'operator.install',operator.workspaceId,operator.operationId,operator.workspaceId,operator.requestFingerprint,200,canonicalJson(receipt),operator.requestId,eventId,now,Number.MAX_SAFE_INTEGER
+   ]);
+   return receipt;
   });
  }
  async fetch(request:Request):Promise<Response> {

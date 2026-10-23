@@ -66,3 +66,13 @@ Install the project browser with `./node_modules/.bin/playwright install --only-
 - [Playwright browsers](https://playwright.dev/docs/browsers) and [webServer readiness](https://playwright.dev/docs/test-webserver).
 - [OIDC Discovery metadata](https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata).
 - Exact package metadata is published at the npm registry endpoints for the versions in the table; the committed lockfile records integrity hashes.
+
+## Operator component and synthetic credential gates
+
+The operator deployment has its own `workers/operator/wrangler.jsonc` and generated `workers/operator/worker-configuration.d.ts`. Generate it with `npx wrangler types --config workers/operator/wrangler.jsonc --env-interface OperatorEnv workers/operator/worker-configuration.d.ts`. Its generated ambient Env/GlobalProps declarations are included only by `tsconfig.operator.json` and `tsconfig.operator-test.json`; they must not merge into the app's compiler program. Shared DO code uses an explicit structural WorkspaceEnvironment.
+
+`npm run typecheck` runs app/test, app production, operator production and operator Workers-test targets. `npm test` includes the actual Node provisioning CLI suite. `npm run test:workers` includes current native grants and control-receipt storage; it excludes the Node CLI and separate operator gateway suites. `npm run test:operator` runs the real operator Worker with a separately named, bundled application Worker/SQLite DO owner. `npm run check` includes all these gates and schema-derived install validator freshness.
+
+The Node CLI test launches actual subprocesses against a generated-certificate TLS fixture, verifies the Access service-header transport and forwards real signed assertions into the production gateway. Its exact-host request routing exists only in test preload modules. It does not alter the existing two-host HTTPS/browser fixture, global certificate trust or production transport.
+
+Node 24.11.0/npm 11.6.1 results remain synthetic-development evidence only. Before real credential-bearing operator use or release, Task 11 must verify a currently supported Node 24 security patch against official distribution/checksum material, align the exact runtime/npm pins and metadata, and rerun locked install, type, contract, Node, Workers, strict HTTPS and browser acceptance on the resulting immutable revision. The operator CLI uses native createHmac plus timingSafeEqual rather than the old Node WebCrypto HMAC comparison. This does not claim that Node-specific advisories apply to workerd.

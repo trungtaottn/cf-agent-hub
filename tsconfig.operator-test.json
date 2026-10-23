@@ -1,0 +1,5 @@
+{
+ "extends":"./tsconfig.operator.json",
+ "compilerOptions":{"types":["@cloudflare/vitest-plugin/types"]},
+ "include":["test/auth/operator-gateway.test.ts","workers/operator/worker-configuration.d.ts"]
+}

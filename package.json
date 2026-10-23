@@ -8,16 +8,18 @@
     "node": "24.11.0"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit && tsc -p tsconfig.worker.json --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.worker.json --noEmit && tsc -p tsconfig.operator.json --noEmit && tsc -p tsconfig.operator-test.json --noEmit",
     "test": "vitest run --config vitest.config.ts",
     "test:workers": "vitest run --config vitest.workers.config.ts",
     "test:ui": "playwright test",
-    "check": "npm run verify:generated && npm run typecheck && npm run verify:r1-contract && npm test && npm run test:workers",
+    "check": "npm run verify:generated && npm run typecheck && npm run verify:r1-contract && npm test && npm run test:workers && npm run test:operator",
     "verify:r1-contract": "node scripts/verify-r1-contract.mjs",
     "verify:release": "node scripts/verify-release.mjs",
     "generate:config": "node scripts/generate-config-validators.mjs",
-    "verify:generated": "node scripts/generate-config-validators.mjs --check && node scripts/generate-auth-contract.mjs --check",
-    "generate:auth": "node scripts/generate-auth-contract.mjs"
+    "verify:generated": "node scripts/generate-config-validators.mjs --check && node scripts/generate-auth-contract.mjs --check && node scripts/generate-operator-contract.mjs --check",
+    "generate:auth": "node scripts/generate-auth-contract.mjs",
+    "test:operator": "vitest run --config vitest.operator.workers.config.ts",
+    "generate:operator": "node scripts/generate-operator-contract.mjs"
   },
   "devDependencies": {
     "typescript": "6.0.3",

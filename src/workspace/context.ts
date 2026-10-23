@@ -17,6 +17,17 @@ export interface RecoveryOperatorContext {
  principalId:string; workspaceId:string; requestId:string; operation:'install';
  expectedEpoch:number; expectedInstallationDigest:string|null;
 }
+export interface InstallOperationContext extends RecoveryOperatorContext {
+ operationId:string;requestFingerprint:string;proofExpiresAt:number;
+}
+export interface OperatorInstallReceipt extends InstallReceipt {
+ operatorPrincipalId:string;operationId:string;originalRequestId:string;
+}
+export type InstallOperationResult={ok:true;receipt:OperatorInstallReceipt}|{ok:false;code:'CONFLICT'|'INVALID_INSTALL'|'INSTALL_UNAVAILABLE'|'UNAUTHENTICATED'};
+export interface WorkspaceEnvironment {
+ WORKSPACE:DurableObjectNamespace<import('./workspace-do').WorkspaceDO>;
+ RECOVERY_BUCKET:R2Bucket;
+}
 export interface InstallReceipt {workspaceId:string;objectName:string;epoch:number;installationDigest:string;}
 export interface InternalRequest {workspaceId:string;objectName:string;requestId:string;operation:string;}
 export interface InternalResponse {status:number;code:string;}

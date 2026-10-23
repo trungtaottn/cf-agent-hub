@@ -1,4 +1,4 @@
-import { parseDeployment, resolveWorkspace, type DeploymentConfig } from './deployment';
+import { parseDeployment, resolveWorkspace, type DeploymentConfig } from './deployment.ts';
 import { validateBundle, type VerificationBundle } from './generated/validators.js';
 import type { WorkspaceTransaction } from '../storage/transaction';
 export interface ValidatedBootstrap {config:DeploymentConfig;bundle:VerificationBundle;workspaceId:string;installationDigest:string;}
@@ -17,8 +17,10 @@ export async function prepareBootstrap(configInput:unknown,bundleInput:unknown,w
  if(!validateBundle(bundleInput))throw Error('INVALID_BUNDLE');
  const bundle=structuredClone(bundleInput);resolveWorkspace(config,workspaceId);
  if(bundle.config_epoch!==config.config_epoch||bundle.config_digest!==await sha256(canonicalJson(config)))throw Error('CONFIG_DIGEST_MISMATCH');
- const {auth:_,...material}=bundle;
- return {config,bundle,workspaceId,installationDigest:await sha256(canonicalJson({config,bundle:material}))};
+ const order=(a:{workspace_id:string;credential_id:string},b:{workspace_id:string;credential_id:string})=>
+  a.workspace_id<b.workspace_id?-1:a.workspace_id>b.workspace_id?1:a.credential_id<b.credential_id?-1:a.credential_id>b.credential_id?1:0;
+ return {config,bundle,workspaceId,installationDigest:await sha256(canonicalJson({config,credentials:[...bundle.credentials].sort(order),retired_credentials:[...bundle.retired_credentials].sort(order)}))};
+
 }
 interface Metadata {workspace_id:string;object_name:string;config_epoch:number;installation_digest:string;admission_state:string;}
 interface Credential {credential_id:string;agent_id:string;token_sha256:string;retired_at_epoch:number|null;}

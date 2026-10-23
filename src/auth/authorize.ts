@@ -4,7 +4,14 @@ import { deny,AuthError } from './context';
 export interface SessionRecord {id:string;workspace_id:string;principal_id:string;issuer:string;subject:string;expires_at:number;revoked_at:number|null;auth_epoch:number;}
 /** Synchronous current-authority check, including the original session, on every command/replay. */
 export function resolveActor(tx:WorkspaceTransaction,identity:VerifiedIdentity,nowMs:number):ActorContext {
- if(identity.kind!=='human')deny();
+ if(identity.kind==='agent') {
+  const row=tx.one<NativeRecord>(`SELECT c.*,m.config_epoch AS installed_epoch,m.admission_state,a.config_epoch AS agent_epoch
+   FROM native_credentials c JOIN workspace_metadata m ON m.workspace_id=c.workspace_id
+   JOIN static_agents a ON a.agent_id=c.agent_id AND a.workspace_id=c.workspace_id
+   WHERE c.credential_id=? AND c.workspace_id=?`,[identity.credentialId,identity.workspaceId]);
+  if(!row||row.enabled!==1||row.retired_at_epoch!==null||row.expires_at<=nowMs||row.admission_state!=='installed'||row.config_epoch!==row.installed_epoch||row.agent_epoch!==row.installed_epoch||!equalDigest(identity.tokenDigest,row.token_sha256))deny();
+  return {workspaceId:row!.workspace_id,principalId:row!.agent_id,kind:'agent',agentId:row!.agent_id,scopes:new Set(JSON.parse(row!.scopes_json) as string[]),projectIds:JSON.parse(row!.project_ids_json) as string[]|null,credentialId:row!.credential_id,runtimeId:null,sessionId:null};
+ }
  const human=identity as Extract<VerifiedIdentity,{kind:'human'}>;
  const row=tx.one<SessionRecord & {config_epoch:number;admission_state:string;enabled:number;grant_epoch:number;scopes_json:string;project_ids_json:string}>(
   `SELECT s.*,m.config_epoch,m.admission_state,g.enabled,g.config_epoch AS grant_epoch,g.scopes_json,g.project_ids_json
@@ -16,8 +23,28 @@ export function resolveActor(tx:WorkspaceTransaction,identity:VerifiedIdentity,n
 }
 /** Domain callers pass their trusted command time, and receive freshly resolved authority. */
 export function authorize(tx:WorkspaceTransaction,actor:ActorContext,operation:string,resource?:ResourceAccess,nowMs=Date.now()):void {
- if(actor.kind!=='human'||!actor.sessionId)deny();
+ let live:ActorContext;
+ if(actor.kind==='agent') {
+  if(!actor.credentialId||actor.sessionId!==null||actor.runtimeId!==null)deny();
+  const credential=tx.one<{token_sha256:string}>('SELECT token_sha256 FROM native_credentials WHERE credential_id=? AND workspace_id=?',[actor.credentialId,actor.workspaceId]);if(!credential)deny();
+  live=resolveActor(tx,{kind:'agent',workspaceId:actor.workspaceId,credentialId:actor.credentialId!,tokenDigest:credential!.token_sha256},nowMs);
+  if(live.agentId!==actor.agentId)deny();
+ } else {
+ if(!actor.sessionId)deny();
  const session=tx.one<SessionRecord>('SELECT * FROM sessions WHERE id=?',[actor.sessionId]);if(!session)deny();
- const live=resolveActor(tx,{kind:'human',issuer:session!.issuer,subject:session!.subject,workspaceId:actor.workspaceId,sessionId:actor.sessionId!},nowMs);
+ live=resolveActor(tx,{kind:'human',issuer:session!.issuer,subject:session!.subject,workspaceId:actor.workspaceId,sessionId:actor.sessionId!},nowMs);
+ }
  if(live.principalId!==actor.principalId||!live.scopes.has(operation)||resource&&live.projectIds!==null&&(resource.projectId===null||!live.projectIds.includes(resource.projectId)))throw new AuthError('FORBIDDEN',403);
+}
+
+interface NativeRecord {
+ credential_id:string;workspace_id:string;agent_id:string;token_sha256:string;scopes_json:string;project_ids_json:string;
+ expires_at:number;enabled:number;retired_at_epoch:number|null;config_epoch:number;installed_epoch:number;agent_epoch:number;admission_state:string;
+}
+function equalDigest(a:string,b:string):boolean {
+ if(!/^[a-f0-9]{64}$/.test(a)||!/^[a-f0-9]{64}$/.test(b))return false;
+ const bytes=(s:string)=>Uint8Array.from(s.match(/../g)!,x=>parseInt(x,16));
+ // Workers supports this native primitive; Node's test ambient types omit its extension.
+ const subtle=crypto.subtle as SubtleCrypto & {timingSafeEqual(a:ArrayBufferView,b:ArrayBufferView):boolean};
+ return subtle.timingSafeEqual(bytes(a),bytes(b));
 }
