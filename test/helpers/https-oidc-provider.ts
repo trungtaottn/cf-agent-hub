@@ -42,7 +42,7 @@ function json(response:ServerResponse,status:number,value:unknown) {
 }
 function formEncode(value:string):string{return new URLSearchParams({x:value}).toString().slice(2);}
 function constantEqual(a:string,b:string) {const x=Buffer.from(a),y=Buffer.from(b);return x.length===y.length&&timingSafeEqual(x,y);}
-export async function startHttpsFixture(worker:FixtureWorker):Promise<HttpsFixture> {
+export async function startHttpsFixture(worker:FixtureWorker,options:{clientSecret?:string}={}):Promise<HttpsFixture> {
  const directory=await mkdtemp(join(tmpdir(),'cfhub-https-'));await chmod(directory,0o700);
  const servers:Server[]=[],sockets=new Set<Socket>();let closed=false;
  const close=async()=>{if(closed)return;closed=true;for(const socket of sockets)socket.destroy();await Promise.all(servers.map(server=>new Promise<void>(resolve=>server.close(()=>resolve()))));await rm(directory,{recursive:true,force:true});};
@@ -51,7 +51,7 @@ export async function startHttpsFixture(worker:FixtureWorker):Promise<HttpsFixtu
   const listen=async(server:Server)=>{servers.push(server);server.on('connection',socket=>{sockets.add(socket);socket.on('close',()=>sockets.delete(socket));});server.requestTimeout=10000;server.headersTimeout=10000;await new Promise<void>((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',()=>resolve());});return (server.address() as {port:number}).port;};
   const {privateKey,publicKey}=await generateKeyPair('RS256',{modulusLength:2048,extractable:true});
   const jwk={...await exportJWK(publicKey),kid:'fixture-rsa',alg:'RS256',use:'sig'};
-  const clientId='cfhub-client',clientSecret=randomBytes(32).toString('base64url');
+  const clientId='cfhub-client',clientSecret=options.clientSecret??randomBytes(32).toString('base64url');
   const redirectUri=APP_ORIGIN+'/v2/workspaces/ws_example/auth/callback';
   const discovery={
    issuer:ISSUER_ORIGIN,authorization_endpoint:ISSUER_ORIGIN+'/authorize',token_endpoint:ISSUER_ORIGIN+'/token',jwks_uri:ISSUER_ORIGIN+'/jwks',
@@ -96,7 +96,7 @@ export async function startHttpsFixture(worker:FixtureWorker):Promise<HttpsFixtu
    if(request.headers.host!==APP_HOST&&request.headers.host!==APP_HOST+':443')return json(response,421,{error:'authority'});
    const headers=new Headers();for(const [key,value]of Object.entries(request.headers))if(value!==undefined&&!['host','connection','transfer-encoding'].includes(key))headers.set(key,Array.isArray(value)?value.join(','):value);
    const bytes=['GET','HEAD'].includes(request.method??'GET')?undefined:await body(request);
-   const upstream=await worker.fetch(APP_ORIGIN+(request.url??'/'),{method:request.method,headers,body:bytes?Uint8Array.from(bytes).buffer:undefined});
+   const upstream=await worker.fetch(APP_ORIGIN+(request.url??'/'),{method:request.method,redirect:'manual',headers,body:bytes?Uint8Array.from(bytes).buffer:undefined});
    response.statusCode=upstream.status;
    upstream.headers.forEach((value,key)=>{if(key!=='set-cookie')response.setHeader(key,value);});
    const cookies=upstream.headers.getSetCookie();if(cookies.length)response.setHeader('set-cookie',cookies);

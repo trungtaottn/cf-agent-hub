@@ -16,7 +16,8 @@
     "verify:r1-contract": "node scripts/verify-r1-contract.mjs",
     "verify:release": "node scripts/verify-release.mjs",
     "generate:config": "node scripts/generate-config-validators.mjs",
-    "verify:generated": "node scripts/generate-config-validators.mjs --check"
+    "verify:generated": "node scripts/generate-config-validators.mjs --check && node scripts/generate-auth-contract.mjs --check",
+    "generate:auth": "node scripts/generate-auth-contract.mjs"
   },
   "devDependencies": {
     "typescript": "6.0.3",

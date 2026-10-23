@@ -1,0 +1,28 @@
+// Auth subset of the canonical OpenAPI contract; Task5 can extend the same DTO module.
+import {readFile,writeFile,mkdir} from 'node:fs/promises';
+import Ajv2020 from 'ajv/dist/2020.js';
+import addFormats from 'ajv-formats';
+import standalone from 'ajv/dist/standalone/index.js';
+const spec=JSON.parse(await readFile('spec/openapi.json','utf8')),schemas=spec.components.schemas;
+const roots=['AuthStartRequest','AuthCallbackQuery','AuthLogoutRequest','AuthStartDataResponse','AuthSessionResponse','AuthLogoutDataResponse','Error'];
+const seen=new Set();
+function type(s) {
+ if(s.$ref){const name=s.$ref.split('/').at(-1);collect(name);return name;}
+ if(s.const!==undefined)return JSON.stringify(s.const);
+ if(s.enum)return s.enum.map(JSON.stringify).join(' | ');
+ if(s.anyOf)return s.anyOf.map(type).join(' | ');
+ if(s.type==='array')return 'Array<'+type(s.items)+'>';
+ if(s.type==='object')return '{'+Object.entries(s.properties??{}).map(([key,v])=>JSON.stringify(key)+(s.required?.includes(key)?'':'?')+':'+type(v)).join(';')+'}';
+ return ({string:'string',integer:'number',number:'number',null:'null',boolean:'boolean'})[s.type]??'unknown';
+}
+const aliases=[];function collect(name){if(seen.has(name))return;seen.add(name);aliases.push('export type '+name+' = '+type(schemas[name])+';');}
+for(const name of roots)collect(name);
+const ajv=new Ajv2020({strict:false,code:{source:true,esm:true}});addFormats(ajv);
+const exports={};for(const name of roots.slice(0,3)){ajv.addSchema({...schemas[name],$id:name});exports['validate'+name]=name;}
+const js='// Generated from spec/openapi.json; npm run generate:auth.\nimport ucs2Module from "ajv/dist/runtime/ucs2length.js";\nconst ucs2Length=typeof ucs2Module==="function"?ucs2Module:ucs2Module.default;\n'+standalone(ajv,exports).replaceAll('require("ajv/dist/runtime/ucs2length").default','ucs2Length')+'\n';
+const dts='// Generated from spec/openapi.json.\nimport type {AuthStartRequest,AuthCallbackQuery,AuthLogoutRequest} from "../dto";\n'+roots.slice(0,3).map(name=>'export declare function validate'+name+'(input:unknown): input is '+name+';').join('\n')+'\n';
+const dto='// Generated from spec/openapi.json; npm run generate:auth.\n'+aliases.join('\n')+'\nexport const authReturnPaths = '+JSON.stringify(schemas.AuthStartRequest.properties.return_path.enum)+' as const;\n';
+await mkdir('src/http/generated',{recursive:true});
+for(const [path,content]of [['src/http/dto.ts',dto],['src/http/generated/auth-validators.js',js],['src/http/generated/auth-validators.d.ts',dts]]){
+ if(process.argv.includes('--check')){if(await readFile(path,'utf8')!==content)throw Error('Stale generated file: '+path);}else await writeFile(path,content);
+}

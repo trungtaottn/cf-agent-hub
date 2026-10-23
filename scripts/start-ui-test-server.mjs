@@ -27,13 +27,11 @@ try {
  });
  const {startHttpsFixture,APP_ORIGIN,ISSUER_ORIGIN,fixture:configurationFixture,operator,prepareBootstrap,sha256,canonicalJson}=await import(pathToFileURL(modulePath).href);
  let worker;
- fixture=await startHttpsFixture({fetch:(input,init)=>worker.fetch(input,init)});
+ const providerClientSecret=randomBytes(32).toString('base64url'),csrfSecret=randomBytes(32).toString('base64url');
+ fixture=await startHttpsFixture({fetch:(input,init)=>worker.fetch(input,init)},{clientSecret:providerClientSecret});
  globalThis.fetch=fixture.dispatch;
  const probePath=join(buildDirectory,'egress-probe.mjs');
  await writeFile(probePath,"export default {async fetch(request){try{return await fetch(request);}catch{return new Response(null,{status:599,headers:{'x-fixture-egress-denied':'1'}});}}};\n");
- harness=createTestHarness({workers:[{configPath:'./wrangler.jsonc',env:'test'},{config:{name:'cf-agent-hub-egress-fixture',main:probePath,compatibility_date:'2026-10-19'}}]});
- await harness.listen();
- worker=harness.getWorker();
  const input=await configurationFixture('ui-fixture');
  input.config.authentication.issuer=ISSUER_ORIGIN;
  input.config.authentication.allowed_origins=[APP_ORIGIN];
@@ -46,6 +44,9 @@ try {
  const {auth:_,...unsigned}=input.bundle;
  input.bundle.auth.tag=createHmac('sha256',randomBytes(32)).update(canonicalJson(unsigned)).digest('hex');
  const prepared=await prepareBootstrap(input.config,input.bundle,'ws_example');
+ harness=createTestHarness({workers:[{configPath:'./wrangler.jsonc',env:'test',vars:{DEPLOYMENT_CONFIG:JSON.stringify(input.config)},secrets:{[input.config.authentication.client_secret_ref]:providerClientSecret,CSRF_SECRET:csrfSecret}},{config:{name:'cf-agent-hub-egress-fixture',main:probePath,compatibility_date:'2026-10-19'}}]});
+ await harness.listen();
+ worker=harness.getWorker();
  const bindings=await worker.getEnv();
  const stub=bindings.WORKSPACE.getByName('ui-fixture');
  // Synthetic fixture context travels only over this trusted internal binding.

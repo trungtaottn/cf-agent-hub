@@ -1,9 +1,11 @@
+import { authRoutes,authFailure,securityHeaders } from '../http/auth-routes';
+import { AuthError,cookieHeader } from '../auth/context';
 import { DurableObject } from 'cloudflare:workers';
 import { migrate } from '../storage/migrations';
 import { withTransaction } from '../storage/transaction';
 import { installConfiguration, prepareBootstrap, canonicalJson, type ValidatedBootstrap } from '../config/bootstrap';
 import { resolveWorkspace } from '../config/deployment';
-import { systemClock, type InstallReceipt, type InternalRequest, type InternalResponse, type RecoveryOperatorContext } from './context';
+import { systemClock, systemEntropy, type InstallReceipt, type InternalRequest, type InternalResponse, type RecoveryOperatorContext } from './context';
 const identifier=(value:unknown)=>typeof value==='string'&&/^[a-zA-Z0-9_-]{1,128}$/.test(value);
 function closed(value:unknown,keys:readonly string[]):value is Record<string,unknown> {
  return value!==null&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).length===keys.length&&keys.every(k=>Object.hasOwn(value,k));
@@ -35,6 +37,13 @@ export class WorkspaceDO extends DurableObject<Env> {
     ]);
    return {...receipt,...mapping};
   });
+ }
+ async fetch(request:Request):Promise<Response> {
+  const match=/^\/v2\/workspaces\/([a-zA-Z0-9_-]{1,128})\/auth\/(start|callback|session|logout)$/.exec(new URL(request.url).pathname);
+  if(!match)return new Response(null,{status:404,headers:securityHeaders});
+  const metadata=withTransaction(this.ctx.storage,tx=>tx.one<{workspace_id:string;object_name:string}>('SELECT workspace_id,object_name FROM workspace_metadata WHERE id=1'));
+  if(!metadata||metadata.workspace_id!==match[1]||this.env.WORKSPACE.idFromName(metadata.object_name).toString()!==this.ctx.id.toString()){const headers=new Headers(securityHeaders);if(match[2]==='callback')headers.append('set-cookie',cookieHeader('cfhub_login','',0));return authFailure(new AuthError('UNAUTHENTICATED',401),crypto.randomUUID(),headers);}
+  return authRoutes(request,{storage:this.ctx.storage,workspaceId:metadata.workspace_id,objectName:metadata.object_name,secrets:this.env as unknown as Record<string,unknown>,clock:systemClock,entropy:systemEntropy});
  }
  async command(request:InternalRequest):Promise<InternalResponse> {
   if(!closed(request,['workspaceId','objectName','requestId','operation'])||!identifier(request.workspaceId)||!identifier(request.objectName)||!identifier(request.requestId)||typeof request.operation!=='string'||request.operation.length>128)throw Error('INVALID_INTERNAL_REQUEST');
