@@ -470,7 +470,7 @@
       "operation": "resume",
       "workspace_id": "ws_example",
       "capture_id": "capture_example",
-      "expected_authority_epoch": 2,
+      "expected_authority_epoch": 1,
       "operation_id": "operation_resume",
       "reason": "Synthetic contract example; not authenticated recovery evidence.",
       "payload": {
@@ -478,10 +478,10 @@
         "ledger": {
           "workspace_id": "ws_example",
           "environment_id": "env_example",
-          "authority_epoch": 2,
+          "authority_epoch": 1,
           "config": {
             "contract_revision": "0.2",
-            "config_epoch": 2,
+            "config_epoch": 1,
             "workspace_catalog": [
               {
                 "workspace_id": "ws_example",
@@ -579,8 +579,8 @@
           },
           "verification_bundle": {
             "contract_revision": "0.1",
-            "config_epoch": 2,
-            "config_digest": "8e3f36c47a1681bbb376343f9e761ce336ea8fc5dc2035029040a662fb963ea4",
+            "config_epoch": 1,
+            "config_digest": "7073eb94446b8bf8f49ce0c37b5b3adcf840d96594d345f241df2408b6260091",
             "credentials": [
               {
                 "workspace_id": "ws_example",

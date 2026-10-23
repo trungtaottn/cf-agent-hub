@@ -73,12 +73,13 @@ export function recoveryAuthorityIssues(command,manifest){
  if(command.workspace_id!==manifest.workspace_id||ledger.workspace_id!==manifest.workspace_id)add('workspace_id');
  if(command.capture_id!==manifest.capture_id)add('capture_id');
  if(command.expected_authority_epoch!==ledger.authority_epoch||ledger.config.config_epoch!==ledger.authority_epoch||ledger.verification_bundle.config_epoch!==ledger.authority_epoch)add('expected_authority_epoch');
- if(ledger.authority_epoch<=sourceEpoch)add('ledger.authority_epoch');
  if((receipt===null)!==(cutover===null)){add('source_retirement_receipt');return [...new Set(errors)];}
  if(receipt===null){
+  if(ledger.authority_epoch<sourceEpoch)add('ledger.authority_epoch');
   if(ledger.environment_id!==manifest.environment_id||!sameMapping(mapping,manifest.release.catalog_mapping))add('source_retirement_receipt');
   return [...new Set(errors)];
  }
+ if(ledger.authority_epoch<=sourceEpoch)add('ledger.authority_epoch');
  if(ledger.environment_id===manifest.environment_id)add('cutover_record.target_environment_id');
  if(receipt.capture_id!==manifest.capture_id||receipt.workspace_id!==manifest.workspace_id||receipt.environment_id!==manifest.environment_id||receipt.authority_epoch!==sourceEpoch||receipt.barrier_id!==manifest.checkpoint.barrier_id)add('source_retirement_receipt.environment_id');
  if(cutover.capture_id!==manifest.capture_id||cutover.workspace_id!==manifest.workspace_id||cutover.source_environment_id!==receipt.environment_id||cutover.source_authority_epoch!==receipt.authority_epoch||cutover.source_retirement_receipt_id!==receipt.id)add('cutover_record.source_authority_epoch');
@@ -129,12 +130,19 @@ export function run(){
  for(const command of commandExamples.commands)assert.deepEqual(probe(commands,command),[],command.operation);
  assert.deepEqual(probe(readJson('spec/recovery-command-examples.schema.json'),commandExamples),[],'Command fixture wrapper must resolve canonical command schema');
  const sourceResume=commandExamples.commands.find(x=>x.operation==='resume');
- assert.equal(sourceResume.expected_authority_epoch,sourceResume.payload.ledger.authority_epoch);
+ assert.equal(sourceResume.expected_authority_epoch,manifest.checkpoint.authority_epoch);
+ assert.equal(sourceResume.payload.ledger.authority_epoch,manifest.checkpoint.authority_epoch);
+ assert.equal(sourceResume.payload.ledger.environment_id,manifest.environment_id);
+ assert.deepEqual(sourceResume.payload.ledger.config,readJson('examples/config/deployment.example.json'));
+ assert.deepEqual(sourceResume.payload.ledger.verification_bundle,readJson('examples/config/r1-bootstrap.example.json'));
+ assert.equal(sourceResume.payload.source_retirement_receipt,null);
+ assert.equal(sourceResume.payload.cutover_record,null);
  assert.deepEqual(recoveryAuthorityIssues(sourceResume,manifest),[],'Original unchanged source resume must be coherent');
  const authority=readJson('examples/recovery/r1-authority-cases.json');
  assert.deepEqual(probe(readJson('spec/recovery-authority-cases.schema.json'),authority),[]);
  assert.deepEqual(probe(commands,authority.matching_target_resume),[]);
  assert.deepEqual(recoveryAuthorityIssues(authority.matching_target_resume,manifest),[]);
+ const unadvancedTarget=structuredClone(authority.matching_target_resume);unadvancedTarget.payload.ledger.authority_epoch=manifest.checkpoint.authority_epoch;assert(recoveryAuthorityIssues(unadvancedTarget,manifest).includes('ledger.authority_epoch'),'Target restore must advance authority epoch');
  const reordered=structuredClone(authority.matching_target_resume);const objectName=reordered.payload.cutover_record.target_catalog_mapping.object_name,workspaceId=reordered.payload.cutover_record.target_catalog_mapping.workspace_id;reordered.payload.cutover_record.target_catalog_mapping={object_name:objectName,workspace_id:workspaceId};assert.deepEqual(recoveryAuthorityIssues(reordered,manifest),[],'Mapping order must not affect authority linkage');
  for(const item of authority.rejections){const branch=commands.oneOf.find(x=>x.properties.operation.const===item.command.operation);const errors=[...probe(branch,item.command,commands),...recoveryAuthorityIssues(item.command,manifest)];assert(errors.some(e=>e.includes(item.field)),item.name+': expected '+item.field+', got '+JSON.stringify(errors));}
  const editOnly=structuredClone(config);editOnly.human_grants[0].scopes=['profile:edit'];assert.deepEqual(deploymentIssues(editOnly),[]);
