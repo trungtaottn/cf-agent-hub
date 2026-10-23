@@ -7,15 +7,15 @@
   "implementation_status": "pending",
   "planning_status": "reviewed-in-recorded-scope",
   "scope": "Standalone product documentation, proposed contracts, synthetic fixtures, reviewed R1-R4 execution plans and planning/documentation validation tooling.",
-  "file_count_including_manifest": 151,
+  "file_count_including_manifest": 159,
   "manifest_excludes_own_hash": true,
   "documentation_counts": {
     "markdown_documents": 52,
-    "json_files_parsed": 92,
-    "json_schemas": 10,
+    "json_files_parsed": 100,
+    "json_schemas": 11,
     "openapi_operations": 55,
     "openapi_component_schemas": 100,
-    "mapped_fixtures": 73,
+    "mapped_fixtures": 80,
     "external_link_occurrences_not_fetched": 49
   },
   "implementation_plan_counts": {
@@ -423,9 +423,9 @@
     },
     {
       "path": "examples/http/fixture-map.json",
-      "size_bytes": 12678,
+      "size_bytes": 14408,
       "mode": "0644",
-      "sha256": "2a31959651f02587fcfeb3ac4725f36b2740881d50e52ccd5ad008658785ba2f"
+      "sha256": "c359e3796605c0d158fe03d56aa88beee7f79380896dec328bc37522bbea758a"
     },
     {
       "path": "examples/http/human-only-denied.response.json",
@@ -596,6 +596,12 @@
       "sha256": "45eb081de8359ebf4cc44dd6d35cd2d3e2ea236a0cc3dcc183944e70fe748d2a"
     },
     {
+      "path": "examples/http/r1-settings.json",
+      "size_bytes": 6781,
+      "mode": "0644",
+      "sha256": "c12a4511c5bf6559e7fecdb7ca65e85a29f01ae259a2982517d9148568d251ae"
+    },
+    {
       "path": "examples/http/r1-startAuth.request.json",
       "size_bytes": 33,
       "mode": "0644",
@@ -606,6 +612,42 @@
       "size_bytes": 149,
       "mode": "0644",
       "sha256": "755602f2549dc8ad3e6145eb8d87c37c2a56c37d459695b02b40391c9a6a167a"
+    },
+    {
+      "path": "examples/http/r1-unavailable-artifact-ids.request.json",
+      "size_bytes": 166,
+      "mode": "0644",
+      "sha256": "85a234979d5f007341e60e194683f5b37ff2307570f54d31fb138db043a53e7f"
+    },
+    {
+      "path": "examples/http/r1-unavailable-artifact-ids.response.json",
+      "size_bytes": 226,
+      "mode": "0644",
+      "sha256": "1498f6a16f00033d64e19a68702010dca1ce640fd68960037c868860af2ffc08"
+    },
+    {
+      "path": "examples/http/r1-unavailable-artifact-reference.request.json",
+      "size_bytes": 212,
+      "mode": "0644",
+      "sha256": "3cfd10b16828b990d95a072ffe4301f3326b39ac11a6072e0a7aecc3df6a450a"
+    },
+    {
+      "path": "examples/http/r1-unavailable-artifact-reference.response.json",
+      "size_bytes": 232,
+      "mode": "0644",
+      "sha256": "4dc00f9f73f3f292168414e5df6581f94840b4c729ffb9e6c5b1736337d5951f"
+    },
+    {
+      "path": "examples/http/r1-unavailable-task-reference.request.json",
+      "size_bytes": 204,
+      "mode": "0644",
+      "sha256": "e3329f3347708d04f036bc76648216dbd507c0ddd2705c3313aff8c8067ab7a2"
+    },
+    {
+      "path": "examples/http/r1-unavailable-task-reference.response.json",
+      "size_bytes": 224,
+      "mode": "0644",
+      "sha256": "c939b8d413463b49cd70a0593acd95b86290356bbf2de36d3511e746cccc4dd2"
     },
     {
       "path": "examples/http/run-heartbeat.request.json",
@@ -753,15 +795,15 @@
     },
     {
       "path": "examples/recovery/r1-authority-cases.json",
-      "size_bytes": 46610,
-      "mode": "0644",
-      "sha256": "c09b1863e672ff27d4d0e8206d44431c63a6be036c616af4a853c3cf5938d79e"
+      "size_bytes": 72610,
+      "mode": "0600",
+      "sha256": "90725f9c9d9e3c30bb51c2a60a78139b2edda1f498de60a4473208bd1c6f2d07"
     },
     {
       "path": "examples/recovery/r1-commands.json",
       "size_bytes": 21514,
-      "mode": "0644",
-      "sha256": "dc5359d9166b7b27177df191a7d6b593946754ebe5c5379e08c7162903a8be8b"
+      "mode": "0600",
+      "sha256": "488457efdc3a3452693a687857b0364faf8f74f6c63518b8a69d6d291fb28561"
     },
     {
       "path": "examples/recovery/r1-manifest.json",
@@ -801,9 +843,9 @@
     },
     {
       "path": "scripts/validate_docs.py",
-      "size_bytes": 24486,
+      "size_bytes": 25000,
       "mode": "0600",
-      "sha256": "34997da024be4012633fea6242250b56f340ca62df74cc4b0ad3fb626ea70e1e"
+      "sha256": "ec15fdabbaf6607c9feeeae7e6baaa343372b1ce7db328a95a0ad7c4539171da"
     },
     {
       "path": "scripts/validate_plans.py",
@@ -813,15 +855,15 @@
     },
     {
       "path": "scripts/verify-r1-contract.mjs",
-      "size_bytes": 13408,
+      "size_bytes": 18951,
       "mode": "0600",
-      "sha256": "04eba091db5ff21fe8c4bccfd6c4c7264394c4a7b1f4885a2db93363962e182c"
+      "sha256": "ba51be32f6baa61921557df4f0528a55bb0896a26e55f6b943866eaee0ec27e3"
     },
     {
       "path": "spec/deployment-config.schema.json",
-      "size_bytes": 12591,
+      "size_bytes": 12642,
       "mode": "0600",
-      "sha256": "2b0c50869c439847fd21ab14a901101234accaab64869190cccc8c542bbc1165"
+      "sha256": "5e92db3f1d212655972065fff58203469b2633d457a30eb1ea4c044f4a92838e"
     },
     {
       "path": "spec/openapi.json",
@@ -831,9 +873,9 @@
     },
     {
       "path": "spec/r1-bootstrap.schema.json",
-      "size_bytes": 3098,
+      "size_bytes": 3144,
       "mode": "0644",
-      "sha256": "f33cc0ac87d700a7c3371a278ebb49ffd78c7ab22a21db2d85d3c1ed0d8477ad"
+      "sha256": "760c834b27b0234c4a172a7dd6ab25caf181557d8644bfe01f785fc6fb170b3d"
     },
     {
       "path": "spec/r1-contract-negative.schema.json",
@@ -842,28 +884,34 @@
       "sha256": "d1b8eec610a481efc11282f28c9b971893745a01ed1ee819e2df18968990adb8"
     },
     {
-      "path": "spec/recovery-authority-cases.schema.json",
-      "size_bytes": 105603,
+      "path": "spec/r1-settings.schema.json",
+      "size_bytes": 2167,
       "mode": "0644",
-      "sha256": "629269f8e1713f6a9299ec3357262776343bf8ef8e2a3327fea3e96b6af18329"
+      "sha256": "ec4e07a129c8e8bb6df45466343cd8fc1e20fce8b91110f08ad1cc5f557bf631"
+    },
+    {
+      "path": "spec/recovery-authority-cases.schema.json",
+      "size_bytes": 791,
+      "mode": "0600",
+      "sha256": "3fa58f1bd23967141ab834d37d3fb296115ef93ee4cec863a8623b2cdb6f0b76"
     },
     {
       "path": "spec/recovery-command-examples.schema.json",
-      "size_bytes": 109853,
+      "size_bytes": 346,
       "mode": "0644",
-      "sha256": "59261961184a783fd99f18aa2b82ebda7d9bbca97b7996b364ba405fd457595e"
+      "sha256": "b6a86c954032c239034ed63c7ba6fd250a09ffe4911510b2cce3e471d3585d9a"
     },
     {
       "path": "spec/recovery-command.schema.json",
-      "size_bytes": 95477,
+      "size_bytes": 36884,
       "mode": "0644",
-      "sha256": "14caad13e3b522bd96554bb5e6569869a59deb7ed25ed53fdcb75295c56e59e8"
+      "sha256": "ab586c997c6eaf7aa97fb68128923718f5fad1ecdb3bebc7b97d991a9375441f"
     },
     {
       "path": "spec/recovery-manifest.schema.json",
-      "size_bytes": 10226,
+      "size_bytes": 10275,
       "mode": "0644",
-      "sha256": "07740a7710bf5906a648bca0045f59b0d2dfcffdbe3d9dcdbb28ac3c8fadda64"
+      "sha256": "299757ddf6e3003c090d6d3397e1ead562b23f41aec0e21407efc7386f9dca7a"
     },
     {
       "path": "spec/task-scenario.schema.json",
@@ -885,9 +933,9 @@
     },
     {
       "path": "test/contracts/r1-contract.test.ts",
-      "size_bytes": 4807,
+      "size_bytes": 6963,
       "mode": "0600",
-      "sha256": "05455ea9ee06c3550a812522fd32997235408a0d504c29d9677f7d5a336d98fb"
+      "sha256": "bff2781240622a72d3d33c24debb220adfd980757b56399092c78b58025bd331"
     },
     {
       "path": "validation/contract-review.json",
@@ -897,9 +945,9 @@
     },
     {
       "path": "validation/fixtures.json",
-      "size_bytes": 1762,
+      "size_bytes": 1870,
       "mode": "0644",
-      "sha256": "3c7b6a0532998f2d8d3e20b2ac17036e4c864652e98bc9fbcd63d44788e4bb98"
+      "sha256": "e93c428f5492debead423f926e8efa724b2585709280f3925a6975c55f2cca99"
     },
     {
       "path": "validation/implementation-plan-register.json",
@@ -921,11 +969,11 @@
     },
     {
       "path": "validation/report.json",
-      "size_bytes": 1614,
+      "size_bytes": 1616,
       "mode": "0644",
-      "sha256": "c884c708354fd4bb701885799a9bf780f1a3743b1fcc13234c52511a6ac9e1a8"
+      "sha256": "84c34edf9fd5d69da38709de1dad41ac252f2bc3a8147ec1510e67477cc77a3c"
     }
   ],
-  "validated_source_commit": "42ce06576c92b6c39317edebf660afd9f26ba3a9",
-  "validated_source_archive_sha256": "921106eecfb36e6b1ab4285ed434e98fde0af167f21c0b92711b8082d4f6d9fb"
+  "validated_source_commit": "57288516416ee474e03c8d76d747db1e0da23c96",
+  "validated_source_archive_sha256": "e7e8860daa5352c0c0c8add641434b2ee8713874b144df1de8f8cad19878584d"
 }

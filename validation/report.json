@@ -1,7 +1,7 @@
 {
   "package": "CF Agent Hub documentation baseline",
   "contract_revision": "r1-foundation-1",
-  "checked_at": "2026-10-23T08:50:53.052895+00:00",
+  "checked_at": "2026-10-23T09:20:57.142435+00:00",
   "status": "passed",
   "environment": {
     "python": "3.12.14",
@@ -11,24 +11,24 @@
   },
   "counts": {
     "markdown_documents": 52,
-    "json_files_parsed": 92,
-    "json_schemas": 10,
+    "json_files_parsed": 100,
+    "json_schemas": 11,
     "openapi_operations": 55,
     "openapi_component_schemas": 100,
-    "mapped_fixtures": 73,
+    "mapped_fixtures": 80,
     "external_link_occurrences_not_fetched": 49
   },
   "checks": {
-    "json_syntax": 92,
+    "json_syntax": 100,
     "markdown_structure": 162,
     "local_links": 694,
     "link_schemes": 49,
     "openapi_structure": 1,
     "openapi_contract": 278,
-    "json_schemas": 10,
-    "fixture_operation_mapping": 119,
+    "json_schemas": 11,
+    "fixture_operation_mapping": 131,
     "fixture_coverage": 2,
-    "fixture_validation": 73,
+    "fixture_validation": 80,
     "fixture_semantics": 6,
     "fixture_integrity": 4,
     "negative_schema_cases": 25
@@ -42,6 +42,6 @@
     "Schema checks do not prove authorization, transaction semantics, UTF-8 byte limits or all semantic constraints.",
     "Public-content review and independent contract review are separate from these automated checks."
   ],
-  "validated_source_commit": "42ce06576c92b6c39317edebf660afd9f26ba3a9",
-  "validated_source_archive_sha256": "921106eecfb36e6b1ab4285ed434e98fde0af167f21c0b92711b8082d4f6d9fb"
+  "validated_source_commit": "57288516416ee474e03c8d76d747db1e0da23c96",
+  "validated_source_archive_sha256": "e7e8860daa5352c0c0c8add641434b2ee8713874b144df1de8f8cad19878584d"
 }
