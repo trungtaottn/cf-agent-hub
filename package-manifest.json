@@ -803,7 +803,7 @@
       "path": "examples/recovery/r1-commands.json",
       "size_bytes": 21514,
       "mode": "0600",
-      "sha256": "488457efdc3a3452693a687857b0364faf8f74f6c63518b8a69d6d291fb28561"
+      "sha256": "14ea2d26146ea24a368964eea3e8cd0303f76493e0048bc2ab2781e2aedfac7d"
     },
     {
       "path": "examples/recovery/r1-manifest.json",
@@ -855,9 +855,9 @@
     },
     {
       "path": "scripts/verify-r1-contract.mjs",
-      "size_bytes": 18951,
+      "size_bytes": 19846,
       "mode": "0600",
-      "sha256": "ba51be32f6baa61921557df4f0528a55bb0896a26e55f6b943866eaee0ec27e3"
+      "sha256": "46bcee2c3f6478b621ddd952e0de83732bfd6e333a748bd938157fd28a97013e"
     },
     {
       "path": "spec/deployment-config.schema.json",
@@ -933,9 +933,9 @@
     },
     {
       "path": "test/contracts/r1-contract.test.ts",
-      "size_bytes": 6963,
+      "size_bytes": 7692,
       "mode": "0600",
-      "sha256": "bff2781240622a72d3d33c24debb220adfd980757b56399092c78b58025bd331"
+      "sha256": "69f56690b639a143cd9e98d249776d7bc0dc2007abe9cab28a4fc28d25e300cc"
     },
     {
       "path": "validation/contract-review.json",
@@ -971,9 +971,9 @@
       "path": "validation/report.json",
       "size_bytes": 1616,
       "mode": "0644",
-      "sha256": "84c34edf9fd5d69da38709de1dad41ac252f2bc3a8147ec1510e67477cc77a3c"
+      "sha256": "01d75b74830ca83b73fd9b05483b6414bab5983c2af106cdf1e6fbb4422ce668"
     }
   ],
-  "validated_source_commit": "57288516416ee474e03c8d76d747db1e0da23c96",
-  "validated_source_archive_sha256": "e7e8860daa5352c0c0c8add641434b2ee8713874b144df1de8f8cad19878584d"
+  "validated_source_commit": "9090e029e0b997204acbfe89d68bb187c9cd44b0",
+  "validated_source_archive_sha256": "e7c62dc80627203e17fdfa815a45b6a957f3d6264abc7850691a4c28a74d4d66"
 }
