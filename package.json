@@ -1,0 +1,35 @@
+{
+  "name": "cf-agent-hub",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": "24.11.0"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.worker.json --noEmit",
+    "test": "vitest run --config vitest.config.ts",
+    "test:workers": "vitest run --config vitest.workers.config.ts",
+    "test:ui": "playwright test",
+    "check": "npm run verify:generated && npm run typecheck && npm run verify:r1-contract && npm test && npm run test:workers",
+    "verify:r1-contract": "node scripts/verify-r1-contract.mjs",
+    "verify:release": "node scripts/verify-release.mjs",
+    "generate:config": "node scripts/generate-config-validators.mjs",
+    "verify:generated": "node scripts/generate-config-validators.mjs --check"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3",
+    "wrangler": "4.152.0",
+    "@cloudflare/vitest-plugin": "1.4.7",
+    "vitest": "4.1.12",
+    "vite": "7.3.7",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
+    "@playwright/test": "1.64.1",
+    "@types/node": "24.10.0"
+  },
+  "dependencies": {
+    "jose": "6.2.13"
+  }
+}

@@ -1,0 +1,20 @@
+import { test,expect,appOrigin,issuerOrigin,captures,launchFixtureBrowser } from '../helpers/browser';
+test('approved fresh fixture keys reach both HTTPS authorities',async({page})=>{
+ const response=await page.goto(appOrigin+'/health/live');expect(response?.status()).toBe(200);expect(await page.textContent('body')).toBe('alive');
+ const discovery=await page.goto(issuerOrigin+'/.well-known/openid-configuration');expect(discovery?.status()).toBe(200);
+ expect(JSON.parse(await page.textContent('body')??'').issuer).toBe(issuerOrigin);
+});
+test('invalid unpinned key fails even for an allowed authority',async()=>{
+ const browser=await launchFixtureBrowser(captures().negativeProxy);
+ try {const page=await browser.newPage({ignoreHTTPSErrors:false});await expect(page.goto(appOrigin+'/health/live')).rejects.toThrow(/ERR_CERT_AUTHORITY_INVALID/);}
+ finally {await browser.close();}
+});
+test('unknown hosts, alternate ports and loopback cannot bypass the proxy',async({page})=>{
+ for(const url of ['https://unknown.example.invalid/','https://hub.fixture.example.invalid:444/','https://127.0.0.1:'+captures().appPort+'/health/live','http://127.0.0.1:'+captures().appPort+'/health/live'])
+  await expect(page.goto(url)).rejects.toThrow();
+});
+test('fixture listeners do not turn public installation into authority',async({page})=>{
+ await page.goto(appOrigin+'/health/live');
+ const status=await page.evaluate(async()=> (await fetch('/internal/install',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({operation:'install',principalId:'synthetic_operator'})})).status);
+ expect(status).toBe(404);
+});
