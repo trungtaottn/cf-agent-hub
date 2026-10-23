@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "R1 settings route body collection",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "amendment_id": {
+      "const": "r1-foundation-1"
+    },
+    "get_configuration": {
+      "$ref": "urn:cf-agent-hub:openapi-components:1#/components/schemas/ConfigurationResponse"
+    },
+    "get_profile": {
+      "$ref": "urn:cf-agent-hub:openapi-components:1#/components/schemas/ProfileDataResponse"
+    },
+    "preview_profile_request": {
+      "$ref": "urn:cf-agent-hub:openapi-components:1#/components/schemas/ProfileWriteRequest"
+    },
+    "preview_profile_response": {
+      "$ref": "urn:cf-agent-hub:openapi-components:1#/components/schemas/ProfilePreviewResponse"
+    },
+    "put_profile_request": {
+      "$ref": "urn:cf-agent-hub:openapi-components:1#/components/schemas/ProfileWriteRequest"
+    },
+    "put_profile_response": {
+      "$ref": "urn:cf-agent-hub:openapi-components:1#/components/schemas/ProfileDataResponse"
+    },
+    "export_profile": {
+      "$ref": "urn:cf-agent-hub:openapi-components:1#/components/schemas/ProfileExportResponse"
+    },
+    "get_preferences": {
+      "$ref": "urn:cf-agent-hub:openapi-components:1#/components/schemas/PreferencesDataResponse"
+    },
+    "put_preferences_request": {
+      "$ref": "urn:cf-agent-hub:openapi-components:1#/components/schemas/PreferencesWriteRequest"
+    },
+    "put_preferences_response": {
+      "$ref": "urn:cf-agent-hub:openapi-components:1#/components/schemas/PreferencesDataResponse"
+    },
+    "get_operations": {
+      "$ref": "urn:cf-agent-hub:openapi-components:1#/components/schemas/OperationsResponse"
+    },
+    "get_readiness": {
+      "$ref": "urn:cf-agent-hub:openapi-components:1#/components/schemas/ReadinessResponse"
+    }
+  },
+  "required": [
+    "amendment_id",
+    "get_configuration",
+    "get_profile",
+    "preview_profile_request",
+    "preview_profile_response",
+    "put_profile_request",
+    "put_profile_response",
+    "export_profile",
+    "get_preferences",
+    "put_preferences_request",
+    "put_preferences_response",
+    "get_operations",
+    "get_readiness"
+  ]
+}

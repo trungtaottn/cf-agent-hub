@@ -123,5 +123,6 @@
     "retired_credentials",
     "auth"
   ],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "$id": "urn:cf-agent-hub:r1-bootstrap:0.1"
 }

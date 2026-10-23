@@ -388,5 +388,6 @@
     "auth"
   ],
   "additionalProperties": false,
-  "description": "Maximum canonical UTF-8 size 65536 bytes. Complete registry, sum/count/digest checks, relationships, 200-row pages, 1MiB chunks and 1000000 total rows are semantic requirements before signing. Empty artifact arrays are mandatory in R1."
+  "description": "Maximum canonical UTF-8 size 65536 bytes. Complete registry, sum/count/digest checks, relationships, 200-row pages, 1MiB chunks and 1000000 total rows are semantic requirements before signing. Empty artifact arrays are mandatory in R1.",
+  "$id": "urn:cf-agent-hub:recovery-manifest:1"
 }

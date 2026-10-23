@@ -470,7 +470,7 @@
       "operation": "resume",
       "workspace_id": "ws_example",
       "capture_id": "capture_example",
-      "expected_authority_epoch": 1,
+      "expected_authority_epoch": 2,
       "operation_id": "operation_resume",
       "reason": "Synthetic contract example; not authenticated recovery evidence.",
       "payload": {

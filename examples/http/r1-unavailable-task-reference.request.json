@@ -1,0 +1,13 @@
+{
+  "recipient_agent_ids": [
+    "agent_reviewer"
+  ],
+  "body": "R1 unavailable reference boundary.",
+  "refs": [
+    {
+      "kind": "task",
+      "id": "task_example"
+    }
+  ],
+  "artifact_ids": []
+}

@@ -53,6 +53,10 @@
     {
       "file": "examples/recovery/r1-authority-cases.json",
       "schema": "spec/recovery-authority-cases.schema.json"
+    },
+    {
+      "file": "examples/http/r1-settings.json",
+      "schema": "spec/r1-settings.schema.json"
     }
   ]
 }

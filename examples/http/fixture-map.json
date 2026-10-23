@@ -399,6 +399,51 @@
       "direction": "response",
       "http_status": 200,
       "scenario": "Newly authorized human reviewer with events:read+messages:read+messages:review+workspace:read follows persisted thread_id; no operations grant and no foreign preferences."
+    },
+    {
+      "file": "r1-unavailable-artifact-ids.request.json",
+      "schema": "#/components/schemas/MessageCreateRequest",
+      "operation_id": "createMessage",
+      "direction": "request",
+      "scenario": "R1 pre-mutation unavailable artifacts rejection; response status 400."
+    },
+    {
+      "file": "r1-unavailable-artifact-ids.response.json",
+      "schema": "#/components/schemas/Error",
+      "operation_id": "createMessage",
+      "direction": "response",
+      "http_status": 400,
+      "scenario": "R1 pre-mutation unavailable artifacts rejection."
+    },
+    {
+      "file": "r1-unavailable-artifact-reference.request.json",
+      "schema": "#/components/schemas/MessageCreateRequest",
+      "operation_id": "createMessage",
+      "direction": "request",
+      "scenario": "R1 pre-mutation unavailable artifacts rejection; response status 400."
+    },
+    {
+      "file": "r1-unavailable-artifact-reference.response.json",
+      "schema": "#/components/schemas/Error",
+      "operation_id": "createMessage",
+      "direction": "response",
+      "http_status": 400,
+      "scenario": "R1 pre-mutation unavailable artifacts rejection."
+    },
+    {
+      "file": "r1-unavailable-task-reference.request.json",
+      "schema": "#/components/schemas/MessageCreateRequest",
+      "operation_id": "createMessage",
+      "direction": "request",
+      "scenario": "R1 pre-mutation unavailable tasks rejection; response status 400."
+    },
+    {
+      "file": "r1-unavailable-task-reference.response.json",
+      "schema": "#/components/schemas/Error",
+      "operation_id": "createMessage",
+      "direction": "response",
+      "http_status": 400,
+      "scenario": "R1 pre-mutation unavailable tasks rejection."
     }
   ],
   "amendment_id": "r1-foundation-1"

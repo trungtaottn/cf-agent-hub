@@ -439,5 +439,6 @@
     "workspace_policies"
   ],
   "additionalProperties": false,
-  "description": "Shape validation is necessary, never authorization. Semantic validation additionally requires exact issuer/subject grants, stable actor/hash mappings, one policy and callback per workspace, immutable unique catalog mappings, client_id=audience, safe operator-approved notification host/path, and <=90-day credential expiry at provisioning. Unknown fields fail with field paths and no values."
+  "description": "Shape validation is necessary, never authorization. Semantic validation additionally requires exact issuer/subject grants, stable actor/hash mappings, one policy and callback per workspace, immutable unique catalog mappings, client_id=audience, safe operator-approved notification host/path, and <=90-day credential expiry at provisioning. Unknown fields fail with field paths and no values.",
+  "$id": "urn:cf-agent-hub:deployment-config:0.2"
 }

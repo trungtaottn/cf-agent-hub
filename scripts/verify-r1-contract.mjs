@@ -10,7 +10,14 @@ export function probe(schema,value,document=schema,path='$') {
   const fail=()=>[path];
   if(schema===true)return [];if(schema===false)return fail();
   if(schema.not&&probe(schema.not,value,document,path).length===0)return fail();
-  if(schema.$ref){let target=document;for(const key of schema.$ref.slice(2).split('/'))target=target[key.replaceAll('~1','/').replaceAll('~0','~')];return probe(target,value,document,path);}
+  if(schema.$ref){
+    const [id,fragment='']=schema.$ref.split('#');
+    const sources={'urn:cf-agent-hub:deployment-config:0.2':'spec/deployment-config.schema.json','urn:cf-agent-hub:r1-bootstrap:0.1':'spec/r1-bootstrap.schema.json','urn:cf-agent-hub:recovery-manifest:1':'spec/recovery-manifest.schema.json','urn:cf-agent-hub:recovery-command:1':'spec/recovery-command.schema.json'};
+    let source=id==='urn:cf-agent-hub:openapi-components:1'?{components:readJson('spec/openapi.json').components}:id?readJson(sources[id]??(()=>{throw Error('Unregistered contract schema: '+id)})()):document;
+    let target=source;
+    if(fragment){if(!fragment.startsWith('/'))throw Error('Invalid local schema fragment: '+schema.$ref);for(const key of fragment.slice(1).split('/'))target=target[key.replaceAll('~1','/').replaceAll('~0','~')];}
+    return probe(target,value,source,path);
+  }
   if(schema.const!==undefined&&JSON.stringify(value)!==JSON.stringify(schema.const))return fail();
   if(schema.enum&&!schema.enum.some(v=>JSON.stringify(v)===JSON.stringify(value)))return fail();
   if(schema.anyOf&&!schema.anyOf.some(s=>probe(s,value,document,path).length===0))return fail();
@@ -58,15 +65,25 @@ export function deploymentIssues(config,{installedEpoch=0,identity=null,discover
 export function safeUrl(value){try{const u=new URL(value),h=u.hostname.toLowerCase();return u.protocol==='https:'&&!u.username&&!u.password&&!u.hash&&!u.search&&u.href===value&&(!u.port||u.port==='443')&&!/^[\d.]+$|:|(^|\.)(localhost|local|internal|metadata|home|lan|test)$|^metadata\./.test(h)&&h.includes('.');}catch{return false;}}
 export function recoveryAuthorityIssues(command,manifest){
  const errors=[];if(command.operation!=='resume')return errors;
- const {source_retirement_receipt:r,cutover_record:c,ledger}=command.payload;
- if((r===null)!==(c===null))errors.push('source_retirement_receipt');
- if(r&&c){
-  if(r.capture_id!==manifest.capture_id||r.workspace_id!==manifest.workspace_id||r.environment_id!==manifest.environment_id||r.authority_epoch!==manifest.checkpoint.authority_epoch||r.barrier_id!==manifest.checkpoint.barrier_id)errors.push('source_retirement_receipt.environment_id');
-  if(c.capture_id!==manifest.capture_id||c.workspace_id!==manifest.workspace_id||c.source_environment_id!==r.environment_id||c.source_authority_epoch!==r.authority_epoch||c.source_retirement_receipt_id!==r.id)errors.push('cutover_record.source_authority_epoch');
-  if(c.target_environment_id!==ledger.environment_id||c.target_authority_epoch!==ledger.authority_epoch||c.target_authority_epoch<=r.authority_epoch)errors.push('cutover_record.target_authority_epoch');
-  const mapping=ledger.config.workspace_catalog.find(x=>x.workspace_id===manifest.workspace_id);
-  if(!mapping||JSON.stringify(c.target_catalog_mapping)!==JSON.stringify(mapping))errors.push('cutover_record.target_catalog_mapping');
+ const add=field=>errors.push(field);
+ const {source_retirement_receipt:receipt,cutover_record:cutover,ledger}=command.payload;
+ const sourceEpoch=manifest.checkpoint.authority_epoch;
+ const mapping=ledger.config.workspace_catalog.find(x=>x.workspace_id===manifest.workspace_id);
+ const sameMapping=(a,b)=>Boolean(a&&b&&a.workspace_id===b.workspace_id&&a.object_name===b.object_name);
+ if(command.workspace_id!==manifest.workspace_id||ledger.workspace_id!==manifest.workspace_id)add('workspace_id');
+ if(command.capture_id!==manifest.capture_id)add('capture_id');
+ if(command.expected_authority_epoch!==ledger.authority_epoch||ledger.config.config_epoch!==ledger.authority_epoch||ledger.verification_bundle.config_epoch!==ledger.authority_epoch)add('expected_authority_epoch');
+ if(ledger.authority_epoch<=sourceEpoch)add('ledger.authority_epoch');
+ if((receipt===null)!==(cutover===null)){add('source_retirement_receipt');return [...new Set(errors)];}
+ if(receipt===null){
+  if(ledger.environment_id!==manifest.environment_id||!sameMapping(mapping,manifest.release.catalog_mapping))add('source_retirement_receipt');
+  return [...new Set(errors)];
  }
+ if(ledger.environment_id===manifest.environment_id)add('cutover_record.target_environment_id');
+ if(receipt.capture_id!==manifest.capture_id||receipt.workspace_id!==manifest.workspace_id||receipt.environment_id!==manifest.environment_id||receipt.authority_epoch!==sourceEpoch||receipt.barrier_id!==manifest.checkpoint.barrier_id)add('source_retirement_receipt.environment_id');
+ if(cutover.capture_id!==manifest.capture_id||cutover.workspace_id!==manifest.workspace_id||cutover.source_environment_id!==receipt.environment_id||cutover.source_authority_epoch!==receipt.authority_epoch||cutover.source_retirement_receipt_id!==receipt.id)add('cutover_record.source_authority_epoch');
+ if(cutover.target_environment_id!==ledger.environment_id||cutover.target_authority_epoch!==ledger.authority_epoch||cutover.target_authority_epoch<=receipt.authority_epoch)add('cutover_record.target_authority_epoch');
+ if(!sameMapping(cutover.target_catalog_mapping,mapping))add('cutover_record.target_catalog_mapping');
  return [...new Set(errors)];
 }
 export function run(){
@@ -85,15 +102,40 @@ export function run(){
  const config=readJson('examples/config/deployment.example.json');assert.deepEqual(probe(deployment,config),[]);assert.deepEqual(deploymentIssues(config),[]);
  for(const test of readJson('examples/http/r1-contract-negative.json').cases){const doc=readJson(test.schema);let value=test.value;const errors=[...probe(doc,value),...(test.schema==='spec/deployment-config.schema.json'?deploymentIssues(value,test.context??{}):[])];assert(errors.some(e=>e.includes(test.field)),test.name+': expected field '+test.field+', got '+JSON.stringify(errors));}
  for(const entry of fixtures){const doc={components:api.components,$ref:entry.schema};assert.deepEqual(probe(doc,readJson('examples/http/'+entry.file)),[],entry.file);}
+ const settings=readJson('examples/http/r1-settings.json'),settingsSchema=readJson('spec/r1-settings.schema.json');
+ assert.deepEqual(probe(settingsSchema,settings),[],'Named settings fixture must validate against canonical OpenAPI DTOs');
+ assert(readJson('validation/fixtures.json').fixtures.some(x=>x.file==='examples/http/r1-settings.json'&&x.schema==='spec/r1-settings.schema.json'));
+ const settingFiles={get_configuration:'r1-getConfiguration.response.json',get_profile:'r1-getProfile.response.json',preview_profile_request:'r1-previewProfile.request.json',preview_profile_response:'r1-previewProfile.response.json',put_profile_request:'r1-putProfile.request.json',put_profile_response:'r1-putProfile.response.json',export_profile:'r1-exportProfile.response.json',get_preferences:'r1-getPreferences.response.json',put_preferences_request:'r1-putPreferences.request.json',put_preferences_response:'r1-putPreferences.response.json',get_operations:'r1-getOperations.response.json',get_readiness:'r1-getReadiness.response.json'};
+ for(const [key,file]of Object.entries(settingFiles))assert.deepEqual(settings[key],readJson('examples/http/'+file),key);
+ for(const [name,feature]of [['artifact-ids','artifacts'],['artifact-reference','artifacts'],['task-reference','tasks']]){
+  const requestFile='r1-unavailable-'+name+'.request.json',responseFile='r1-unavailable-'+name+'.response.json';
+  const request=readJson('examples/http/'+requestFile),response=readJson('examples/http/'+responseFile);
+  const mappedRequest=fixtures.find(x=>x.file===requestFile),mappedResponse=fixtures.find(x=>x.file===responseFile);
+  assert.equal(mappedRequest?.operation_id,'createMessage');assert.equal(mappedRequest?.schema,'#/components/schemas/MessageCreateRequest');
+  assert.equal(mappedResponse?.operation_id,'createMessage');assert.equal(mappedResponse?.http_status,400);assert.equal(mappedResponse?.schema,'#/components/schemas/Error');
+  assert.equal(response.error.code,'INVALID_REQUEST');assert.equal(response.error.details?.feature,feature);assert.equal(response.error.retryable,false);
+  assert.deepEqual(probe({components:api.components,$ref:mappedRequest.schema},request),[]);
+  assert.deepEqual(probe({components:api.components,$ref:mappedResponse.schema},response),[]);
+  if(name==='artifact-ids')assert(request.artifact_ids.length>0&&request.refs.length===0);
+  if(name==='artifact-reference')assert(request.artifact_ids.length===0&&request.refs.some(x=>x.kind==='artifact'));
+  if(name==='task-reference')assert(request.artifact_ids.length===0&&request.refs.some(x=>x.kind==='task'));
+ }
  const recovery=readJson('spec/recovery-manifest.schema.json'),manifest=readJson('examples/recovery/r1-manifest.json');assert.deepEqual(probe(recovery,manifest),[]);
  const commands=readJson('spec/recovery-command.schema.json'),commandExamples=readJson('examples/recovery/r1-commands.json');
- assert.deepEqual(commands.$defs.DeploymentConfig,deployment,'Recovery config definition must equal deployment schema');
- assert.deepEqual(readJson('spec/recovery-command-examples.schema.json').$defs.DeploymentConfig,deployment);
- assert.deepEqual(readJson('spec/recovery-authority-cases.schema.json').$defs.DeploymentConfig,deployment);
+ assert.equal(commands.$id,'urn:cf-agent-hub:recovery-command:1');
+ assert.equal(readJson('spec/recovery-command-examples.schema.json').properties.commands.items.$ref,commands.$id);
+ assert.equal(readJson('spec/recovery-authority-cases.schema.json').properties.matching_target_resume.$ref,commands.$id);
+ for(const [id,expected]of [['urn:cf-agent-hub:deployment-config:0.2',3],['urn:cf-agent-hub:r1-bootstrap:0.1',3],['urn:cf-agent-hub:recovery-manifest:1',2]])assert.equal((JSON.stringify(commands).match(new RegExp(id,'g'))??[]).length,expected,id+' must be referenced exactly');
  for(const command of commandExamples.commands)assert.deepEqual(probe(commands,command),[],command.operation);
+ assert.deepEqual(probe(readJson('spec/recovery-command-examples.schema.json'),commandExamples),[],'Command fixture wrapper must resolve canonical command schema');
+ const sourceResume=commandExamples.commands.find(x=>x.operation==='resume');
+ assert.equal(sourceResume.expected_authority_epoch,sourceResume.payload.ledger.authority_epoch);
+ assert.deepEqual(recoveryAuthorityIssues(sourceResume,manifest),[],'Original unchanged source resume must be coherent');
  const authority=readJson('examples/recovery/r1-authority-cases.json');
+ assert.deepEqual(probe(readJson('spec/recovery-authority-cases.schema.json'),authority),[]);
  assert.deepEqual(probe(commands,authority.matching_target_resume),[]);
  assert.deepEqual(recoveryAuthorityIssues(authority.matching_target_resume,manifest),[]);
+ const reordered=structuredClone(authority.matching_target_resume);const objectName=reordered.payload.cutover_record.target_catalog_mapping.object_name,workspaceId=reordered.payload.cutover_record.target_catalog_mapping.workspace_id;reordered.payload.cutover_record.target_catalog_mapping={object_name:objectName,workspace_id:workspaceId};assert.deepEqual(recoveryAuthorityIssues(reordered,manifest),[],'Mapping order must not affect authority linkage');
  for(const item of authority.rejections){const branch=commands.oneOf.find(x=>x.properties.operation.const===item.command.operation);const errors=[...probe(branch,item.command,commands),...recoveryAuthorityIssues(item.command,manifest)];assert(errors.some(e=>e.includes(item.field)),item.name+': expected '+item.field+', got '+JSON.stringify(errors));}
  const editOnly=structuredClone(config);editOnly.human_grants[0].scopes=['profile:edit'];assert.deepEqual(deploymentIssues(editOnly),[]);
  for(const name of ['getAuthSession','logoutAuth']){const op=Object.values(api.paths).flatMap(item=>Object.values(item)).find(x=>x.operationId===name);assert.deepEqual(op.security,[{HumanSession:[]}]);assert.deepEqual(op['x-required-scopes'],[]);assert.equal(op['x-auth-protocol'],true);}

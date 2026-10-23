@@ -18,6 +18,7 @@ from urllib.parse import unquote, urlsplit
 from jsonschema import Draft202012Validator, FormatChecker
 from markdown_it import MarkdownIt
 from openapi_spec_validator import validate as validate_openapi
+from referencing import Registry, Resource
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -104,6 +105,11 @@ def validate_schemas_and_fixtures(spec: dict) -> tuple[int, int]:
             check(False, f"{path.name}: {error}", "json_schemas")
         schemas[path.relative_to(ROOT).as_posix()] = schema
 
+    resources = [(schema["$id"], Resource.from_contents(schema)) for schema in schemas.values() if "$id" in schema]
+    components_resource = {"$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "urn:cf-agent-hub:openapi-components:1", "components": spec["components"]}
+    resources.append((components_resource["$id"], Resource.from_contents(components_resource)))
+    registry = Registry().with_resources(resources)
+
     mappings = read_json(ROOT / "validation/fixtures.json")["fixtures"]
     api_map = read_json(ROOT / "examples/http/fixture-map.json")
     operations = {operation["operationId"]: operation for path in spec["paths"].values() for method, operation in path.items() if method in {"get", "post", "patch", "put", "delete"}}
@@ -149,7 +155,7 @@ def validate_schemas_and_fixtures(spec: dict) -> tuple[int, int]:
             "components": spec["components"],
             "$ref": entry["openapi_schema"],
         }
-        errors = sorted(Draft202012Validator(schema, format_checker=FormatChecker()).iter_errors(data), key=lambda e: str(e.path))
+        errors = sorted(Draft202012Validator(schema, format_checker=FormatChecker(), registry=registry).iter_errors(data), key=lambda e: str(e.path))
         check(not errors, f"{name}: " + "; ".join(f"{list(e.path)} {e.message}" for e in errors), "fixture_validation")
         if name.startswith("examples/profiles/"):
             for field in ["projects", "work_roles"]:
@@ -200,7 +206,7 @@ def validate_schemas_and_fixtures(spec: dict) -> tuple[int, int]:
         check(not validator.is_valid(value), f"Profile negative case {index} unexpectedly accepted", "negative_schema_cases")
     for case in read_json(ROOT / "examples/http/r1-contract-negative.json")["cases"]:
         schema = schemas[case["schema"]]
-        schema_errors = list(Draft202012Validator(schema, format_checker=FormatChecker()).iter_errors(case["value"]))
+        schema_errors = list(Draft202012Validator(schema, format_checker=FormatChecker(), registry=registry).iter_errors(case["value"]))
         semantic = deployment_semantic_errors(case["value"], case.get("context", {})) if case["schema"] == "spec/deployment-config.schema.json" else []
         paths = []
         for error in schema_errors:

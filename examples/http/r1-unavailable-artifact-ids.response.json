@@ -1,0 +1,11 @@
+{
+  "error": {
+    "code": "INVALID_REQUEST",
+    "message": "Feature unavailable in R1.",
+    "retryable": false,
+    "request_id": "req_r1_unavailable_artifact_ids",
+    "details": {
+      "feature": "artifacts"
+    }
+  }
+}

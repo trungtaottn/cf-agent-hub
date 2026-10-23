@@ -1222,6 +1222,682 @@
           }
         }
       }
+    },
+    {
+      "name": "target cannot omit both exclusive-authority proofs",
+      "field": "source_retirement_receipt",
+      "command": {
+        "operation": "resume",
+        "workspace_id": "ws_example",
+        "capture_id": "capture_example",
+        "expected_authority_epoch": 2,
+        "operation_id": "resume_target_example",
+        "reason": "Synthetic contract example; not authenticated recovery evidence.",
+        "payload": {
+          "receipt_id": "receipt_example",
+          "ledger": {
+            "workspace_id": "ws_example",
+            "environment_id": "env_target",
+            "authority_epoch": 2,
+            "config": {
+              "contract_revision": "0.2",
+              "config_epoch": 2,
+              "workspace_catalog": [
+                {
+                  "workspace_id": "ws_example",
+                  "object_name": "workspace-target"
+                }
+              ],
+              "authentication": {
+                "mode": "verified-oidc",
+                "issuer": "https://identity.example.invalid",
+                "audience": "cfhub-client",
+                "client_id": "cfhub-client",
+                "allowed_origins": [
+                  "https://hub.example.invalid"
+                ],
+                "redirect_uris": [
+                  {
+                    "workspace_id": "ws_example",
+                    "redirect_uri": "https://hub.example.invalid/v2/workspaces/ws_example/auth/callback"
+                  }
+                ],
+                "client_secret_ref": "OIDC_CLIENT_SECRET",
+                "session_ttl_seconds": 3600,
+                "id_token_algorithms": [
+                  "RS256"
+                ],
+                "reviewed_oidc_endpoints": {
+                  "authorization_endpoint": "https://identity.example.invalid/authorize",
+                  "token_endpoint": "https://identity.example.invalid/token",
+                  "jwks_uri": "https://identity.example.invalid/jwks"
+                }
+              },
+              "static_participants": [
+                {
+                  "workspace_id": "ws_example",
+                  "agent_id": "agent_research",
+                  "display_name": "Research participant"
+                }
+              ],
+              "human_grants": [
+                {
+                  "workspace_id": "ws_example",
+                  "principal_id": "human_operator",
+                  "issuer": "https://identity.example.invalid",
+                  "subject": "synthetic-subject",
+                  "scopes": [
+                    "workspace:read",
+                    "messages:send",
+                    "messages:read",
+                    "messages:review",
+                    "events:read",
+                    "profile:edit",
+                    "operations:read"
+                  ],
+                  "project_ids": null,
+                  "enabled": true
+                }
+              ],
+              "static_credential_refs": [
+                {
+                  "workspace_id": "ws_example",
+                  "credential_id": "credential_research_1",
+                  "agent_id": "agent_research",
+                  "scopes": [
+                    "workspace:read",
+                    "messages:send",
+                    "messages:read",
+                    "messages:ack",
+                    "events:read"
+                  ],
+                  "project_ids": null,
+                  "expires_at": "2026-11-23T00:00:00Z",
+                  "enabled": true
+                }
+              ],
+              "workspace_policies": [
+                {
+                  "workspace_id": "ws_example",
+                  "allowed_user_overrides": [
+                    "theme",
+                    "density",
+                    "default_view"
+                  ],
+                  "notification_destinations": [
+                    {
+                      "destination_id": "research",
+                      "agent_id": "agent_research",
+                      "url": "https://receiver.example.invalid/cfhub",
+                      "signing_key_ref": "NOTIFICATION_SIGNING_KEY",
+                      "enabled": true
+                    }
+                  ],
+                  "retry_after_max_seconds": 3600
+                }
+              ]
+            },
+            "verification_bundle": {
+              "contract_revision": "0.1",
+              "config_epoch": 2,
+              "config_digest": "1d7ee0c6b11f33da2364d9e34efbe49c4b9e81ef69cbac92c58af66d768db5d4",
+              "credentials": [
+                {
+                  "workspace_id": "ws_example",
+                  "credential_id": "credential_research_1",
+                  "token_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+                }
+              ],
+              "retired_credentials": [],
+              "auth": {
+                "key_id": "synthetic_key",
+                "algorithm": "HMAC-SHA256",
+                "tag": "0000000000000000000000000000000000000000000000000000000000000000"
+              }
+            },
+            "installation_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+            "retired_authorities": [],
+            "auth": {
+              "key_id": "synthetic_key",
+              "algorithm": "HMAC-SHA256",
+              "tag": "0000000000000000000000000000000000000000000000000000000000000000"
+            }
+          },
+          "source_retirement_receipt": null,
+          "cutover_record": null
+        }
+      }
+    },
+    {
+      "name": "foreign outer workspace",
+      "field": "workspace_id",
+      "command": {
+        "operation": "resume",
+        "workspace_id": "ws_other",
+        "capture_id": "capture_example",
+        "expected_authority_epoch": 2,
+        "operation_id": "resume_target_example",
+        "reason": "Synthetic contract example; not authenticated recovery evidence.",
+        "payload": {
+          "receipt_id": "receipt_example",
+          "ledger": {
+            "workspace_id": "ws_example",
+            "environment_id": "env_target",
+            "authority_epoch": 2,
+            "config": {
+              "contract_revision": "0.2",
+              "config_epoch": 2,
+              "workspace_catalog": [
+                {
+                  "workspace_id": "ws_example",
+                  "object_name": "workspace-target"
+                }
+              ],
+              "authentication": {
+                "mode": "verified-oidc",
+                "issuer": "https://identity.example.invalid",
+                "audience": "cfhub-client",
+                "client_id": "cfhub-client",
+                "allowed_origins": [
+                  "https://hub.example.invalid"
+                ],
+                "redirect_uris": [
+                  {
+                    "workspace_id": "ws_example",
+                    "redirect_uri": "https://hub.example.invalid/v2/workspaces/ws_example/auth/callback"
+                  }
+                ],
+                "client_secret_ref": "OIDC_CLIENT_SECRET",
+                "session_ttl_seconds": 3600,
+                "id_token_algorithms": [
+                  "RS256"
+                ],
+                "reviewed_oidc_endpoints": {
+                  "authorization_endpoint": "https://identity.example.invalid/authorize",
+                  "token_endpoint": "https://identity.example.invalid/token",
+                  "jwks_uri": "https://identity.example.invalid/jwks"
+                }
+              },
+              "static_participants": [
+                {
+                  "workspace_id": "ws_example",
+                  "agent_id": "agent_research",
+                  "display_name": "Research participant"
+                }
+              ],
+              "human_grants": [
+                {
+                  "workspace_id": "ws_example",
+                  "principal_id": "human_operator",
+                  "issuer": "https://identity.example.invalid",
+                  "subject": "synthetic-subject",
+                  "scopes": [
+                    "workspace:read",
+                    "messages:send",
+                    "messages:read",
+                    "messages:review",
+                    "events:read",
+                    "profile:edit",
+                    "operations:read"
+                  ],
+                  "project_ids": null,
+                  "enabled": true
+                }
+              ],
+              "static_credential_refs": [
+                {
+                  "workspace_id": "ws_example",
+                  "credential_id": "credential_research_1",
+                  "agent_id": "agent_research",
+                  "scopes": [
+                    "workspace:read",
+                    "messages:send",
+                    "messages:read",
+                    "messages:ack",
+                    "events:read"
+                  ],
+                  "project_ids": null,
+                  "expires_at": "2026-11-23T00:00:00Z",
+                  "enabled": true
+                }
+              ],
+              "workspace_policies": [
+                {
+                  "workspace_id": "ws_example",
+                  "allowed_user_overrides": [
+                    "theme",
+                    "density",
+                    "default_view"
+                  ],
+                  "notification_destinations": [
+                    {
+                      "destination_id": "research",
+                      "agent_id": "agent_research",
+                      "url": "https://receiver.example.invalid/cfhub",
+                      "signing_key_ref": "NOTIFICATION_SIGNING_KEY",
+                      "enabled": true
+                    }
+                  ],
+                  "retry_after_max_seconds": 3600
+                }
+              ]
+            },
+            "verification_bundle": {
+              "contract_revision": "0.1",
+              "config_epoch": 2,
+              "config_digest": "1d7ee0c6b11f33da2364d9e34efbe49c4b9e81ef69cbac92c58af66d768db5d4",
+              "credentials": [
+                {
+                  "workspace_id": "ws_example",
+                  "credential_id": "credential_research_1",
+                  "token_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+                }
+              ],
+              "retired_credentials": [],
+              "auth": {
+                "key_id": "synthetic_key",
+                "algorithm": "HMAC-SHA256",
+                "tag": "0000000000000000000000000000000000000000000000000000000000000000"
+              }
+            },
+            "installation_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+            "retired_authorities": [],
+            "auth": {
+              "key_id": "synthetic_key",
+              "algorithm": "HMAC-SHA256",
+              "tag": "0000000000000000000000000000000000000000000000000000000000000000"
+            }
+          },
+          "source_retirement_receipt": {
+            "id": "retirement_example",
+            "capture_id": "capture_example",
+            "workspace_id": "ws_example",
+            "environment_id": "env_example",
+            "authority_epoch": 1,
+            "barrier_id": "barrier_example",
+            "retired_at": "2026-10-23T00:20:00Z",
+            "auth": {
+              "key_id": "synthetic_key",
+              "algorithm": "HMAC-SHA256",
+              "tag": "0000000000000000000000000000000000000000000000000000000000000000"
+            }
+          },
+          "cutover_record": {
+            "id": "cutover_example",
+            "capture_id": "capture_example",
+            "workspace_id": "ws_example",
+            "source_environment_id": "env_example",
+            "source_authority_epoch": 1,
+            "target_environment_id": "env_target",
+            "target_authority_epoch": 2,
+            "source_retirement_receipt_id": "retirement_example",
+            "target_catalog_mapping": {
+              "workspace_id": "ws_example",
+              "object_name": "workspace-target"
+            },
+            "cutover_at": "2026-10-23T00:21:00Z",
+            "auth": {
+              "key_id": "synthetic_key",
+              "algorithm": "HMAC-SHA256",
+              "tag": "0000000000000000000000000000000000000000000000000000000000000000"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "foreign outer capture",
+      "field": "capture_id",
+      "command": {
+        "operation": "resume",
+        "workspace_id": "ws_example",
+        "capture_id": "capture_other",
+        "expected_authority_epoch": 2,
+        "operation_id": "resume_target_example",
+        "reason": "Synthetic contract example; not authenticated recovery evidence.",
+        "payload": {
+          "receipt_id": "receipt_example",
+          "ledger": {
+            "workspace_id": "ws_example",
+            "environment_id": "env_target",
+            "authority_epoch": 2,
+            "config": {
+              "contract_revision": "0.2",
+              "config_epoch": 2,
+              "workspace_catalog": [
+                {
+                  "workspace_id": "ws_example",
+                  "object_name": "workspace-target"
+                }
+              ],
+              "authentication": {
+                "mode": "verified-oidc",
+                "issuer": "https://identity.example.invalid",
+                "audience": "cfhub-client",
+                "client_id": "cfhub-client",
+                "allowed_origins": [
+                  "https://hub.example.invalid"
+                ],
+                "redirect_uris": [
+                  {
+                    "workspace_id": "ws_example",
+                    "redirect_uri": "https://hub.example.invalid/v2/workspaces/ws_example/auth/callback"
+                  }
+                ],
+                "client_secret_ref": "OIDC_CLIENT_SECRET",
+                "session_ttl_seconds": 3600,
+                "id_token_algorithms": [
+                  "RS256"
+                ],
+                "reviewed_oidc_endpoints": {
+                  "authorization_endpoint": "https://identity.example.invalid/authorize",
+                  "token_endpoint": "https://identity.example.invalid/token",
+                  "jwks_uri": "https://identity.example.invalid/jwks"
+                }
+              },
+              "static_participants": [
+                {
+                  "workspace_id": "ws_example",
+                  "agent_id": "agent_research",
+                  "display_name": "Research participant"
+                }
+              ],
+              "human_grants": [
+                {
+                  "workspace_id": "ws_example",
+                  "principal_id": "human_operator",
+                  "issuer": "https://identity.example.invalid",
+                  "subject": "synthetic-subject",
+                  "scopes": [
+                    "workspace:read",
+                    "messages:send",
+                    "messages:read",
+                    "messages:review",
+                    "events:read",
+                    "profile:edit",
+                    "operations:read"
+                  ],
+                  "project_ids": null,
+                  "enabled": true
+                }
+              ],
+              "static_credential_refs": [
+                {
+                  "workspace_id": "ws_example",
+                  "credential_id": "credential_research_1",
+                  "agent_id": "agent_research",
+                  "scopes": [
+                    "workspace:read",
+                    "messages:send",
+                    "messages:read",
+                    "messages:ack",
+                    "events:read"
+                  ],
+                  "project_ids": null,
+                  "expires_at": "2026-11-23T00:00:00Z",
+                  "enabled": true
+                }
+              ],
+              "workspace_policies": [
+                {
+                  "workspace_id": "ws_example",
+                  "allowed_user_overrides": [
+                    "theme",
+                    "density",
+                    "default_view"
+                  ],
+                  "notification_destinations": [
+                    {
+                      "destination_id": "research",
+                      "agent_id": "agent_research",
+                      "url": "https://receiver.example.invalid/cfhub",
+                      "signing_key_ref": "NOTIFICATION_SIGNING_KEY",
+                      "enabled": true
+                    }
+                  ],
+                  "retry_after_max_seconds": 3600
+                }
+              ]
+            },
+            "verification_bundle": {
+              "contract_revision": "0.1",
+              "config_epoch": 2,
+              "config_digest": "1d7ee0c6b11f33da2364d9e34efbe49c4b9e81ef69cbac92c58af66d768db5d4",
+              "credentials": [
+                {
+                  "workspace_id": "ws_example",
+                  "credential_id": "credential_research_1",
+                  "token_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+                }
+              ],
+              "retired_credentials": [],
+              "auth": {
+                "key_id": "synthetic_key",
+                "algorithm": "HMAC-SHA256",
+                "tag": "0000000000000000000000000000000000000000000000000000000000000000"
+              }
+            },
+            "installation_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+            "retired_authorities": [],
+            "auth": {
+              "key_id": "synthetic_key",
+              "algorithm": "HMAC-SHA256",
+              "tag": "0000000000000000000000000000000000000000000000000000000000000000"
+            }
+          },
+          "source_retirement_receipt": {
+            "id": "retirement_example",
+            "capture_id": "capture_example",
+            "workspace_id": "ws_example",
+            "environment_id": "env_example",
+            "authority_epoch": 1,
+            "barrier_id": "barrier_example",
+            "retired_at": "2026-10-23T00:20:00Z",
+            "auth": {
+              "key_id": "synthetic_key",
+              "algorithm": "HMAC-SHA256",
+              "tag": "0000000000000000000000000000000000000000000000000000000000000000"
+            }
+          },
+          "cutover_record": {
+            "id": "cutover_example",
+            "capture_id": "capture_example",
+            "workspace_id": "ws_example",
+            "source_environment_id": "env_example",
+            "source_authority_epoch": 1,
+            "target_environment_id": "env_target",
+            "target_authority_epoch": 2,
+            "source_retirement_receipt_id": "retirement_example",
+            "target_catalog_mapping": {
+              "workspace_id": "ws_example",
+              "object_name": "workspace-target"
+            },
+            "cutover_at": "2026-10-23T00:21:00Z",
+            "auth": {
+              "key_id": "synthetic_key",
+              "algorithm": "HMAC-SHA256",
+              "tag": "0000000000000000000000000000000000000000000000000000000000000000"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "stale outer expected authority epoch",
+      "field": "expected_authority_epoch",
+      "command": {
+        "operation": "resume",
+        "workspace_id": "ws_example",
+        "capture_id": "capture_example",
+        "expected_authority_epoch": 1,
+        "operation_id": "resume_target_example",
+        "reason": "Synthetic contract example; not authenticated recovery evidence.",
+        "payload": {
+          "receipt_id": "receipt_example",
+          "ledger": {
+            "workspace_id": "ws_example",
+            "environment_id": "env_target",
+            "authority_epoch": 2,
+            "config": {
+              "contract_revision": "0.2",
+              "config_epoch": 2,
+              "workspace_catalog": [
+                {
+                  "workspace_id": "ws_example",
+                  "object_name": "workspace-target"
+                }
+              ],
+              "authentication": {
+                "mode": "verified-oidc",
+                "issuer": "https://identity.example.invalid",
+                "audience": "cfhub-client",
+                "client_id": "cfhub-client",
+                "allowed_origins": [
+                  "https://hub.example.invalid"
+                ],
+                "redirect_uris": [
+                  {
+                    "workspace_id": "ws_example",
+                    "redirect_uri": "https://hub.example.invalid/v2/workspaces/ws_example/auth/callback"
+                  }
+                ],
+                "client_secret_ref": "OIDC_CLIENT_SECRET",
+                "session_ttl_seconds": 3600,
+                "id_token_algorithms": [
+                  "RS256"
+                ],
+                "reviewed_oidc_endpoints": {
+                  "authorization_endpoint": "https://identity.example.invalid/authorize",
+                  "token_endpoint": "https://identity.example.invalid/token",
+                  "jwks_uri": "https://identity.example.invalid/jwks"
+                }
+              },
+              "static_participants": [
+                {
+                  "workspace_id": "ws_example",
+                  "agent_id": "agent_research",
+                  "display_name": "Research participant"
+                }
+              ],
+              "human_grants": [
+                {
+                  "workspace_id": "ws_example",
+                  "principal_id": "human_operator",
+                  "issuer": "https://identity.example.invalid",
+                  "subject": "synthetic-subject",
+                  "scopes": [
+                    "workspace:read",
+                    "messages:send",
+                    "messages:read",
+                    "messages:review",
+                    "events:read",
+                    "profile:edit",
+                    "operations:read"
+                  ],
+                  "project_ids": null,
+                  "enabled": true
+                }
+              ],
+              "static_credential_refs": [
+                {
+                  "workspace_id": "ws_example",
+                  "credential_id": "credential_research_1",
+                  "agent_id": "agent_research",
+                  "scopes": [
+                    "workspace:read",
+                    "messages:send",
+                    "messages:read",
+                    "messages:ack",
+                    "events:read"
+                  ],
+                  "project_ids": null,
+                  "expires_at": "2026-11-23T00:00:00Z",
+                  "enabled": true
+                }
+              ],
+              "workspace_policies": [
+                {
+                  "workspace_id": "ws_example",
+                  "allowed_user_overrides": [
+                    "theme",
+                    "density",
+                    "default_view"
+                  ],
+                  "notification_destinations": [
+                    {
+                      "destination_id": "research",
+                      "agent_id": "agent_research",
+                      "url": "https://receiver.example.invalid/cfhub",
+                      "signing_key_ref": "NOTIFICATION_SIGNING_KEY",
+                      "enabled": true
+                    }
+                  ],
+                  "retry_after_max_seconds": 3600
+                }
+              ]
+            },
+            "verification_bundle": {
+              "contract_revision": "0.1",
+              "config_epoch": 2,
+              "config_digest": "1d7ee0c6b11f33da2364d9e34efbe49c4b9e81ef69cbac92c58af66d768db5d4",
+              "credentials": [
+                {
+                  "workspace_id": "ws_example",
+                  "credential_id": "credential_research_1",
+                  "token_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+                }
+              ],
+              "retired_credentials": [],
+              "auth": {
+                "key_id": "synthetic_key",
+                "algorithm": "HMAC-SHA256",
+                "tag": "0000000000000000000000000000000000000000000000000000000000000000"
+              }
+            },
+            "installation_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+            "retired_authorities": [],
+            "auth": {
+              "key_id": "synthetic_key",
+              "algorithm": "HMAC-SHA256",
+              "tag": "0000000000000000000000000000000000000000000000000000000000000000"
+            }
+          },
+          "source_retirement_receipt": {
+            "id": "retirement_example",
+            "capture_id": "capture_example",
+            "workspace_id": "ws_example",
+            "environment_id": "env_example",
+            "authority_epoch": 1,
+            "barrier_id": "barrier_example",
+            "retired_at": "2026-10-23T00:20:00Z",
+            "auth": {
+              "key_id": "synthetic_key",
+              "algorithm": "HMAC-SHA256",
+              "tag": "0000000000000000000000000000000000000000000000000000000000000000"
+            }
+          },
+          "cutover_record": {
+            "id": "cutover_example",
+            "capture_id": "capture_example",
+            "workspace_id": "ws_example",
+            "source_environment_id": "env_example",
+            "source_authority_epoch": 1,
+            "target_environment_id": "env_target",
+            "target_authority_epoch": 2,
+            "source_retirement_receipt_id": "retirement_example",
+            "target_catalog_mapping": {
+              "workspace_id": "ws_example",
+              "object_name": "workspace-target"
+            },
+            "cutover_at": "2026-10-23T00:21:00Z",
+            "auth": {
+              "key_id": "synthetic_key",
+              "algorithm": "HMAC-SHA256",
+              "tag": "0000000000000000000000000000000000000000000000000000000000000000"
+            }
+          }
+        }
+      }
     }
   ]
 }

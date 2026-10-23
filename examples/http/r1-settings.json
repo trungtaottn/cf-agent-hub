@@ -1,0 +1,289 @@
+{
+  "amendment_id": "r1-foundation-1",
+  "get_configuration": {
+    "data": {
+      "config_epoch": 1,
+      "profile_revision": 1,
+      "preferences_revision": 1,
+      "allowed_user_overrides": [
+        "theme",
+        "density",
+        "default_view"
+      ],
+      "enabled_features": [
+        "workspace",
+        "messages",
+        "events",
+        "profile",
+        "preferences",
+        "operations"
+      ]
+    },
+    "request_id": "req_synthetic_getConfiguration"
+  },
+  "get_profile": {
+    "data": {
+      "profile_revision": 1,
+      "profile": {
+        "contract_revision": "0.1",
+        "profile_id": "profile_neutral",
+        "display_name": "Workspace",
+        "description": "A shared coordination workspace.",
+        "branding": {
+          "accent": "blue"
+        },
+        "navigation": {
+          "visible_views": [
+            "overview",
+            "inbox",
+            "tasks",
+            "agents",
+            "approvals",
+            "activity"
+          ]
+        },
+        "projects": [],
+        "work_roles": []
+      }
+    },
+    "request_id": "req_synthetic_getProfile"
+  },
+  "preview_profile_request": {
+    "expected_profile_revision": 1,
+    "profile": {
+      "contract_revision": "0.1",
+      "profile_id": "profile_neutral",
+      "display_name": "Workspace",
+      "description": "A shared coordination workspace.",
+      "branding": {
+        "accent": "blue"
+      },
+      "navigation": {
+        "visible_views": [
+          "overview",
+          "inbox",
+          "tasks",
+          "agents",
+          "approvals",
+          "activity"
+        ]
+      },
+      "projects": [],
+      "work_roles": []
+    }
+  },
+  "preview_profile_response": {
+    "data": {
+      "base_revision": 1,
+      "profile": {
+        "contract_revision": "0.1",
+        "profile_id": "profile_neutral",
+        "display_name": "Workspace",
+        "description": "A shared coordination workspace.",
+        "branding": {
+          "accent": "blue"
+        },
+        "navigation": {
+          "visible_views": [
+            "overview",
+            "inbox",
+            "tasks",
+            "agents",
+            "approvals",
+            "activity"
+          ]
+        },
+        "projects": [],
+        "work_roles": []
+      },
+      "changes": [],
+      "conflicts": []
+    },
+    "request_id": "req_synthetic_previewProfile"
+  },
+  "put_profile_request": {
+    "expected_profile_revision": 1,
+    "profile": {
+      "contract_revision": "0.1",
+      "profile_id": "profile_neutral",
+      "display_name": "Workspace",
+      "description": "A shared coordination workspace.",
+      "branding": {
+        "accent": "blue"
+      },
+      "navigation": {
+        "visible_views": [
+          "overview",
+          "inbox",
+          "tasks",
+          "agents",
+          "approvals",
+          "activity"
+        ]
+      },
+      "projects": [],
+      "work_roles": []
+    }
+  },
+  "put_profile_response": {
+    "data": {
+      "profile_revision": 1,
+      "profile": {
+        "contract_revision": "0.1",
+        "profile_id": "profile_neutral",
+        "display_name": "Workspace",
+        "description": "A shared coordination workspace.",
+        "branding": {
+          "accent": "blue"
+        },
+        "navigation": {
+          "visible_views": [
+            "overview",
+            "inbox",
+            "tasks",
+            "agents",
+            "approvals",
+            "activity"
+          ]
+        },
+        "projects": [],
+        "work_roles": []
+      }
+    },
+    "request_id": "req_synthetic_putProfile"
+  },
+  "export_profile": {
+    "data": {
+      "profile_revision": 1,
+      "profile": {
+        "contract_revision": "0.1",
+        "profile_id": "profile_neutral",
+        "display_name": "Workspace",
+        "description": "A shared coordination workspace.",
+        "branding": {
+          "accent": "blue"
+        },
+        "navigation": {
+          "visible_views": [
+            "overview",
+            "inbox",
+            "tasks",
+            "agents",
+            "approvals",
+            "activity"
+          ]
+        },
+        "projects": [],
+        "work_roles": []
+      },
+      "included_categories": [
+        "presentation",
+        "projects",
+        "work_roles"
+      ]
+    },
+    "request_id": "req_synthetic_exportProfile"
+  },
+  "get_preferences": {
+    "data": {
+      "preferences_revision": 1,
+      "preferences": {
+        "contract_revision": "0.1",
+        "theme": "system",
+        "density": "comfortable",
+        "default_view": "tasks"
+      },
+      "effective": {
+        "contract_revision": "0.1",
+        "theme": "system",
+        "density": "comfortable",
+        "default_view": "tasks"
+      },
+      "allowed_user_overrides": [
+        "theme",
+        "density",
+        "default_view"
+      ]
+    },
+    "request_id": "req_synthetic_getPreferences"
+  },
+  "put_preferences_request": {
+    "expected_preferences_revision": 1,
+    "preferences": {
+      "contract_revision": "0.1",
+      "theme": "system",
+      "density": "comfortable",
+      "default_view": "tasks"
+    }
+  },
+  "put_preferences_response": {
+    "data": {
+      "preferences_revision": 1,
+      "preferences": {
+        "contract_revision": "0.1",
+        "theme": "system",
+        "density": "comfortable",
+        "default_view": "tasks"
+      },
+      "effective": {
+        "contract_revision": "0.1",
+        "theme": "system",
+        "density": "comfortable",
+        "default_view": "tasks"
+      },
+      "allowed_user_overrides": [
+        "theme",
+        "density",
+        "default_view"
+      ]
+    },
+    "request_id": "req_synthetic_putPreferences"
+  },
+  "get_operations": {
+    "data": {
+      "observed_at": "2026-10-23T00:00:00Z",
+      "config_epoch": 1,
+      "schema_version": 1,
+      "readiness": {
+        "observed_at": "2026-10-23T00:00:00Z",
+        "ready": false,
+        "checks": [
+          {
+            "name": "operator_probe",
+            "status": "unknown",
+            "code": "PROBE_REQUIRED",
+            "checked_at": null
+          }
+        ]
+      },
+      "outbox": {
+        "pending_count": 0,
+        "in_flight_count": 0,
+        "failed_count": 0,
+        "suppressed_count": 0,
+        "oldest_due_at": null,
+        "next_due_at": null
+      },
+      "scheduler": {
+        "last_run_at": null,
+        "last_error_code": null
+      }
+    },
+    "request_id": "req_synthetic_getOperations"
+  },
+  "get_readiness": {
+    "data": {
+      "observed_at": "2026-10-23T00:00:00Z",
+      "ready": false,
+      "checks": [
+        {
+          "name": "operator_probe",
+          "status": "unknown",
+          "code": "PROBE_REQUIRED",
+          "checked_at": null
+        }
+      ]
+    },
+    "request_id": "req_synthetic_getReadiness"
+  }
+}
