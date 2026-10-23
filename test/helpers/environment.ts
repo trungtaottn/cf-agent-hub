@@ -1,12 +1,13 @@
 import example from '../../examples/config/deployment.example.json';
 import bundleExample from '../../examples/config/r1-bootstrap.example.json';
+import type { VerificationBundle } from '../../src/config/generated/validators.js';
 import { parseDeployment } from '../../src/config/deployment';
 import { prepareBootstrap, sha256, canonicalJson } from '../../src/config/bootstrap';
 import type { RecoveryOperatorContext } from '../../src/workspace/context';
 export const nowMs = Date.parse('2026-10-23T00:00:00Z');
 export async function fixture(name: string, epoch = 1) {
  const config=structuredClone(example); config.config_epoch=epoch; config.workspace_catalog[0].object_name=name;
- const bundle=structuredClone(bundleExample); bundle.config_epoch=epoch;
+ const bundle=structuredClone(bundleExample) as VerificationBundle; bundle.config_epoch=epoch;
  bundle.config_digest=await sha256(canonicalJson(config));
  return {config:parseDeployment(config),bundle};
 }

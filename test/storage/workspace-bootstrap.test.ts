@@ -3,7 +3,7 @@ import { env, exports } from 'cloudflare:workers';
 import { runInDurableObject, evictDurableObject } from 'cloudflare:test';
 import { withTransaction } from '../../src/storage/transaction';
 import { migrate, FOUNDATION_SQL } from '../../src/storage/migrations';
-import { prepareBootstrap, sha256, canonicalJson } from '../../src/config/bootstrap';
+import { prepareBootstrap, sha256, canonicalJson, installConfiguration } from '../../src/config/bootstrap';
 import { prepared, fixture, operator, nowMs } from '../helpers/environment';
 const stub=(name:string)=>env.WORKSPACE.getByName(name);
 async function denied(name:string,context:Parameters<import('../../src/workspace/workspace-do').WorkspaceDO['reconcileConfiguration']>[0],input:Awaited<ReturnType<typeof prepared>>) {
@@ -87,5 +87,80 @@ describe('actual workerd SQLite authority',()=>{
    expect(response.status).toBe(404);
   }
   expect((await snapshot('public-denied')).metadata).toEqual([]);
+ });
+});
+
+describe('transaction and authority hardening',()=>{
+ it('escaped_transaction_cannot_write_after_commit',async()=>{
+  await runInDurableObject(stub('escape'),(_object,state)=>{
+   let escaped:import('../../src/storage/transaction').WorkspaceTransaction|undefined;
+   withTransaction(state.storage,tx=>{escaped=tx;});
+   expect(()=>escaped!.exec('INSERT INTO scheduler_state (id,next_due_at) VALUES (1,999)')).toThrow('TRANSACTION_CLOSED');
+   expect(state.storage.sql.exec('SELECT * FROM scheduler_state').toArray()).toEqual([]);
+  });
+ });
+ it('failed_bootstrap_rolls_back_every_authority_and_event_row',async()=>{
+  const input=await prepared('failed-bootstrap');
+  await runInDurableObject(stub('failed-bootstrap'),(_object,state)=>{
+   expect(()=>withTransaction(state.storage,tx=>{
+    installConfiguration(tx,input.config,input,nowMs);
+    tx.exec("INSERT INTO events (id,workspace_id,type,actor_json,resource_type,resource_id,resource_version,request_id,occurred_at,summary) VALUES ('event_probe','ws_example','configuration.installed','{}','configuration','ws_example',1,'req_probe',1,'probe')");
+    throw Error('FAULT_AFTER_INSTALL');
+   })).toThrow('FAULT_AFTER_INSTALL');
+   for(const table of ['workspace_metadata','human_grants','static_agents','native_credentials','events'])expect(state.storage.sql.exec('SELECT * FROM '+table).toArray()).toEqual([]);
+  });
+ });
+ it('all_required_tables_and_ordering_indexes_exist',async()=>{
+  await runInDurableObject(stub('schema-complete'),(_object,state)=>{
+   const tables=state.storage.sql.exec<{name:string}>("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%'").toArray().map(x=>x.name).sort();
+   expect(tables).toEqual(['schema_migrations','workspace_metadata','human_grants','static_agents','native_credentials','login_attempts','sessions','profiles','preferences','threads','thread_participants','messages','inbox','events','idempotency_outcomes','outbox','scheduler_state','maintenance_state','recovery_jobs','recovery_chunks','probe_receipts'].sort());
+   for(const [index,columns]of Object.entries({threads_created:['created_at','id'],inbox_recipient_order:['recipient_agent_id','acknowledged_at','created_at','message_id'],events_sequence:['sequence'],outbox_due:['status','next_due_at'],login_attempts_expiry:['expires_at']}))
+    expect(state.storage.sql.exec<{name:string}>('PRAGMA index_info('+index+')').toArray().map(x=>x.name)).toEqual(columns);
+  });
+ });
+ it('retired_credentials_cannot_resurrect_or_change_hash',async()=>{
+  const name='retirement',input=await prepared(name);await stub(name).reconcileConfiguration(operator(),input);
+  const next=await fixture(name,2),credential=next.bundle.credentials.pop()!;next.config.static_credential_refs=[];
+  next.bundle.retired_credentials=[{...credential,agent_id:'agent_research',retired_at_epoch:2}];
+  next.bundle.config_digest=await sha256(canonicalJson(next.config));
+  const retired=await prepareBootstrap(next.config,next.bundle,'ws_example');await stub(name).reconcileConfiguration(operator(1,input.installationDigest),retired);
+  const before=await snapshot(name);
+  expect(before.credentials[0].enabled).toBe(0);expect(before.credentials[0].retired_at_epoch).toBe(2);
+  expect(await denied(name,operator(2,retired.installationDigest),await prepared(name,3))).toContain('CREDENTIAL_IMMUTABLE');
+  const omitted=structuredClone(next);omitted.config.config_epoch=3;omitted.bundle.config_epoch=3;omitted.bundle.retired_credentials=[];
+  omitted.bundle.config_digest=await sha256(canonicalJson(omitted.config));
+  expect(await denied(name,operator(2,retired.installationDigest),await prepareBootstrap(omitted.config,omitted.bundle,'ws_example'))).toContain('RETIREMENT_REQUIRED');
+  expect(await snapshot(name)).toEqual(before);
+ });
+ it('removal_requires_explicit_retirement_and_changed_binding_is_denied',async()=>{
+  const name='retirement-required',input=await prepared(name);await stub(name).reconcileConfiguration(operator(),input);
+  const next=await fixture(name,2);next.bundle.credentials=[];next.config.static_credential_refs=[];next.bundle.config_digest=await sha256(canonicalJson(next.config));
+  expect(await denied(name,operator(1,input.installationDigest),await prepareBootstrap(next.config,next.bundle,'ws_example'))).toContain('RETIREMENT_REQUIRED');
+  const wrong=await prepared('wrong-object',2);expect(await denied(name,operator(1,input.installationDigest),wrong)).toContain('WORKSPACE_IDENTITY_MISMATCH');
+ });
+ it('commands_recheck_installed_identity_and_empty_authority_is_closed',async()=>{
+  const name='command-identity';
+  expect(await stub(name).command({workspaceId:'ws_example',objectName:name,requestId:'req_empty',operation:'read'})).toEqual({status:503,code:'NOT_INSTALLED'});
+  await stub(name).reconcileConfiguration(operator(),await prepared(name));
+  await runInDurableObject(stub(name),async object=>{
+   await expect(object.command({workspaceId:'ws_foreign',objectName:name,requestId:'req_wrong',operation:'read'})).rejects.toThrow('WORKSPACE_IDENTITY_MISMATCH');
+  });
+  expect(await stub(name).command({workspaceId:'ws_example',objectName:name,requestId:'req_closed',operation:'read'})).toEqual({status:403,code:'AUTHENTICATION_REQUIRED'});
+ });
+ it('forged_digest_or_extra_operator_fields_fail_without_domain_writes',async()=>{
+  const name='forgery',input=await prepared(name);
+  expect(await denied(name,operator(),{...input,installationDigest:'0'.repeat(64)})).toContain('INSTALLATION_DIGEST_MISMATCH');
+  expect(await denied(name,{...operator(),unreviewed:true} as ReturnType<typeof operator>,input)).toContain('INVALID_OPERATOR_CONTEXT');
+  expect((await snapshot(name)).metadata).toEqual([]);
+ });
+ it('new_credential_expiry_is_bounded_at_install_time',async()=>{
+  const name='expiry',input=await fixture(name);
+  input.config.static_credential_refs[0].expires_at=new Date(nowMs+91*86400000).toISOString();
+  input.bundle.config_digest=await sha256(canonicalJson(input.config));
+  const validated=await prepareBootstrap(input.config,input.bundle,'ws_example');
+  await runInDurableObject(stub(name),(_object,state)=>{
+   expect(()=>withTransaction(state.storage,tx=>installConfiguration(tx,validated.config,validated,nowMs))).toThrow('CREDENTIAL_EXPIRY');
+   expect(state.storage.sql.exec('SELECT * FROM workspace_metadata').toArray()).toEqual([]);
+  });
  });
 });
