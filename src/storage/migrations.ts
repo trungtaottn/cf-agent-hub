@@ -3,10 +3,11 @@ import sessionEpoch from './migrations/0002-session-auth-epoch.sql';
 import preferenceOwner from './migrations/0003-preference-owner.sql';
 import messageAdmission from './migrations/0004-message-admission.sql';
 import cursorRetention from './migrations/0005-cursor-retention.sql';
+import schedulerDiagnostics from './migrations/0006-outbox-scheduler-diagnostics.sql';
 import { withTransaction } from './transaction';
 export const FOUNDATION_SQL=foundation;
 export interface Migration {version:number;sql:string;}
-const defaults:readonly Migration[]=[{version:1,sql:foundation},{version:2,sql:sessionEpoch},{version:3,sql:preferenceOwner},{version:4,sql:messageAdmission},{version:5,sql:cursorRetention}];
+const defaults:readonly Migration[]=[{version:1,sql:foundation},{version:2,sql:sessionEpoch},{version:3,sql:preferenceOwner},{version:4,sql:messageAdmission},{version:5,sql:cursorRetention},{version:6,sql:schedulerDiagnostics}];
 export function migrate(storage:DurableObjectStorage,migrations:readonly Migration[]=defaults):void {
  // Migration-time entropy is prepared before entering SQL. Existing rows keep these IDs forever.
  const hasPreferences=storage.sql.exec<{name:string}>("SELECT name FROM sqlite_master WHERE type='table' AND name='preferences'").toArray().length>0;

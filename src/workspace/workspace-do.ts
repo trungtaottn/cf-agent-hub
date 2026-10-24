@@ -1,3 +1,7 @@
+import {operationsPath,operationsRoutes} from '../http/operations-routes';
+import {OutboxScheduler} from '../outbox/scheduler';
+import {DeliveryDispatcher} from '../outbox/dispatcher';
+import type {AuthWorkspace} from '../auth/context';
 import {messagePath,messageRoutes} from '../http/message-routes';
 import {settingsPath,settingsRoutes} from '../http/settings-routes';
 import { authRoutes,authFailure,securityHeaders } from '../http/auth-routes';
@@ -98,13 +102,24 @@ export class WorkspaceDO extends DurableObject<WorkspaceEnvironment> {
    return receipt;
   });
  }
- async fetch(request:Request):Promise<Response> {
-  const match=/^\/v2\/workspaces\/([a-zA-Z0-9_-]{1,128})\/auth\/(start|callback|session|logout)$/.exec(new URL(request.url).pathname);
-  const settings=settingsPath.exec(new URL(request.url).pathname),message=messagePath.exec(new URL(request.url).pathname);
-  if(!match&&!settings&&!message)return new Response(null,{status:404,headers:securityHeaders});
+ #outboxWorkspace():AuthWorkspace|null{
   const metadata=withTransaction(this.ctx.storage,tx=>tx.one<{workspace_id:string;object_name:string}>('SELECT workspace_id,object_name FROM workspace_metadata WHERE id=1'));
-  if(!metadata||metadata.workspace_id!==(match??settings??message)![1]||this.env.WORKSPACE.idFromName(metadata.object_name).toString()!==this.ctx.id.toString()){const headers=new Headers(securityHeaders);if(match?.[2]==='callback')headers.append('set-cookie',cookieHeader('cfhub_login','',0));return authFailure(new AuthError('UNAUTHENTICATED',401),crypto.randomUUID(),headers);}
-  return (message?messageRoutes:settings?settingsRoutes:authRoutes)(request,{storage:this.ctx.storage,workspaceId:metadata.workspace_id,objectName:metadata.object_name,secrets:this.env as unknown as Record<string,unknown>,clock:systemClock,entropy:systemEntropy});
+  if(!metadata||this.env.WORKSPACE.idFromName(metadata.object_name).toString()!==this.ctx.id.toString())return null;
+  return {storage:this.ctx.storage,workspaceId:metadata.workspace_id,objectName:metadata.object_name,secrets:this.env as unknown as Record<string,unknown>,clock:systemClock,entropy:systemEntropy};
+ }
+ async repairSchedule(){const workspace=this.#outboxWorkspace();if(!workspace)throw Error('WORKSPACE_IDENTITY_MISMATCH');return new OutboxScheduler(workspace,new DeliveryDispatcher(workspace)).repairSchedule();}
+ async runDueWork(nowMs:number):Promise<void>{const workspace=this.#outboxWorkspace();if(!workspace)return;await new OutboxScheduler(workspace,new DeliveryDispatcher(workspace)).runDueWork(nowMs);}
+ async alarm():Promise<void>{await this.runDueWork(systemClock.nowMs());}
+ async #repairDirty():Promise<void>{try{if(withTransaction(this.ctx.storage,tx=>tx.one<{dirty:number}>('SELECT dirty FROM scheduler_state WHERE id=1')?.dirty===1))await this.repairSchedule();}catch{/* Persisted work and catalog sweep remain authoritative. */}}
+ async fetch(request:Request):Promise<Response> {
+  await this.#repairDirty();
+  const match=/^\/v2\/workspaces\/([a-zA-Z0-9_-]{1,128})\/auth\/(start|callback|session|logout)$/.exec(new URL(request.url).pathname);
+  const settings=settingsPath.exec(new URL(request.url).pathname),message=messagePath.exec(new URL(request.url).pathname),operations=operationsPath.exec(new URL(request.url).pathname);
+  if(!match&&!settings&&!message&&!operations)return new Response(null,{status:404,headers:securityHeaders});
+  const metadata=withTransaction(this.ctx.storage,tx=>tx.one<{workspace_id:string;object_name:string}>('SELECT workspace_id,object_name FROM workspace_metadata WHERE id=1'));
+  if(!metadata||metadata.workspace_id!==(match??settings??message??operations)![1]||this.env.WORKSPACE.idFromName(metadata.object_name).toString()!==this.ctx.id.toString()){const headers=new Headers(securityHeaders);if(match?.[2]==='callback')headers.append('set-cookie',cookieHeader('cfhub_login','',0));return authFailure(new AuthError('UNAUTHENTICATED',401),crypto.randomUUID(),headers);}
+  const response=await (operations?operationsRoutes:message?messageRoutes:settings?settingsRoutes:authRoutes)(request,{storage:this.ctx.storage,workspaceId:metadata.workspace_id,objectName:metadata.object_name,secrets:this.env as unknown as Record<string,unknown>,clock:systemClock,entropy:systemEntropy});
+  await this.#repairDirty();return response;
  }
  async command(request:InternalRequest):Promise<InternalResponse> {
   if(!closed(request,['workspaceId','objectName','requestId','operation'])||!identifier(request.workspaceId)||!identifier(request.objectName)||!identifier(request.requestId)||typeof request.operation!=='string'||request.operation.length>128)throw Error('INVALID_INTERNAL_REQUEST');

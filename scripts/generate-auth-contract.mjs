@@ -6,8 +6,8 @@ import standalone from 'ajv/dist/standalone/index.js';
 const spec=JSON.parse(await readFile('spec/openapi.json','utf8')),schemas=spec.components.schemas;
 const settings=['Configuration','ProfileData','ProfilePreview','ProfileExport','PreferencesData','WorkspaceProfile','UserPreferences','ConfigurationResponse','ProfileDataResponse','ProfilePreviewResponse','ProfileExportResponse','PreferencesDataResponse'];
 const inputs=['AuthStartRequest','AuthCallbackQuery','AuthLogoutRequest','MessageCreateRequest','MessageAckRequest','ProfileWriteRequest','PreferencesWriteRequest'];
-const roots=['AckResult',...inputs,'AuthStartDataResponse','AuthSessionResponse','AuthLogoutDataResponse','Error','Event','Message','MessageNotification',...settings];
-const validated=[...inputs,'Error','Event','Message','MessageNotification',...settings];
+const roots=['Operations','OperationsResponse','AckResult',...inputs,'AuthStartDataResponse','AuthSessionResponse','AuthLogoutDataResponse','Error','Event','Message','MessageNotification',...settings];
+const validated=['Operations','OperationsResponse',...inputs,'Error','Event','Message','MessageNotification',...settings];
 const seen=new Set(),aliases=[];
 function type(s) {
  if(s.$ref){const parts=s.$ref.split('/').slice(3),name=parts.shift();if(parts.length){let target=schemas[name];for(const part of parts)target=target[part.replaceAll('~1','/').replaceAll('~0','~')];return type(target);}collect(name);return name;}
@@ -27,7 +27,7 @@ const ajv=new Ajv2020({strict:false,code:{source:true,esm:true}});addFormats(ajv
 ajv.addSchema({$id:'cfhub-http',components:{schemas}});
 const exports={};
 for(const name of validated){ajv.addSchema({$id:name,$ref:'cfhub-http#/components/schemas/'+name});exports['validate'+name]=name;}
-const js='// Generated from spec/openapi.json; npm run generate:auth.\nimport ucs2Module from "ajv/dist/runtime/ucs2length.js";\nconst ucs2Length=typeof ucs2Module==="function"?ucs2Module:ucs2Module.default;\n'+standalone(ajv,exports).replaceAll('require("ajv/dist/runtime/ucs2length").default','ucs2Length')+'\n';
+const js='// Generated from spec/openapi.json; npm run generate:auth.\nimport ucs2Module from "ajv/dist/runtime/ucs2length.js";\nimport formatsModule from "ajv-formats/dist/formats.js";\nimport equalModule from "ajv/dist/runtime/equal.js";\nconst ucs2Length=typeof ucs2Module==="function"?ucs2Module:ucs2Module.default;\nconst fullFormats=formatsModule.fullFormats;\nconst equal=typeof equalModule==="function"?equalModule:equalModule.default;\n'+standalone(ajv,exports).replaceAll('require("ajv/dist/runtime/ucs2length").default','ucs2Length').replaceAll('require("ajv-formats/dist/formats").fullFormats','fullFormats').replaceAll('require("ajv/dist/runtime/equal").default','equal')+'\n';
 const dts='// Generated from spec/openapi.json.\nimport type {'+validated.join(',')+'} from "../dto";\n'+validated.map(name=>'export declare function validate'+name+'(input:unknown): input is '+name+';').join('\n')+'\n';
 const dto='// Generated from spec/openapi.json; npm run generate:auth.\n'+aliases.join('\n')+'\nexport const authReturnPaths = '+JSON.stringify(schemas.AuthStartRequest.properties.return_path.enum)+' as const;\n';
 function byteRules(s,path=[]){

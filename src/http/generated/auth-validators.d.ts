@@ -1,5 +1,7 @@
 // Generated from spec/openapi.json.
-import type {AuthStartRequest,AuthCallbackQuery,AuthLogoutRequest,MessageCreateRequest,MessageAckRequest,ProfileWriteRequest,PreferencesWriteRequest,Error,Event,Message,MessageNotification,Configuration,ProfileData,ProfilePreview,ProfileExport,PreferencesData,WorkspaceProfile,UserPreferences,ConfigurationResponse,ProfileDataResponse,ProfilePreviewResponse,ProfileExportResponse,PreferencesDataResponse} from "../dto";
+import type {Operations,OperationsResponse,AuthStartRequest,AuthCallbackQuery,AuthLogoutRequest,MessageCreateRequest,MessageAckRequest,ProfileWriteRequest,PreferencesWriteRequest,Error,Event,Message,MessageNotification,Configuration,ProfileData,ProfilePreview,ProfileExport,PreferencesData,WorkspaceProfile,UserPreferences,ConfigurationResponse,ProfileDataResponse,ProfilePreviewResponse,ProfileExportResponse,PreferencesDataResponse} from "../dto";
+export declare function validateOperations(input:unknown): input is Operations;
+export declare function validateOperationsResponse(input:unknown): input is OperationsResponse;
 export declare function validateAuthStartRequest(input:unknown): input is AuthStartRequest;
 export declare function validateAuthCallbackQuery(input:unknown): input is AuthCallbackQuery;
 export declare function validateAuthLogoutRequest(input:unknown): input is AuthLogoutRequest;

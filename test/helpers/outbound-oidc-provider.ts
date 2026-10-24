@@ -1,4 +1,5 @@
 // Node-side synthetic issuer. Only the Vitest outbound service imports this module.
+import {NotificationReceiver} from './notification-receiver';
 import { randomBytes, createHash } from 'node:crypto';
 import { generateKeyPair, exportJWK, SignJWT } from 'jose';
 import example from '../../examples/config/deployment.example.json';
@@ -9,12 +10,20 @@ export async function outboundProvider() {
  const second={...await exportJWK(rotated.publicKey),kid:'rotated',alg:'RS256',use:'sig'};
  const issuer=example.authentication.issuer;
  const metadata={issuer,...example.authentication.reviewed_oidc_endpoints,response_types_supported:['code'],response_modes_supported:['query'],subject_types_supported:['public'],id_token_signing_alg_values_supported:['RS256'],code_challenge_methods_supported:['S256'],token_endpoint_auth_methods_supported:['client_secret_basic']};
+ const notificationKey='SYNTHETIC-ONLY-outbound-receiver-key-0123456789';
+ const notificationReceiver=new NotificationReceiver(':memory:',{workspaceId:'ws_example',recipientAgentId:'agent_research',key:notificationKey,nowSeconds:()=>Math.floor(Date.now()/1000)});
+ const notificationRequests:{body:string;headers:Record<string,string>}[]=[];
  const codes=new Map<string,{url:URL;mode:string;now:number}>();let behavior='normal',jwksMode='normal',jwksRequests=0,requests:string[]=[];
  let release:(()=>void)|undefined;let waiting=false;
  const json=(value:unknown,status=200)=>Response.json(value,{status});
  const handler=async(request:Request):Promise<Response>=>{
   const url=new URL(request.url);
+  if(url.origin==='https://receiver.example.invalid'&&url.pathname==='/cfhub'){
+   const body=await request.text();notificationRequests.push({body,headers:Object.fromEntries(request.headers)});
+   return notificationReceiver.receive(new Request(request.url,{method:request.method,headers:request.headers,body}));
+  }
   if(url.origin==='https://fixture-control.example.invalid') {
+   if(url.pathname==='/notification-evidence')return json({requests:notificationRequests,ledger:notificationReceiver.evidence()});
    if(url.pathname==='/reset'){behavior='normal';jwksMode='normal';requests=[];release?.();release=undefined;waiting=false;return json({ok:true});}
    if(url.pathname==='/mode'){behavior=await request.text();return json({ok:true});}
    if(url.pathname==='/requests')return json({requests,waiting});
@@ -55,5 +64,5 @@ export async function outboundProvider() {
   }
   return json({error:'denied'},599);
  };
- return {bindings:{DEPLOYMENT_CONFIG:JSON.stringify(example),OIDC_CLIENT_SECRET:secret,CSRF_SECRET:csrf,CURSOR_ENCRYPTION_KEY:randomBytes(32).toString('hex')},handler};
+ return {bindings:{NOTIFICATION_SIGNING_KEY:notificationKey,DEPLOYMENT_CONFIG:JSON.stringify(example),OIDC_CLIENT_SECRET:secret,CSRF_SECRET:csrf,CURSOR_ENCRYPTION_KEY:randomBytes(32).toString('hex')},handler};
 }

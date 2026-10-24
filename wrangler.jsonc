@@ -2,6 +2,7 @@
   "name": "cf-agent-hub",
   "main": "src/index.ts",
   "compatibility_date": "2026-10-19",
+  "triggers": {"crons": ["* * * * *"]},
   "exports": {
     "WorkspaceDO": {
       "type": "durable-object",

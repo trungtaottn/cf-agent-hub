@@ -35,6 +35,12 @@ function participantGrants(tx:WorkspaceTransaction,workspaceId:string,participan
   WHERE g.workspace_id=? AND g.principal_id=? AND g.enabled=1 AND g.config_epoch=m.config_epoch AND m.admission_state='installed'`,[workspaceId,participant.id]);
  return rows.map(r=>readGrant(r,participant));
 }
+
+/** Background current eligibility: no authentication handle or interactive session is manufactured. */
+export function participantCanReadMessages(tx:WorkspaceTransaction,workspaceId:string,participant:Participant,messageIds:readonly string[],nowMs:number,requiredScope?:string):boolean{
+ return participantGrants(tx,workspaceId,participant,nowMs).some(grant=>hasRead(grant)&&(!requiredScope||grant.scopes.has(requiredScope))&&messageIds.every(id=>visible(tx,workspaceId,grant,id)));
+}
+
 export function assertMessageVisible(tx:WorkspaceTransaction,actor:ActorContext,id:string,nowMs:number):void{
  const live=refreshActor(tx,actor,nowMs),grant:ReadGrant={kind:live.kind,id:live.kind==='agent'?live.agentId!:live.principalId,scopes:live.scopes,projectIds:live.projectIds};
  if(!visible(tx,live.workspaceId,grant,id))inaccessible();
