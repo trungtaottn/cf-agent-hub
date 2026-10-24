@@ -1,6 +1,6 @@
 {
   "scope": "implementation-plans-only",
-  "reviewed_at": "2026-10-24T03:08:26Z",
+  "reviewed_at": "2026-10-24T04:07:47Z",
   "status": "passed-in-reviewed-scope",
   "product_runtime_tests_run": false,
   "implementation_status": "pending",
@@ -49,7 +49,7 @@
     }
   },
   "reviewed_plan_sha256": {
-    "R1": "3f94e99ceb20896e74e4b673768b035640b8deeba96bce53bbd6a18292516ddb",
+    "R1": "b483052fa12f9b11550e46b160dd7eceeed67d5da168164f8f3ab972fd7a448e",
     "R2": "7bd7520370bf058ca4e69218210666bce4544d468cb2312f7f813bc320cc6c1b",
     "R3": "c6ee22bce2250f96db87b4156082db9373c52b5dec9f0331e8dcd5512448cbf8",
     "R4": "efe60d3a7eef00532bb6084c25433769ab603a66fe3c46cec9742e8b04ec6b38"
@@ -229,7 +229,8 @@
     "Final byte digests identify the reviewed planning deliverable; they are not Git/runtime release identities.",
     "The historical full planning review covers the prior identified plan bytes. The independent accumulated R1 amendment review, followed by its focused correction re-review, covers the changes to the current identified R1 plan bytes. Together they supply the current planning-review identity. This receipt does not certify product implementation, tests, deployment or release.",
     "The independently approved Task 7 scoped R1 amendment supplies the next current planning identity, composed with all retained historical full-review and amendment stages. It does not supply new whole-plan or product/runtime acceptance.",
-    "The independently accepted Task 8 scoped plan amendment supplies the next current planning identity, retaining one nonblocking Minor map-completeness finding for final triage. It does not supply whole-plan, implementation, runtime or release approval."
+    "The independently accepted Task 8 scoped plan amendment supplies the next current planning identity, retaining one nonblocking Minor map-completeness finding for final triage. It does not supply whole-plan, implementation, runtime or release approval.",
+    "The independently accepted Task 9 scoped plan amendment supplies the next current R1 planning identity. Its nonblocking wording Minor and the earlier Task 8 map Minor remain retained for final triage; this does not supply whole-plan, implementation, runtime or release approval."
   ],
   "limitations": [
     "No claim of defect-free software or exhaustive proof.",
@@ -418,6 +419,56 @@
         "Only the identified plan delta is approved; this is not a new full-plan review.",
         "The Minor map-completeness finding remains open, rather than being represented as corrected.",
         "Whole Task 8 implementation review, canonical source validation and release gates remain separate."
+      ]
+    },
+    {
+      "id": "r1-task9-durable-notification-recovery",
+      "scope": "R1 Task 9 plan-only exact notification wire and recovery integration amendment",
+      "reviewer_role": "independent scoped plan-amendment reviewer",
+      "reviewed_at": "2026-10-24T04:07:47Z",
+      "status": "approved-with-nonblocking-minor",
+      "plan_path": "docs/superpowers/plans/2026-10-23-r1-foundation.md",
+      "from_plan_sha256": "3f94e99ceb20896e74e4b673768b035640b8deeba96bce53bbd6a18292516ddb",
+      "source_base_commit": "fbf538f6e116a27f19b537dc395389a4b1f14a26",
+      "source_base_tree": "55005cd37d69a50f08d376be2b1a166f8f37db7e",
+      "source_plan_commit": "1ed1b3a1325015f45fa374548686b557696e7901",
+      "source_plan_tree": "9568836b38fd43bffad27bab891b1e5c5a697ffd",
+      "to_plan_sha256": "b483052fa12f9b11550e46b160dd7eceeed67d5da168164f8f3ab972fd7a448e",
+      "to_plan_bytes": 106335,
+      "review_package_sha256": "bbaaa078e59c907eedbb93d9dd12b83519aff3128c175b5bb4eb68406d10af84",
+      "review_package_bytes": 19228,
+      "review_report_sha256": "bf67059e785c747d5918991cd6027ac7a09d676867e921330a72f805491dbdb8",
+      "review_report_bytes": 8092,
+      "changed_scope": [
+        "Exact original-body HMAC envelope, encoded opaque delivery ID, key bytes and freshness verification.",
+        "Durable receiver claim/completion distinctions, independent golden vectors, concurrent duplicates and restart evidence.",
+        "Current-grant eligibility extraction, DO/scheduled sweep integration, protected Operations projection and generated contract/test registration.",
+        "Forward migration 6 limited to nullable bounded scheduler diagnostics; Task 11 retains registry/probe/release ownership."
+      ],
+      "findings": {
+        "critical": 0,
+        "important": 0,
+        "minor_open": 1
+      },
+      "open_findings": [
+        {
+          "id": "M1",
+          "severity": "Minor",
+          "status": "open-for-final-triage",
+          "summary": "The phrase versioned headers should read unsupported-version headers; supported signature version v1 remains binding."
+        }
+      ],
+      "previous_receipt": {
+        "path": "validation/implementation-plan-review.before-task9.json",
+        "sha256": "cddaddb7dcb1587e71df93b06b22bd89d4fbe69bc6e73ac1eb7574dece3b1f8d",
+        "bytes": 21801
+      },
+      "review_basis": "Controller accepted the actual independent scoped review after reading its complete report. All historical records/counts and R2-R4/shared identities remain preserved.",
+      "product_runtime_tests_run": false,
+      "limitations": [
+        "Only the identified plan delta is approved; this is not a new full-plan review.",
+        "The nonblocking wording Minor remains open for final integration triage, alongside the earlier Task 8 map Minor.",
+        "Whole Task 9 runtime/source review remains separate; actual probe readiness, schema registry/restore and release gates remain Task 11."
       ]
     }
   ]
