@@ -112,3 +112,37 @@ it('public_do_fetch_cannot_dispatch_operator_rpc_and_request_envelope_is_bounded
  expect((await call({...body,reason:'x'.repeat(66000)},await assertion())).status).toBe(413);
  expect((await call(body,await assertion(),{authorization:'Bearer '+ 'A'.repeat(43)})).status).toBe(401);
 });
+
+it('valid_hmac_orphan_retired_participant_rejected_before_authority',async()=>{
+ const payload=await material(3);
+ (payload.verification_bundle.retired_credentials as any[]).push({workspace_id:workspace,credential_id:'retired_missing',agent_id:'missing_agent',token_sha256:'3'.repeat(64),retired_at_epoch:2});
+ await sign(payload.verification_bundle);
+ const target=env.WORKSPACE.getByName('operator-fixture-'+workspace) as any;
+ const snapshot=()=>target.authoritySnapshot({workspaceId:workspace,objectName:'operator-fixture-'+workspace});
+ const before=await snapshot();expect(before).toEqual({epoch:0,installationDigest:null});
+ expect((await call(envelope(payload,'orphan-retirement',0),await assertion())).status).toBe(400);
+ expect(await snapshot()).toEqual(before);
+ expect((await call(envelope(await material(3),'valid-after-orphan',0),await assertion())).status).toBe(200);
+});
+it('later_config_cannot_drop_retired_participant_and_valid_history_still_advances',async()=>{
+ const retired=await material(3),credential=retired.verification_bundle.credentials.pop()!;
+ retired.config.static_credential_refs=[];
+ (retired.verification_bundle.retired_credentials as any[]).push({...credential,agent_id:'agent_research',retired_at_epoch:2});
+ retired.verification_bundle.config_digest=await sha256(canonicalJson(retired.config));await sign(retired.verification_bundle);
+ expect((await call(envelope(retired,'retired-baseline',0),await assertion())).status).toBe(200);
+ const target=env.WORKSPACE.getByName('operator-fixture-'+workspace) as any;
+ const snapshot=()=>target.authoritySnapshot({workspaceId:workspace,objectName:'operator-fixture-'+workspace});
+ const before=await snapshot();
+ const next=structuredClone(retired);next.config.config_epoch=4;next.verification_bundle.config_epoch=4;next.config.static_participants=[];next.config.workspace_policies[0].notification_destinations=[];
+ next.verification_bundle.config_digest=await sha256(canonicalJson(next.config));await sign(next.verification_bundle);
+ expect((await call(envelope(next,'dropped-retired-participant',3),await assertion())).status).toBe(400);
+ expect(await snapshot()).toEqual(before);
+ next.verification_bundle.retired_credentials=[];await sign(next.verification_bundle);
+ expect((await call(envelope(next,'omitted-stored-retirement',3),await assertion())).status).toBe(400);
+ expect(await snapshot()).toEqual(before);
+ next.config.static_participants=retired.config.static_participants;
+ next.verification_bundle.retired_credentials=retired.verification_bundle.retired_credentials;
+ next.verification_bundle.config_digest=await sha256(canonicalJson(next.config));await sign(next.verification_bundle);
+ expect((await call(envelope(next,'retained-history',3),await assertion())).status).toBe(200);
+ expect((await snapshot()).epoch).toBe(4);
+});

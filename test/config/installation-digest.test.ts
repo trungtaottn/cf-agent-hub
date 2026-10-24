@@ -17,3 +17,12 @@ it('installation_digest_matches_adr_material_and_sorted_credentials',async()=>{
  bundle.credentials.reverse();bundle.retired_credentials.reverse();
  expect((await prepareBootstrap(config,bundle,'ws_example')).installationDigest).toBe(expected);
 });
+
+it('retired_credential_requires_matching_workspace_and_static_participant',async()=>{
+ for(const target of ['missing_agent','foreign_workspace']){
+  const {config,bundle}=await fixture('retired-reference',3);
+  bundle.retired_credentials=[{workspace_id:target==='foreign_workspace'?'ws_foreign':'ws_example',credential_id:'retired_missing',agent_id:target==='missing_agent'?'missing_agent':'agent_research',token_sha256:'3'.repeat(64),retired_at_epoch:2}];
+  const result=await prepareBootstrap(config,bundle,'ws_example').then(()=> 'accepted',error=>(error as Error).message);
+  expect(result).toBe('INVALID_RETIREMENT');
+ }
+});

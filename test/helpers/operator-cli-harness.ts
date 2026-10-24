@@ -50,7 +50,8 @@ export async function operatorCliHarness(directory:string){
    const active=await storage.exec('SELECT COUNT(*) AS n FROM native_credentials WHERE enabled=1');
    const retired=await storage.exec('SELECT COUNT(*) AS n FROM native_credentials WHERE retired_at_epoch IS NOT NULL');
    const receipts=await storage.exec("SELECT COUNT(*) AS n FROM idempotency_outcomes WHERE operation='operator.install'");
-   return {epoch:metadata[0].epoch,active:active[0].n,retired:retired[0].n,receipts:receipts[0].n};
+   const events=await storage.exec('SELECT COUNT(*) AS n FROM events');
+   return {epoch:metadata[0].epoch,active:active[0].n,retired:retired[0].n,receipts:receipts[0].n,events:events[0].n};
   },port:(server.address() as {port:number}).port,close,worker};
  }catch(error){await close();throw error;}
 }

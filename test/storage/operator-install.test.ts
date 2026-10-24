@@ -1,7 +1,8 @@
 import {it,expect,vi} from 'vitest';
 import {env} from 'cloudflare:workers';
 import {runInDurableObject} from 'cloudflare:test';
-import {prepared,operator} from '../helpers/environment';
+import {prepared,operator,fixture} from '../helpers/environment';
+import {prepareBootstrap,sha256,canonicalJson} from '../../src/config/bootstrap';
 import type {InstallOperationContext} from '../../src/workspace/context';
 const context=(expectedEpoch=0,digest:string|null=null,operationId='install_one',fingerprint='1'.repeat(64)):InstallOperationContext=>({...operator(expectedEpoch,digest),operationId,requestFingerprint:fingerprint,proofExpiresAt:Date.now()+300000});
 it('operator_receipt_event_and_authority_commit_atomically_and_deny_without_rpc_exception',async()=>{
@@ -65,5 +66,37 @@ it('operator_proof_expiry_after_preparation_denies_effect_and_original_replay',a
   expect((await object.installOperation(expired,input)).ok).toBe(false);
   expect((await object.installOperation({...proof,requestId:'new_assertion',proofExpiresAt:Date.now()+600000},input)).ok).toBe(true);
   expect(state.storage.sql.exec('SELECT COUNT(*) AS n FROM events').one().n).toBe(1);
+ });
+});
+
+it('retired_participant_validation_keeps_operator_authority_events_and_receipts_atomic',async()=>{
+ const name='operator-retired-reference',stub=env.WORKSPACE.getByName(name),orphan=await prepared(name,3);
+ orphan.bundle.retired_credentials=[{workspace_id:'ws_example',credential_id:'retired_missing',agent_id:'missing_agent',token_sha256:'3'.repeat(64),retired_at_epoch:2}];
+ orphan.installationDigest=await sha256(canonicalJson({config:orphan.config,credentials:orphan.bundle.credentials,retired_credentials:orphan.bundle.retired_credentials}));
+ await runInDurableObject(stub,async(object,state)=>{
+  const snapshot=()=>['workspace_metadata','human_grants','static_agents','native_credentials','events','idempotency_outcomes'].map(table=>state.storage.sql.exec('SELECT * FROM '+table).toArray());
+  const empty=snapshot();expect(empty.map(x=>x.length)).toEqual([0,0,0,0,0,0]);
+  const invalid=await object.installOperation(context(),orphan);
+  expect(invalid.ok).toBe(false);if(!invalid.ok)expect(invalid.code).toBe('INVALID_INSTALL');
+  expect(canonicalJson(snapshot())===canonicalJson(empty)).toBe(true);
+  const raw=await fixture(name,3),credential=raw.bundle.credentials.pop()!;
+  raw.config.static_credential_refs=[];
+  raw.bundle.retired_credentials=[{...credential,agent_id:'agent_research',retired_at_epoch:2}];
+  raw.bundle.config_digest=await sha256(canonicalJson(raw.config));
+  const retired=await prepareBootstrap(raw.config,raw.bundle,'ws_example');
+  expect((await object.installOperation(context(),retired)).ok).toBe(true);
+  const before=snapshot();expect(before.map(x=>x.length)).toEqual([1,1,1,1,1,1]);
+  const next=structuredClone(raw);next.config.config_epoch=4;next.bundle.config_epoch=4;
+  next.config.static_participants=[];next.config.workspace_policies[0].notification_destinations=[];next.bundle.retired_credentials=[];
+  next.bundle.config_digest=await sha256(canonicalJson(next.config));
+  const dropped=await prepareBootstrap(next.config,next.bundle,'ws_example');
+  expect(await object.installOperation(context(3,retired.installationDigest,'drop_participant'),dropped)).toEqual({ok:false,code:'INVALID_INSTALL'});
+  expect(canonicalJson(snapshot())===canonicalJson(before)).toBe(true);
+  next.config.static_participants=raw.config.static_participants;next.bundle.retired_credentials=raw.bundle.retired_credentials;
+  next.bundle.config_digest=await sha256(canonicalJson(next.config));
+  const retained=await prepareBootstrap(next.config,next.bundle,'ws_example');
+  expect((await object.installOperation(context(3,retired.installationDigest,'retained_history'),retained)).ok).toBe(true);
+  expect(snapshot().map(x=>x.length)).toEqual([1,1,1,1,2,2]);
+  expect(state.storage.sql.exec('SELECT enabled,retired_at_epoch FROM native_credentials').one()).toEqual({enabled:0,retired_at_epoch:2});
  });
 });

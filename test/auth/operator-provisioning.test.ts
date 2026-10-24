@@ -156,8 +156,34 @@ it('actual_cli_install_uses_authenticated_gateway_and_current_durable_authority'
   green(f.invoke(['assemble','--prior-config',two.config,'--prior-bundle',two.bundle,'--config',config,'--retire','credential_research_1','--integrity-key-fd','4','--bundle-output',bundle]));
   const retired=await install({config,bundle},operator('install_retirement',4));green(retired);expect(JSON.parse(retired.stdout).receipt.epoch).toBe(5);
   const state=await harness.authority();
-  expect(state.epoch).toBe(5);expect(state.active).toBe(1);expect(state.retired).toBe(1);expect(state.receipts).toBe(3);
-  const invalidTlsOperator=f.put('operator-tls-negative.json',operator('tls_negative',5));
+  expect(state.epoch).toBe(5);expect(state.active).toBe(1);expect(state.retired).toBe(1);expect(state.receipts).toBe(3);expect(state.events).toBe(3);
+  // Authenticated synthetic material exercises install directly, bypassing create/assemble.
+  const signed=(config:typeof c1,b:any)=>{
+   b.config_epoch=config.config_epoch;b.config_digest=createHash('sha256').update(canonical(config)).digest('hex');
+   const {tag:_,...auth}=b.auth;
+   b.auth.tag=createHmac('sha256',Buffer.from(harness.key.key_base64,'base64')).update(canonical({...b,auth})).digest('hex');
+   return {config:f.put('reviewed-'+randomBytes(5).toString('hex')+'.json',config),bundle:f.put('signed-'+randomBytes(5).toString('hex')+'.json',b)};
+  };
+  const c4=structuredClone(c3);c4.config_epoch=6;
+  const orphan=read(bundle);orphan.retired_credentials[0].agent_id='missing_agent';
+  let beforeInvalid=harness.calls.count;
+  const orphanDenied=await install(signed(c4,orphan),operator('orphan_retired_participant',5));
+  expect(orphanDenied.status).not.toBe(0);expect(harness.calls.count).toBe(beforeInvalid);
+  expect(await harness.authority()).toEqual(state);
+  const dropped=structuredClone(c4);dropped.static_credential_refs=[];dropped.static_participants=[];dropped.workspace_policies[0].notification_destinations=[];
+  const droppedBundle=read(bundle),remaining=droppedBundle.credentials.pop();
+  droppedBundle.retired_credentials.push({...remaining,agent_id:'agent_research',retired_at_epoch:6});
+  beforeInvalid=harness.calls.count;
+  const droppedDenied=await install(signed(dropped,droppedBundle),operator('drop_retired_participant',5));
+  expect(droppedDenied.status).not.toBe(0);expect(harness.calls.count).toBe(beforeInvalid);
+  expect(await harness.authority()).toEqual(state);
+  const omitted=read(bundle);omitted.credentials=[];omitted.retired_credentials=[];
+  const omittedDenied=await install(signed(dropped,omitted),operator('omit_stored_retirement',5));
+  expect(omittedDenied.status).not.toBe(0);expect(harness.calls.count).toBe(beforeInvalid+1);
+  expect(await harness.authority()).toEqual(state);
+  const retained=await install(signed(c4,read(bundle)),operator('valid_retained_history',5));green(retained);
+  expect(await harness.authority()).toEqual({...state,epoch:6,receipts:4,events:4});
+  const invalidTlsOperator=f.put('operator-tls-negative.json',operator('tls_negative',6));
   const beforeTls=harness.calls.count;
   const tlsDenied=await asyncCli(['install','--operator-config',invalidTlsOperator,'--config',config,'--bundle',bundle],{...network,CFHUB_TEST_OPERATOR_CERT:harness.untrustedCertificate});
   expect(tlsDenied.status).not.toBe(0);expect(harness.calls.count).toBe(beforeTls);

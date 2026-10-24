@@ -18,7 +18,9 @@ async function snapshot(name:string) {
   metadata:state.storage.sql.exec('SELECT * FROM workspace_metadata').toArray(),
   grants:state.storage.sql.exec('SELECT * FROM human_grants ORDER BY principal_id').toArray(),
   credentials:state.storage.sql.exec('SELECT * FROM native_credentials ORDER BY credential_id').toArray(),
-  migrations:state.storage.sql.exec('SELECT * FROM schema_migrations').toArray()
+  migrations:state.storage.sql.exec('SELECT * FROM schema_migrations').toArray(),
+  events:state.storage.sql.exec('SELECT * FROM events ORDER BY sequence').toArray(),
+  receipts:state.storage.sql.exec('SELECT * FROM idempotency_outcomes ORDER BY key').toArray()
  }));
 }
 describe('actual workerd SQLite authority',()=>{
@@ -95,6 +97,33 @@ describe('actual workerd SQLite authority',()=>{
 });
 
 describe('transaction and authority hardening',()=>{
+ it('direct_install_rejects_orphan_retired_participant_without_authority_or_events',async()=>{
+  const name='orphan-direct',input=await prepared(name,3);
+  input.bundle.retired_credentials=[{workspace_id:'ws_example',credential_id:'retired_missing',agent_id:'missing_agent',token_sha256:'3'.repeat(64),retired_at_epoch:2}];
+  const before=await snapshot(name);
+  expect(before.metadata.length+before.credentials.length+before.events.length+before.receipts.length).toBe(0);
+  await runInDurableObject(stub(name),(_object,state)=>{
+   expect(()=>withTransaction(state.storage,tx=>installConfiguration(tx,input.config,input,nowMs))).toThrow('INVALID_RETIREMENT');
+  });
+  expect(await snapshot(name)).toEqual(before);
+ });
+ it('stored_tombstone_prevents_dropping_participant_even_if_bundle_omits_history',async()=>{
+  const name='stored-retired-reference',raw=await fixture(name,2),credential=raw.bundle.credentials.pop()!;
+  raw.config.static_credential_refs=[];
+  raw.bundle.retired_credentials=[{...credential,agent_id:'agent_research',retired_at_epoch:2}];
+  raw.bundle.config_digest=await sha256(canonicalJson(raw.config));
+  const retired=await prepareBootstrap(raw.config,raw.bundle,'ws_example');
+  await stub(name).reconcileConfiguration(operator(),retired);
+  const next=structuredClone(raw);next.config.config_epoch=3;next.bundle.config_epoch=3;
+  next.config.static_participants=[];next.config.workspace_policies[0].notification_destinations=[];next.bundle.retired_credentials=[];
+  next.bundle.config_digest=await sha256(canonicalJson(next.config));
+  const input=await prepareBootstrap(next.config,next.bundle,'ws_example'),before=await snapshot(name);
+  expect([before.metadata.length,before.credentials.length,before.events.length,before.receipts.length]).toEqual([1,1,1,0]);
+  await runInDurableObject(stub(name),(_object,state)=>{
+   expect(()=>withTransaction(state.storage,tx=>installConfiguration(tx,input.config,input,nowMs))).toThrow('INVALID_RETIREMENT');
+  });
+  expect(await snapshot(name)).toEqual(before);
+ });
  it('escaped_transaction_cannot_write_after_commit',async()=>{
   await runInDurableObject(stub('escape'),(_object,state)=>{
    let escaped:import('../../src/storage/transaction').WorkspaceTransaction|undefined;

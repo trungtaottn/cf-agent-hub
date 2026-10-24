@@ -12,11 +12,17 @@ export async function sha256(value:string):Promise<string> {
  const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value));
  return Array.from(new Uint8Array(bytes),b=>b.toString(16).padStart(2,'0')).join('');
 }
+function validateRetirement(config:DeploymentConfig,tombstone:{workspace_id:string;agent_id:string;retired_at_epoch:number}):void {
+ if(!config.workspace_catalog.some(x=>x.workspace_id===tombstone.workspace_id)||
+  !config.static_participants.some(x=>x.workspace_id===tombstone.workspace_id&&x.agent_id===tombstone.agent_id)||
+  tombstone.retired_at_epoch>config.config_epoch)throw Error('INVALID_RETIREMENT');
+}
 export async function prepareBootstrap(configInput:unknown,bundleInput:unknown,workspaceId:string):Promise<ValidatedBootstrap> {
  const config=parseDeployment(configInput);
  if(!validateBundle(bundleInput))throw Error('INVALID_BUNDLE');
  const bundle=structuredClone(bundleInput);resolveWorkspace(config,workspaceId);
  if(bundle.config_epoch!==config.config_epoch||bundle.config_digest!==await sha256(canonicalJson(config)))throw Error('CONFIG_DIGEST_MISMATCH');
+ for(const tombstone of bundle.retired_credentials)validateRetirement(config,tombstone);
  const order=(a:{workspace_id:string;credential_id:string},b:{workspace_id:string;credential_id:string})=>
   a.workspace_id<b.workspace_id?-1:a.workspace_id>b.workspace_id?1:a.credential_id<b.credential_id?-1:a.credential_id>b.credential_id?1:0;
  return {config,bundle,workspaceId,installationDigest:await sha256(canonicalJson({config,credentials:[...bundle.credentials].sort(order),retired_credentials:[...bundle.retired_credentials].sort(order)}))};
@@ -42,10 +48,12 @@ export function installConfiguration(tx:WorkspaceTransaction,config:DeploymentCo
  if(hashes.size!==bundle.credentials.length||retired.size!==bundle.retired_credentials.length)throw Error('DUPLICATE_CREDENTIAL');
  if(hashes.size!==config.static_credential_refs.length)throw Error('CREDENTIAL_SET_MISMATCH');
  for(const ref of config.static_credential_refs)if(!hashes.has(keyed(ref.workspace_id,ref.credential_id))||retired.has(keyed(ref.workspace_id,ref.credential_id)))throw Error('CREDENTIAL_SET_MISMATCH');
- for(const tombstone of retired.values())if(!config.workspace_catalog.some(x=>x.workspace_id===tombstone.workspace_id)||tombstone.retired_at_epoch>config.config_epoch)throw Error('INVALID_RETIREMENT');
+ for(const tombstone of retired.values())validateRetirement(config,tombstone);
  const existing=tx.all<Credential>('SELECT credential_id,agent_id,token_sha256,retired_at_epoch FROM native_credentials');
  const references=config.static_credential_refs.filter(x=>x.workspace_id===workspaceId);
  for(const credential of existing) {
+  // Stored tombstones remain bound to the reviewed catalog even when incoming history is omitted.
+  if(credential.retired_at_epoch!==null)validateRetirement(config,{...credential,workspace_id:workspaceId,retired_at_epoch:credential.retired_at_epoch});
   const ref=references.find(x=>x.credential_id===credential.credential_id),tombstone=retired.get(keyed(workspaceId,credential.credential_id));
   if(ref) {
    if(credential.retired_at_epoch!==null||ref.agent_id!==credential.agent_id||hashes.get(keyed(workspaceId,ref.credential_id))!.token_sha256!==credential.token_sha256)throw Error('CREDENTIAL_IMMUTABLE');
