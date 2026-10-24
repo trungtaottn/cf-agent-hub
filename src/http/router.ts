@@ -43,7 +43,7 @@ export async function dispatchCommand<B,T>(request:Request,workspace:AuthWorkspa
   }
   const fingerprint=await fingerprintRequest(route.method,route.path,query,body);
   executing=true;
-  return toHttpResponse(executeCommand({workspace,requestId,idempotencyKey:key,fingerprint},identity,route.command,body),requestId,headers);
+  return toHttpResponse(executeCommand({workspace,requestId,idempotencyKey:key,fingerprint,admissionEpoch:installed.epoch},identity,route.command,body),requestId,headers);
  }catch(error){
   if(!executing)securityLog(error,requestId);
   return toHttpError(error,requestId,headers);

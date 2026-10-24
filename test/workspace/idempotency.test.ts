@@ -2,7 +2,7 @@ import {it,expect,vi} from 'vitest';
 import {env} from 'cloudflare:workers';
 import {runInDurableObject,evictDurableObject} from 'cloudflare:test';
 import {fixture,operator} from '../helpers/environment';
-import {canonicalJson,prepareBootstrap,sha256} from '../../src/config/bootstrap';
+import {canonicalJson,prepareBootstrap,sha256,installConfiguration} from '../../src/config/bootstrap';
 import {withTransaction} from '../../src/storage/transaction';
 import {executeCommand,type CommandDescriptor,type CommandExecutionContext} from '../../src/workspace/commands';
 import {fingerprintRequest,cleanupCompletedOutcomes} from '../../src/workspace/idempotency';
@@ -18,7 +18,7 @@ async function setup(name:string){
  const raw=await fixture(name);raw.bundle.credentials[0].token_sha256=await sha256(token);
  const input=await prepareBootstrap(raw.config,raw.bundle,'ws_example'),stub=env.WORKSPACE.getByName(name);await stub.reconcileConfiguration(operator(),input);
  const identity:VerifiedIdentity={kind:'agent',workspaceId:'ws_example',credentialId:'credential_research_1',tokenDigest:await sha256(token)};
- return {stub,identity,name};
+ return {stub,identity,name,input};
 }
 function workspace(storage:DurableObjectStorage,name:string,now=Date.now()):AuthWorkspace{return {storage,workspaceId:'ws_example',objectName:name,secrets:{},clock:{nowMs:()=>now},entropy:{bytes:n=>crypto.getRandomValues(new Uint8Array(n))}};}
 const counts=(storage:DurableObjectStorage)=>Object.fromEntries(['threads','messages','outbox','events','idempotency_outcomes'].map(t=>[t,storage.sql.exec<{n:number}>('SELECT count(*) AS n FROM '+t).one().n]));
@@ -35,7 +35,7 @@ function descriptor(id='message_one',fault=false):CommandDescriptor<{body:string
   return {outcome:{status:201,data:{id}},event:{type:'message.accepted',resourceType:'message',resourceId:id,resourceVersion:null,threadId:'thread_'+id}};
  }};
 }
-async function context(storage:DurableObjectStorage,name:string,body:unknown,key='same',now=Date.now()):Promise<CommandExecutionContext>{return {workspace:workspace(storage,name,now),requestId:'req_'+key,idempotencyKey:key,fingerprint:await fingerprintRequest('POST','/messages',{},body)};}
+async function context(storage:DurableObjectStorage,name:string,body:unknown,key='same',now=Date.now()):Promise<CommandExecutionContext>{return {workspace:workspace(storage,name,now),requestId:'req_'+key,idempotencyKey:key,fingerprint:await fingerprintRequest('POST','/messages',{},body),admissionEpoch:storage.sql.exec<{config_epoch:number}>('SELECT config_epoch FROM workspace_metadata WHERE id=1').one().config_epoch};}
 it('canonical_key_order_replays_array_order_conflicts',async()=>{
  const {stub,identity,name}=await setup('command-order');
  await runInDurableObject(stub,async(_o,state)=>{
@@ -172,4 +172,80 @@ it('secret_canaries_are_absent_from_persisted_events_outcomes_and_all_diagnostic
   for(const table of ['events','idempotency_outcomes','outbox'])expect(JSON.stringify(state.storage.sql.exec('SELECT * FROM '+table).toArray())).not.toContain(secret);
  });expect(JSON.stringify([...warn.mock.calls,...info.mock.calls])).not.toContain(secret);
  }finally{warn.mockRestore();info.mockRestore();}
+});
+
+it.each(['resource','checkAccess','execute'] as const)('promise_%s_callback_fails_closed_and_rolls_back',async hook=>{
+ const {stub,identity,name}=await setup('async-first-'+hook.toLowerCase());
+ await runInDurableObject(stub,async(_o,state)=>{
+  const body={body:'safe'},ctx=await context(state.storage,name,body),command=descriptor(),before=counts(state.storage);
+  let rejection:Promise<never>|undefined;
+  const bad=(tx:Parameters<typeof command.execute>[0],callCtx:Parameters<typeof command.execute>[1])=>{
+   if(hook==='execute')command.execute(tx,callCtx,body);
+   else tx.exec('INSERT INTO threads (id,workspace_id,subject,created_at) VALUES (?,?,?,?)',['guard_probe','ws_example','probe',1]);
+   return rejection=Promise.reject(new HttpError('FORBIDDEN',403));
+  };
+  const broken={...command,[hook]:bad} as unknown as typeof command;
+  let outcome:unknown,error:unknown;
+  try{outcome=executeCommand(ctx,identity,broken,body);}catch(caught){error=caught;}
+  // Keep vulnerable RED free of unrelated unhandled-rejection noise. GREEN must consume its own rejection.
+  if(!error)void rejection?.catch(()=>{});
+  expect(error).toMatchObject({code:'INTERNAL_ERROR',status:500});expect(outcome).toBeUndefined();
+  expect(counts(state.storage)).toEqual(before);
+  await new Promise(resolve=>setTimeout(resolve,0));
+ });
+});
+it('promise_replay_guard_returns_no_protected_outcome_and_rolls_back',async()=>{
+ const {stub,identity,name}=await setup('async-replay');
+ await runInDurableObject(stub,async(_o,state)=>{
+  const body={body:'safe'},ctx=await context(state.storage,name,body),command=descriptor();executeCommand(ctx,identity,command,body);
+  const before=counts(state.storage);let rejection:Promise<never>|undefined;
+  const broken={...command,checkReplay:((tx:Parameters<typeof command.checkReplay>[0])=>{
+   tx.exec("INSERT INTO threads (id,workspace_id,subject,created_at) VALUES ('replay_guard','ws_example','probe',1)");
+   return rejection=Promise.reject(new HttpError('FORBIDDEN',403));
+  }) as unknown as typeof command.checkReplay};
+  let outcome:unknown,error:unknown;try{outcome=executeCommand(ctx,identity,broken,body);}catch(caught){error=caught;}
+  if(!error)void rejection?.catch(()=>{});
+  expect(error).toMatchObject({code:'INTERNAL_ERROR',status:500});expect(outcome).toBeUndefined();expect(counts(state.storage)).toEqual(before);
+  await new Promise(resolve=>setTimeout(resolve,0));
+ });
+});
+it.each(['checkAccess','checkReplay'] as const)('thenable_%s_guard_fails_closed',async hook=>{
+ const {stub,identity,name}=await setup('thenable-'+hook.toLowerCase());
+ await runInDurableObject(stub,async(_o,state)=>{
+  const body={body:'safe'},ctx=await context(state.storage,name,body),command=descriptor();
+  if(hook==='checkReplay')executeCommand(ctx,identity,command,body);
+  const before=counts(state.storage);
+  const broken={...command,[hook]:()=>({then(_resolve:unknown,reject:(error:unknown)=>void){reject(new HttpError('FORBIDDEN',403));}})} as unknown as typeof command;
+  let outcome:unknown,error:unknown;try{outcome=executeCommand(ctx,identity,broken,body);}catch(caught){error=caught;}
+  expect(error).toMatchObject({code:'INTERNAL_ERROR',status:500});expect(outcome).toBeUndefined();expect(counts(state.storage)).toEqual(before);
+  await new Promise(resolve=>setTimeout(resolve,0));
+ });
+});
+it.each(['first','replay'] as const)('native_origin_epoch_interleaving_denies_%s_without_effects_or_original_data',async mode=>{
+ const {stub,name,input}=await setup('origin-race-'+mode);
+ await runInDurableObject(stub,async(_o,state)=>{
+  const owned=workspace(state.storage,name),route={method:'POST',path:'/v2/workspaces/ws_example/messages',schema:'MessageCreateRequest' as const,query:()=>({}),command:descriptor()};
+  const oldOrigin='https://hub.example.invalid',newOrigin='https://new-hub.example.invalid';
+  const request=(origin:string)=>new Request(origin+route.path,{method:'POST',headers:{'content-type':'application/json','idempotency-key':'origin-race',authorization:'Bearer '+token,origin},body:JSON.stringify({recipient_agent_ids:['agent_research'],body:'safe',refs:[],artifact_ids:[]})});
+  if(mode==='replay')expect((await dispatchCommand(request(oldOrigin),owned,route)).status).toBe(201);
+  const updated=structuredClone(input);updated.config.config_epoch=2;updated.bundle.config_epoch=2;
+  updated.config.authentication.allowed_origins=[newOrigin];
+  updated.config.authentication.redirect_uris[0].redirect_uri=newOrigin+'/v2/workspaces/ws_example/auth/callback';
+  updated.bundle.config_digest=await sha256(canonicalJson(updated.config));
+  const prepared=await prepareBootstrap(updated.config,updated.bundle,'ws_example');
+  let hashes=0,afterInstall:ReturnType<typeof counts>|undefined;
+  const digest=crypto.subtle.digest.bind(crypto.subtle);
+  const spy=vi.spyOn(crypto.subtle,'digest').mockImplementation(async(...args:Parameters<typeof crypto.subtle.digest>)=>{
+   const hash=await digest(...args);
+   // Native proof is hash 1; fingerprint is hash 2. Install only origin policy while preserving the credential.
+   if(++hashes===2){withTransaction(state.storage,tx=>installConfiguration(tx,prepared.config,prepared,owned.clock.nowMs()));afterInstall=counts(state.storage);}
+   return hash;
+  });
+  let denied:Response;try{denied=await dispatchCommand(request(oldOrigin),owned,route);}finally{spy.mockRestore();}
+  expect(afterInstall).toBeDefined();expect(denied.status).toBe(401);expect(await denied.json()).not.toHaveProperty('data');expect(counts(state.storage)).toEqual(afterInstall);
+  // A current independently prepared request at the new allowed origin may create/replay normally.
+  const fresh=await dispatchCommand(request(newOrigin),owned,route);expect(fresh.status).toBe(201);
+  expect(await fresh.json()).toHaveProperty('data.id','message_one');
+  expect(state.storage.sql.exec("SELECT enabled,config_epoch,token_sha256 FROM native_credentials").one()).toMatchObject({enabled:1,config_epoch:2,token_sha256:(input.bundle.credentials[0]).token_sha256});
+ });
 });

@@ -27,7 +27,7 @@ dispatchCommand<B,T>(
 
 The method/path are the canonical route selected by trusted code. query validates and returns semantic JSON query values before fingerprinting; it must reject unsupported/duplicate parameters and preserve meaningful order. It must not supply a raw URL, headers, proofs, default-filled request body or current credential identity as canonical intent.
 
-Dispatch generates a server UUID for each attempt and ignores caller correlation headers. It parses canonical request data, rejects a mixed bearer/session lane, prepares native bearer or human session verification through the existing auth exports, and requires current same-origin human CSRF. Hashing/HMAC and fingerprint await complete before executeCommand. It returns the exact shared data/request_id or error envelope with no-store/security headers. Domain owners remain responsible for route selection and any route-specific method/CORS negotiation; the framework does not expose speculative routes.
+Dispatch generates a server UUID for each attempt and ignores caller correlation headers. It parses canonical request data, rejects a mixed bearer/session lane, prepares native bearer or human session verification through the existing auth exports, and requires current same-origin human CSRF. Hashing/HMAC and fingerprint await complete before executeCommand. The owned context carries admissionEpoch from the same installed snapshot that admitted URL/Origin/CORS. The effect transaction requires that exact epoch before replay lookup or writes; a configuration change during preparation rejects the in-flight attempt. A fresh independently prepared request can create/replay under the new current policy with the same still-authorized credential. It returns the exact shared data/request_id or error envelope with no-store/security headers. Domain owners remain responsible for route selection and any route-specific method/CORS negotiation; the framework does not expose speculative routes.
 
 fingerprintRequest(method, path, query, body): Promise<string> canonicalizes original validated JSON: object key order is ignored, array order is preserved, omitted fields differ from explicit null, and method is uppercase. Unsupported/nonfinite/cyclic/sparse non-JSON intent rejects before SQL. The bootstrap installation digest is unchanged and is a different protocol.
 
@@ -42,13 +42,14 @@ interface CommandExecutionContext {
  requestId: string;
  idempotencyKey: string;
  fingerprint: string;
+ admissionEpoch: number;
 }
 interface CommandDescriptor<B,T> {
  operation: string;
  target: string;
  resource(tx, ctx, body): ResourceAccess | undefined;
- checkAccess(tx, ctx, body): void;
- checkReplay(tx, ctx, body, outcome: CommandOutcome<T>): void;
+ checkAccess(tx, ctx, body): undefined;
+ checkReplay(tx, ctx, body, outcome: CommandOutcome<T>): undefined;
  execute(tx, ctx, body): { outcome: CommandOutcome<T>; event: EventDraft };
 }
 executeCommand<B,T>(
@@ -57,9 +58,9 @@ executeCommand<B,T>(
 ): CommandOutcome<T>;
 ~~~
 
-All descriptor callbacks receive WorkspaceTransaction and the current CommandContext. Only internal trusted code constructs these descriptors or prepared contexts. Public HTTP cannot serialize a proof or actor into this interface.
+All descriptor callbacks receive WorkspaceTransaction and the current CommandContext. Only internal trusted code constructs these descriptors or prepared contexts. Public HTTP cannot serialize a proof, actor or admission epoch into this interface. admissionEpoch must be the installed epoch read when the route's current HTTP admission policy was checked, never a public header/body value or a new epoch silently substituted after preparation.
 
-The wrapper owns withTransaction. It samples workspace.clock.nowMs() at entry after awaits, checks actual workspace mapping/admission/maintenance, resolves identity against current installed authority, authorizes the operation and resource, then calls checkAccess before replay lookup. No nested transaction, Promise, network, crypto await or R2 operation belongs in a callback.
+The wrapper owns withTransaction. It samples workspace.clock.nowMs() at entry after awaits, checks actual workspace mapping/admission/maintenance, resolves identity against current installed authority, authorizes the operation and resource, then calls checkAccess before replay lookup. No nested transaction, Promise, network, crypto await or R2 operation belongs in a callback. Access/replay guards must synchronously return undefined or throw. Use a block with no return value for a successful guard; do not return the void result of another function. TypeScript rejects async, Promise and thenable guard implementations. Every descriptor callback result (resource, checkAccess, checkReplay and execute) is also checked at runtime: a thenable triggers INTERNAL_ERROR and transaction rollback, with rejection consumed outside any SQL await. Non-undefined guard results fail closed as well.
 
 resource and checkAccess enforce current resource relationships/ownership on every attempt. checkReplay verifies current visibility of the original returned resource before any original result is returned. All first-execution revision/CAS/business preconditions belong in execute, which is skipped on a valid replay. Never move revision checks into checkAccess or checkReplay. A replacement native credential can replay for its same principal only with current scopes and visibility. Revoked/expired sessions and removed credentials cannot replay.
 
