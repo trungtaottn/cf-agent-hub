@@ -1,9 +1,10 @@
 // Generated from spec/openapi.json.
-import type {AuthStartRequest,AuthCallbackQuery,AuthLogoutRequest,MessageCreateRequest,ProfileWriteRequest,PreferencesWriteRequest,Error,Event,Message,MessageNotification,Configuration,ProfileData,ProfilePreview,ProfileExport,PreferencesData,WorkspaceProfile,UserPreferences,ConfigurationResponse,ProfileDataResponse,ProfilePreviewResponse,ProfileExportResponse,PreferencesDataResponse} from "../dto";
+import type {AuthStartRequest,AuthCallbackQuery,AuthLogoutRequest,MessageCreateRequest,MessageAckRequest,ProfileWriteRequest,PreferencesWriteRequest,Error,Event,Message,MessageNotification,Configuration,ProfileData,ProfilePreview,ProfileExport,PreferencesData,WorkspaceProfile,UserPreferences,ConfigurationResponse,ProfileDataResponse,ProfilePreviewResponse,ProfileExportResponse,PreferencesDataResponse} from "../dto";
 export declare function validateAuthStartRequest(input:unknown): input is AuthStartRequest;
 export declare function validateAuthCallbackQuery(input:unknown): input is AuthCallbackQuery;
 export declare function validateAuthLogoutRequest(input:unknown): input is AuthLogoutRequest;
 export declare function validateMessageCreateRequest(input:unknown): input is MessageCreateRequest;
+export declare function validateMessageAckRequest(input:unknown): input is MessageAckRequest;
 export declare function validateProfileWriteRequest(input:unknown): input is ProfileWriteRequest;
 export declare function validatePreferencesWriteRequest(input:unknown): input is PreferencesWriteRequest;
 export declare function validateError(input:unknown): input is Error;

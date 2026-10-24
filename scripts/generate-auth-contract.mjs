@@ -5,8 +5,8 @@ import addFormats from 'ajv-formats';
 import standalone from 'ajv/dist/standalone/index.js';
 const spec=JSON.parse(await readFile('spec/openapi.json','utf8')),schemas=spec.components.schemas;
 const settings=['Configuration','ProfileData','ProfilePreview','ProfileExport','PreferencesData','WorkspaceProfile','UserPreferences','ConfigurationResponse','ProfileDataResponse','ProfilePreviewResponse','ProfileExportResponse','PreferencesDataResponse'];
-const inputs=['AuthStartRequest','AuthCallbackQuery','AuthLogoutRequest','MessageCreateRequest','ProfileWriteRequest','PreferencesWriteRequest'];
-const roots=[...inputs,'AuthStartDataResponse','AuthSessionResponse','AuthLogoutDataResponse','Error','Event','Message','MessageNotification',...settings];
+const inputs=['AuthStartRequest','AuthCallbackQuery','AuthLogoutRequest','MessageCreateRequest','MessageAckRequest','ProfileWriteRequest','PreferencesWriteRequest'];
+const roots=['AckResult',...inputs,'AuthStartDataResponse','AuthSessionResponse','AuthLogoutDataResponse','Error','Event','Message','MessageNotification',...settings];
 const validated=[...inputs,'Error','Event','Message','MessageNotification',...settings];
 const seen=new Set(),aliases=[];
 function type(s) {

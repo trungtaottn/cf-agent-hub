@@ -1,9 +1,11 @@
 // Generated from spec/openapi.json; npm run generate:auth.
+export type AckResult = {"acknowledged_ids":Array<string>;"already_acknowledged_ids":Array<string>};
 export type AuthStartRequest = {"return_path":"/" | "/overview" | "/inbox" | "/activity" | "/settings"};
 export type AuthCallbackQuery = {"code":string;"state":string};
 export type AuthLogoutRequest = Record<string, never>;
 export type MessageReference = {"kind":"task" | "artifact" | "message";"id":string};
 export type MessageCreateRequest = {"recipient_agent_ids":Array<string>;"thread_id"?:string | null;"body":string;"refs":Array<MessageReference>;"artifact_ids":Array<string>};
+export type MessageAckRequest = {"message_ids":Array<string>};
 export type WorkspaceProfile = {"contract_revision":"0.1";"profile_id":string;"display_name":string;"description":string;"branding":{"accent":"blue" | "teal" | "indigo" | "violet" | "amber" | "slate"};"navigation":{"visible_views":Array<"overview" | "inbox" | "tasks" | "kanban" | "agents" | "approvals" | "activity">};"projects":Array<{"id":string;"display_name":string;"description":string;"archived":boolean}>;"work_roles":Array<{"id":string;"display_name":string;"description":string;"archived":boolean}>};
 export type ProfileWriteRequest = {"expected_profile_revision":number;"profile":WorkspaceProfile};
 export type UserPreferences = {"contract_revision":"0.1";"theme":"system" | "light" | "dark";"density":"comfortable" | "compact";"default_view":"overview" | "inbox" | "tasks" | "kanban" | "agents" | "approvals" | "activity"};

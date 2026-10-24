@@ -6,6 +6,7 @@ import {validateEvent} from '../http/generated/auth-validators.js';
 import {canonicalJson} from '../config/bootstrap';
 import {authorize,refreshActor} from '../auth/authorize';
 import {HttpError} from '../http/envelopes';
+import {assertMessageVisible} from '../messages/references';
 export interface RedactedEventInput extends EventDraft{id:string;workspaceId:string;actor:ActorContext;requestId:string;nowMs:number;}
 const definitions={
  'message.accepted':{resource:'message',summary:'Message accepted.'},
@@ -43,10 +44,25 @@ export function projectEvent(tx:WorkspaceTransaction,actor:ActorContext,id:strin
   void Promise.resolve(visible).catch(()=>{});throw new HttpError('INTERNAL_ERROR',500);
  }
  if(visible!==true)return null;
+ if(event.type==='message.accepted'){
+  const message=tx.one<{thread_id:string}>('SELECT m.thread_id FROM messages m JOIN threads t ON t.id=m.thread_id AND t.workspace_id=m.workspace_id WHERE m.id=? AND m.workspace_id=?',[event.resource_id,live.workspaceId]);
+  if(!message)return null;event.thread_id=message.thread_id;
+ }
  if(!validateEvent(event))throw new HttpError('INTERNAL_ERROR',500);
  return event;
 }
 
+/** Current resource policy composes the accepted settings predicate without duplicating ownership. */
+export const resourceEventVisibility:EventVisibility=(tx,actor,resource,event,nowMs)=>{
+ if(!validateEvent(event)||event.workspace_id!==actor.workspaceId||resource.id!==event.resource_id||resource.kind!==event.resource_type)return false;
+ try{
+  authorize(tx,actor,'events:read',resource,nowMs);
+  if(event.type==='message.accepted'||event.type==='message.acknowledged'){
+   assertMessageVisible(tx,actor,event.resource_id,nowMs);return true;
+  }
+  return settingsEventVisibility(tx,actor,resource,event,nowMs)===true;
+ }catch(error){if(error instanceof HttpError&&error.code==='NOT_FOUND'||error instanceof Error&&'code' in error&&error.code==='FORBIDDEN')return false;throw error;}
+};
 /** Typed settings predicate. Ownership comes from the immutable persisted record association. */
 export const settingsEventVisibility:EventVisibility=(tx,actor,resource,event,nowMs)=>{
  if(event.workspace_id!==actor.workspaceId||resource.id!==event.resource_id||resource.kind!==event.resource_type||!validateEvent(event))return false;

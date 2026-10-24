@@ -55,5 +55,5 @@ export async function outboundProvider() {
   }
   return json({error:'denied'},599);
  };
- return {bindings:{DEPLOYMENT_CONFIG:JSON.stringify(example),OIDC_CLIENT_SECRET:secret,CSRF_SECRET:csrf},handler};
+ return {bindings:{DEPLOYMENT_CONFIG:JSON.stringify(example),OIDC_CLIENT_SECRET:secret,CSRF_SECRET:csrf,CURSOR_ENCRYPTION_KEY:randomBytes(32).toString('hex')},handler};
 }

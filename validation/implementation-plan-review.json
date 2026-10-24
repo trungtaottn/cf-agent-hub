@@ -1,6 +1,6 @@
 {
   "scope": "implementation-plans-only",
-  "reviewed_at": "2026-10-24T02:25:20Z",
+  "reviewed_at": "2026-10-24T03:08:26Z",
   "status": "passed-in-reviewed-scope",
   "product_runtime_tests_run": false,
   "implementation_status": "pending",
@@ -49,7 +49,7 @@
     }
   },
   "reviewed_plan_sha256": {
-    "R1": "1a79df68a29f0a2340a2a5d38e6def1fc7038f7c55dc5d0546bb29704ca31b95",
+    "R1": "3f94e99ceb20896e74e4b673768b035640b8deeba96bce53bbd6a18292516ddb",
     "R2": "7bd7520370bf058ca4e69218210666bce4544d468cb2312f7f813bc320cc6c1b",
     "R3": "c6ee22bce2250f96db87b4156082db9373c52b5dec9f0331e8dcd5512448cbf8",
     "R4": "efe60d3a7eef00532bb6084c25433769ab603a66fe3c46cec9742e8b04ec6b38"
@@ -228,7 +228,8 @@
     "Controller inspected final changes and aligned editorial status/execution-method headers with the shared per-task review protocol.",
     "Final byte digests identify the reviewed planning deliverable; they are not Git/runtime release identities.",
     "The historical full planning review covers the prior identified plan bytes. The independent accumulated R1 amendment review, followed by its focused correction re-review, covers the changes to the current identified R1 plan bytes. Together they supply the current planning-review identity. This receipt does not certify product implementation, tests, deployment or release.",
-    "The independently approved Task 7 scoped R1 amendment supplies the next current planning identity, composed with all retained historical full-review and amendment stages. It does not supply new whole-plan or product/runtime acceptance."
+    "The independently approved Task 7 scoped R1 amendment supplies the next current planning identity, composed with all retained historical full-review and amendment stages. It does not supply new whole-plan or product/runtime acceptance.",
+    "The independently accepted Task 8 scoped plan amendment supplies the next current planning identity, retaining one nonblocking Minor map-completeness finding for final triage. It does not supply whole-plan, implementation, runtime or release approval."
   ],
   "limitations": [
     "No claim of defect-free software or exhaustive proof.",
@@ -369,6 +370,54 @@
         "Only the identified public R1 plan delta was approved; this is not a new full-plan review.",
         "The review did not approve implementation, receipt bytes, runtime tests, deployment, recovery or release.",
         "Whole Task 7 source review and final canonical validation remain separate gates."
+      ]
+    },
+    {
+      "id": "r1-task8-authorized-traversal-ack",
+      "scope": "R1 Task 8 plan-only cursor, retention and ACK integration amendment",
+      "reviewer_role": "independent scoped plan-amendment reviewer",
+      "reviewed_at": "2026-10-24T03:08:26Z",
+      "status": "approved-with-nonblocking-minor",
+      "plan_path": "docs/superpowers/plans/2026-10-23-r1-foundation.md",
+      "from_plan_sha256": "1a79df68a29f0a2340a2a5d38e6def1fc7038f7c55dc5d0546bb29704ca31b95",
+      "source_base_commit": "3471aeeb51c58d34b5fa4a8e7cbcfc3dc561c9fd",
+      "source_base_tree": "77c1f1c64bb45081efcbd42fe234715da02dd616",
+      "source_plan_commit": "48d673712181e1c3e054c0ab36a7fac37e574a54",
+      "source_plan_tree": "0d77ff5a091772875323ce8dcac8341ec9f9fe05",
+      "to_plan_sha256": "3f94e99ceb20896e74e4b673768b035640b8deeba96bce53bbd6a18292516ddb",
+      "to_plan_bytes": 103371,
+      "review_package_sha256": "7272fab7bf2098c83aba2654c4d8e64391af248d031d3792a956c5a483ffcf27",
+      "review_report_sha256": "7bf45e01ca855d0fb9e913d06223f45f658eebc09044448703ed165da0548bef",
+      "review_report_bytes": 14913,
+      "changed_scope": [
+        "Explicit bounded read/ACK route and cursor ownership, forward metadata retention-floor migration and downstream registration.",
+        "Original proof revalidation after cursor decode/encode, separate managed encryption key and current resource publication.",
+        "Shared typed visibility/scheduler integration and preservation of item-bounded complete traversal."
+      ],
+      "findings": {
+        "critical": 0,
+        "important": 0,
+        "minor_open": 1
+      },
+      "open_findings": [
+        {
+          "id": "M1",
+          "severity": "Minor",
+          "status": "open-for-final-triage",
+          "summary": "Task 8 file map does not explicitly list the necessary Workers test registration and canonical HTTP generator/DTO/validator integration paths."
+        }
+      ],
+      "previous_receipt": {
+        "path": "validation/implementation-plan-review.before-task8.json",
+        "sha256": "3149cc2c9dc50a2a631475519d83d05c4f0c654d651ef8f334cf411457bb09e2",
+        "bytes": 18773
+      },
+      "review_basis": "Controller accepted the actual independent scoped review after reading its complete report, with one nonblocking Minor retained. All historical records and R2-R4/shared identities are preserved.",
+      "product_runtime_tests_run": false,
+      "limitations": [
+        "Only the identified plan delta is approved; this is not a new full-plan review.",
+        "The Minor map-completeness finding remains open, rather than being represented as corrected.",
+        "Whole Task 8 implementation review, canonical source validation and release gates remain separate."
       ]
     }
   ]

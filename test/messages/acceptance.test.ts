@@ -120,7 +120,7 @@ import {migrate,FOUNDATION_SQL} from '../../src/storage/migrations';
 it('forward_migration_preserves_legacy_membership_bytes_attempts_and_unproven_route',async()=>{
  const {stub}=await messageFixture('message-legacy');await runInDurableObject(stub,(_o,state)=>{
   for(const table of ['thread_participants','outbox','scheduler_state']){state.storage.sql.exec('DROP TABLE '+table);state.storage.sql.exec(FOUNDATION_SQL.match(new RegExp(String.raw`CREATE TABLE ${table} \([\s\S]*?\);`))![0]);}
-  state.storage.sql.exec('DELETE FROM schema_migrations WHERE version=4');
+  for(const column of ['message_retained_after_id','message_retained_after_created_at','event_retained_after_sequence'])state.storage.sql.exec('ALTER TABLE workspace_metadata DROP COLUMN '+column);state.storage.sql.exec('DELETE FROM schema_migrations WHERE version>=4');
   state.storage.sql.exec("INSERT INTO threads VALUES ('legacy-thread','ws_example','',1)");state.storage.sql.exec("INSERT INTO thread_participants VALUES ('legacy-thread','agent_research')");
   state.storage.sql.exec("INSERT INTO outbox (id,workspace_id,message_id,destination_id,notification_id,payload_json,status,attempts,next_due_at,retry_multiplier,created_at,updated_at) VALUES ('legacy','ws_example','legacy-message','research','original-notification','{\"old\": true}','exhausted',6,100,.9,1,2)");state.storage.sql.exec('INSERT INTO scheduler_state VALUES (1,100,90,80)');
   const before=state.storage.sql.exec('SELECT * FROM outbox').one();state.storage.sql.exec("CREATE TRIGGER migration_fault BEFORE INSERT ON schema_migrations WHEN NEW.version=4 BEGIN SELECT RAISE(ABORT,'migration_fault'); END");

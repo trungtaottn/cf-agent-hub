@@ -5,6 +5,7 @@ export const httpSchemas = {
 "AuthCallbackQuery":{validate:validators.validateAuthCallbackQuery,byteRules:[]},
 "AuthLogoutRequest":{validate:validators.validateAuthLogoutRequest,byteRules:[]},
 "MessageCreateRequest":{validate:validators.validateMessageCreateRequest,byteRules:[{"path":["body"],"encoding":"utf8","maxBytes":32768},{"path":["refs"],"encoding":"json","maxBytes":8192}]},
+"MessageAckRequest":{validate:validators.validateMessageAckRequest,byteRules:[]},
 "ProfileWriteRequest":{validate:validators.validateProfileWriteRequest,byteRules:[]},
 "PreferencesWriteRequest":{validate:validators.validatePreferencesWriteRequest,byteRules:[]}
 } as const;
