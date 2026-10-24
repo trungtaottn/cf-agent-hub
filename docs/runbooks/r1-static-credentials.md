@@ -1,5 +1,7 @@
 # R1 static credentials and operator installation
 
+Status: Implemented offline provisioning and authenticated installation; live provider, deployment and recovery acceptance pending.
+
 This runbook describes the implemented offline provisioning and authenticated installation boundary. It does not establish deployment or release acceptance. The pinned Node 24.11.0 runtime is admitted only for synthetic development; Task 11 must verify and adopt a supported Node 24 security patch and rerun release gates before real operator credentials are used. See [toolchain](toolchain.md).
 
 ## Authority and token handling

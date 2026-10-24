@@ -1,6 +1,6 @@
 {
   "scope": "implementation-plans-only",
-  "reviewed_at": "2026-10-23T07:41:27.148580+00:00",
+  "reviewed_at": "2026-10-24T01:59:10Z",
   "status": "passed-in-reviewed-scope",
   "product_runtime_tests_run": false,
   "implementation_status": "pending",
@@ -49,7 +49,7 @@
     }
   },
   "reviewed_plan_sha256": {
-    "R1": "fd05f8ee86ccd9b8428ce2ff6d15e4207446294118bf55072ddf860962506d6d",
+    "R1": "45f91564a7f75e7502cef3b259aac312ecc14aadfea8af77e7adaa7341596e3b",
     "R2": "7bd7520370bf058ca4e69218210666bce4544d468cb2312f7f813bc320cc6c1b",
     "R3": "c6ee22bce2250f96db87b4156082db9373c52b5dec9f0331e8dcd5512448cbf8",
     "R4": "efe60d3a7eef00532bb6084c25433769ab603a66fe3c46cec9742e8b04ec6b38"
@@ -226,7 +226,8 @@
     "Controller cross-plan interface, dependency and authority review.",
     "Authors corrected findings; independent focused re-review checked affected mechanisms.",
     "Controller inspected final changes and aligned editorial status/execution-method headers with the shared per-task review protocol.",
-    "Final byte digests identify the reviewed planning deliverable; they are not Git/runtime release identities."
+    "Final byte digests identify the reviewed planning deliverable; they are not Git/runtime release identities.",
+    "The historical full planning review covers the prior identified plan bytes. The independent accumulated R1 amendment review, followed by its focused correction re-review, covers the changes to the current identified R1 plan bytes. Together they supply the current planning-review identity. This receipt does not certify product implementation, tests, deployment or release."
   ],
   "limitations": [
     "No claim of defect-free software or exhaustive proof.",
@@ -234,5 +235,102 @@
     "Future task commands are specified deliverables, not observed successful executions.",
     "Planning-only validators check structure and traceability, not domain correctness.",
     "Baseline contract revision 0.1 remains unchanged; each task must implement and verify its proposed amendments before dependent behavior."
+  ],
+  "plan_amendment_reviews": [
+    {
+      "id": "r1-accumulated-amendments-2026-10-24",
+      "scope": "accumulated-r1-plan-amendments-only",
+      "reviewer_role": "independent accumulated-plan-amendment reviewer",
+      "reviewed_at": "2026-10-24T01:59:10Z",
+      "status": "approved",
+      "previous_full_review": {
+        "path": "validation/implementation-plan-review.2026-10-23.json",
+        "sha256": "7d74ae1240a8f0556c6f6a78d1889d26de85cb4ce76ee282cae3f128e4816870",
+        "bytes": 9629,
+        "reviewed_at": "2026-10-23T07:41:27.148580+00:00",
+        "scope": "Historical full planning review for its exact recorded plan and shared-file bytes; original conclusions and counts are preserved."
+      },
+      "plan_path": "docs/superpowers/plans/2026-10-23-r1-foundation.md",
+      "from_plan_sha256": "fd05f8ee86ccd9b8428ce2ff6d15e4207446294118bf55072ddf860962506d6d",
+      "source_plan_commit": "555bb14e3d0014370dcd3717356b9c7afb0490dd",
+      "source_plan_tree": "3301a48eb4eeba552b625be38f3d9a83c529fc1a",
+      "to_plan_sha256": "45f91564a7f75e7502cef3b259aac312ecc14aadfea8af77e7adaa7341596e3b",
+      "to_plan_bytes": 97359,
+      "review_stages": [
+        {
+          "stage": "accumulated-amendment-review",
+          "reviewer_role": "independent accumulated-plan-amendment reviewer",
+          "reviewed_at": "2026-10-24T01:54:04Z",
+          "status": "needs-correction",
+          "commit": "ce6a53a6602c39b4d8e22c8ecb6e14671707ca05",
+          "tree": "f24a9ddb47e76b427d4ad62a96d690cc86b5342c",
+          "plan_sha256": "a0adfd68fa47e2f968fc45b082e3e6d82b1edda93082a6e7e8884a034a359769",
+          "plan_bytes": 97350,
+          "changed_blocks": 9,
+          "approved_blocks": 8,
+          "findings": [
+            {
+              "id": "APA-01",
+              "severity": "Important",
+              "status": "open",
+              "summary": "The Task 3 CSRF interface declared synchronous void despite its asynchronous proof-preparation requirement."
+            }
+          ]
+        },
+        {
+          "stage": "focused-correction-review",
+          "reviewer_role": "independent accumulated-plan-amendment reviewer",
+          "reviewed_at": "2026-10-24T01:59:10Z",
+          "status": "approved",
+          "commit": "555bb14e3d0014370dcd3717356b9c7afb0490dd",
+          "tree": "3301a48eb4eeba552b625be38f3d9a83c529fc1a",
+          "plan_sha256": "45f91564a7f75e7502cef3b259aac312ecc14aadfea8af77e7adaa7341596e3b",
+          "plan_bytes": 97359,
+          "findings": [
+            {
+              "id": "APA-01",
+              "status": "addressed",
+              "resolution": "Independently inspected the sole return-type correction to assertCsrf(request,session):Promise<void>; surrounding synchronous authorization and transaction boundaries remain unchanged."
+            }
+          ],
+          "new_findings": 0
+        }
+      ],
+      "changed_scope": [
+        "Concrete human-authentication and operator file ownership, including their shared contract continuation.",
+        "Settings, immutable preference-owner migration and typed settings-event ownership.",
+        "The explicit bounded Task 6 revision-zero and response-only settings documentation/schema amendment allowance.",
+        "The concrete authenticated install binding and deferred recovery extension boundary.",
+        "The Task 3 authentication file map, forward epoch migration, canonical generation and fixture ownership.",
+        "The Task 3 asynchronous human proof, persisted epoch and return-intent interface, with the focused Promise<void> CSRF correction.",
+        "The Task 4 concrete module and Node/Workers/operator test partition.",
+        "The native owned authentication context, authenticated install identity and strict proof lifetime.",
+        "The explicit operator test and aggregate verification gate."
+      ],
+      "findings": [
+        {
+          "id": "APA-01",
+          "severity": "Important",
+          "status": "resolved",
+          "topic": "Public Task 3 asynchronous CSRF interface",
+          "original_declaration": "assertCsrf(request,session):void",
+          "corrected_declaration": "assertCsrf(request,session):Promise<void>",
+          "resolution": "The plan-only correction was committed, frozen and independently approved in the actual focused correction review; no runtime change was requested or made.",
+          "resolved_at": "2026-10-24T01:59:10Z",
+          "reviewed_commit": "555bb14e3d0014370dcd3717356b9c7afb0490dd",
+          "reviewed_plan_sha256": "45f91564a7f75e7502cef3b259aac312ecc14aadfea8af77e7adaa7341596e3b"
+        }
+      ],
+      "review_basis": "The historical full planning review covers the prior identified plan bytes. The independent accumulated R1 amendment review, followed by its focused correction re-review, covers the changes to the current identified R1 plan bytes. Together they supply the current planning-review identity. This receipt does not certify product implementation, tests, deployment or release.",
+      "product_runtime_tests_run": false,
+      "limitations": [
+        "The original full-review findings, counts, verdicts and timestamp remain historical; this is their explicit composition with later amendment reviews, not a new full planning review.",
+        "The accumulated review covers the net Tasks 3, 4 and 6 planning amendments; its initial needs-correction verdict remains attached to its original exact bytes and time.",
+        "The focused review approves only the actual one-line correction and its exact resulting plan identity.",
+        "No unchanged plan design or R2-R4 amendment was independently re-reviewed by these stages; their existing plan and shared-file digests remain unchanged.",
+        "No product implementation, runtime tests, deployment, recovery, release, capability promotion or defect-free software is certified.",
+        "Any further plan change requires review of its actual delta and exact identity; a matching validator digest alone does not establish review provenance."
+      ]
+    }
   ]
 }

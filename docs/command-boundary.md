@@ -1,5 +1,7 @@
 # Bounded command and event boundary
 
+Status: Implemented command and event boundary; R1 release and deployment acceptance pending.
+
 The Task 5 framework registers no domain HTTP route. Domain owners select a route in the owned WorkspaceDO and pass its actual AuthWorkspace to dispatchCommand. Neither a public request nor a caller-supplied JSON identity constructs that workspace, an actor, a transaction or a command descriptor. Operator installation remains on its separate authenticated control path and operator.install receipt namespace.
 
 ## Canonical HTTP input

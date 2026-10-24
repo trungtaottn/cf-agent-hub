@@ -1,5 +1,7 @@
 # Toolchain and local verification
 
+Status: Synthetic development and local verification evidence; supported-runtime refresh and R1 release acceptance pending.
+
 CF Agent Hub uses exact project dependencies and a committed npm lockfile. Run `npm ci`, not an unpinned installer. The implementation runtime is Node 24.11.0 with npm 11.6.1; the independent browser validation host uses the same hash-verified official Node 24.11.0 and bundled npm 11.6.1. A preinstalled newer Node patch does not satisfy the exact declared engine.
 
 | Component | Locked version |
