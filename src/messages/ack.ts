@@ -10,6 +10,8 @@ import {inaccessible} from './references';
 import {markSchedulerDirty} from '../outbox/scheduler-state';
 function recipients(tx:WorkspaceTransaction,ctx:CommandContext,input:MessageAckRequest):readonly {id:string;acknowledged_at:number|null}[]{
  if(!validateMessageAckRequest(input))throw new HttpError('INVALID_REQUEST',400);
+ // Opaque IDs need Set uniqueness independent of generated object-key handling.
+ if(new Set(input.message_ids).size!==input.message_ids.length)throw new HttpError('INVALID_REQUEST',400);
  if(ctx.actor.kind!=='agent'||!ctx.actor.agentId)throw new HttpError('FORBIDDEN',403);
  authorize(tx,ctx.actor,'messages:ack',{kind:'message',id:input.message_ids[0],projectId:null},ctx.nowMs);settingsPolicy(tx,ctx.actor);
  return input.message_ids.map(id=>{

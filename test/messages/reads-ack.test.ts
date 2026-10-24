@@ -204,3 +204,22 @@ it('route_limits_duplicate_queries_event_start_and_current_message_project_scope
   expect((await (await get(state.storage,name,'/events')).json<any>()).data).toEqual([]);
  });
 });
+
+it('duplicate_proto_ack_ids_are_invalid_before_receipt_lookup_or_writes_and_single_opaque_id_is_valid',async()=>{
+ const {stub,name,identity}=await messageFixture('ack-proto-unique');await runInDurableObject(stub,async(_o,state)=>{
+  const original=await send(state.storage,name,identity,'seed'),id='__proto__';
+  state.storage.sql.exec('INSERT INTO messages SELECT ?,workspace_id,thread_id,sender_kind,sender_principal_id,sender_agent_id,body,refs_json,created_at FROM messages WHERE id=?',id,original.id);
+  state.storage.sql.exec("INSERT INTO inbox VALUES (?,'agent_research','ws_example',1,NULL)",id);
+  const before=messageSnapshot(state.storage);
+  const duplicate=await messageRoutes(request('/messages:ack','POST',{message_ids:[id,id]},'duplicate-unacknowledged'),workspace(state.storage,name));
+  expect(duplicate.status).toBe(400);expect((await duplicate.json<any>()).error.code).toBe('INVALID_REQUEST');expect(messageSnapshot(state.storage)).toEqual(before);
+  const single=await messageRoutes(request('/messages:ack','POST',{message_ids:[id]},'single-opaque'),workspace(state.storage,name));
+  expect(single.status).toBe(200);expect((await single.json<any>()).data).toEqual({acknowledged_ids:[id],already_acknowledged_ids:[]});
+  const firstTimestamp=state.storage.sql.exec<{acknowledged_at:number}>('SELECT acknowledged_at FROM inbox WHERE message_id=?',id).one().acknowledged_at;expect(firstTimestamp).toBeTypeOf('number');
+  const afterSingle=messageSnapshot(state.storage);
+  const duplicateAcknowledged=await messageRoutes(request('/messages:ack','POST',{message_ids:[id,id]},'duplicate-acknowledged'),workspace(state.storage,name));
+  expect(duplicateAcknowledged.status).toBe(400);expect((await duplicateAcknowledged.json<any>()).error.code).toBe('INVALID_REQUEST');expect(messageSnapshot(state.storage)).toEqual(afterSingle);
+  const repeatedSingle=await messageRoutes(request('/messages:ack','POST',{message_ids:[id]},'repeat-single-opaque'),workspace(state.storage,name));
+  expect(repeatedSingle.status).toBe(200);expect((await repeatedSingle.json<any>()).data).toEqual({acknowledged_ids:[],already_acknowledged_ids:[id]});expect(state.storage.sql.exec('SELECT acknowledged_at FROM inbox WHERE message_id=?',id).one().acknowledged_at).toBe(firstTimestamp);
+ });
+});
