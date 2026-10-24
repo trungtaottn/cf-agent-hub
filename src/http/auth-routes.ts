@@ -1,27 +1,17 @@
 import { validateAuthStartRequest,validateAuthLogoutRequest,validateAuthCallbackQuery } from './generated/auth-validators.js';
-import type { AuthStartDataResponse,AuthSessionResponse,AuthLogoutDataResponse,Error as ErrorEnvelope } from './dto';
+import type { AuthStartDataResponse,AuthSessionResponse,AuthLogoutDataResponse } from './dto';
 import { beginLogin,completeLogin,verifyHumanSession,revokeSession } from '../auth/sessions';
 import { csrfToken,assertCsrf } from '../auth/csrf';
 import { resolveActor,type SessionRecord } from '../auth/authorize';
 import { AuthError,currentConfiguration,cookieHeader,readCookie,type AuthWorkspace } from '../auth/context';
 import { withTransaction } from '../storage/transaction';
-export const securityHeaders={
- 'cache-control':'no-store','content-security-policy':"default-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
- 'referrer-policy':'no-referrer','x-content-type-options':'nosniff'
-};
-export function authFailure(error:unknown,requestId:string,headers:Headers):Response {
- const known=error instanceof AuthError?error:new AuthError('AUTH_UNAVAILABLE',503);
- // Only fixed categories and a server-generated correlation ID; never request URLs or provider errors.
- console.warn(JSON.stringify({category:known.code,request_id:requestId}));
- return Response.json({error:{code:known.status===413?'LIMIT_EXCEEDED':known.code==='AUTH_UNAVAILABLE'?'DEPENDENCY_UNAVAILABLE':known.code,message:'Authentication request denied',retryable:known.status===503,request_id:requestId}} satisfies ErrorEnvelope,{status:known.status,headers});
-}
-async function body(request:Request):Promise<unknown> {
- if(request.headers.get('content-type')?.split(';')[0].trim()!=='application/json')throw new AuthError('INVALID_REQUEST',400);
- const reader=request.body?.getReader();if(!reader)throw new AuthError('INVALID_REQUEST',400);let total=0;const chunks:Uint8Array[]=[];
- try{for(;;){const {value,done}=await reader.read();if(done)break;total+=value.byteLength;if(total>65536)throw new AuthError('INVALID_REQUEST',413);chunks.push(value);}}finally{await reader.cancel();}
- const bytes=new Uint8Array(total);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength;}
- let value:unknown;try{value=JSON.parse(new TextDecoder().decode(bytes));}catch{throw new AuthError('INVALID_REQUEST',400);}
- return value;
+import {parseBoundedJson} from './bounds';
+import {HttpError,toHttpError,securityHeaders} from './envelopes';
+import {securityLog} from '../audit/redact';
+export {securityHeaders};
+export function authFailure(error:unknown,requestId:string,headers:Headers):Response{
+ const known=error instanceof AuthError||error instanceof HttpError?error:new AuthError('AUTH_UNAVAILABLE',503);
+ securityLog(known,requestId);return toHttpError(known,requestId,headers);
 }
 export async function authRoutes(request:Request,workspace:AuthWorkspace):Promise<Response> {
  const requestId=crypto.randomUUID(),headers=new Headers(securityHeaders),url=new URL(request.url),route=url.pathname.split('/').at(-1);
@@ -42,7 +32,7 @@ export async function authRoutes(request:Request,workspace:AuthWorkspace):Promis
   }
   if(route==='start'&&request.method==='POST') {
    if(request.headers.get('origin')!==origin)throw new AuthError('FORBIDDEN',403);
-   const input=await body(request);if(!validateAuthStartRequest(input))throw new AuthError('INVALID_REQUEST',400);
+   const input=await parseBoundedJson(request,'AuthStartRequest');if(!validateAuthStartRequest(input))throw new AuthError('INVALID_REQUEST',400);
    const started=await beginLogin(workspace,input.return_path,origin);headers.append('set-cookie',cookieHeader('cfhub_login',started.cookie,300));
    return Response.json({data:{authorization_url:started.authorizationUrl},request_id:requestId} satisfies AuthStartDataResponse,{headers});
   }
@@ -56,7 +46,7 @@ export async function authRoutes(request:Request,workspace:AuthWorkspace):Promis
   }
   if((route==='session'&&request.method==='GET')||(route==='logout'&&request.method==='POST')) {
    if(url.search)throw new AuthError('INVALID_REQUEST',400);
-   if(route==='logout'&&!validateAuthLogoutRequest(await body(request)))throw new AuthError('INVALID_REQUEST',400);
+   if(route==='logout'&&!validateAuthLogoutRequest(await parseBoundedJson(request,'AuthLogoutRequest')))throw new AuthError('INVALID_REQUEST',400);
    const identity=await verifyHumanSession(workspace,request.headers.get('cookie'),workspace.clock.nowMs());
    if(identity.kind!=='human')throw new AuthError('UNAUTHENTICATED',401);
    const session=withTransaction(workspace.storage,tx=>{resolveActor(tx,identity,workspace.clock.nowMs());return tx.one<SessionRecord>('SELECT * FROM sessions WHERE id=?',[identity.sessionId])!;});

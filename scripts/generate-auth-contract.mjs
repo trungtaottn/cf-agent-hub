@@ -1,28 +1,46 @@
-// Auth subset of the canonical OpenAPI contract; Task5 can extend the same DTO module.
+// Canonical HTTP subset. Extend roots here when a domain owner adds routes.
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import standalone from 'ajv/dist/standalone/index.js';
 const spec=JSON.parse(await readFile('spec/openapi.json','utf8')),schemas=spec.components.schemas;
-const roots=['AuthStartRequest','AuthCallbackQuery','AuthLogoutRequest','AuthStartDataResponse','AuthSessionResponse','AuthLogoutDataResponse','Error'];
-const seen=new Set();
+const inputs=['AuthStartRequest','AuthCallbackQuery','AuthLogoutRequest','MessageCreateRequest'];
+const roots=[...inputs,'AuthStartDataResponse','AuthSessionResponse','AuthLogoutDataResponse','Error','Event'];
+const validated=[...inputs,'Error','Event'];
+const seen=new Set(),aliases=[];
 function type(s) {
  if(s.$ref){const name=s.$ref.split('/').at(-1);collect(name);return name;}
  if(s.const!==undefined)return JSON.stringify(s.const);
- if(s.enum)return s.enum.map(JSON.stringify).join(' | ');
- if(s.anyOf)return s.anyOf.map(type).join(' | ');
+ if(s.enum)return s.enum.map(x=>JSON.stringify(x)).join(' | ');
+ if(s.anyOf||s.oneOf)return (s.anyOf??s.oneOf).map(type).join(' | ');
  if(s.type==='array')return 'Array<'+type(s.items)+'>';
- if(s.type==='object')return '{'+Object.entries(s.properties??{}).map(([key,v])=>JSON.stringify(key)+(s.required?.includes(key)?'':'?')+':'+type(v)).join(';')+'}';
+ if(s.type==='object'){
+  if(!Object.keys(s.properties??{}).length&&s.additionalProperties===false)return 'Record<string, never>';
+  return '{'+Object.entries(s.properties??{}).map(([key,v])=>JSON.stringify(key)+(s.required?.includes(key)?'':'?')+':'+type(v)).join(';')+'}';
+ }
  return ({string:'string',integer:'number',number:'number',null:'null',boolean:'boolean'})[s.type]??'unknown';
 }
-const aliases=[];function collect(name){if(seen.has(name))return;seen.add(name);aliases.push('export type '+name+' = '+type(schemas[name])+';');}
+function collect(name){if(seen.has(name))return;seen.add(name);aliases.push('export type '+name+' = '+type(schemas[name])+';');}
 for(const name of roots)collect(name);
 const ajv=new Ajv2020({strict:false,code:{source:true,esm:true}});addFormats(ajv);
-const exports={};for(const name of roots.slice(0,3)){ajv.addSchema({...schemas[name],$id:name});exports['validate'+name]=name;}
+ajv.addSchema({$id:'cfhub-http',components:{schemas}});
+const exports={};
+for(const name of validated){ajv.addSchema({$id:name,$ref:'cfhub-http#/components/schemas/'+name});exports['validate'+name]=name;}
 const js='// Generated from spec/openapi.json; npm run generate:auth.\nimport ucs2Module from "ajv/dist/runtime/ucs2length.js";\nconst ucs2Length=typeof ucs2Module==="function"?ucs2Module:ucs2Module.default;\n'+standalone(ajv,exports).replaceAll('require("ajv/dist/runtime/ucs2length").default','ucs2Length')+'\n';
-const dts='// Generated from spec/openapi.json.\nimport type {AuthStartRequest,AuthCallbackQuery,AuthLogoutRequest} from "../dto";\n'+roots.slice(0,3).map(name=>'export declare function validate'+name+'(input:unknown): input is '+name+';').join('\n')+'\n';
+const dts='// Generated from spec/openapi.json.\nimport type {'+validated.join(',')+'} from "../dto";\n'+validated.map(name=>'export declare function validate'+name+'(input:unknown): input is '+name+';').join('\n')+'\n';
 const dto='// Generated from spec/openapi.json; npm run generate:auth.\n'+aliases.join('\n')+'\nexport const authReturnPaths = '+JSON.stringify(schemas.AuthStartRequest.properties.return_path.enum)+' as const;\n';
+function byteRules(s,path=[]){
+ if(s.$ref)return byteRules(schemas[s.$ref.split('/').at(-1)],path);
+ const rules=[];
+ if(s['x-utf8-max-bytes']!==undefined)rules.push({path,encoding:'utf8',maxBytes:s['x-utf8-max-bytes']});
+ if(s['x-json-max-bytes']!==undefined)rules.push({path,encoding:'json',maxBytes:s['x-json-max-bytes']});
+ for(const [name,child] of Object.entries(s.properties??{}))rules.push(...byteRules(child,[...path,name]));
+ if(s.items)rules.push(...byteRules(s.items,[...path,'*']));
+ return rules;
+}
+const fields=[...new Set(Object.values(schemas).flatMap(function walk(s){return [...Object.keys(s.properties??{}),...Object.values(s.properties??{}).flatMap(walk),...(s.items?walk(s.items):[])];}))].sort();
+const registry='// Generated from spec/openapi.json; npm run generate:auth.\nimport * as validators from "./auth-validators.js";\nexport const httpSchemas = {\n'+inputs.map(name=>JSON.stringify(name)+':{validate:validators.validate'+name+',byteRules:'+JSON.stringify(byteRules(schemas[name]))+'}').join(',\n')+'\n} as const;\nexport type HttpSchemaName=keyof typeof httpSchemas;\nexport const httpFieldNames = '+JSON.stringify(fields)+' as const;\n';
 await mkdir('src/http/generated',{recursive:true});
-for(const [path,content]of [['src/http/dto.ts',dto],['src/http/generated/auth-validators.js',js],['src/http/generated/auth-validators.d.ts',dts]]){
+for(const [path,content]of [['src/http/dto.ts',dto],['src/http/generated/auth-validators.js',js],['src/http/generated/auth-validators.d.ts',dts],['src/http/generated/http-schemas.ts',registry]]){
  if(process.argv.includes('--check')){if(await readFile(path,'utf8')!==content)throw Error('Stale generated file: '+path);}else await writeFile(path,content);
 }

@@ -1,0 +1,51 @@
+import {AuthError,currentConfiguration,type AuthWorkspace} from '../auth/context';
+import {verifyNativeCredential} from '../auth/native';
+import {verifyHumanSession} from '../auth/sessions';
+import {csrfToken,assertCsrf} from '../auth/csrf';
+import {resolveActor,type SessionRecord} from '../auth/authorize';
+import {withTransaction} from '../storage/transaction';
+import {executeCommand,type CommandDescriptor} from '../workspace/commands';
+import {fingerprintRequest} from '../workspace/idempotency';
+import type {VerifiedIdentity} from '../workspace/context';
+import type {HttpSchemaName} from './generated/http-schemas';
+import {parseBoundedJson} from './bounds';
+import {HttpError,securityHeaders,toHttpError,toHttpResponse} from './envelopes';
+import {securityLog} from '../audit/redact';
+/** Constructed by the domain owner in the DO, never a public command descriptor. */
+export interface CommandRoute<B,T>{method:string;path:string;schema:HttpSchemaName;query(params:URLSearchParams):unknown;command:CommandDescriptor<B,T>;}
+/** Authenticated framework hook for domain owners. Does not register any public route. */
+export async function dispatchCommand<B,T>(request:Request,workspace:AuthWorkspace,route:CommandRoute<B,T>):Promise<Response>{
+ const requestId=crypto.randomUUID(),headers=new Headers(securityHeaders);let executing=false;
+ try{
+  const url=new URL(request.url);
+  if(request.method!==route.method||url.pathname!==route.path)throw new HttpError('NOT_FOUND',404);
+  const bearer=request.headers.get('authorization'),cookie=request.headers.get('cookie');
+  if(bearer&&cookie?.split(';').some(x=>x.trim().startsWith('cfhub_session=')))throw new HttpError('INVALID_REQUEST',400);
+  const key=request.headers.get('idempotency-key');if(!key)throw new HttpError('INVALID_REQUEST',400);
+  const body=await parseBoundedJson(request,route.schema) as B,query=route.query(url.searchParams);
+  const installed=withTransaction(workspace.storage,tx=>currentConfiguration(tx,workspace));
+  const auth=installed.config.authentication,redirect=auth.redirect_uris.find(x=>x.workspace_id===workspace.workspaceId)!.redirect_uri,origin=new URL(redirect).origin;
+  if(url.origin!==origin||request.headers.has('origin')&&request.headers.get('origin')!==origin)throw new HttpError('FORBIDDEN',403);
+  if(request.headers.has('origin')){
+   if(!auth.allowed_origins.includes(origin))throw new HttpError('FORBIDDEN',403);
+   headers.set('access-control-allow-origin',origin);headers.set('access-control-allow-credentials','true');headers.set('vary','Origin');
+  }
+  let identity:VerifiedIdentity;
+  if(bearer){
+   const match=/^Bearer ([A-Za-z0-9_-]{43})$/.exec(bearer);if(!match)throw new AuthError('UNAUTHENTICATED',401);
+   identity=await verifyNativeCredential(workspace,match[1],workspace.clock.nowMs());
+  }else{
+   identity=await verifyHumanSession(workspace,cookie,workspace.clock.nowMs());
+   if(identity.kind!=='human')throw new AuthError('UNAUTHENTICATED',401);
+   const sessionId=identity.sessionId;
+   const session=withTransaction(workspace.storage,tx=>{currentConfiguration(tx,workspace,installed.epoch);resolveActor(tx,identity,workspace.clock.nowMs());return tx.one<SessionRecord>('SELECT * FROM sessions WHERE id=?',[sessionId])!;});
+   assertCsrf(request,{csrfToken:await csrfToken(workspace,session),origin});
+  }
+  const fingerprint=await fingerprintRequest(route.method,route.path,query,body);
+  executing=true;
+  return toHttpResponse(executeCommand({workspace,requestId,idempotencyKey:key,fingerprint},identity,route.command,body),requestId,headers);
+ }catch(error){
+  if(!executing)securityLog(error,requestId);
+  return toHttpError(error,requestId,headers);
+ }
+}

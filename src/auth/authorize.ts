@@ -21,8 +21,8 @@ export function resolveActor(tx:WorkspaceTransaction,identity:VerifiedIdentity,n
  if(!row||row.revoked_at!==null||row.expires_at<=nowMs||row.admission_state!=='installed'||row.enabled!==1||row.auth_epoch<=0||row.auth_epoch!==row.config_epoch||row.grant_epoch!==row.config_epoch)deny();
  return {workspaceId:row!.workspace_id,principalId:row!.principal_id,kind:'human',agentId:null,scopes:new Set(JSON.parse(row!.scopes_json) as string[]),projectIds:JSON.parse(row!.project_ids_json) as string[]|null,credentialId:null,runtimeId:null,sessionId:row!.id};
 }
-/** Domain callers pass their trusted command time, and receive freshly resolved authority. */
-export function authorize(tx:WorkspaceTransaction,actor:ActorContext,operation:string,resource?:ResourceAccess,nowMs=Date.now()):void {
+/** Refresh an internal actor before passing current grants to a resource visibility predicate. */
+export function refreshActor(tx:WorkspaceTransaction,actor:ActorContext,nowMs:number):ActorContext {
  let live:ActorContext;
  if(actor.kind==='agent') {
   if(!actor.credentialId||actor.sessionId!==null||actor.runtimeId!==null)deny();
@@ -34,7 +34,13 @@ export function authorize(tx:WorkspaceTransaction,actor:ActorContext,operation:s
  const session=tx.one<SessionRecord>('SELECT * FROM sessions WHERE id=?',[actor.sessionId]);if(!session)deny();
  live=resolveActor(tx,{kind:'human',issuer:session!.issuer,subject:session!.subject,workspaceId:actor.workspaceId,sessionId:actor.sessionId!},nowMs);
  }
- if(live.principalId!==actor.principalId||!live.scopes.has(operation)||resource&&live.projectIds!==null&&(resource.projectId===null||!live.projectIds.includes(resource.projectId)))throw new AuthError('FORBIDDEN',403);
+ if(live.principalId!==actor.principalId)throw new AuthError('FORBIDDEN',403);
+ return live;
+}
+/** Domain callers pass their trusted command time; no cached actor grants authority. */
+export function authorize(tx:WorkspaceTransaction,actor:ActorContext,operation:string,resource?:ResourceAccess,nowMs=Date.now()):void {
+ const live=refreshActor(tx,actor,nowMs);
+ if(!live.scopes.has(operation)||resource&&live.projectIds!==null&&(resource.projectId===null||!live.projectIds.includes(resource.projectId)))throw new AuthError('FORBIDDEN',403);
 }
 
 interface NativeRecord {

@@ -1,6 +1,7 @@
 import { parseDeployment,resolveWorkspace } from './config/deployment';
 import { authFailure,securityHeaders } from './http/auth-routes';
 import { AuthError,cookieHeader } from './auth/context';
+import {HttpError,toHttpError} from './http/envelopes';
 export { WorkspaceDO } from './workspace/workspace-do';
 export default {
  async fetch(request:Request,env:Env):Promise<Response> {
@@ -16,6 +17,6 @@ export default {
     const workspace=resolveWorkspace(config,match[1]);return await env.WORKSPACE.getByName(workspace.objectName).fetch(request);
    }catch(error){const headers=new Headers(securityHeaders);if(match[2]==='callback')headers.append('set-cookie',cookieHeader('cfhub_login','',0));return authFailure(match[2]==='callback'&&(!(error instanceof AuthError)||error.status===503)?new AuthError('UNAUTHENTICATED',401):error,crypto.randomUUID(),headers);}
   }
-  return Response.json({error:{code:'NOT_FOUND',message:'Route unavailable',retryable:false,request_id:crypto.randomUUID()}},{status:404,headers:securityHeaders});
+  return toHttpError(new HttpError('NOT_FOUND',404),crypto.randomUUID());
  }
 };
