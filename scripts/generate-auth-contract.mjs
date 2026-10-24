@@ -4,12 +4,13 @@ import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import standalone from 'ajv/dist/standalone/index.js';
 const spec=JSON.parse(await readFile('spec/openapi.json','utf8')),schemas=spec.components.schemas;
-const inputs=['AuthStartRequest','AuthCallbackQuery','AuthLogoutRequest','MessageCreateRequest'];
-const roots=[...inputs,'AuthStartDataResponse','AuthSessionResponse','AuthLogoutDataResponse','Error','Event'];
-const validated=[...inputs,'Error','Event'];
+const settings=['Configuration','ProfileData','ProfilePreview','ProfileExport','PreferencesData','WorkspaceProfile','UserPreferences','ConfigurationResponse','ProfileDataResponse','ProfilePreviewResponse','ProfileExportResponse','PreferencesDataResponse'];
+const inputs=['AuthStartRequest','AuthCallbackQuery','AuthLogoutRequest','MessageCreateRequest','ProfileWriteRequest','PreferencesWriteRequest'];
+const roots=[...inputs,'AuthStartDataResponse','AuthSessionResponse','AuthLogoutDataResponse','Error','Event',...settings];
+const validated=[...inputs,'Error','Event',...settings];
 const seen=new Set(),aliases=[];
 function type(s) {
- if(s.$ref){const name=s.$ref.split('/').at(-1);collect(name);return name;}
+ if(s.$ref){const parts=s.$ref.split('/').slice(3),name=parts.shift();if(parts.length){let target=schemas[name];for(const part of parts)target=target[part.replaceAll('~1','/').replaceAll('~0','~')];return type(target);}collect(name);return name;}
  if(s.const!==undefined)return JSON.stringify(s.const);
  if(s.enum)return s.enum.map(x=>JSON.stringify(x)).join(' | ');
  if(s.anyOf||s.oneOf)return (s.anyOf??s.oneOf).map(type).join(' | ');
@@ -30,7 +31,7 @@ const js='// Generated from spec/openapi.json; npm run generate:auth.\nimport uc
 const dts='// Generated from spec/openapi.json.\nimport type {'+validated.join(',')+'} from "../dto";\n'+validated.map(name=>'export declare function validate'+name+'(input:unknown): input is '+name+';').join('\n')+'\n';
 const dto='// Generated from spec/openapi.json; npm run generate:auth.\n'+aliases.join('\n')+'\nexport const authReturnPaths = '+JSON.stringify(schemas.AuthStartRequest.properties.return_path.enum)+' as const;\n';
 function byteRules(s,path=[]){
- if(s.$ref)return byteRules(schemas[s.$ref.split('/').at(-1)],path);
+ if(s.$ref){let target=spec;for(const part of s.$ref.split('/').slice(1))target=target[part.replaceAll('~1','/').replaceAll('~0','~')];return byteRules(target,path);}
  const rules=[];
  if(s['x-utf8-max-bytes']!==undefined)rules.push({path,encoding:'utf8',maxBytes:s['x-utf8-max-bytes']});
  if(s['x-json-max-bytes']!==undefined)rules.push({path,encoding:'json',maxBytes:s['x-json-max-bytes']});

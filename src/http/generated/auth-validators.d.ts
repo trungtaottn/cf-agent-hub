@@ -1,8 +1,22 @@
 // Generated from spec/openapi.json.
-import type {AuthStartRequest,AuthCallbackQuery,AuthLogoutRequest,MessageCreateRequest,Error,Event} from "../dto";
+import type {AuthStartRequest,AuthCallbackQuery,AuthLogoutRequest,MessageCreateRequest,ProfileWriteRequest,PreferencesWriteRequest,Error,Event,Configuration,ProfileData,ProfilePreview,ProfileExport,PreferencesData,WorkspaceProfile,UserPreferences,ConfigurationResponse,ProfileDataResponse,ProfilePreviewResponse,ProfileExportResponse,PreferencesDataResponse} from "../dto";
 export declare function validateAuthStartRequest(input:unknown): input is AuthStartRequest;
 export declare function validateAuthCallbackQuery(input:unknown): input is AuthCallbackQuery;
 export declare function validateAuthLogoutRequest(input:unknown): input is AuthLogoutRequest;
 export declare function validateMessageCreateRequest(input:unknown): input is MessageCreateRequest;
+export declare function validateProfileWriteRequest(input:unknown): input is ProfileWriteRequest;
+export declare function validatePreferencesWriteRequest(input:unknown): input is PreferencesWriteRequest;
 export declare function validateError(input:unknown): input is Error;
 export declare function validateEvent(input:unknown): input is Event;
+export declare function validateConfiguration(input:unknown): input is Configuration;
+export declare function validateProfileData(input:unknown): input is ProfileData;
+export declare function validateProfilePreview(input:unknown): input is ProfilePreview;
+export declare function validateProfileExport(input:unknown): input is ProfileExport;
+export declare function validatePreferencesData(input:unknown): input is PreferencesData;
+export declare function validateWorkspaceProfile(input:unknown): input is WorkspaceProfile;
+export declare function validateUserPreferences(input:unknown): input is UserPreferences;
+export declare function validateConfigurationResponse(input:unknown): input is ConfigurationResponse;
+export declare function validateProfileDataResponse(input:unknown): input is ProfileDataResponse;
+export declare function validateProfilePreviewResponse(input:unknown): input is ProfilePreviewResponse;
+export declare function validateProfileExportResponse(input:unknown): input is ProfileExportResponse;
+export declare function validatePreferencesDataResponse(input:unknown): input is PreferencesDataResponse;

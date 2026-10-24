@@ -1,0 +1,24 @@
+{
+  "data": {
+    "preferences_revision": 0,
+    "preferences": {
+      "contract_revision": "0.1",
+      "theme": "system",
+      "density": "comfortable",
+      "default_view": "overview"
+    },
+    "effective": {
+      "contract_revision": "0.1",
+      "theme": "system",
+      "density": "comfortable",
+      "default_view": "overview"
+    },
+    "allowed_user_overrides": [
+      "theme",
+      "density",
+      "default_view"
+    ],
+    "default_view_fallback_reason": null
+  },
+  "request_id": "req_synthetic_preferences_absent"
+}

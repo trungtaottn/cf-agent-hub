@@ -29,15 +29,34 @@ export function appendEvent(tx:WorkspaceTransaction,event:RedactedEventInput):{i
  const stored=tx.one<{sequence:number}>('SELECT sequence FROM events WHERE id=?',[row.id])!;
  return {id:row.id,sequence:stored.sequence};
 }
-export type EventVisibility=(tx:WorkspaceTransaction,actor:ActorContext,resource:ResourceAccess)=>boolean;
+export type EventVisibility=(tx:WorkspaceTransaction,actor:ActorContext,resource:ResourceAccess,event:Event,nowMs:number)=>boolean;
 /** Resource predicate must join current persisted resources/owners; false yields no event ID or summary.
  * Task6 supplies the preferences stable owner predicate. No permissive default exists. */
 export function projectEvent(tx:WorkspaceTransaction,actor:ActorContext,id:string,nowMs:number,visibility:EventVisibility):Event|null{
  const live=refreshActor(tx,actor,nowMs);
  authorize(tx,live,'events:read',undefined,nowMs);
  const row=tx.one<EventRow>('SELECT * FROM events WHERE id=? AND workspace_id=?',[id,actor.workspaceId]);
- if(!row||!visibility(tx,live,{kind:row.resource_type,id:row.resource_id,projectId:null}))return null;
+ if(!row)return null;
  const event=projection(row);
+ const visible:unknown=visibility(tx,live,{kind:row.resource_type,id:row.resource_id,projectId:null},event,nowMs);
+ if(visible!==null&&(typeof visible==='object'||typeof visible==='function')&&typeof (visible as {then?:unknown}).then==='function'){
+  void Promise.resolve(visible).catch(()=>{});throw new HttpError('INTERNAL_ERROR',500);
+ }
+ if(visible!==true)return null;
  if(!validateEvent(event))throw new HttpError('INTERNAL_ERROR',500);
  return event;
 }
+
+/** Typed settings predicate. Ownership comes from the immutable persisted record association. */
+export const settingsEventVisibility:EventVisibility=(tx,actor,resource,event,nowMs)=>{
+ if(event.workspace_id!==actor.workspaceId||resource.id!==event.resource_id||resource.kind!==event.resource_type||!validateEvent(event))return false;
+ const live=refreshActor(tx,actor,nowMs);
+ if(!live.scopes.has('events:read'))return false;
+ if(event.type==='configuration.installed')return live.kind==='human'&&live.scopes.has('operations:read')&&resource.kind==='configuration'&&resource.id===live.workspaceId&&event.actor.kind==='system';
+ if(event.type==='profile.updated')return live.scopes.has('workspace:read')&&resource.kind==='profile'&&resource.id===live.workspaceId&&event.actor.kind==='human';
+ if(event.type==='preferences.updated'){
+  if(live.kind!=='human'||!live.scopes.has('workspace:read')||resource.kind!=='preferences'||event.actor.kind!=='human'||event.actor.principal_id!==live.principalId)return false;
+  return !!tx.one('SELECT record_id FROM preferences WHERE record_id=? AND workspace_id=? AND principal_id=?',[resource.id,live.workspaceId,live.principalId]);
+ }
+ return false;
+};

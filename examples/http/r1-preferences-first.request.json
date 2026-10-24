@@ -1,0 +1,9 @@
+{
+  "expected_preferences_revision": 0,
+  "preferences": {
+    "contract_revision": "0.1",
+    "theme": "dark",
+    "density": "comfortable",
+    "default_view": "overview"
+  }
+}

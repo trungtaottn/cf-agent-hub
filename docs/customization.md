@@ -1,8 +1,8 @@
 # Customization and portable profiles
 
-Status: Design baseline · Contract revision 0.1 · Implementation pending.
+Status: R1 server settings transport implemented in source · Contract revision 0.1 · Live deployment verification pending.
 
-Workspace profiles let an operator adapt CF Agent Hub to a team's vocabulary and visual identity without changing the coordination contract. A workspace may present a delivery board, a research queue, or an operations desk while using the same task state machine, agent identities, and review boundaries. All profile import, preview, and export behavior described here is planned.
+Workspace profiles let an operator adapt CF Agent Hub to a team's vocabulary and visual identity without changing the coordination contract. A workspace may present a delivery board, a research queue, or an operations desk while using the same task state machine, agent identities, and review boundaries. R1 implements the server profile preview, versioned upsert, export and personal preference transport described below; browser settings controls remain a later task.
 
 ## What a profile can express
 
@@ -35,3 +35,11 @@ Validation failure leaves the current profile intact. An apply conflict requires
 ## Acceptance criteria
 
 A fresh workspace must render coherently with no demo data. The demo preset must be visibly optional. Export/import between two workspaces must reproduce permitted presentation settings without transferring access. A stale preview must fail safely. Omitted projects must survive import. Every invalid field must receive a useful validation message. A rejected import must produce no partial settings changes. All canonical task states must retain recognizable labels and semantics across profiles.
+
+## Implemented R1 server behavior
+
+The server now provides closed preview, apply and export transport; the browser controls are a later task. Preview contains only the canonical merged portable profile, base revision, bounded JSON Pointer changes, and bounded archive/remap conflict categories. It creates no durable preview row, outcome, event or revision. Its required Idempotency-Key correlates advisory recomputation. Apply revalidates the installed policy, current human authority, expected revision and referenced project restrictions inside the one synchronous transaction that commits state, one accepted event and the durable command outcome.
+
+Stable-ID upsert preserves omitted projects and work roles. Label matches never merge different IDs. Current project grant restrictions count as references: changing a referenced project's archived flag in either direction is rejected. R1 has no work-role assignment or task reference table; later domain owners must extend the reference predicate when those persisted relationships exist. No R1 profile route remaps references.
+
+Exports contain exactly profile_revision, profile and included_categories `['presentation','projects','work_roles']`. They do not include preference state or deployment/identity data. The profile-edit-only human lane can preview, apply and export without workspace:read. Workspace:read gates ordinary profile/configuration reads; preference access additionally requires a human session.

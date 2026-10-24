@@ -76,14 +76,14 @@ All operation DTO aliases derive from committed OpenAPI schemas in `src/http/dto
 | `workers/operator/`, `src/recovery/operator.ts`, `src/recovery/generated/install-validator.{js,d.ts}` | Separate authenticated install gateway and schema-derived install envelope (Task 4); same verifier extends into recovery (Task 11) |
 | `vitest.operator.workers.config.ts`, `tsconfig.operator{,-test}.json` | Real two-Worker gateway tests and isolated operator production/test types |
 | `src/http/{router,envelopes,bounds,dto}.ts`, `src/workspace/{commands,idempotency}.ts`, `src/audit/{events,redact}.ts` | Shared command entry, envelopes, atomic outcomes and redaction (Task 5) |
-| `src/config/{policy,profile,preferences,settings-service}.ts`, `src/http/settings-routes.ts` | Settings validation, preview, versioned write and portable export (Task 6) |
+| `src/config/{policy,profile,preferences,settings-service}.ts`, `src/http/settings-routes.ts`, `src/storage/migrations/0003-preference-owner.sql`, migration/HTTP routing integration, `src/audit/events.ts`, canonical settings DTO generation/schema/examples and configuration/customization/API docs | Settings validation, preview, versioned writes, portable export, immutable preference owner records and typed settings event visibility (Task 6; explicit R-X revision-zero/response-only contract amendment) |
 | `src/messages/{commands,references,reads,ack}.ts`, `src/http/{message-routes,cursors}.ts` | Durable send, authorized traversal and recipient ACK (Tasks 7–8) |
 | `src/outbox/{repository,dispatcher,scheduler,egress}.ts`, `src/http/operations-routes.ts` | Persisted delivery, due-work recovery and protected diagnostics (Task 9) |
 | `packages/client/src/{client,types}.ts`, `src/ui/{app,read-state,settings,styles}.ts`, `src/ui/index.html` | Small shared client, truthful browser projection and preferences (Task 10) |
 | `src/recovery/{capture,restore,manifest,operator,table-registry,maintenance,probes}.ts`, `workers/operator/{src/index.ts,wrangler.jsonc}`, `scripts/recover-workspace.mjs` | Authenticated operator bridge, typed SQL capture/restore, barrier, receipts and deliberate resume (Tasks 4 and 11) |
 | `src/health/readiness.ts`, `scripts/verify-release.mjs`, `scripts/verify-r1-deployment.mjs`, `docs/runbooks/r1-operations.md` | Observable readiness and R1 release evidence (Task 11) |
 
-Test files are named in their owning tasks. Existing baseline domain documentation is changed only in Task 1's explicit amendment or Task 11's supported evidence update. No implementation task may silently broaden a schema.
+Test files are named in their owning tasks. Existing baseline domain documentation is changed only in Task 1's explicit amendment, Task 6's explicit R-X revision-zero/preference-response amendment and settings integration, or Task 11's supported evidence update. No implementation task may silently broaden a schema.
 
 ## Task 1: Close the R1 contract gaps before implementation
 

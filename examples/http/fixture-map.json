@@ -444,6 +444,29 @@
       "direction": "response",
       "http_status": 400,
       "scenario": "R1 pre-mutation unavailable tasks rejection."
+    },
+    {
+      "file": "r1-preferences-absent.response.json",
+      "schema": "#/components/schemas/PreferencesDataResponse",
+      "operation_id": "getPreferences",
+      "direction": "response",
+      "http_status": 200,
+      "scenario": "No stored override: revision zero, neutral defaults, no read-time write."
+    },
+    {
+      "file": "r1-preferences-first.request.json",
+      "schema": "#/components/schemas/PreferencesWriteRequest",
+      "operation_id": "putPreferences",
+      "direction": "request",
+      "scenario": "First owner-only full-document preference write uses expected revision zero."
+    },
+    {
+      "file": "r1-preferences-first.response.json",
+      "schema": "#/components/schemas/PreferencesDataResponse",
+      "operation_id": "putPreferences",
+      "direction": "response",
+      "http_status": 200,
+      "scenario": "First committed write produces revision one; stable opaque owner record remains server-only."
     }
   ],
   "amendment_id": "r1-foundation-1"

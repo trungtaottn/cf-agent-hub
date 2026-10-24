@@ -1,8 +1,8 @@
 # Configuration
 
-Status: Design baseline · Contract revision 0.1 · Implementation pending.
+Status: R1 server settings transport implemented in source · Contract revision 0.1 · Live deployment verification pending.
 
-Configuration in CF Agent Hub has four separate owners: deployment operators, workspace policy administrators, workspace profile editors, and individual users. The separation prevents a harmless visual preset from becoming a way to grant access or redirect stored workspace data. These are proposed configuration contracts; their schemas and routes are specified; no runtime loader, settings screen, or deployment command is delivered by this documentation baseline.
+Configuration in CF Agent Hub has four separate owners: deployment operators, workspace policy administrators, workspace profile editors, and individual users. The separation prevents a harmless visual preset from becoming a way to grant access or redirect stored workspace data. The R1 source implements the closed deployment loader and server settings transport described below. Browser settings controls and live deployment verification remain later gates.
 
 ## Ownership and precedence
 
@@ -85,3 +85,17 @@ The required closed `authentication.reviewed_oidc_endpoints` contains exact pinn
 The binding named by `authentication.client_secret_ref` contains the provider client secret. `CSRF_SECRET` is a separate protected secret containing at least 32 random bytes, encoded for storage as a string. Never derive it from a cookie, session digest, client secret or provider token. These secret values are provisioned through protected Worker secret bindings, not deployment JSON, browser storage, command-line arguments or repository files. The application returns a session-bound HMAC CSRF token only through the no-store authenticated session response.
 
 Register the exact configured GET callback with the provider and choose the Basic confidential-client profile described in ADR0007. Keep provider/application clocks aligned for the zero-tolerance proof policy. No refresh token is used; the local cookie expires no later than the ID token. Real-provider compatibility, gateway and deployment verification remain separate release gates.
+
+### Executable R1 settings transport
+
+The R1 source implements the settings routes described above using the canonical OpenAPI DTOs and generated validators. Browser settings screens and live deployment verification are later gates. Public deployment and policy writes remain outside these routes.
+
+An absent personal preference has revision `0`, neutral values (`system`, `comfortable`, `overview`), and no stored row or edit event. A first `PUT /preferences` supplies `expected_preferences_revision:0` and commits revision `1`. Stored row versions, profile revisions, installed epochs and settings event resource versions remain positive. A stale first-write request can report `current_revision:0`.
+
+A preferences PUT is a complete closed portable document. The service compares each theme, density and default-view value against the validated stored document, or neutral defaults when it is absent or malformed. An unchanged field outside `allowed_user_overrides` can carry through. Changing any disallowed field rejects the entire command with a field pointer such as `/preferences/theme`; no other field, revision, accepted event or outcome commits. Effective values are always filtered through the current installed policy. A malformed stored document produces a fixed redacted server diagnostic and safe values while retaining its actual revision; a read never repairs or inserts a row.
+
+The response-only `default_view_fallback_reason` is required and is `null`, `VIEW_UNAVAILABLE`, or `PREFERENCE_NOT_ALLOWED`. It is null when the effective view equals the normalized stored/default preference. Policy takes precedence when default_view is disallowed and differs; otherwise an unavailable or unauthorized selection uses VIEW_UNAVAILABLE. R1 human inbox, tasks, Kanban and approvals cannot become available through a profile or preference. Overview is the deterministic authorized fallback. Stored enum intent survives feature unavailability; navigation visibility remains presentation and supplies no authority.
+
+Preference rows have an immutable, unique opaque server record ID bound to their workspace/principal. Forward SQL migration 3 backfills legacy rows without changing their document or revision; new IDs are allocated before the first committed write. The ID is not portable preference content and never encodes a principal slug. The actual settings event predicate checks current scopes and the persisted owner association before projecting a preference event ID or summary. Configuration events require a human with events:read and operations:read. Profile events require events:read and workspace:read.
+
+An ordinary same-intent replay returns the original outcome and creates no new event. Replays reauthorize the current actor and resource; a preference outcome whose former effective projection conflicts with current policy is denied, and a fresh GET supplies the current effective values. This preserves both immutable command outcomes and the current policy ceiling.
