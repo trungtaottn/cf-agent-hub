@@ -52,7 +52,7 @@ interface CommandDescriptor<B,T> {
  resource(tx, ctx, body): ResourceAccess | undefined;
  checkAccess(tx, ctx, body): undefined;
  checkReplay(tx, ctx, body, outcome: CommandOutcome<T>): undefined;
- execute(tx, ctx, body): { outcome: CommandOutcome<T>; event: EventDraft };
+ execute(tx, ctx, body, acceptedEventId: string): { outcome: CommandOutcome<T>; event: EventDraft };
 }
 executeCommand<B,T>(
  ctx: CommandExecutionContext, identity: VerifiedIdentity,
@@ -65,6 +65,8 @@ All descriptor callbacks receive WorkspaceTransaction and the current CommandCon
 The wrapper owns withTransaction. It samples workspace.clock.nowMs() at entry after awaits, checks actual workspace mapping/admission/maintenance, resolves identity against current installed authority, authorizes the operation and resource, then calls checkAccess before replay lookup. No nested transaction, Promise, network, crypto await or R2 operation belongs in a callback. Access/replay guards must synchronously return undefined or throw. Use a block with no return value for a successful guard; do not return the void result of another function. TypeScript rejects async, Promise and thenable guard implementations. Every descriptor callback result (resource, checkAccess, checkReplay and execute) is also checked at runtime: a thenable triggers INTERNAL_ERROR and transaction rollback, with rejection consumed outside any SQL await. Non-undefined guard results fail closed as well.
 
 resource and checkAccess enforce current resource relationships/ownership on every attempt. checkReplay verifies current visibility of the original returned resource before any original result is returned. All first-execution revision/CAS/business preconditions belong in execute, which is skipped on a valid replay. Never move revision checks into checkAccess or checkReplay. A replacement native credential can replay for its same principal only with current scopes and visibility. Revoked/expired sessions and removed credentials cannot replay.
+
+The wrapper reserves an accepted event ID before SQL and supplies it as the fourth execute argument. This trusted immutable string is not a public field, a second event writer or a callback phase. Message notification payload.event_id uses exactly this ID, and occurred_at uses the same ctx.nowMs the wrapper supplies to appendEvent. Existing three-argument implementations may ignore the fourth argument; direct typed calls must supply it. Replay skips execute and keeps the original event/payload identities despite any unused new reservation.
 
 The handler's execute writes domain rows and any outbox rows and returns authoritative JSON domain data plus stable event resource fields. It does not append the accepted event or store an outcome itself. The wrapper appends exactly one event and stores outcome data/status/original request/event linkage in the same transaction. A failure at any point, including after event insertion, rolls all of those writes back. The handler must return its typed public domain result, never a request/header/credential dump or a response-attempt envelope.
 

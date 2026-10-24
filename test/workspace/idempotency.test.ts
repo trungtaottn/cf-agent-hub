@@ -180,7 +180,7 @@ it.each(['resource','checkAccess','execute'] as const)('promise_%s_callback_fail
   const body={body:'safe'},ctx=await context(state.storage,name,body),command=descriptor(),before=counts(state.storage);
   let rejection:Promise<never>|undefined;
   const bad=(tx:Parameters<typeof command.execute>[0],callCtx:Parameters<typeof command.execute>[1])=>{
-   if(hook==='execute')command.execute(tx,callCtx,body);
+   if(hook==='execute')command.execute(tx,callCtx,body,'event_async_probe');
    else tx.exec('INSERT INTO threads (id,workspace_id,subject,created_at) VALUES (?,?,?,?)',['guard_probe','ws_example','probe',1]);
    return rejection=Promise.reject(new HttpError('FORBIDDEN',403));
   };

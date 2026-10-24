@@ -1,5 +1,5 @@
 // Generated from spec/openapi.json.
-import type {AuthStartRequest,AuthCallbackQuery,AuthLogoutRequest,MessageCreateRequest,ProfileWriteRequest,PreferencesWriteRequest,Error,Event,Configuration,ProfileData,ProfilePreview,ProfileExport,PreferencesData,WorkspaceProfile,UserPreferences,ConfigurationResponse,ProfileDataResponse,ProfilePreviewResponse,ProfileExportResponse,PreferencesDataResponse} from "../dto";
+import type {AuthStartRequest,AuthCallbackQuery,AuthLogoutRequest,MessageCreateRequest,ProfileWriteRequest,PreferencesWriteRequest,Error,Event,Message,MessageNotification,Configuration,ProfileData,ProfilePreview,ProfileExport,PreferencesData,WorkspaceProfile,UserPreferences,ConfigurationResponse,ProfileDataResponse,ProfilePreviewResponse,ProfileExportResponse,PreferencesDataResponse} from "../dto";
 export declare function validateAuthStartRequest(input:unknown): input is AuthStartRequest;
 export declare function validateAuthCallbackQuery(input:unknown): input is AuthCallbackQuery;
 export declare function validateAuthLogoutRequest(input:unknown): input is AuthLogoutRequest;
@@ -8,6 +8,8 @@ export declare function validateProfileWriteRequest(input:unknown): input is Pro
 export declare function validatePreferencesWriteRequest(input:unknown): input is PreferencesWriteRequest;
 export declare function validateError(input:unknown): input is Error;
 export declare function validateEvent(input:unknown): input is Event;
+export declare function validateMessage(input:unknown): input is Message;
+export declare function validateMessageNotification(input:unknown): input is MessageNotification;
 export declare function validateConfiguration(input:unknown): input is Configuration;
 export declare function validateProfileData(input:unknown): input is ProfileData;
 export declare function validateProfilePreview(input:unknown): input is ProfilePreview;

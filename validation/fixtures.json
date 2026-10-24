@@ -57,6 +57,10 @@
     {
       "file": "examples/http/r1-settings.json",
       "schema": "spec/r1-settings.schema.json"
+    },
+    {
+      "file": "examples/http/r1-message-notification.json",
+      "openapi_schema": "#/components/schemas/MessageNotification"
     }
   ]
 }

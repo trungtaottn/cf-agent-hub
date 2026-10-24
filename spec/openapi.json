@@ -6233,8 +6233,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "minLength": 1,
-                "maxLength": 128
+                "minLength": 1
               },
               {
                 "type": "null"
@@ -6458,9 +6457,7 @@
                 },
                 "thread_id": {
                   "type": "string",
-                  "minLength": 1,
-                  "maxLength": 128,
-                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                  "minLength": 1
                 },
                 "resource_version": {
                   "type": "null"
@@ -8898,6 +8895,54 @@
           "data",
           "request_id"
         ]
+      },
+      "MessageNotification": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "payload_version": {
+            "type": "integer",
+            "const": 1
+          },
+          "type": {
+            "type": "string",
+            "const": "message.accepted"
+          },
+          "delivery_id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "workspace_id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "recipient_agent_id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "message_id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "thread_id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "event_id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "payload_version",
+          "type",
+          "delivery_id",
+          "workspace_id",
+          "recipient_agent_id",
+          "message_id",
+          "thread_id",
+          "event_id",
+          "occurred_at"
+        ],
+        "description": "Immutable notification intent. The receiver durably deduplicates delivery_id and fetches authoritative content with its own current credential; transport acceptance does not acknowledge or execute the message."
       }
     },
     "responses": {

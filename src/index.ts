@@ -1,3 +1,4 @@
+import {messagePath} from './http/message-routes';
 import {settingsPath} from './http/settings-routes';
 import { parseDeployment,resolveWorkspace } from './config/deployment';
 import { authFailure,securityHeaders } from './http/auth-routes';
@@ -9,14 +10,14 @@ export default {
   const url=new URL(request.url);
   if(request.method==='GET'&&url.pathname==='/health/live')return new Response('alive',{headers:{...securityHeaders,'content-type':'text/plain'}});
   const match=/^\/v2\/workspaces\/([a-zA-Z0-9_-]{1,128})\/auth\/(start|callback|session|logout)$/.exec(url.pathname);
-  const settings=settingsPath.exec(url.pathname);
-  if(match||settings) {
+  const settings=settingsPath.exec(url.pathname),message=messagePath.exec(url.pathname);
+  if(match||settings||message) {
    try {
     const raw=(env as unknown as Record<string,unknown>).DEPLOYMENT_CONFIG;
     if(typeof raw!=='string')throw new AuthError('AUTH_UNAVAILABLE',503);
     const config=parseDeployment(JSON.parse(raw));
-    if(!config.workspace_catalog.some(x=>x.workspace_id===(match??settings)![1]))throw new AuthError('UNAUTHENTICATED',401);
-    const workspace=resolveWorkspace(config,(match??settings)![1]);return await env.WORKSPACE.getByName(workspace.objectName).fetch(request);
+    if(!config.workspace_catalog.some(x=>x.workspace_id===(match??settings??message)![1]))throw new AuthError('UNAUTHENTICATED',401);
+    const workspace=resolveWorkspace(config,(match??settings??message)![1]);return await env.WORKSPACE.getByName(workspace.objectName).fetch(request);
    }catch(error){const headers=new Headers(securityHeaders);if(match?.[2]==='callback')headers.append('set-cookie',cookieHeader('cfhub_login','',0));return authFailure(match?.[2]==='callback'&&(!(error instanceof AuthError)||error.status===503)?new AuthError('UNAUTHENTICATED',401):error,crypto.randomUUID(),headers);}
   }
   return toHttpError(new HttpError('NOT_FOUND',404),crypto.randomUUID());

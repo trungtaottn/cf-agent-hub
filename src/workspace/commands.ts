@@ -18,7 +18,7 @@ export interface CommandDescriptor<B,T>{
  /** Checks visibility of the original returned resource; never current revision/preconditions. */
  checkReplay(tx:WorkspaceTransaction,ctx:CommandContext,body:B,outcome:CommandOutcome<T>):undefined;
  /** First execution owns domain/outbox writes and business preconditions. Wrapper owns event/outcome. */
- execute(tx:WorkspaceTransaction,ctx:CommandContext,body:B):{outcome:CommandOutcome<T>;event:EventDraft};
+ execute(tx:WorkspaceTransaction,ctx:CommandContext,body:B,acceptedEventId:string):{outcome:CommandOutcome<T>;event:EventDraft};
 }
 /** Fail closed on any async descriptor result, consuming rejection without awaiting inside SQL. */
 function synchronousResult<T>(result:T):T{
@@ -53,7 +53,7 @@ export function executeCommand<B,T>(ctx:CommandExecutionContext,identity:Verifie
     replay={requestId:prior.original_request_id,eventId:prior.event_id};
     return outcome;
    }
-   const effect=synchronousResult(command.execute(tx,context,body));
+   const effect=synchronousResult(command.execute(tx,context,body,eventId));
    if(!effect||!effect.outcome||!Number.isInteger(effect.outcome.status)||effect.outcome.status<200||effect.outcome.status>299)throw new HttpError('INTERNAL_ERROR',500);
    // Only JSON domain output is retained. No headers, raw requests, proof, or per-attempt response envelope.
    const outcome:CommandOutcome<T>={status:effect.outcome.status,data:JSON.parse(canonicalJsonValue(effect.outcome.data)) as T};
