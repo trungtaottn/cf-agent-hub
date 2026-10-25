@@ -1,6 +1,6 @@
 # Branching, beta and stable promotion
 
-**Status (2026-10-25):** This document defines repository governance, not a claim that a beta/stable application has been released. GitHub Rulesets must be activated by a repository administrator. The workflow file alone cannot enforce PR-only writes or prevent admins from pushing directly.
+Status: No released beta/stable application as of 2026-10-25. The `dev` and `main` GitHub Rulesets are active; R1 remains an unmerged PR candidate. This document defines repository governance, not evidence of release or deployment. Workflow files alone cannot enforce PR-only writes or prevent admins from pushing directly.
 
 ## Canonical branches
 
