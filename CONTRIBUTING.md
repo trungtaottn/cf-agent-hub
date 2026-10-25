@@ -4,6 +4,8 @@ Status: Contribution policy for design baseline 0.1 · Runtime implementation pe
 
 Contributions should make the proposed product easier to implement, operate and verify. The current package contains design contracts and documentation checks, not a released application. Keep implementation status accurate and use synthetic examples.
 
+Coding and automation contributors must also follow the [repository agent guide](AGENTS.md). [AGENT.md](AGENT.md) is a pointer, not an alternate policy; product runtime-agent behavior is separately specified in [docs/agents.md](docs/agents.md).
+
 ## Choose the right change
 
 For a wording correction, fix the canonical page and its affected links/examples together. For a behavior change, identify the relevant feature-matrix row, explain the user problem, describe compatibility and failure behavior, and update the canonical contract before implementing. Changes to identity, authorization, lifecycle, transaction boundaries or protocol semantics require an ADR or an explicit amendment to an existing one.
@@ -26,4 +28,4 @@ Third-party code and assets require compatible licenses and retained notices. A 
 
 Reviewers check the contract, authorization, failure behavior and evidence, not just formatting. An adapter must not introduce a second domain implementation. A UI must not claim live or successful state without an authoritative source. A profile must not become a route around policy.
 
-The maintainer accepts changes and decides release promotion using the [release checklist](docs/release-checklist.md). No published issue tracker, support channel or repository URL is assumed by this design package; use the contribution channels advertised by the eventual public repository. Security findings follow [SECURITY.md](SECURITY.md).
+The maintainer accepts changes and decides release promotion using the [release checklist](docs/release-checklist.md). Repository source branches and beta/stable promotion follow the [branch governance policy](docs/branching-and-releases.md), which requires GitHub Rulesets to be active before PR-only enforcement can be claimed. No published issue tracker, support channel or repository URL is assumed by this design package; use the contribution channels advertised by the eventual public repository. Security findings follow [SECURITY.md](SECURITY.md).

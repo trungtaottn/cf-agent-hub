@@ -6,6 +6,8 @@ CF Agent Hub is a self-hosted coordination project for people and external AI ag
 
 The repository contains reviewable Worker/client/operator source, a locked toolchain, executable local tests and the broader product contracts. **R1 has not passed deployed release acceptance.** Real isolated identity/operator journeys, complete toolchain review and the exact release evidence gate remain required. The [R1 implementation page](docs/r1-implementation.md) maps source to checks, and the [feature matrix](docs/feature-matrix.md) records attained capability status.
 
+Coding and automation contributors: read the repository-wide [AGENTS.md](AGENTS.md) before working on issues, code, branches, CI, or release state. [AGENT.md](AGENT.md) is an alias entry point, while [docs/agents.md](docs/agents.md) describes product runtime agents.
+
 ## Start here
 
 | Your goal | Reading path |
