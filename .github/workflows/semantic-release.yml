@@ -1,0 +1,103 @@
+name: Semantic release (Beta / Stable)
+
+# Explicit dispatch is a deliberate acceptance gate: do not publish simply on
+# a push before deployed release evidence has been verified.
+on:
+  workflow_dispatch:
+    inputs:
+      evidence_path:
+        description: Committed, exact-SHA R1 release evidence JSON path
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: semantic-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    # Disabled by default; repository admin enables only after branch rulesets
+    # and independent deployment/recovery evidence are established.
+    if: ${{ vars.SEMANTIC_RELEASE_ENABLED == 'true' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main') }}
+    name: release-acceptance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '24.22.1'
+          package-manager-cache: false
+      - name: Confirm pinned Node and npm
+        run: |
+          test "$(node -p process.versions.node)" = '24.22.1'
+          test "$(npm --version)" = '11.19.1'
+      - name: Audit release toolchain
+        run: |
+          npm ci --prefix release-tooling --ignore-scripts
+          npm audit --prefix release-tooling --audit-level=low
+      - name: Verify branch and release-policy contracts
+        run: |
+          node --test test/governance/*.test.mjs
+          node --test test/release/semantic-analysis.test.mjs
+      - name: Verify active branch protection and exact-SHA R1 checks
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/check-release-authorization.mjs
+      - name: Install verified application toolchain
+        run: |
+          test -f package.json
+          test -f package-lock.json
+          test -f scripts/verify-release.mjs
+          npm ci
+      - name: Verify exact reviewed release evidence (no deploy)
+        env:
+          RELEASE_EVIDENCE_PATH: ${{ inputs.evidence_path }}
+        run: |
+          test -n "$RELEASE_EVIDENCE_PATH"
+          node scripts/verify-release.mjs --round R1 --evidence "$RELEASE_EVIDENCE_PATH"
+
+  publish:
+    name: github-semantic-release
+    needs: [verify]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    # Can additionally be protected by environment reviewers.
+    environment:
+      name: ${{ github.ref_name == 'main' && 'stable-release' || 'beta-release' }}
+    permissions:
+      contents: write
+      actions: read
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '24.22.1'
+          package-manager-cache: false
+      - name: Recheck protected branch head and exact CI before publishing
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          node scripts/check-release-authorization.mjs
+      - name: Install locked semantic-release tooling and check advisories
+        run: |
+          npm ci --prefix release-tooling --ignore-scripts
+          npm audit --prefix release-tooling --audit-level=low
+      - name: Compute SemVer, tag and publish GitHub release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm --prefix release-tooling run release

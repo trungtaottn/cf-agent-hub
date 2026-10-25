@@ -27,9 +27,7 @@
         "required_approving_review_count": 0,
         "required_review_thread_resolution": true,
         "allowed_merge_methods": [
-          "merge",
-          "squash",
-          "rebase"
+          "merge"
         ]
       }
     },
@@ -47,6 +45,9 @@
           },
           {
             "context": "dependencies"
+          },
+          {
+            "context": "release-toolchain"
           }
         ]
       }
