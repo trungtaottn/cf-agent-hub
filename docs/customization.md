@@ -24,7 +24,7 @@ Archiving a project prevents new selection while retaining historical task refer
 
 A user's theme, density, and default view can override only fields allowed by the workspace. The [preferences fixture](../examples/config/user-preferences.json) is a separate contract; it must not be embedded in a shared preset. Workspace policy and permission checks remain in effect regardless of a preference. If a previously selected view becomes unavailable, navigation must explain the fallback and offer an allowed destination.
 
-Workspace branding must remain legible in light and dark themes. User preference controls should identify when a workspace policy restricts a choice. A profile may hide a navigation entry to reduce clutter, but the interface must still surface authorized urgent approvals or lease failures requiring attention.
+Workspace branding must remain legible in light and dark themes. User preference controls should identify when a workspace policy restricts a choice. A profile may hide a navigation entry to reduce clutter, but the interface must still surface authorized urgent approvals or lease failures requiring attention. In R1 the UI keeps Overview as a safe fallback and Settings reachable, intersects optional profile navigation with actually supported routes, and reports `VIEW_UNAVAILABLE` when a stored default view is hidden or not implemented. Hiding navigation does not revoke underlying route permissions or grant any new scope.
 
 ## Export and recovery
 

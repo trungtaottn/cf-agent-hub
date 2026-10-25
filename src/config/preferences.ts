@@ -6,6 +6,7 @@ import {authorize,refreshActor} from '../auth/authorize';
 import {HttpError} from '../http/envelopes';
 import {canonicalJson} from './bootstrap';
 import {settingsPolicy} from './policy';
+import {storedProfile} from './profile';
 export const neutralPreferences:UserPreferences={contract_revision:'0.1',theme:'system',density:'comfortable',default_view:'overview'};
 export interface SettingsCommandContext extends CommandContext{preferenceRecordId?:string;}
 export interface PreferenceRecord{version:number;document_json:string;record_id:string;}
@@ -21,8 +22,10 @@ export function preferenceView(tx:WorkspaceTransaction,actor:ActorContext,prefer
  const live=refreshActor(tx,actor,nowMs);authorize(tx,live,'workspace:read',undefined,nowMs);if(live.kind!=='human')throw new HttpError('FORBIDDEN',403);
  const {policy}=settingsPolicy(tx,live),effective=structuredClone(neutralPreferences);
  for(const field of policy.allowed_user_overrides)effective[field]=preferences[field] as never;
- // R1 has no human inbox or task engine. Visibility is never an authority grant.
- const available=(view:UserPreferences['default_view'])=>view==='overview'||view==='agents'||view==='activity'&&live.scopes.has('events:read');
+ // Profile navigation is presentation only, but an invisible default must not be selected.
+ // R1 has no human inbox or task engine; Overview is the deterministic safe fallback.
+ const visibleViews=new Set(storedProfile(tx,live).profile.navigation.visible_views);
+ const available=(view:UserPreferences['default_view'])=>view==='overview'||view==='activity'&&live.scopes.has('events:read')&&visibleViews.has('activity');
  if(!available(effective.default_view))effective.default_view='overview';
  const reason=effective.default_view===preferences.default_view?null:!policy.allowed_user_overrides.includes('default_view')?'PREFERENCE_NOT_ALLOWED':'VIEW_UNAVAILABLE';
  return {preferences_revision:revision,preferences,effective,allowed_user_overrides:[...policy.allowed_user_overrides],default_view_fallback_reason:reason};

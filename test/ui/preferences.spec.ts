@@ -61,6 +61,22 @@ test('network fault fixture: failed profile read preserves working preferences a
  await expect(page.getByLabel('Theme',{exact:true})).toHaveValue('dark');
 });
 
+test('stored Agents default is unavailable and root reload resolves to Overview',async({page})=>{
+ await login(page);await page.getByRole('link',{name:'Settings',exact:true}).click();
+ await page.getByLabel('Default view',{exact:true}).selectOption('agents');
+ await page.getByRole('button',{name:'Save preferences'}).click();
+ await expect(page.getByTestId('preferences-result')).toContainText('Preferences saved');
+ await expect(page.getByTestId('preference-policy')).toContainText('VIEW_UNAVAILABLE');
+ await page.goto(appOrigin+'/?workspace=ws_example');
+ await expect(page.getByRole('heading',{name:'Workspace overview'})).toBeVisible();
+ await expect(page.locator('a[href^="/agents"]')).toHaveCount(0);
+ await page.getByRole('link',{name:'Settings',exact:true}).click();
+ await expect(page.getByLabel('Default view',{exact:true})).toHaveValue('agents');
+ await expect(page.getByTestId('preference-policy')).toContainText('VIEW_UNAVAILABLE');
+ await page.getByLabel('Default view',{exact:true}).selectOption('overview');
+ await page.getByRole('button',{name:'Save preferences'}).click();
+ await expect(page.getByTestId('preference-policy')).not.toContainText('VIEW_UNAVAILABLE');
+});
 test('keyboard_theme_density_and_fallback_view persist through real HTTP',async({page})=>{
  await login(page);await page.getByRole('link',{name:'Settings',exact:true}).click();
  await expect(page.getByRole('heading',{name:'Your preferences'})).toBeVisible();
@@ -79,6 +95,34 @@ test('keyboard_theme_density_and_fallback_view persist through real HTTP',async(
  await page.getByRole('button',{name:'Save preferences'}).click();
  await expect(page.getByTestId('preferences-result')).toContainText('Preferences saved');
  await screenshot(page,'light-settings');
+});
+test('workspace navigation profile hides optional R1 links but preserves Settings and a truthful default',async({page})=>{
+ await login(page);
+ await page.getByRole('link',{name:'Settings',exact:true}).click();
+ await page.getByLabel('Default view',{exact:true}).selectOption('activity');
+ await page.getByRole('button',{name:'Save preferences'}).click();
+ await expect(page.getByTestId('preferences-result')).toContainText('Preferences saved');
+ await page.getByText('Edit complete portable profile').click();
+ const editor=page.getByLabel('Portable profile JSON',{exact:true});
+ const profile=JSON.parse(await editor.inputValue());
+ profile.navigation.visible_views=['overview'];
+ await editor.fill(JSON.stringify(profile));
+ await page.getByRole('button',{name:'Preview profile',exact:true}).click();
+ await expect(page.getByTestId('profile-result')).toContainText('Preview complete');
+ await page.getByRole('button',{name:'Apply previewed profile',exact:true}).click();
+ await expect(page.getByTestId('profile-result')).toContainText('Profile saved');
+ await expect(page.getByTestId('preference-policy')).toContainText('VIEW_UNAVAILABLE');
+ await expect(page.getByRole('link',{name:'Activity',exact:true})).toHaveCount(0);
+ await expect(page.getByRole('link',{name:'Inbox',exact:true})).toHaveCount(0);
+ await expect(page.getByRole('link',{name:'Settings',exact:true})).toHaveCount(1);
+ await expect(page.getByRole('link',{name:'Overview',exact:true})).toHaveCount(1);
+ await page.goto(appOrigin+'/?workspace=ws_example');
+ await expect(page.getByRole('heading',{name:'Workspace overview'})).toBeVisible();
+ await expect(page.getByRole('link',{name:'Activity',exact:true})).toHaveCount(0);
+ await expect(page.getByRole('link',{name:'Settings',exact:true})).toHaveCount(1);
+ await page.getByRole('link',{name:'Settings',exact:true}).click();
+ await expect(page.getByLabel('Default view',{exact:true})).toHaveValue('activity');
+ await expect(page.getByTestId('preference-policy')).toContainText('VIEW_UNAVAILABLE');
 });
 test('network fault fixture: uncertain preference write replays exact key/body and prevents changed intent',async({page})=>{
  await login(page);await page.getByRole('link',{name:'Settings',exact:true}).click();

@@ -20,7 +20,11 @@ const accents=['blue','teal','indigo','violet','amber','slate'];
 const navigationLinks=new Map<string,HTMLAnchorElement>();
 const settings=new SettingsPanel({
  request:<T>(operation:Operation,input:OperationInputs[Operation],options?:RequestOptions)=>request<T>(operation,input,options),
- profileSaved(result){void models.profile.refresh(async()=>result).then(()=>{applyPresentation();render();});},
+ profileSaved(result){void models.profile.refresh(async()=>result).then(async()=>{
+  // A changed navigation profile can make a previously effective default unavailable.
+  if(preferencesAvailable&&!denied)await models.preferences.refresh(()=>request<PreferencesData>('getPreferences',{}));
+  applyPresentation();render();
+ });},
  preferencesSaved(result){void models.preferences.refresh(async()=>result).then(()=>{applyPresentation();render();});}
 });
 function invalidateAll(status:401|403,id:string|null):void{
@@ -69,9 +73,13 @@ function navigate(name:string,selectedThread:string|null=null):void{
  if(selectedThread)void refreshThread(selectedThread,false);
 }
 function renderNavigation():void{
+ const visibleViews=models.profile.state.data?.profile.navigation.visible_views;
  const entries=([['overview','Overview'],['activity','Activity'],['inbox','Inbox'],['settings','Settings']] as const).filter(([name])=>{
-  if(name==='activity')return eventsAvailable||denied;
+  // Overview is a permanent safe fallback; Settings is deliberately outside profile navigation.
+  if(name==='overview')return true;
   if(name==='settings')return profileAvailable||preferencesAvailable||denied;
+  if(visibleViews&&!visibleViews.includes(name))return false;
+  if(name==='activity')return eventsAvailable||denied;
   return true;
  });
  const visible=new Set<string>(entries.map(([name])=>name));

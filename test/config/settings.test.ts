@@ -228,9 +228,22 @@ it('event_visibility_thenable_fails_closed_and_rolls_back',async()=>{
 });
 
 it.each(['overview','agents','activity','inbox','tasks','kanban','approvals'] as const)('default_view_%s_preserves_portable_intent_and_reports_availability',async default_view=>{
- const {stub,name}=await settingsFixture('settings-view-'+default_view);await runInDurableObject(stub,async(_o,state)=>{const id=human(state.storage),body={expected_preferences_revision:0,preferences:{...preference,default_view}},view=executeCommand(await commandContext(state.storage,name,body,'view'),id,preferencesCommand('pref_'+'b'.repeat(32)),body).data,available=['overview','agents','activity'].includes(default_view);
+ const {stub,name}=await settingsFixture('settings-view-'+default_view);await runInDurableObject(stub,async(_o,state)=>{const id=human(state.storage),body={expected_preferences_revision:0,preferences:{...preference,default_view}},view=executeCommand(await commandContext(state.storage,name,body,'view'),id,preferencesCommand('pref_'+'b'.repeat(32)),body).data,available=['overview','activity'].includes(default_view);
  expect(view.preferences.default_view).toBe(default_view);expect(view.effective.default_view).toBe(available?default_view:'overview');expect(view.default_view_fallback_reason).toBe(available?null:'VIEW_UNAVAILABLE');
  if(default_view==='activity'){state.storage.sql.exec("UPDATE human_grants SET scopes_json='[\"workspace:read\"]'");expect(withTransaction(state.storage,tx=>readPreferences(tx,actor(state.storage,id)))).toMatchObject({preferences:{default_view:'activity'},effective:{default_view:'overview'},default_view_fallback_reason:'VIEW_UNAVAILABLE'});}
+ });
+});
+it('profile_navigation_hides_activity_preference_without_changing_stored_intent',async()=>{
+ const {stub,name}=await settingsFixture('settings-navigation-activity');
+ await runInDurableObject(stub,async(_o,state)=>{
+  const id=human(state.storage),initial=read(state.storage,id);
+  const preferences={expected_preferences_revision:0,preferences:{...preference,default_view:'activity' as const}};
+  const saved=executeCommand(await commandContext(state.storage,name,preferences,'activity-pref'),id,preferencesCommand('pref_'+'e'.repeat(32)),preferences).data;
+  expect(saved.effective.default_view).toBe('activity');
+  const restricted={expected_profile_revision:1,profile:{...initial.profile,navigation:{visible_views:['overview' as const]}}};
+  executeCommand(await commandContext(state.storage,name,restricted,'profile-nav'),id,profileCommand(),restricted);
+  const result=withTransaction(state.storage,tx=>readPreferences(tx,actor(state.storage,id)));
+  expect(result).toMatchObject({preferences:{default_view:'activity'},effective:{default_view:'overview'},default_view_fallback_reason:'VIEW_UNAVAILABLE'});
  });
 });
 it('profile_restoration_is_new_revision_and_keeps_later_stable_ids',async()=>{
