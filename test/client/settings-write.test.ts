@@ -1,6 +1,7 @@
 import {it,expect,vi} from 'vitest';
 import {IntentWriter} from '../../src/ui/write-intent';
-import type {ApiResult,PreferencesWriteRequest} from '../../packages/client/src/types';
+import {HubClient} from '../../packages/client/src/client';
+import type {ApiResult,PreferencesWriteRequest,ProfileWriteRequest} from '../../packages/client/src/types';
 const input:PreferencesWriteRequest={expected_preferences_revision:0,preferences:{contract_revision:'0.1',theme:'dark',density:'compact',default_view:'overview'}};
 const loss:ApiResult<unknown>={ok:false,status:null,requestId:null,error:{code:'NETWORK_ERROR',message:'Network request failed',retryable:true}};
 it('freezes an uncertain settings intent and replays the exact original key and body',async()=>{
@@ -44,4 +45,62 @@ it.each(['NETWORK_ERROR','REQUEST_ABORTED','INVALID_RESPONSE'])('retains %s as a
  const writer=new IntentWriter(vi.fn(async()=>unknown));await writer.begin('putPreferences',input,'original');
  expect(writer.state.status).toBe('uncertain');
  await expect(writer.begin('putPreferences',input,'replacement')).rejects.toThrow('Reconcile');
+});
+
+const profileInput:ProfileWriteRequest={
+ expected_profile_revision:1,
+ profile:{
+  contract_revision:'0.1',profile_id:'profile_neutral',display_name:'Workspace',description:'',
+  branding:{accent:'blue'},navigation:{visible_views:['overview','inbox','activity']},
+  projects:[{id:'project_one',display_name:'One',description:'',archived:false}],work_roles:[]
+ }
+};
+
+it('returns known scalar and missing-field locations without dispatching settings writes',async()=>{
+ const fetch=vi.fn();const client=new HubClient('ws',{fetch});client.setCsrfToken('csrf');
+ const wrongType={...input,preferences:{...input.preferences,theme:17}};
+ const missingTheme={...input,preferences:{contract_revision:'0.1',density:'compact',default_view:'overview'}};
+ const [wrong,missing]=await Promise.all([
+  client.request('putPreferences',wrongType as never,{idempotencyKey:'wrong-type'}),
+  client.request('putPreferences',missingTheme as never,{idempotencyKey:'missing-theme'})
+ ]);
+ expect(wrong).toMatchObject({ok:false,status:null,error:{code:'INVALID_REQUEST',details:{field:'/preferences/theme'}}});
+ expect(missing).toMatchObject({ok:false,status:null,error:{code:'INVALID_REQUEST',details:{field:'/preferences/theme'}}});
+ expect(fetch).not.toHaveBeenCalled();
+});
+
+it('does not reflect attacker-controlled property names or values in local validation paths',async()=>{
+ const fetch=vi.fn();const client=new HubClient('ws',{fetch});client.setCsrfToken('csrf');
+ const hostile='<img src=x onerror=alert(1)>',secret='never-show-private-value';
+ const preferenceInput={...input,preferences:{...input.preferences,[hostile]:secret}};
+ const profile={...profileInput,profile:{...profileInput.profile,branding:{accent:'blue',[hostile]:secret}}};
+ const project={...profileInput,profile:{...profileInput.profile,projects:[{...profileInput.profile.projects[0]!,[hostile]:secret}]}};
+ const [p,br,item]=await Promise.all([
+  client.request('putPreferences',preferenceInput as never,{idempotencyKey:'unknown-preference'}),
+  client.request('previewProfile',profile as never,{idempotencyKey:'unknown-branding'}),
+  client.request('putProfile',project as never,{idempotencyKey:'unknown-project'})
+ ]);
+ expect(p).toMatchObject({ok:false,error:{details:{field:'/preferences'}}});
+ expect(br).toMatchObject({ok:false,error:{details:{field:'/profile/branding'}}});
+ expect(item).toMatchObject({ok:false,error:{details:{field:'/profile/projects/0'}}});
+ for(const response of [p,br,item]){
+  expect(JSON.stringify(response)).not.toContain(hostile);
+  expect(JSON.stringify(response)).not.toContain(secret);
+ }
+ expect(fetch).not.toHaveBeenCalled();
+});
+
+it('isolates consecutive and concurrent settings errors and preserves array locations',async()=>{
+ const fetch=vi.fn();const client=new HubClient('ws',{fetch});client.setCsrfToken('csrf');
+ const invalidProjects={...profileInput,profile:{...profileInput.profile,projects:[{...profileInput.profile.projects[0]!,display_name:19}]}};
+ const invalidPreference={...input,preferences:{...input.preferences,density:'dense'}};
+ const [item,preference]=await Promise.all([
+  client.request('previewProfile',invalidProjects as never,{idempotencyKey:'bad-project'}),
+  client.request('putPreferences',invalidPreference as never,{idempotencyKey:'bad-density'})
+ ]);
+ expect(item).toMatchObject({ok:false,error:{details:{field:'/profile/projects/0/display_name'}}});
+ expect(preference).toMatchObject({ok:false,error:{details:{field:'/preferences/density'}}});
+ const invalidRoot=await client.request('putPreferences',null as never,{idempotencyKey:'bad-root'});
+ expect(invalidRoot).toMatchObject({ok:false,error:{details:{field:'/preferences'}}});
+ expect(fetch).not.toHaveBeenCalled();
 });

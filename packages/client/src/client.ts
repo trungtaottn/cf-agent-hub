@@ -50,6 +50,32 @@ function safeDetails(value:unknown):Record<string,unknown>{
  if(value.feature==='tasks'||value.feature==='artifacts')details.feature=value.feature;
  return details;
 }
+type ValidationIssue={instancePath?:string;keyword?:string;params?:Record<string,unknown>};
+type ValidatorWithErrors=((input:unknown)=>boolean)&{errors?:readonly ValidationIssue[]|null};
+const knownFieldSegment=(segment:string):boolean=>
+ (httpFieldNames as readonly string[]).includes(segment)||/^[0-9]{1,5}$/.test(segment);
+
+/** Report a known JSON Pointer location, never an untrusted additional-property name. */
+function localSettingsValidationDetails(operation:Operation,validated:boolean):Record<string,unknown>|undefined{
+ const preferences=operation==='putPreferences';
+ if(!preferences&&operation!=='previewProfile'&&operation!=='putProfile')return undefined;
+ const fallback=preferences?'/preferences':'/profile';
+ if(!validated)return {field:fallback};
+ const validator=(preferences?validatePreferencesWriteRequest:validateProfileWriteRequest) as ValidatorWithErrors;
+ const issue=validator.errors?.[0];
+ const path=issue?.instancePath;
+ const segments=typeof path==='string'&&path.startsWith('/')?path.slice(1).split('/'):[] as string[];
+ if(issue?.keyword==='required'){
+  const missing=issue.params?.missingProperty;
+  // Ajv's missingProperty is attacker-influenced on an open object: admit only canonical field names.
+  if(typeof missing==='string'&&knownFieldSegment(missing))segments.push(missing);
+ }
+ const permittedRoot=preferences?['preferences','expected_preferences_revision']:['profile','expected_profile_revision'];
+ if(!segments.length||!permittedRoot.includes(segments[0]!)||!segments.every(knownFieldSegment))return {field:fallback};
+ const field='/'+segments.join('/');
+ return {field:field.length<=256?field:fallback};
+}
+
 function validInput(operation:Operation,input:Record<string,unknown>):boolean{
  if(operation==='startAuth')return validateAuthStartRequest(input);
  if(operation==='logoutAuth')return validateAuthLogoutRequest(input);
@@ -82,7 +108,8 @@ export class HubClient {
  async request<T=unknown,O extends Operation=Operation>(operation:O,input:OperationInputs[O],options:RequestOptions={}):Promise<ApiResult<T>>{
   if(!Object.hasOwn(routes,operation))return failure('OPERATION_UNAVAILABLE','Operation unavailable in the R1 browser client');
   const route=routes[operation];
-  if(!record(input)||!validInput(operation,input))return failure('INVALID_REQUEST','Invalid request');
+  if(!record(input))return failure('INVALID_REQUEST','Invalid request',null,false,null,localSettingsValidationDetails(operation,false));
+  if(!validInput(operation,input))return failure('INVALID_REQUEST','Invalid request',null,false,null,localSettingsValidationDetails(operation,true));
   if(route.key&&(!nonempty(options.idempotencyKey)||options.idempotencyKey.trim()!==options.idempotencyKey||/[\r\n]/.test(options.idempotencyKey)))
    return failure('INVALID_REQUEST','Explicit idempotency key required');
   if(route.csrf&&!this.#csrfToken)return failure('CSRF_REQUIRED','Session CSRF token required');
