@@ -1,0 +1,12 @@
+export const R1_FEATURES:readonly string[];
+export const ALL_FEATURES:readonly string[];
+export const R1_OPERATIONS:readonly string[];
+export const AUTH_LANES:readonly string[];
+export const REQUIRED_KINDS:readonly string[];
+export const REQUIRED_GATES:Readonly<Record<string,{features:string[];environment:string}>>;
+export const REQUIRED_RECOVERY_STEPS:readonly string[];
+export const ACCEPTED_GATE_OUTCOME:'pass';
+export const REQUIRED_RECOVERY_CHECKS:Readonly<Record<string,readonly string[]>>;
+export const ROUTE_STATUS:Readonly<Record<string,readonly number[]>>;
+export const MUTATION_COUNTS:readonly string[];
+export function routeExpectation(operation:string,lane:string):{status:number;error_code:string|null;mutations:Record<string,number>}|null;

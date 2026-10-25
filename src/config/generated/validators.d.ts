@@ -1,0 +1,87 @@
+// Generated from canonical schemas.
+export type DeploymentConfig = {
+"contract_revision": "0.2";
+"workspace_catalog": Array<{
+"workspace_id": string;
+"object_name": string;
+}>;
+"authentication": {
+"mode": "verified-oidc";
+"issuer": string;
+"audience": string;
+"allowed_origins": Array<string>;
+"client_id": string;
+"redirect_uris": Array<{
+"workspace_id": string;
+"redirect_uri": string;
+}>;
+"client_secret_ref": string;
+"session_ttl_seconds": number;
+"id_token_algorithms": ["RS256"];
+"reviewed_oidc_endpoints": {
+"authorization_endpoint": string;
+"token_endpoint": string;
+"jwks_uri": string;
+};
+};
+"static_participants": Array<{
+"workspace_id": string;
+"agent_id": string;
+"display_name": string;
+}>;
+"config_epoch": number;
+"human_grants": Array<{
+"workspace_id": string;
+"principal_id": string;
+"issuer": string;
+"subject": string;
+"scopes": Array<"workspace:read" | "messages:send" | "messages:read" | "messages:review" | "events:read" | "profile:edit" | "operations:read">;
+"project_ids": unknown;
+"enabled": boolean;
+}>;
+"static_credential_refs": Array<{
+"workspace_id": string;
+"credential_id": string;
+"agent_id": string;
+"scopes": Array<"workspace:read" | "messages:send" | "messages:read" | "messages:ack" | "events:read">;
+"project_ids": unknown;
+"expires_at": string;
+"enabled": boolean;
+}>;
+"workspace_policies": Array<{
+"workspace_id": string;
+"allowed_user_overrides": Array<"theme" | "density" | "default_view">;
+"notification_destinations": Array<{
+"destination_id": string;
+"agent_id": string;
+"url": string;
+"signing_key_ref": string;
+"enabled": boolean;
+}>;
+"retry_after_max_seconds": number;
+}>;
+};
+export type VerificationBundle = {
+"contract_revision": "0.1";
+"config_epoch": number;
+"config_digest": string;
+"credentials": Array<{
+"workspace_id": string;
+"credential_id": string;
+"token_sha256": string;
+}>;
+"retired_credentials": Array<{
+"workspace_id": string;
+"credential_id": string;
+"agent_id": string;
+"token_sha256": string;
+"retired_at_epoch": number;
+}>;
+"auth": {
+"key_id": string;
+"algorithm": "HMAC-SHA256";
+"tag": string;
+};
+};
+export declare function validateDeployment(input: unknown): input is DeploymentConfig;
+export declare function validateBundle(input: unknown): input is VerificationBundle;

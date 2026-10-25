@@ -1,0 +1,29 @@
+{
+  "key": "SYNTHETIC-ONLY-r1-wire-vector-key-0123456789-ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+  "vectors": [
+    {
+      "name": "ordinary-ascii",
+      "deliveryId": "delivery_ascii_001",
+      "bodyBase64": "eyJkZWxpdmVyeV9pZCI6ImRlbGl2ZXJ5X2FzY2lpXzAwMSIsImV2ZW50X2lkIjoiZXZlbnRfc3ludGhldGljXzAwMSIsIm1lc3NhZ2VfaWQiOiJtZXNzYWdlX3N5bnRoZXRpY18wMDEiLCJvY2N1cnJlZF9hdCI6IjIwMjYtMTAtMjRUMDA6MDA6MDAuMDAwWiIsInBheWxvYWRfdmVyc2lvbiI6MSwicmVjaXBpZW50X2FnZW50X2lkIjoiYWdlbnRfc3ludGhldGljX3JlY2VpdmVyIiwidGhyZWFkX2lkIjoidGhyZWFkX3N5bnRoZXRpY18wMDEiLCJ0eXBlIjoibWVzc2FnZS5hY2NlcHRlZCIsIndvcmtzcGFjZV9pZCI6IndzX3N5bnRoZXRpY19yZWZlcmVuY2UifQ==",
+      "encodedId": "ImRlbGl2ZXJ5X2FzY2lpXzAwMSI",
+      "timestamp": "1792800000",
+      "signature": "v1=2WeuSjx5t1J1JRfAPLo6x_BSaCiw_IefTriIAVSL26w"
+    },
+    {
+      "name": "opaque-unicode-quotes-backslash-controls",
+      "deliveryId": "delivery_é_é_漢_😀_\"\\\b\f\n\r\t\u0000\u001f  ",
+      "bodyBase64": "eyJkZWxpdmVyeV9pZCI6ImRlbGl2ZXJ5X8OpX2XMgV/mvKJf8J+YgF9cIlxcXGJcZlxuXHJcdFx1MDAwMFx1MDAxZuKAqOKAqSIsImV2ZW50X2lkIjoiZXZlbnRfc3ludGhldGljXzAwMSIsIm1lc3NhZ2VfaWQiOiJtZXNzYWdlX3N5bnRoZXRpY18wMDEiLCJvY2N1cnJlZF9hdCI6IjIwMjYtMTAtMjRUMDA6MDA6MDAuMDAwWiIsInBheWxvYWRfdmVyc2lvbiI6MSwicmVjaXBpZW50X2FnZW50X2lkIjoiYWdlbnRfc3ludGhldGljX3JlY2VpdmVyIiwidGhyZWFkX2lkIjoidGhyZWFkX3N5bnRoZXRpY18wMDEiLCJ0eXBlIjoibWVzc2FnZS5hY2NlcHRlZCIsIndvcmtzcGFjZV9pZCI6IndzX3N5bnRoZXRpY19yZWZlcmVuY2UifQ==",
+      "encodedId": "ImRlbGl2ZXJ5X8OpX2XMgV_mvKJf8J-YgF9cIlxcXGJcZlxuXHJcdFx1MDAwMFx1MDAxZuKAqOKAqSI",
+      "timestamp": "1792800000",
+      "signature": "v1=t8Q_U4jfosfgqPwiNZ1TGqPqq-JBMQt4XA8Jnt5Fr_w"
+    },
+    {
+      "name": "lone-surrogates",
+      "deliveryId": "delivery_lone_\ud800_mid_\udfff_end_😀",
+      "bodyBase64": "eyJkZWxpdmVyeV9pZCI6ImRlbGl2ZXJ5X2xvbmVfXHVkODAwX21pZF9cdWRmZmZfZW5kX/CfmIAiLCJldmVudF9pZCI6ImV2ZW50X3N5bnRoZXRpY18wMDEiLCJtZXNzYWdlX2lkIjoibWVzc2FnZV9zeW50aGV0aWNfMDAxIiwib2NjdXJyZWRfYXQiOiIyMDI2LTEwLTI0VDAwOjAwOjAwLjAwMFoiLCJwYXlsb2FkX3ZlcnNpb24iOjEsInJlY2lwaWVudF9hZ2VudF9pZCI6ImFnZW50X3N5bnRoZXRpY19yZWNlaXZlciIsInRocmVhZF9pZCI6InRocmVhZF9zeW50aGV0aWNfMDAxIiwidHlwZSI6Im1lc3NhZ2UuYWNjZXB0ZWQiLCJ3b3Jrc3BhY2VfaWQiOiJ3c19zeW50aGV0aWNfcmVmZXJlbmNlIn0=",
+      "encodedId": "ImRlbGl2ZXJ5X2xvbmVfXHVkODAwX21pZF9cdWRmZmZfZW5kX_CfmIAi",
+      "timestamp": "1792800000",
+      "signature": "v1=_U6YCdhfIjndYrb41lhmByInfH5MEZp_3rQTK2ZWx_M"
+    }
+  ]
+}

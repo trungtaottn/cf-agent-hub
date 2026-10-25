@@ -1,6 +1,6 @@
 # Documentation index
 
-Status: Design baseline · Contract revision 0.1 · Implementation pending.
+Status: R1 candidate documentation · Contract revision 0.2 · Deployed release acceptance pending.
 
 Read this set as a proposed contract for CF Agent Hub. A feature page describes intended behavior; it does not prove that the behavior has been built. The [feature matrix](feature-matrix.md) is the source of truth for implementation status.
 
@@ -8,6 +8,7 @@ Read this set as a proposed contract for CF Agent Hub. A feature page describes 
 
 | Document | Questions it answers |
 | --- | --- |
+| [R1 implementation and acceptance](r1-implementation.md) | Which source and local checks exist, and which external gates still block verification? |
 | [Overview](overview.md) | Who is the hub for, what does it coordinate, and what is outside scope? |
 | [Getting started](getting-started.md) | What can be reviewed now, and what must a first implementation prove? |
 | [Use cases](use-cases.md) | How do personal work, multi-agent handoffs and team review fit? |
@@ -58,4 +59,4 @@ When two pages appear to disagree, consult the canonical responsibility in the t
 
 ## Implementation plans
 
-Use the [implementation plan index](superpowers/plans/README.md) for the R1–R4 task breakdown, contract amendments, review gates and execution dependencies. Product implementation remains pending.
+Use the [implementation plan index](superpowers/plans/README.md) for the R1–R4 task breakdown, contract amendments, review gates and execution dependencies. R1 has a reviewable candidate; later rounds remain pending and unavailable.

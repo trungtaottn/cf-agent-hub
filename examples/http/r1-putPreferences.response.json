@@ -1,6 +1,6 @@
 {
   "data": {
-    "preferences_revision": 1,
+    "preferences_revision": 2,
     "preferences": {
       "contract_revision": "0.1",
       "theme": "system",
@@ -11,13 +11,14 @@
       "contract_revision": "0.1",
       "theme": "system",
       "density": "comfortable",
-      "default_view": "tasks"
+      "default_view": "overview"
     },
     "allowed_user_overrides": [
       "theme",
       "density",
       "default_view"
-    ]
+    ],
+    "default_view_fallback_reason": "VIEW_UNAVAILABLE"
   },
   "request_id": "req_synthetic_putPreferences"
 }

@@ -1,0 +1,23 @@
+{
+  "scope": "r1-recovery-plan-amendment-only",
+  "round": "R1",
+  "base_plan_sha256": "b483052fa12f9b11550e46b160dd7eceeed67d5da168164f8f3ab972fd7a448e",
+  "reviewed_plan_sha256": "beec9d0ca34e10297774754a1f75d1310b3b5728ff1f16efcae9a36c9d30724e",
+  "independent_review": true,
+  "product_runtime_tests_run": false,
+  "open_blocking_findings": [],
+  "reviewed_at": "2026-10-25T07:46:36.880Z",
+  "summary": "Independent approval is limited to the exact two-hunk R1 plan delta from the recorded base: the source-candidate status and acceptance-boundary clarification, and the bounded unresolved-effect recovery receipt amendment. The 64-ID ordered prefix, exact unresolved count and completeness flag agree with the closed response schema and generated cross-field validators used by Worker and CLI consumers. Capture and restore receipts remain immutable snapshots; resolution emits a fresh summary, and resume independently requires the full current SQL unresolved count to be zero. The existing large-backlog regression source exercises 2,000 unresolved effects, a resolution outside the displayed prefix, immutable status receipt replay and blocked resume; validator cases reject inconsistent counts, completeness, duplication and ordering. Test sources and implementation were inspected, but no product runtime test was executed for this planning review. The status clarification explicitly retains pending isolated deployment acceptance and separate review, evidence, promotion and release gates. This record composes with the original historical review without replacing it and supplies neither whole-plan reapproval, R2-R4 approval nor product, deployment or release certification.",
+  "reviewed_paths": [
+    "docs/superpowers/plans/2026-10-23-r1-foundation.md",
+    "validation/implementation-plan-review.json",
+    "docs/r1-implementation.md",
+    "spec/recovery-response.schema.json",
+    "scripts/generate-operator-contract.mjs",
+    "src/recovery/jobs.ts",
+    "src/recovery/controls.ts",
+    "scripts/lib/recovery-client.mjs",
+    "scripts/lib/recovery-transport.mjs",
+    "test/recovery/unresolved-bounds.test.ts"
+  ]
+}

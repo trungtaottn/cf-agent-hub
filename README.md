@@ -1,10 +1,10 @@
 # CF Agent Hub
 
-Status: Design baseline · Contract revision 0.1 · Implementation pending.
+Status: R1 source candidate · Contract revision 0.2 · Isolated acceptance pending; no released artifact.
 
-CF Agent Hub is a proposed self-hosted workspace for coordinating people and external AI agents. It combines durable tasks, a Kanban view, messages, execution claims, human decisions and reviewable artifacts. A native HTTP contract is the foundation; a CLI and protocol adapters share the same workspace rules.
+CF Agent Hub is a self-hosted coordination project for people and external AI agents. The R1 candidate provides authenticated durable messages, recipient inbox/ACK, bounded thread/activity reads, a neutral browser dashboard, policy-preserving settings and protected logical SQL recovery. Tasks, Kanban execution, runtime claims, human decisions, artifacts and protocol adapters belong to later release gates.
 
-This package defines the product before implementation. It contains documentation, proposed schemas and synthetic fixtures. It does not contain a released server, a certified client integration or an executable deployment. **Every product capability is currently Specified.** The [feature matrix](docs/feature-matrix.md) records the evidence required to advance that status.
+The repository contains reviewable Worker/client/operator source, a locked toolchain, executable local tests and the broader product contracts. **R1 has not passed deployed release acceptance.** Real isolated identity/operator journeys, complete toolchain review and the exact release evidence gate remain required. The [R1 implementation page](docs/r1-implementation.md) maps source to checks, and the [feature matrix](docs/feature-matrix.md) records attained capability status.
 
 Coding and automation contributors: read the repository-wide [AGENTS.md](AGENTS.md) before working on issues, code, branches, CI, or release state. [AGENT.md](AGENT.md) is an alias entry point, while [docs/agents.md](docs/agents.md) describes product runtime agents.
 
@@ -12,6 +12,7 @@ Coding and automation contributors: read the repository-wide [AGENTS.md](AGENTS.
 
 | Your goal | Reading path |
 | --- | --- |
+| Verify the R1 source candidate | [R1 implementation and acceptance](docs/r1-implementation.md) → [Toolchain](docs/runbooks/toolchain.md) → [Recovery](docs/runbooks/r1-recovery.md) |
 | Understand the product and release scope | [Overview](docs/overview.md) → [Use cases](docs/use-cases.md) → [Roadmap](docs/roadmap.md) |
 | Review or implement an agent client | [Agents](docs/agents.md) → [HTTP API](docs/http-api.md) → [Delivery semantics](docs/delivery-semantics.md) → [CLI](docs/cli.md) |
 | Design the workspace experience | [Kanban](docs/kanban.md) → [Customization](docs/customization.md) → [Design guidelines](docs/design-guidelines.md) |
@@ -33,7 +34,7 @@ The hub coordinates external execution. It does not provide a code sandbox or mo
 
 ## What is in this package
 
-`docs/` contains guides, contracts, runbooks and decisions. `spec/` contains the proposed OpenAPI document and configuration/profile JSON Schemas. `examples/` contains synthetic contract fixtures, including neutral and opt-in workspace profiles. `scripts/` contains documentation validation only. The [documentation maintenance guide](docs/docs-maintenance.md) explains how to keep them aligned.
+`src/` contains the R1 Worker, workspace domain/storage, browser UI and recovery implementation. `workers/operator/` contains the separate authenticated operator gateway. `packages/client/` contains the browser contract client, while `test/` contains Node, Workers, operator and browser suites. `scripts/` contains build, contract, operational and evidence verification tools. `docs/`, `spec/` and `examples/` retain the product contracts and explicitly synthetic fixtures, including later-release specifications. The historical documentation-package manifest is not a runtime release manifest; [runtime evidence](docs/runtime-evidence.md) binds an actual candidate and artifact separately.
 
 Documentation checks validate consistency of these assets. They do not demonstrate production authorization, persistence, concurrency, protocol conformance or disaster recovery. Those require the runtime evidence listed in [testing](docs/testing.md) and the [release checklist](docs/release-checklist.md).
 

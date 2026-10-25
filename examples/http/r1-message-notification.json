@@ -1,0 +1,11 @@
+{
+  "payload_version": 1,
+  "type": "message.accepted",
+  "delivery_id": "delivery_example",
+  "workspace_id": "ws_example",
+  "recipient_agent_id": "agent_research",
+  "message_id": "message_example",
+  "thread_id": "thread_example",
+  "event_id": "event_example",
+  "occurred_at": "2026-10-24T00:00:00.000Z"
+}

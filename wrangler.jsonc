@@ -1,0 +1,85 @@
+{
+  "name": "cf-agent-hub",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-19",
+  "triggers": {
+    "crons": [
+      "* * * * *"
+    ]
+  },
+  "exports": {
+    "WorkspaceDO": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    }
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "WORKSPACE",
+        "class_name": "WorkspaceDO"
+      }
+    ]
+  },
+  "r2_buckets": [
+    {
+      "binding": "RECOVERY_BUCKET",
+      "bucket_name": "cf-agent-hub-recovery"
+    }
+  ],
+  "env": {
+    "test": {
+      "name": "cf-agent-hub-test",
+      "durable_objects": {
+        "bindings": [
+          {
+            "name": "WORKSPACE",
+            "class_name": "WorkspaceDO"
+          }
+        ]
+      },
+      "r2_buckets": [
+        {
+          "binding": "RECOVERY_BUCKET",
+          "bucket_name": "cf-agent-hub-test-recovery"
+        }
+      ]
+    },
+    "dev": {
+      "name": "cf-agent-hub-dev",
+      "durable_objects": {
+        "bindings": [
+          {
+            "name": "WORKSPACE",
+            "class_name": "WorkspaceDO"
+          }
+        ]
+      },
+      "r2_buckets": [
+        {
+          "binding": "RECOVERY_BUCKET",
+          "bucket_name": "cf-agent-hub-dev-recovery"
+        }
+      ]
+    }
+  },
+  "rules": [
+    {
+      "type": "Text",
+      "globs": [
+        "**/*.sql"
+      ],
+      "fallthrough": true
+    }
+  ],
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "run_worker_first": true,
+    "html_handling": "none",
+    "not_found_handling": "none"
+  },
+  "build": {
+    "command": "npm run build:ui"
+  }
+}

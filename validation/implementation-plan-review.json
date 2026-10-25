@@ -1,6 +1,6 @@
 {
   "scope": "implementation-plans-only",
-  "reviewed_at": "2026-10-23T07:41:27.148580+00:00",
+  "reviewed_at": "2026-10-24T04:07:47Z",
   "status": "passed-in-reviewed-scope",
   "product_runtime_tests_run": false,
   "implementation_status": "pending",
@@ -49,7 +49,7 @@
     }
   },
   "reviewed_plan_sha256": {
-    "R1": "fd05f8ee86ccd9b8428ce2ff6d15e4207446294118bf55072ddf860962506d6d",
+    "R1": "b483052fa12f9b11550e46b160dd7eceeed67d5da168164f8f3ab972fd7a448e",
     "R2": "7bd7520370bf058ca4e69218210666bce4544d468cb2312f7f813bc320cc6c1b",
     "R3": "c6ee22bce2250f96db87b4156082db9373c52b5dec9f0331e8dcd5512448cbf8",
     "R4": "efe60d3a7eef00532bb6084c25433769ab603a66fe3c46cec9742e8b04ec6b38"
@@ -226,7 +226,11 @@
     "Controller cross-plan interface, dependency and authority review.",
     "Authors corrected findings; independent focused re-review checked affected mechanisms.",
     "Controller inspected final changes and aligned editorial status/execution-method headers with the shared per-task review protocol.",
-    "Final byte digests identify the reviewed planning deliverable; they are not Git/runtime release identities."
+    "Final byte digests identify the reviewed planning deliverable; they are not Git/runtime release identities.",
+    "The historical full planning review covers the prior identified plan bytes. The independent accumulated R1 amendment review, followed by its focused correction re-review, covers the changes to the current identified R1 plan bytes. Together they supply the current planning-review identity. This receipt does not certify product implementation, tests, deployment or release.",
+    "The independently approved Task 7 scoped R1 amendment supplies the next current planning identity, composed with all retained historical full-review and amendment stages. It does not supply new whole-plan or product/runtime acceptance.",
+    "The independently accepted Task 8 scoped plan amendment supplies the next current planning identity, retaining one nonblocking Minor map-completeness finding for final triage. It does not supply whole-plan, implementation, runtime or release approval.",
+    "The independently accepted Task 9 scoped plan amendment supplies the next current R1 planning identity. Its nonblocking wording Minor and the earlier Task 8 map Minor remain retained for final triage; this does not supply whole-plan, implementation, runtime or release approval."
   ],
   "limitations": [
     "No claim of defect-free software or exhaustive proof.",
@@ -234,5 +238,238 @@
     "Future task commands are specified deliverables, not observed successful executions.",
     "Planning-only validators check structure and traceability, not domain correctness.",
     "Baseline contract revision 0.1 remains unchanged; each task must implement and verify its proposed amendments before dependent behavior."
+  ],
+  "plan_amendment_reviews": [
+    {
+      "id": "r1-accumulated-amendments-2026-10-24",
+      "scope": "accumulated-r1-plan-amendments-only",
+      "reviewer_role": "independent accumulated-plan-amendment reviewer",
+      "reviewed_at": "2026-10-24T01:59:10Z",
+      "status": "approved",
+      "previous_full_review": {
+        "path": "validation/implementation-plan-review.2026-10-23.json",
+        "sha256": "7d74ae1240a8f0556c6f6a78d1889d26de85cb4ce76ee282cae3f128e4816870",
+        "bytes": 9629,
+        "reviewed_at": "2026-10-23T07:41:27.148580+00:00",
+        "scope": "Historical full planning review for its exact recorded plan and shared-file bytes; original conclusions and counts are preserved."
+      },
+      "plan_path": "docs/superpowers/plans/2026-10-23-r1-foundation.md",
+      "from_plan_sha256": "fd05f8ee86ccd9b8428ce2ff6d15e4207446294118bf55072ddf860962506d6d",
+      "source_plan_commit": "555bb14e3d0014370dcd3717356b9c7afb0490dd",
+      "source_plan_tree": "3301a48eb4eeba552b625be38f3d9a83c529fc1a",
+      "to_plan_sha256": "45f91564a7f75e7502cef3b259aac312ecc14aadfea8af77e7adaa7341596e3b",
+      "to_plan_bytes": 97359,
+      "review_stages": [
+        {
+          "stage": "accumulated-amendment-review",
+          "reviewer_role": "independent accumulated-plan-amendment reviewer",
+          "reviewed_at": "2026-10-24T01:54:04Z",
+          "status": "needs-correction",
+          "commit": "ce6a53a6602c39b4d8e22c8ecb6e14671707ca05",
+          "tree": "f24a9ddb47e76b427d4ad62a96d690cc86b5342c",
+          "plan_sha256": "a0adfd68fa47e2f968fc45b082e3e6d82b1edda93082a6e7e8884a034a359769",
+          "plan_bytes": 97350,
+          "changed_blocks": 9,
+          "approved_blocks": 8,
+          "findings": [
+            {
+              "id": "APA-01",
+              "severity": "Important",
+              "status": "open",
+              "summary": "The Task 3 CSRF interface declared synchronous void despite its asynchronous proof-preparation requirement."
+            }
+          ]
+        },
+        {
+          "stage": "focused-correction-review",
+          "reviewer_role": "independent accumulated-plan-amendment reviewer",
+          "reviewed_at": "2026-10-24T01:59:10Z",
+          "status": "approved",
+          "commit": "555bb14e3d0014370dcd3717356b9c7afb0490dd",
+          "tree": "3301a48eb4eeba552b625be38f3d9a83c529fc1a",
+          "plan_sha256": "45f91564a7f75e7502cef3b259aac312ecc14aadfea8af77e7adaa7341596e3b",
+          "plan_bytes": 97359,
+          "findings": [
+            {
+              "id": "APA-01",
+              "status": "addressed",
+              "resolution": "Independently inspected the sole return-type correction to assertCsrf(request,session):Promise<void>; surrounding synchronous authorization and transaction boundaries remain unchanged."
+            }
+          ],
+          "new_findings": 0
+        }
+      ],
+      "changed_scope": [
+        "Concrete human-authentication and operator file ownership, including their shared contract continuation.",
+        "Settings, immutable preference-owner migration and typed settings-event ownership.",
+        "The explicit bounded Task 6 revision-zero and response-only settings documentation/schema amendment allowance.",
+        "The concrete authenticated install binding and deferred recovery extension boundary.",
+        "The Task 3 authentication file map, forward epoch migration, canonical generation and fixture ownership.",
+        "The Task 3 asynchronous human proof, persisted epoch and return-intent interface, with the focused Promise<void> CSRF correction.",
+        "The Task 4 concrete module and Node/Workers/operator test partition.",
+        "The native owned authentication context, authenticated install identity and strict proof lifetime.",
+        "The explicit operator test and aggregate verification gate."
+      ],
+      "findings": [
+        {
+          "id": "APA-01",
+          "severity": "Important",
+          "status": "resolved",
+          "topic": "Public Task 3 asynchronous CSRF interface",
+          "original_declaration": "assertCsrf(request,session):void",
+          "corrected_declaration": "assertCsrf(request,session):Promise<void>",
+          "resolution": "The plan-only correction was committed, frozen and independently approved in the actual focused correction review; no runtime change was requested or made.",
+          "resolved_at": "2026-10-24T01:59:10Z",
+          "reviewed_commit": "555bb14e3d0014370dcd3717356b9c7afb0490dd",
+          "reviewed_plan_sha256": "45f91564a7f75e7502cef3b259aac312ecc14aadfea8af77e7adaa7341596e3b"
+        }
+      ],
+      "review_basis": "The historical full planning review covers the prior identified plan bytes. The independent accumulated R1 amendment review, followed by its focused correction re-review, covers the changes to the current identified R1 plan bytes. Together they supply the current planning-review identity. This receipt does not certify product implementation, tests, deployment or release.",
+      "product_runtime_tests_run": false,
+      "limitations": [
+        "The original full-review findings, counts, verdicts and timestamp remain historical; this is their explicit composition with later amendment reviews, not a new full planning review.",
+        "The accumulated review covers the net Tasks 3, 4 and 6 planning amendments; its initial needs-correction verdict remains attached to its original exact bytes and time.",
+        "The focused review approves only the actual one-line correction and its exact resulting plan identity.",
+        "No unchanged plan design or R2-R4 amendment was independently re-reviewed by these stages; their existing plan and shared-file digests remain unchanged.",
+        "No product implementation, runtime tests, deployment, recovery, release, capability promotion or defect-free software is certified.",
+        "Any further plan change requires review of its actual delta and exact identity; a matching validator digest alone does not establish review provenance."
+      ]
+    },
+    {
+      "id": "r1-task7-atomic-message-admission",
+      "scope": "R1 Task 7 plan-only R-Y/R-AA/R-AC amendment",
+      "reviewer_role": "independent scoped plan-amendment reviewer",
+      "reviewed_at": "2026-10-24T02:25:20Z",
+      "status": "approved",
+      "plan_path": "docs/superpowers/plans/2026-10-23-r1-foundation.md",
+      "from_plan_sha256": "45f91564a7f75e7502cef3b259aac312ecc14aadfea8af77e7adaa7341596e3b",
+      "source_base_commit": "67f4d7f0456ffcc73837c165cafe9df8f5379e96",
+      "source_base_tree": "00ac7a6f77dc03f2063a092644b548ed2a8a9390",
+      "source_plan_commit": "d62fa4c91ce2c95fd0a9c7ebe61b11a38d716479",
+      "source_plan_tree": "902ac8632df73088da522a48e63723080a44205b",
+      "to_plan_sha256": "1a79df68a29f0a2340a2a5d38e6def1fc7038f7c55dc5d0546bb29704ca31b95",
+      "to_plan_bytes": 102104,
+      "review_package_sha256": "4cf2d28ff9cfef24b472ca1366e46f97c1525a8682f0670a2bd80e7aba588b85",
+      "review_package_bytes": 19005,
+      "review_report_sha256": "2e45105161f0f7bcc7809ae138059cbdf37189d063cd78ca30636987591010f1",
+      "review_report_bytes": 11987,
+      "changed_scope": [
+        "Typed fixed membership and forward migration 4 with preserved legacy outbox bytes/attempts and NULL routing history.",
+        "Coherent current participant grants and actual-caller/all-participant reference visibility.",
+        "Closed canonical notification, immutable payload/routing snapshots, durable scheduling generation and downstream ownership.",
+        "Reserved accepted-event identity adapter preserving the sole synchronous wrapper event/outcome writer.",
+        "Exact opaque Event thread linkage correction, explicit file map, focused proof and documentation ownership."
+      ],
+      "findings": {
+        "critical": 0,
+        "important": 0,
+        "minor_requiring_correction": 0
+      },
+      "review_basis": "Controller adopted the actual independent scoped approval after reading the complete report. All prior full-review and amendment records remain unchanged; R2-R4 and shared identities are unchanged.",
+      "product_runtime_tests_run": false,
+      "limitations": [
+        "Only the identified public R1 plan delta was approved; this is not a new full-plan review.",
+        "The review did not approve implementation, receipt bytes, runtime tests, deployment, recovery or release.",
+        "Whole Task 7 source review and final canonical validation remain separate gates."
+      ]
+    },
+    {
+      "id": "r1-task8-authorized-traversal-ack",
+      "scope": "R1 Task 8 plan-only cursor, retention and ACK integration amendment",
+      "reviewer_role": "independent scoped plan-amendment reviewer",
+      "reviewed_at": "2026-10-24T03:08:26Z",
+      "status": "approved-with-nonblocking-minor",
+      "plan_path": "docs/superpowers/plans/2026-10-23-r1-foundation.md",
+      "from_plan_sha256": "1a79df68a29f0a2340a2a5d38e6def1fc7038f7c55dc5d0546bb29704ca31b95",
+      "source_base_commit": "3471aeeb51c58d34b5fa4a8e7cbcfc3dc561c9fd",
+      "source_base_tree": "77c1f1c64bb45081efcbd42fe234715da02dd616",
+      "source_plan_commit": "48d673712181e1c3e054c0ab36a7fac37e574a54",
+      "source_plan_tree": "0d77ff5a091772875323ce8dcac8341ec9f9fe05",
+      "to_plan_sha256": "3f94e99ceb20896e74e4b673768b035640b8deeba96bce53bbd6a18292516ddb",
+      "to_plan_bytes": 103371,
+      "review_package_sha256": "7272fab7bf2098c83aba2654c4d8e64391af248d031d3792a956c5a483ffcf27",
+      "review_report_sha256": "7bf45e01ca855d0fb9e913d06223f45f658eebc09044448703ed165da0548bef",
+      "review_report_bytes": 14913,
+      "changed_scope": [
+        "Explicit bounded read/ACK route and cursor ownership, forward metadata retention-floor migration and downstream registration.",
+        "Original proof revalidation after cursor decode/encode, separate managed encryption key and current resource publication.",
+        "Shared typed visibility/scheduler integration and preservation of item-bounded complete traversal."
+      ],
+      "findings": {
+        "critical": 0,
+        "important": 0,
+        "minor_open": 1
+      },
+      "open_findings": [
+        {
+          "id": "M1",
+          "severity": "Minor",
+          "status": "open-for-final-triage",
+          "summary": "Task 8 file map does not explicitly list the necessary Workers test registration and canonical HTTP generator/DTO/validator integration paths."
+        }
+      ],
+      "previous_receipt": {
+        "path": "validation/implementation-plan-review.before-task8.json",
+        "sha256": "3149cc2c9dc50a2a631475519d83d05c4f0c654d651ef8f334cf411457bb09e2",
+        "bytes": 18773
+      },
+      "review_basis": "Controller accepted the actual independent scoped review after reading its complete report, with one nonblocking Minor retained. All historical records and R2-R4/shared identities are preserved.",
+      "product_runtime_tests_run": false,
+      "limitations": [
+        "Only the identified plan delta is approved; this is not a new full-plan review.",
+        "The Minor map-completeness finding remains open, rather than being represented as corrected.",
+        "Whole Task 8 implementation review, canonical source validation and release gates remain separate."
+      ]
+    },
+    {
+      "id": "r1-task9-durable-notification-recovery",
+      "scope": "R1 Task 9 plan-only exact notification wire and recovery integration amendment",
+      "reviewer_role": "independent scoped plan-amendment reviewer",
+      "reviewed_at": "2026-10-24T04:07:47Z",
+      "status": "approved-with-nonblocking-minor",
+      "plan_path": "docs/superpowers/plans/2026-10-23-r1-foundation.md",
+      "from_plan_sha256": "3f94e99ceb20896e74e4b673768b035640b8deeba96bce53bbd6a18292516ddb",
+      "source_base_commit": "fbf538f6e116a27f19b537dc395389a4b1f14a26",
+      "source_base_tree": "55005cd37d69a50f08d376be2b1a166f8f37db7e",
+      "source_plan_commit": "1ed1b3a1325015f45fa374548686b557696e7901",
+      "source_plan_tree": "9568836b38fd43bffad27bab891b1e5c5a697ffd",
+      "to_plan_sha256": "b483052fa12f9b11550e46b160dd7eceeed67d5da168164f8f3ab972fd7a448e",
+      "to_plan_bytes": 106335,
+      "review_package_sha256": "bbaaa078e59c907eedbb93d9dd12b83519aff3128c175b5bb4eb68406d10af84",
+      "review_package_bytes": 19228,
+      "review_report_sha256": "bf67059e785c747d5918991cd6027ac7a09d676867e921330a72f805491dbdb8",
+      "review_report_bytes": 8092,
+      "changed_scope": [
+        "Exact original-body HMAC envelope, encoded opaque delivery ID, key bytes and freshness verification.",
+        "Durable receiver claim/completion distinctions, independent golden vectors, concurrent duplicates and restart evidence.",
+        "Current-grant eligibility extraction, DO/scheduled sweep integration, protected Operations projection and generated contract/test registration.",
+        "Forward migration 6 limited to nullable bounded scheduler diagnostics; Task 11 retains registry/probe/release ownership."
+      ],
+      "findings": {
+        "critical": 0,
+        "important": 0,
+        "minor_open": 1
+      },
+      "open_findings": [
+        {
+          "id": "M1",
+          "severity": "Minor",
+          "status": "open-for-final-triage",
+          "summary": "The phrase versioned headers should read unsupported-version headers; supported signature version v1 remains binding."
+        }
+      ],
+      "previous_receipt": {
+        "path": "validation/implementation-plan-review.before-task9.json",
+        "sha256": "cddaddb7dcb1587e71df93b06b22bd89d4fbe69bc6e73ac1eb7574dece3b1f8d",
+        "bytes": 21801
+      },
+      "review_basis": "Controller accepted the actual independent scoped review after reading its complete report. All historical records/counts and R2-R4/shared identities remain preserved.",
+      "product_runtime_tests_run": false,
+      "limitations": [
+        "Only the identified plan delta is approved; this is not a new full-plan review.",
+        "The nonblocking wording Minor remains open for final integration triage, alongside the earlier Task 8 map Minor.",
+        "Whole Task 9 runtime/source review remains separate; actual probe readiness, schema registry/restore and release gates remain Task 11."
+      ]
+    }
   ]
 }

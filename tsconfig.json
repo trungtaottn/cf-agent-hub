@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
+    "types": [
+      "node",
+      "@cloudflare/vitest-plugin/types"
+    ]
+  },
+  "include": [
+    "test/**/*.ts",
+    "*.config.ts",
+    "worker-configuration.d.ts",
+    "src/**/*.ts",
+    "packages/client/**/*.ts"
+  ],
+  "exclude": [
+    "test/auth/operator-gateway.test.ts",
+    "workers/operator/**",
+    "src/ui/app.ts",
+    "src/ui/settings.ts",
+    "src/ui/dom.ts",
+    "test/recovery/operator-transport.test.ts"
+  ]
+}

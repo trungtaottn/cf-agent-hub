@@ -1,8 +1,8 @@
 # Development workflow
 
-Status: Design baseline · Contract revision 0.1 · Implementation pending.
+Status: R1 source candidate · Contract revision 0.2 · Integrated/deployed acceptance pending.
 
-This guide defines how implementation should grow from the documentation contract. It intentionally contains no fictional application build command. The current executable tooling validates documentation, schemas and fixtures; future runtime scripts must be added and tested with the implementation release.
+R1 has executable Worker, operator, client and browser code. Start with [R1 implementation and acceptance](r1-implementation.md) and the pinned [toolchain runbook](runbooks/toolchain.md): install the lockfile, build UI assets, run generated/type/contract/Node/Workers checks, run the separate browser gate, then validate the documentation. Local checks retain their observed scope; deployment and release require their own actual evidence.
 
 ## Start from a coherent slice
 
