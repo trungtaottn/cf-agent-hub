@@ -31,7 +31,7 @@ export class SettingsPanel{
  readonly element=el('div',undefined,{class:'settings-grid'});
  #bridge:SettingsBridge;#profile:ProfileData|null=null;#preferences:PreferencesData|null=null;
  #profileWriter:IntentWriter;#preferencesWriter:IntentWriter;
- #sectionsInitialized=false;#generation=0;#profileEditable=false;#refreshProfileControls:(()=>void)|null=null;
+ #sectionsInitialized=false;#generation=0;#profileEditable=false;#refreshProfileControls:(()=>void)|null=null;#refreshPreferencesPolicy:((data:PreferencesData)=>void)|null=null;
  #profileCard=el('section',undefined,{class:'card','aria-labelledby':'profile-heading'});
  #preferencesCard=el('section',undefined,{class:'card','aria-labelledby':'preferences-heading'});
  #profileEvidence=el('div',undefined,{class:'evidence','data-testid':'profile-read-state'});
@@ -42,7 +42,7 @@ export class SettingsPanel{
   this.#profileWriter=new IntentWriter(transport);this.#preferencesWriter=new IntentWriter(transport);
  }
  invalidate():void{
-  ++this.#generation;this.#profileWriter.invalidate();this.#preferencesWriter.invalidate();this.#profile=null;this.#preferences=null;this.#sectionsInitialized=false;this.#profileEditable=false;this.#refreshProfileControls=null;
+  ++this.#generation;this.#profileWriter.invalidate();this.#preferencesWriter.invalidate();this.#profile=null;this.#preferences=null;this.#sectionsInitialized=false;this.#profileEditable=false;this.#refreshProfileControls=null;this.#refreshPreferencesPolicy=null;
   this.#profileCard.replaceChildren();this.#preferencesCard.replaceChildren();this.#profileEvidence.replaceChildren();this.#preferencesEvidence.replaceChildren();
   this.element.replaceChildren(el('p','Access denied. Settings drafts and pending write data have been cleared.',{class:'notice'}));
  }
@@ -58,6 +58,7 @@ export class SettingsPanel{
   // Initialize each successful section independently; subsequent reads update
   // evidence without replacing draft controls or an unresolved write intent.
   if(!this.#preferences&&preferences.data){this.#preferences=structuredClone(preferences.data);this.#renderPreferences();}
+  else if(this.#preferences&&preferences.data){this.#preferences=structuredClone(preferences.data);this.#refreshPreferencesPolicy?.(preferences.data);}
   if(!this.#profile&&profile.data){this.#profile=structuredClone(profile.data);this.#renderProfile();}
   this.#refreshProfileControls?.();
  }
@@ -72,6 +73,7 @@ export class SettingsPanel{
    for(const [name,node]of [['theme',theme],['density',density],['default_view',view]] as const)node.disabled=!data.allowed_user_overrides.includes(name);
   };
   policyText();
+  this.#refreshPreferencesPolicy=(fresh)=>{data=fresh;expected=fresh.preferences_revision;policyText();};
   fieldset.append(labeledControl('Theme',theme),labeledControl('Density',density),labeledControl('Default view',view),policy);
   const result=el('div','',{'data-testid':'preferences-result',role:'status'}),review=el('div');
   const save=button('Save preferences',()=>void write(false)),replay=button('Reconcile original preferences write',()=>void write(true),{class:'secondary'});replay.hidden=true;
