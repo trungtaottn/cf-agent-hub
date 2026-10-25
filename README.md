@@ -6,6 +6,8 @@ CF Agent Hub is a proposed self-hosted workspace for coordinating people and ext
 
 This package defines the product before implementation. It contains documentation, proposed schemas and synthetic fixtures. It does not contain a released server, a certified client integration or an executable deployment. **Every product capability is currently Specified.** The [feature matrix](docs/feature-matrix.md) records the evidence required to advance that status.
 
+Coding and automation contributors: read the repository-wide [AGENTS.md](AGENTS.md) before working on issues, code, branches, CI, or release state. [AGENT.md](AGENT.md) is an alias entry point, while [docs/agents.md](docs/agents.md) describes product runtime agents.
+
 ## Start here
 
 | Your goal | Reading path |
