@@ -23,7 +23,7 @@ jobs:
           node-version: '24.22.1'
           package-manager-cache: false
       - name: Verify branch policy fixtures
-        run: node --test test/governance/branch-promotion.test.mjs
+        run: node --test test/governance/*.test.mjs
       - name: Reject unauthorized stable sources
         env:
           PR_BASE: ${{ github.event.pull_request.base.ref }}
@@ -31,3 +31,30 @@ jobs:
           PR_BASE_REPO: ${{ github.event.pull_request.base.repo.full_name }}
           PR_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
         run: node scripts/check-branch-promotion.mjs
+      - name: Require Conventional Commit title
+        env:
+          PR_BASE: ${{ github.event.pull_request.base.ref }}
+          PR_HEAD: ${{ github.event.pull_request.head.ref }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: node scripts/check-conventional-pr.mjs
+
+  release-toolchain:
+    name: release-toolchain
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '24.22.1'
+          package-manager-cache: false
+      - name: Install locked release dependencies
+        run: npm ci --prefix release-tooling --ignore-scripts
+      - name: Reject release-tooling advisories
+        run: npm audit --prefix release-tooling --audit-level=low
+      - name: Verify release-policy fixtures and real Conventional Commit analysis
+        run: |
+          node --test test/governance/semantic-release.test.mjs
+          node --test test/release/semantic-analysis.test.mjs
