@@ -13,7 +13,10 @@ it('operations_projects_real_counts_and_unknown_readiness_without_fabricated_pro
   state.storage.sql.exec("UPDATE outbox SET status='exhausted',attempts=6,last_error='network'");const h=actor(state.storage,human(state.storage)),workspace=owned(state.storage,name);
   const data=withTransaction(state.storage,tx=>projectOperations(tx,workspace,h,Date.now()));
   expect(data.outbox).toMatchObject({pending_count:0,in_flight_count:0,failed_count:1,suppressed_count:0});
-  expect(data.readiness).toMatchObject({ready:false,checks:[{name:'storage_probe',status:'unknown',code:'PROBE_NOT_RUN',checked_at:null}]});expect(data.schema_version).toBe(6);
+  expect(data.readiness.ready).toBe(false);
+  expect(data.readiness.checks).toContainEqual({name:'storage_probe',status:'unknown',code:'PROBE_NOT_RUN',checked_at:null});
+  expect(data.readiness.checks).toContainEqual(expect.objectContaining({name:'delivery',status:'fail',code:'DELIVERY_FAILURES'}));
+  expect(data.readiness.checks).toContainEqual({name:'r2_artifacts',status:'unknown',code:'CAPABILITY_UNAVAILABLE_R1',checked_at:null});expect(data.schema_version).toBe(7);
   state.storage.sql.exec('UPDATE human_grants SET enabled=0');expect(()=>withTransaction(state.storage,tx=>projectOperations(tx,workspace,h,Date.now()))).toThrow();
  });
 });

@@ -25,6 +25,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MD = MarkdownIt("commonmark").enable("table")
 ERRORS: list[str] = []
 CHECKS: dict[str, int] = {}
+GENERATED_DIRECTORIES = {"node_modules", "dist", "test-results", "playwright-report"}
 
 
 def check(condition: bool, label: str, category: str) -> None:
@@ -60,7 +61,9 @@ def heading_anchors(tokens) -> set[str]:
 
 
 def validate_markdown() -> tuple[int, int]:
-    documents = sorted(p for p in ROOT.rglob("*.md") if not any(part.startswith(".") for part in p.relative_to(ROOT).parts))
+    documents = sorted(p for p in ROOT.rglob("*.md") if not any(
+        part.startswith(".") or part in GENERATED_DIRECTORIES for part in p.relative_to(ROOT).parts
+    ))
     parsed = {path: MD.parse(path.read_text(encoding="utf-8")) for path in documents}
     anchors = {path: heading_anchors(tokens) for path, tokens in parsed.items()}
     external_count = 0
@@ -381,7 +384,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--report", type=Path, help="Write a documentation-only JSON report")
     args = parser.parse_args()
-    files = sorted(p for p in ROOT.rglob("*") if p.is_file() and not any(part.startswith(".") for part in p.relative_to(ROOT).parts))
+    files = sorted(p for p in ROOT.rglob("*") if p.is_file() and not any(
+        part.startswith(".") or part in GENERATED_DIRECTORIES for part in p.relative_to(ROOT).parts
+    ))
     json_count = 0
     for path in files:
         if path.suffix == ".json":

@@ -1,3 +1,4 @@
+import {admissionOpen,assertAdmissionOpen,type AdmissionFence} from '../recovery/maintenance';
 import type {WorkspaceTransaction} from '../storage/transaction';
 import type {Message,MessageNotification} from '../http/dto';
 import {validateMessageNotification} from '../http/generated/auth-validators.js';
@@ -48,7 +49,7 @@ export interface OutboxRow{
  created_at:number;updated_at:number;
 }
 export interface DeliveryAttempt{
- deliveryId:string;attemptId:string;attemptNumber:number;leaseExpiresAt:number;payloadJson:string;
+ admissionFence:AdmissionFence;deliveryId:string;attemptId:string;attemptNumber:number;leaseExpiresAt:number;payloadJson:string;
  destinationId:string;destination:DestinationSnapshot;notification:MessageNotification;
 }
 const delays=[5,30,120,600,3600] as const;
@@ -95,7 +96,8 @@ function retryCap(tx:WorkspaceTransaction,workspaceId:string):number{
 export function claimDue(tx:WorkspaceTransaction,nowMs:number,limit:25):readonly DeliveryAttempt[]{
  const claimed:DeliveryAttempt[]=[];
  const metadata=tx.one<{admission_state:string}>('SELECT admission_state FROM workspace_metadata WHERE id=1');
- if(metadata?.admission_state!=='installed'||tx.one('SELECT id FROM maintenance_state WHERE id=1'))return claimed;
+ if(metadata?.admission_state!=='installed'||!admissionOpen(tx))return claimed;
+ const admissionFence=assertAdmissionOpen(tx);
  const rows=tx.all<OutboxRow>(`SELECT * FROM outbox WHERE (status='pending' AND next_due_at<=?) OR (status='in_flight' AND lease_expires_at<=?) ORDER BY CASE WHEN status='in_flight' THEN lease_expires_at ELSE next_due_at END,id LIMIT ?`,[nowMs,nowMs,Math.min(25,Math.max(0,limit))]);
  for(const row of rows){
   // Legacy NULL routing is non-executable history. Preserve its prior transport and lease evidence.
@@ -113,7 +115,7 @@ export function claimDue(tx:WorkspaceTransaction,nowMs:number,limit:25):readonly
   if(row.attempts>=6){disposition(tx,row,'exhausted',row.last_error,nowMs,row.last_status);continue;}
   const attemptNumber=row.attempts+1,attemptId=JSON.stringify([row.id,attemptNumber]),leaseExpiresAt=nowMs+30000;
   tx.exec("UPDATE outbox SET status='in_flight',attempts=?,lease_token=?,lease_expires_at=?,updated_at=? WHERE id=?",[attemptNumber,attemptId,leaseExpiresAt,nowMs,row.id]);markSchedulerDirty(tx);
-  claimed.push({deliveryId:row.id,attemptId,attemptNumber,leaseExpiresAt,payloadJson:row.payload_json,destinationId:row.destination_id,...intent});
+  claimed.push({admissionFence,deliveryId:row.id,attemptId,attemptNumber,leaseExpiresAt,payloadJson:row.payload_json,destinationId:row.destination_id,...intent});
  }
  return claimed;
 }
@@ -122,8 +124,9 @@ export function liveAttempt(tx:WorkspaceTransaction,attempt:DeliveryAttempt,nowM
  return row&&row.lease_expires_at===attempt.leaseExpiresAt&&row.payload_json===attempt.payloadJson&&row.destination_id===attempt.destinationId&&row.destination_snapshot_json===canonicalJson(attempt.destination)?row:null;
 }
 /** Late responses cannot overwrite another attempt or reclaim an expired lease. */
-export function finishAttempt(tx:WorkspaceTransaction,attemptId:string,result:DeliveryResult,nowMs:number):void{
- if(result.kind==='obsolete'||result.kind==='paused'||tx.one('SELECT id FROM maintenance_state WHERE id=1')||
+export function finishAttempt(tx:WorkspaceTransaction,attemptId:string,result:DeliveryResult,nowMs:number,expected:AdmissionFence):void{
+ if(!admissionOpen(tx,expected))return;
+ if(result.kind==='obsolete'||result.kind==='paused'||!admissionOpen(tx)||
   tx.one<{admission_state:string}>('SELECT admission_state FROM workspace_metadata WHERE id=1')?.admission_state!=='installed')return;
  const row=tx.one<OutboxRow>("SELECT * FROM outbox WHERE status='in_flight' AND lease_token=? AND lease_expires_at>?",[attemptId,nowMs]);if(!row)return;
  if(result.kind==='delivered'){disposition(tx,row,'succeeded',null,nowMs,result.status);return;}

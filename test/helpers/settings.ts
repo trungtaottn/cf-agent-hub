@@ -21,7 +21,7 @@ export function human(storage:DurableObjectStorage,other=false):VerifiedIdentity
 }
 export function actor(storage:DurableObjectStorage,identity:VerifiedIdentity){return withTransaction(storage,tx=>resolveActor(tx,identity,Date.now()));}
 export async function commandContext(storage:DurableObjectStorage,name:string,body:unknown,key:string){
- return {workspace:owned(storage,name),requestId:'request_'+key,idempotencyKey:key,fingerprint:await fingerprintRequest('PUT','/settings',{},body),admissionEpoch:storage.sql.exec<{config_epoch:number}>('SELECT config_epoch FROM workspace_metadata').one().config_epoch};
+ return {workspace:owned(storage,name),requestId:'request_'+key,idempotencyKey:key,fingerprint:await fingerprintRequest('PUT','/settings',{},body),admissionGeneration:storage.sql.exec<{generation:number}>('SELECT generation FROM maintenance_state WHERE id=1').one().generation,admissionEpoch:storage.sql.exec<{config_epoch:number}>('SELECT config_epoch FROM workspace_metadata').one().config_epoch};
 }
 export const snapshot=(storage:DurableObjectStorage)=>Object.fromEntries(['profiles','preferences','events','idempotency_outcomes'].map(t=>[t,storage.sql.exec('SELECT * FROM '+t).toArray()]));
 export const preference={contract_revision:'0.1',theme:'system',density:'comfortable',default_view:'overview'} as const;

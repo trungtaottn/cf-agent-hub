@@ -1,6 +1,6 @@
 import { test,expect,appOrigin,issuerOrigin,captures,launchFixtureBrowser } from '../helpers/browser';
 test('approved fresh fixture keys reach both HTTPS authorities',async({page})=>{
- const response=await page.goto(appOrigin+'/health/live');expect(response?.status()).toBe(200);expect(await page.textContent('body')).toBe('alive');
+ const response=await page.goto(appOrigin+'/health/live');expect(response?.status()).toBe(200);expect(response?.headers()['content-type']).toMatch(/^application\/json\b/);expect(await response?.json()).toEqual({status:'alive'});
  const discovery=await page.goto(issuerOrigin+'/.well-known/openid-configuration');expect(discovery?.status()).toBe(200);
  expect(JSON.parse(await page.textContent('body')??'').issuer).toBe(issuerOrigin);
 });

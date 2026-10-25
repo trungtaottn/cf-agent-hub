@@ -1,6 +1,12 @@
 // Generated from spec/openapi.json; npm run generate:auth.
+export type Actor = {"kind":"human" | "agent" | "system";"principal_id":string;"agent_id":string | null};
+export type Scope = "workspace:read" | "tasks:read" | "tasks:create" | "tasks:edit" | "tasks:schedule" | "tasks:claim" | "tasks:execute" | "tasks:review" | "tasks:cancel" | "approvals:read" | "approvals:decide" | "agents:read" | "agents:manage" | "runtimes:manage" | "messages:read" | "messages:send" | "messages:ack" | "artifacts:read" | "artifacts:write" | "events:read" | "credentials:manage" | "search:read" | "messages:review" | "profile:edit" | "operations:read";
+export type Workspace = {"id":string;"display_name":string;"contract_revision":"0.1";"actor":Actor;"effective_scopes":Array<Scope>};
+export type WorkspaceResponse = {"data":Workspace;"request_id":string};
 export type ReadinessCheck = {"name":string;"status":"pass" | "fail" | "unknown";"code":string;"checked_at":string | null};
 export type Readiness = {"observed_at":string;"ready":boolean;"checks":Array<ReadinessCheck>};
+export type ReadinessResponse = {"data":Readiness;"request_id":string};
+export type Liveness = {"status":"alive"};
 export type Operations = {"observed_at":string;"config_epoch":number;"schema_version":number;"readiness":Readiness;"outbox":{"pending_count":number;"in_flight_count":number;"failed_count":number;"suppressed_count":number;"oldest_due_at":string | null;"next_due_at":string | null};"scheduler":{"last_run_at":string | null;"last_error_code":string | null}};
 export type OperationsResponse = {"data":Operations;"request_id":string};
 export type AckResult = {"acknowledged_ids":Array<string>;"already_acknowledged_ids":Array<string>};
@@ -21,7 +27,6 @@ export type AuthSessionResponse = {"data":AuthSession;"request_id":string};
 export type AuthLogoutData = {"logged_out":true};
 export type AuthLogoutDataResponse = {"data":AuthLogoutData;"request_id":string};
 export type Error = {"error":{"code":"INVALID_REQUEST" | "UNAUTHENTICATED" | "FORBIDDEN" | "NOT_FOUND" | "VERSION_CONFLICT" | "IDEMPOTENCY_CONFLICT" | "INVALID_STATE" | "STALE_RUN" | "APPROVAL_EXPIRED" | "CURSOR_EXPIRED" | "LIMIT_EXCEEDED" | "RATE_LIMITED" | "DEPENDENCY_UNAVAILABLE" | "INTERNAL_ERROR";"message":string;"retryable":boolean;"request_id":string;"details"?:{"field"?:string;"current_version"?:number;"current_proposal_version"?:number;"resource_id"?:string;"retry_after_seconds"?:number;"reason"?:string;"feature"?:"artifacts" | "tasks";"current_revision"?:number}}};
-export type Actor = {"kind":"human" | "agent" | "system";"principal_id":string;"agent_id":string | null};
 export type Event = {"id":string;"workspace_id":string;"sequence":number;"type":string;"actor":Actor;"resource_type":"task" | "run" | "approval" | "agent" | "runtime" | "message" | "artifact" | "credential" | "configuration" | "profile" | "preferences";"resource_id":string;"task_version":number | null;"run_id":string | null;"fence":number | null;"occurred_at":string;"summary":string;"request_id":string;"resource_version":number | null;"thread_id":string | null};
 export type Message = {"id":string;"workspace_id":string;"thread_id":string;"sender":Actor;"recipient_agent_ids":Array<string>;"body":string;"refs":Array<MessageReference>;"artifact_ids":Array<string>;"created_at":string;"acknowledged_at":string | null};
 export type Id = string;

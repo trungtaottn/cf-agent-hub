@@ -5,21 +5,29 @@
   "type": "module",
   "license": "MIT",
   "engines": {
-    "node": "24.11.0"
+    "node": "24.22.1",
+    "npm": "11.19.1"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit && tsc -p tsconfig.worker.json --noEmit && tsc -p tsconfig.operator.json --noEmit && tsc -p tsconfig.operator-test.json --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.worker.json --noEmit && tsc -p tsconfig.operator.json --noEmit && tsc -p tsconfig.operator-test.json --noEmit && tsc -p tsconfig.ui.json --noEmit",
     "test": "vitest run --config vitest.config.ts",
     "test:workers": "vitest run --config vitest.workers.config.ts",
     "test:ui": "playwright test",
-    "check": "npm run verify:generated && npm run typecheck && npm run verify:r1-contract && npm test && npm run test:workers && npm run test:operator",
+    "check": "npm run verify:generated && npm run typecheck && npm run verify:r1-contract && npm test && npm run test:workers && npm run test:operator && npm run test:deployment-verifier && npm run test:recovery-cli",
     "verify:r1-contract": "node scripts/verify-r1-contract.mjs",
     "verify:release": "node scripts/verify-release.mjs",
     "generate:config": "node scripts/generate-config-validators.mjs",
     "verify:generated": "node scripts/generate-config-validators.mjs --check && node scripts/generate-auth-contract.mjs --check && node scripts/generate-operator-contract.mjs --check",
     "generate:auth": "node scripts/generate-auth-contract.mjs",
     "test:operator": "vitest run --config vitest.operator.workers.config.ts",
-    "generate:operator": "node scripts/generate-operator-contract.mjs"
+    "generate:operator": "node scripts/generate-operator-contract.mjs",
+    "build:ui": "node scripts/build-ui.mjs",
+    "check:runtime": "node scripts/check-runtime-boot.mjs",
+    "verify:readiness": "node scripts/verify-readiness.mjs",
+    "verify:deployment": "node scripts/verify-r1-deployment.mjs",
+    "recover:workspace": "node scripts/recover-workspace.mjs",
+    "test:deployment-verifier": "node --test test/deployment/verify-r1-deployment.test.mjs",
+    "test:recovery-cli": "node --test test/cli/*.test.mjs"
   },
   "devDependencies": {
     "typescript": "6.0.3",
@@ -35,5 +43,6 @@
   },
   "dependencies": {
     "jose": "6.2.13"
-  }
+  },
+  "packageManager": "npm@11.19.1"
 }

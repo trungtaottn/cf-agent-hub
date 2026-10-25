@@ -10,9 +10,10 @@ export async function verifyNativeCredential(workspace:AuthWorkspace,bearer:stri
  const decoded=atob(bearer.replace(/-/g,'+').replace(/_/g,'/')+'=');
  if(decoded.length!==32||btoa(decoded).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')!==bearer)deny();
  // Only the hash enters the query; safe fixed-length comparison occurs in resolveActor.
+ const admission=withTransaction(workspace.storage,tx=>currentConfiguration(tx,workspace));
  const tokenDigest=await sha256(bearer);
  return withTransaction(workspace.storage,tx=>{
-  currentConfiguration(tx,workspace);
+  currentConfiguration(tx,workspace,admission.fence);
   const row=tx.one<{credential_id:string}>('SELECT credential_id FROM native_credentials WHERE workspace_id=? AND token_sha256=?',[workspace.workspaceId,tokenDigest]);
   if(!row)deny();
   const identity:VerifiedIdentity={kind:'agent',workspaceId:workspace.workspaceId,credentialId:row!.credential_id,tokenDigest};

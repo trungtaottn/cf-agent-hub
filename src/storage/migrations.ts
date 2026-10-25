@@ -4,10 +4,12 @@ import preferenceOwner from './migrations/0003-preference-owner.sql';
 import messageAdmission from './migrations/0004-message-admission.sql';
 import cursorRetention from './migrations/0005-cursor-retention.sql';
 import schedulerDiagnostics from './migrations/0006-outbox-scheduler-diagnostics.sql';
+import maintenanceGeneration from './migrations/0007-maintenance-generation.sql';
 import { withTransaction } from './transaction';
 export const FOUNDATION_SQL=foundation;
+export {CURRENT_SCHEMA_VERSION} from './schema-version';
 export interface Migration {version:number;sql:string;}
-const defaults:readonly Migration[]=[{version:1,sql:foundation},{version:2,sql:sessionEpoch},{version:3,sql:preferenceOwner},{version:4,sql:messageAdmission},{version:5,sql:cursorRetention},{version:6,sql:schedulerDiagnostics}];
+const defaults:readonly Migration[]=[{version:1,sql:foundation},{version:2,sql:sessionEpoch},{version:3,sql:preferenceOwner},{version:4,sql:messageAdmission},{version:5,sql:cursorRetention},{version:6,sql:schedulerDiagnostics},{version:7,sql:maintenanceGeneration}];
 export function migrate(storage:DurableObjectStorage,migrations:readonly Migration[]=defaults):void {
  // Migration-time entropy is prepared before entering SQL. Existing rows keep these IDs forever.
  const hasPreferences=storage.sql.exec<{name:string}>("SELECT name FROM sqlite_master WHERE type='table' AND name='preferences'").toArray().length>0;
@@ -17,6 +19,10 @@ export function migrate(storage:DurableObjectStorage,migrations:readonly Migrati
   tx.exec('CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, applied_at INTEGER NOT NULL)');
   const current=tx.one<{version:number}>('SELECT MAX(version) AS version FROM schema_migrations')?.version??0;
   if(current>migrations[migrations.length-1].version)throw Error('UNSUPPORTED_SCHEMA');
+  if(current>0&&current<migrations[migrations.length-1].version){
+   const tables=new Set(tx.all<{name:string}>("SELECT name FROM sqlite_schema WHERE type='table' AND name IN ('workspace_metadata','maintenance_state')").map(x=>x.name));
+   if(tables.has('workspace_metadata')&&tx.one("SELECT id FROM workspace_metadata WHERE admission_state<>'installed'")||tables.has('maintenance_state')&&tx.one("SELECT id FROM maintenance_state WHERE state<>'open'"))throw Error('FROZEN_SCHEMA_MIGRATION');
+  }
   for(const migration of migrations)if(migration.version>current) {
    if(migrations===defaults&&migration.version===3){
     const [create,finish]=migration.sql.split('-- @preference-owner-backfill');

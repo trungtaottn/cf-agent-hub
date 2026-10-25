@@ -21,7 +21,7 @@ export async function beginLogin(workspace:AuthWorkspace,returnPath:string,origi
  const now=workspace.clock.nowMs();
  // No await from the same-configuration check through insertion/publication.
  withTransaction(workspace.storage,tx=>{
-  currentConfiguration(tx,workspace,installed.epoch);
+  currentConfiguration(tx,workspace,installed.fence);
   tx.exec('DELETE FROM login_attempts WHERE expires_at<=?',[now]);
   tx.exec('INSERT INTO login_attempts (id,workspace_id,state_digest,nonce,pkce_verifier,cookie_digest,redirect_uri,created_at,expires_at,auth_epoch,return_path) VALUES (?,?,?,?,?,?,?,?,?,?,?)',[id,workspace.workspaceId,stateDigest,nonce,verifier,cookieDigest,redirect,now,now+300000,installed.epoch,returnPath]);
  });
@@ -31,9 +31,10 @@ export async function beginLogin(workspace:AuthWorkspace,returnPath:string,origi
 }
 export async function completeLogin(workspace:AuthWorkspace,code:string,state:string,cookie:string|null,previousCookie:string|null=null):Promise<SessionIssue> {
  if(!/^[A-Za-z0-9_-]{43}$/.test(state)||!cookie||!code||code.length>2048)deny();
+ const admission=withTransaction(workspace.storage,tx=>currentConfiguration(tx,workspace));
  const [stateDigest,cookieDigest,previousDigest]=await Promise.all([sha256(state),sha256(cookie!),previousCookie?sha256(previousCookie):Promise.resolve(null)]);
  const {attempt,installed}=withTransaction(workspace.storage,tx=>{
-  const installed=currentConfiguration(tx,workspace),attempt=tx.one<LoginAttempt>('SELECT * FROM login_attempts WHERE state_digest=?',[stateDigest]);
+  const installed=currentConfiguration(tx,workspace,admission.fence),attempt=tx.one<LoginAttempt>('SELECT * FROM login_attempts WHERE state_digest=?',[stateDigest]);
   validAttempt(attempt,workspace,installed.epoch,cookieDigest,workspace.clock.nowMs());return {attempt:attempt!,installed};
  });
  const auth=installed.config.authentication,proof=await verifyCode(auth,secret(workspace,auth.client_secret_ref),attempt,code,()=>workspace.clock.nowMs());
@@ -43,7 +44,7 @@ export async function completeLogin(workspace:AuthWorkspace,code:string,state:st
  const candidate:SessionRecord={id,workspace_id:workspace.workspaceId,principal_id:'',issuer:proof.issuer,subject:proof.subject,expires_at:expiresAt,revoked_at:null,auth_epoch:installed.epoch};
  const csrfDigest=await sha256(await csrfToken(workspace,candidate));
  withTransaction(workspace.storage,tx=>{
-  currentConfiguration(tx,workspace,installed.epoch);
+  currentConfiguration(tx,workspace,installed.fence);
   const current=tx.one<LoginAttempt>('SELECT * FROM login_attempts WHERE id=?',[attempt.id]);
   const instant=workspace.clock.nowMs();validAttempt(current,workspace,installed.epoch,cookieDigest,instant);if(expiresAt<=instant)deny();
   const grant=tx.one<{principal_id:string}>('SELECT principal_id FROM human_grants WHERE workspace_id=? AND issuer=? AND subject=? AND enabled=1 AND config_epoch=?',[workspace.workspaceId,proof.issuer,proof.subject,installed.epoch]);
@@ -59,9 +60,9 @@ function validAttempt(attempt:LoginAttempt|null,workspace:AuthWorkspace,epoch:nu
 }
 /** Hash outside SQL; the identity is internal and every effect must resolveActor again. */
 export async function verifyHumanSession(workspace:AuthWorkspace,cookie:string|null,nowMs:number):Promise<VerifiedIdentity> {
- const value=readCookie(cookie,'cfhub_session');if(!value)deny();const digest=await sha256(value!);
+ const value=readCookie(cookie,'cfhub_session');if(!value)deny();const admission=withTransaction(workspace.storage,tx=>currentConfiguration(tx,workspace));const digest=await sha256(value!);
  return withTransaction(workspace.storage,tx=>{
-  currentConfiguration(tx,workspace);
+  currentConfiguration(tx,workspace,admission.fence);
   const session=tx.one<SessionRecord>('SELECT * FROM sessions WHERE token_digest=? AND workspace_id=?',[digest,workspace.workspaceId]);if(!session)deny();
   const identity:VerifiedIdentity={kind:'human',workspaceId:workspace.workspaceId,sessionId:session!.id,issuer:session!.issuer,subject:session!.subject};
   resolveActor(tx,identity,Math.max(nowMs,workspace.clock.nowMs()));return identity;

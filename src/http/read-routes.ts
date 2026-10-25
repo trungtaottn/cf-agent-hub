@@ -39,12 +39,12 @@ export async function dispatchRead(request:Request,workspace:AuthWorkspace,targe
   if(bearer){const match=/^Bearer ([A-Za-z0-9_-]{43})$/.exec(bearer);if(!match)throw new AuthError('UNAUTHENTICATED',401);identity=await verifyNativeCredential(workspace,match[1],workspace.clock.nowMs());}
   else identity=await verifyHumanSession(workspace,cookie,workspace.clock.nowMs());
   const queryHash=await sha256(canonicalJson({limit:query.limit,acknowledged:target.operation==='inbox'?query.acknowledged:null,threadId:target.threadId,sort:target.operation==='events'?'sequence:asc':'created_at,id:asc'}));
-  const actor=withTransaction(workspace.storage,tx=>{currentConfiguration(tx,workspace,installed.epoch);return resolveActor(tx,identity,workspace.clock.nowMs());});
+  const actor=withTransaction(workspace.storage,tx=>{currentConfiguration(tx,workspace,installed.fence);return resolveActor(tx,identity,workspace.clock.nowMs());});
   const binding:CursorBinding={workspaceId:workspace.workspaceId,principalId:actor.principalId,lane:actor.kind,credentialId:actor.credentialId,sessionId:actor.sessionId,operation:target.operation,queryHash};
   const codec=createCursorCodec(secret(workspace,'CURSOR_ENCRYPTION_KEY'),workspace.entropy);
   const cursor=query.token?await codec.decodeCursor(query.token,binding,workspace.clock.nowMs()):undefined;
   const current=(tx:Parameters<typeof resolveActor>[0])=>{
-   currentConfiguration(tx,workspace,installed.epoch);const nowMs=workspace.clock.nowMs(),live=resolveActor(tx,identity,nowMs);
+   currentConfiguration(tx,workspace,installed.fence);const nowMs=workspace.clock.nowMs(),live=resolveActor(tx,identity,nowMs);
    if(live.principalId!==binding.principalId||live.kind!==binding.lane||live.credentialId!==binding.credentialId||live.sessionId!==binding.sessionId)throw new AuthError('UNAUTHENTICATED',401);
    if(cursor&&cursor.expiresAt<=nowMs)throw new HttpError('CURSOR_EXPIRED',410);
    return {live,nowMs};

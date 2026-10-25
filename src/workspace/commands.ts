@@ -1,3 +1,4 @@
+import {maintenanceClosed} from '../recovery/maintenance';
 import {currentConfiguration,type AuthWorkspace} from '../auth/context';
 import {authorize,resolveActor} from '../auth/authorize';
 import type {CommandContext,VerifiedIdentity,ResourceAccess} from './context';
@@ -8,7 +9,7 @@ import {findOutcome,readOutcome,storeOutcome,canonicalJsonValue} from './idempot
 import {HttpError} from '../http/envelopes';
 export interface CommandOutcome<T>{status:number;data:T;}
 /** Internal owned context; never construct from HTTP JSON or serialize caller authority. */
-export interface CommandExecutionContext{workspace:AuthWorkspace;requestId:string;idempotencyKey:string;fingerprint:string;admissionEpoch:number;}
+export interface CommandExecutionContext{workspace:AuthWorkspace;requestId:string;idempotencyKey:string;fingerprint:string;admissionEpoch:number;admissionGeneration:number;}
 export interface EventDraft{type:'message.accepted'|'message.acknowledged'|'profile.updated'|'preferences.updated';resourceType:'message'|'profile'|'preferences';resourceId:string;resourceVersion:number|null;threadId:string|null;}
 export interface CommandDescriptor<B,T>{
  operation:string;target:string;
@@ -32,7 +33,7 @@ function synchronousGuard(result:undefined):void{
  if(synchronousResult(result)!==undefined)throw new HttpError('INTERNAL_ERROR',500);
 }
 export function executeCommand<B,T>(ctx:CommandExecutionContext,identity:VerifiedIdentity,command:CommandDescriptor<B,T>,body:B):CommandOutcome<T>{
- if(!Number.isSafeInteger(ctx.admissionEpoch)||ctx.admissionEpoch<=0||identity.workspaceId!==ctx.workspace.workspaceId||!ctx.idempotencyKey||!/^[a-f0-9]{64}$/.test(ctx.fingerprint)||!/^[a-z]+:[a-z]+$/.test(command.operation)||!command.target)throw new HttpError('INVALID_REQUEST',400);
+ if(!Number.isSafeInteger(ctx.admissionGeneration)||ctx.admissionGeneration<0||!Number.isSafeInteger(ctx.admissionEpoch)||ctx.admissionEpoch<=0||identity.workspaceId!==ctx.workspace.workspaceId||!ctx.idempotencyKey||!/^[a-f0-9]{64}$/.test(ctx.fingerprint)||!/^[a-z]+:[a-z]+$/.test(command.operation)||!command.target)throw new HttpError('INVALID_REQUEST',400);
  // Entropy and all async proof/fingerprint work complete before SQL. Command time is sampled inside entry.
  const eventId='event_'+Array.from(ctx.workspace.entropy.bytes(24),b=>b.toString(16).padStart(2,'0')).join('');
  let verifiedActor:CommandContext['actor']|undefined;
@@ -40,8 +41,8 @@ export function executeCommand<B,T>(ctx:CommandExecutionContext,identity:Verifie
  try{
   const result=withTransaction(ctx.workspace.storage,tx=>{
    const nowMs=ctx.workspace.clock.nowMs();
-   currentConfiguration(tx,ctx.workspace,ctx.admissionEpoch);
-   if(tx.one('SELECT id FROM maintenance_state WHERE id=1'))throw new HttpError('DEPENDENCY_UNAVAILABLE',503);
+   if(maintenanceClosed(tx))throw new HttpError('DEPENDENCY_UNAVAILABLE',503);
+   currentConfiguration(tx,ctx.workspace,{authorityEpoch:ctx.admissionEpoch,maintenanceGeneration:ctx.admissionGeneration});
    const actor=resolveActor(tx,identity,nowMs);verifiedActor=actor;
    const context:CommandContext={actor,requestId:ctx.requestId,idempotencyKey:ctx.idempotencyKey,nowMs};
    authorize(tx,actor,command.operation,synchronousResult(command.resource(tx,context,body)),nowMs);

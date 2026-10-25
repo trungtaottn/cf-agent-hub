@@ -1,21 +1,21 @@
 # Deployment
 
-Status: Design baseline · Contract revision 0.1 · Implementation pending.
+Status: R1 implementation candidate · Contract revision 0.2 · Isolated deployment acceptance pending; no released artifact.
 
-This is the proposed deployment and promotion runbook for CF Agent Hub, dated 2026-10-23. It defines operator acceptance requirements. It is not an installation recipe for a released service: no application package, working deployment script, or verified production environment is claimed. Release-specific executable instructions must accompany implementation before promotion.
+R1 includes application and operator Workers, authenticated messages and settings, a browser dashboard, logical SQL recovery and executable local verification. The candidate still requires an authorized isolated deployment, real identity-provider and operator journeys, a clean reviewed toolchain inventory and the release evidence gate before promotion. Local fixture results do not establish production readiness. See [R1 implementation and acceptance](r1-implementation.md) and the [runtime evidence contract](runtime-evidence.md).
 
 ## Deployment boundary and ownership
 
-The planned topology is a Cloudflare Worker for ingress, authentication and request validation; one SQLite-backed Durable Object per workspace for authoritative coordination; and private R2 storage for artifact bytes. Human browsers and external agent runtimes call the same domain services through authenticated entry points. Agent processes, model calls and execution environments run outside the hub. No executor, shell or container service is provisioned by this design.
+R1 uses a Cloudflare Worker for ingress, authentication and request validation, one SQLite-backed Durable Object per workspace, and private R2 storage for bounded recovery chunks. A separate operator Worker authenticates installation and recovery operations. Human browsers and native clients use the public application boundary. R2 artifact APIs, tasks and runtime claims remain unavailable; agent execution environments run outside the hub.
 
 | Resource | Operator responsibility | Required evidence before use |
 |---|---|---|
 | Worker and public route | Account, environment, compatibility date, exact release version and permitted hostnames | Release receipt and public-edge authentication checks |
 | Workspace Durable Object namespace | SQLite storage, class lifecycle configuration, immutable workspace-to-object mapping | Mapping review, schema compatibility and persistence after restart |
-| R2 bucket | Private access, scoped bindings, retention and recovery copy policy | Authorized round trip and denied anonymous/cross-workspace reads |
+| R2 bucket | Private recovery access, scoped bindings, retention and recovery copy policy | Actual operator capture/read/write/restore; R1 does not claim an artifact API round trip |
 | Human identity provider | Trusted issuer, audience, keys, callback settings and initial memberships | Verified identity and rejected invalid assertions |
 | Native credentials | Authorized issuance, workspace grant policy and revocation | One-time reveal, scoped request and next-request revocation denial |
-| External runtime | Client version, credential custody and local effect deduplication | Claim/lease/fence and interrupted-request recovery tests |
+| Native client | Client version, static credential custody and local effect deduplication | Authorized messaging, own inbox/ACK and original-intent replay; runtime claims are R2 |
 
 Separate test and production accounts or resource sets are required. An environment must not silently inherit production namespaces, bucket bindings, credentials or callback destinations. Workspace catalogs are operator-provisioned configuration; editing a profile cannot select a different Durable Object or create a new tenant. Teams can later manage membership in existing workspaces without introducing automatic tenant provisioning.
 
@@ -37,13 +37,34 @@ Review [Cloudflare limits](https://developers.cloudflare.com/workers/platform/li
 6. Validate the public route with both human and native credential lanes. Check every alternate hostname and preview exposure against the same intended boundary; remove unnecessary exposure.
 7. Promote only after the [release checklist](release-checklist.md) has actual evidence for the intended release gate. Enable external delivery last, with a controlled receiver.
 
-Planned application routes and request examples are owned by the [HTTP contract](http-api.md). R1 adds minimal public liveness and a separately authenticated operator recovery gateway; neither is a product admin bypass.
+Application routes and request examples are owned by the [HTTP contract](http-api.md). R1 adds minimal public liveness and a separately authenticated operator recovery gateway; neither is a product admin bypass.
 
 ## Readiness and release receipt
 
-The R1 public GET /health/live indicates ingress liveness only. Readiness must separately show valid bindings, compatible workspace schema, correct catalog mapping, secret-key availability for enabled features, successful transactional write/read, artifact round trip, and durable scheduling recovery. A dependency outage may degrade delivery while the task engine remains operational; report that distinction without marking every feature ready.
+`GET /health/live` returns the closed JSON value `{"status":"alive"}` and makes no dependency claim. `GET /v2/workspaces/{workspace_id}/readiness` and `/operations` require a current human session with unrestricted `operations:read`; native bearer credentials do not grant diagnostic access. These GETs inspect persisted evidence and never run probes or repair alarms. A missing or expired probe remains unknown. The operator probe performs an actual SQL write/read, verifies forced rollback and checks the real alarm before publishing its receipt.
 
-Use a disposable synthetic task and restricted principals to prove atomic claim, stale-fence denial, review submission and independent acceptance. Confirm bearer authentication without the matching `X-Runtime-Token` cannot claim or execute work; enrollment must reveal `runtime_token` once and persist only its bound verification hash. Parent-credential revocation must invalidate runtime proof, and credential rotation must require fresh enrollment and a new claim after old authority ends safely. Verify `outcome_unknown` creates a Backlog hold blocking Ready/requeue/claim and approved Ready intent cannot be patched under its existing decision. Include a rejected cross-workspace request, rejected CSRF mutation, credential revocation, and orphan upload cleanup. Do not use real customer tasks as a deployment probe. Store sanitized request IDs and outcomes with the exact deployed versions and bindings.
+Readiness checks the exact compiled migration sequence, current configuration/grants, required keys, recovery binding, admission barrier, fresh matching storage/scheduler probes and persisted scheduler/delivery state. A matching probe expires after five minutes. A delivery failure degrades delivery while a valid storage probe remains healthy. R1 always reports artifact APIs as unavailable; a configured private recovery binding does not prove an artifact round trip.
+
+Run the local candidate gates with the exact Node/npm versions in the [toolchain runbook](runbooks/toolchain.md):
+
+```sh
+npm ci
+npm run build:ui
+npm run check
+npm run check:runtime
+npm run test:ui
+python -B scripts/validate_docs.py
+```
+
+After an authorized isolated deployment and an actual operator probe, read protected readiness with a user-owned 0600 config and credential file outside the checkout:
+
+```sh
+node scripts/verify-readiness.mjs --input /secure/readiness.json 3</secure/readiness-credentials.json
+```
+
+The closed config binds `origin`, `environment_id`, `workspace_id`, `expected_actor_id`, `expected_config_epoch`, `expected_schema_version` and `credential_fd` (for example `"3"`). The descriptor contains `session_cookie` and, when the public application additionally requires Access, `access_client_id` and `access_client_secret`. The tool uses exact-origin HTTPS, rejects redirects/challenges and bounds response size/time. Its final operations read binds the fresh probe to the expected current schema and epoch. This result proves authenticated readiness only; it does not prove a provider login journey or deployed artifact provenance.
+
+Use disposable messages and restricted principals for the R1 deployed ingress matrix. Retain actual provider signature/issuer/audience rejection, allowed and forbidden human login, origin/CSRF denial, static bearer access, acknowledged revocation followed by next-request denial, and alternate-host exposure results. A supplied cookie is not evidence of how the provider authenticated it. HTTP denial alone does not prove unchanged SQL; the actual Workers matrix records SQL effects separately. Keep these results bound to the reviewed candidate/build/deployment. Task claims, runtime tokens, review acceptance and artifact cleanup belong to later release gates.
 
 ## Upgrade and failed deployment
 
@@ -57,10 +78,10 @@ Resume service only after the restored or rolled-back candidate passes readiness
 
 The R1 deployment contract is revision 0.2. Review the closed [deployment configuration](../spec/deployment-config.schema.json), exact catalog, human grants, static credential references, workspace policies, OIDC issuer/client/redirects and destination allowlist before admitting traffic. A static participant label alone gives no authority. A valid identity without an installed grant is denied even on first install.
 
-Use the planned operator helper's `create`, `assemble` and `install` subcommands with a protected authenticated [bootstrap bundle](../spec/r1-bootstrap.schema.json). `create` generates exactly one new 32-byte token to a user-selected protected descriptor and writes the hash bundle to a named exclusive 0600 file outside the repository. `assemble` performs config-only epoch updates or explicit retirement without generating a token. Updates require `--prior-config` and authenticated `--prior-bundle`; only `--initialize` against empty authority omits them. Verify prior signature, config digest and epoch, immutable actor/hash bindings, retained hashes and retired tombstones. Every new config epoch is strictly greater than installed epoch; same-epoch digest mismatch conflicts. The combined installation digest covers config, current hashes and tombstones. Installation is via the separate authenticated operator gateway and binding-only reconciliation, never a public product admin route. Record operator receipt and `configuration.installed` event; read installed authority on each command.
+Use the operator helper's `create`, `assemble` and `install` subcommands with a protected authenticated [bootstrap bundle](../spec/r1-bootstrap.schema.json). `create` generates exactly one new 32-byte token to a user-selected protected descriptor and writes the hash bundle to a named exclusive 0600 file outside the repository. `assemble` performs config-only epoch updates or explicit retirement without generating a token. Updates require `--prior-config` and authenticated `--prior-bundle`; only `--initialize` against empty authority omits them. Verify prior signature, config digest and epoch, immutable actor/hash bindings, retained hashes and retired tombstones. Every new config epoch is strictly greater than installed epoch; same-epoch digest mismatch conflicts. The combined installation digest covers config, current hashes and tombstones. Installation is via the separate authenticated operator gateway and binding-only reconciliation, never a public product admin route. Record operator receipt and `configuration.installed` event; read installed authority on each command.
 
 Protect the OIDC client secret, bootstrap authentication key, notification signing keys, recovery integrity key, recovery encryption key and Access service-token material separately. The R1 OIDC profile supports RS256, exact HTTPS issuer and callback URI per workspace; unsupported providers fail admission. Rotation installs a fresh credential ID at a greater epoch, verifies scope, then disables the predecessor at another epoch. Lost reveal is replaced and retired, never retrieved. Revocation is effective across all affected workspace authorities only after their new epochs are acknowledged. Old Worker startup cannot reinstall a removed grant.
 
-The [R1 recovery runbook](runbooks/r1-recovery.md) defines the separate operator Worker, bounded logical SQL capture and protected binary transport. A probe is an actual transactional write/rollback and scheduling check, recorded only by that gateway. Liveness returns minimal `alive`; readiness and queue diagnostics require human `operations:read`. Recovery reapplies the latest separately authenticated authority ledger, invalidates sessions, resolves uncertain delivery and proves exclusive authority before resume. A failed restore, missing operator access or unretired source leaves admission disabled. These are specified controls; a runtime implementation and release evidence are still required.
+The [R1 recovery runbook](runbooks/r1-recovery.md) describes the separate operator Worker, bounded logical SQL capture and protected binary transport. A probe is an actual transactional write/rollback and scheduling check, recorded only by that gateway. Readiness and queue diagnostics require human `operations:read`. Recovery reapplies the latest separately authenticated authority ledger, invalidates sessions, resolves uncertain delivery and proves exclusive authority before resume. A failed restore, missing operator access or unretired source leaves admission disabled. Actual deployed recovery evidence is still required before R1 verification.
 
 Preflight must review and install the closed OIDC authorization, token and JWKS endpoint pins alongside the issuer. Reject discovery mismatch before fetching token/JWKS or constructing an authorization URL; refuse server-side redirects. The pin strings are canonical HTTPS exact host/path values, with no query, fragment, credentials, explicit port, IP literal or local/private/metadata target. The browser's ordinary provider login redirects remain allowed after starting from the pinned authorization URL.

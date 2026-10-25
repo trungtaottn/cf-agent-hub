@@ -1,8 +1,20 @@
 # Backup and restore
 
-Status: Design baseline · Contract revision 0.1 · Implementation pending.
+Status: R1 logical SQL recovery implemented in the candidate · Deployed rehearsal pending; R2 artifact recovery unavailable.
 
-This is the required recovery design, not a claim that backup/export or restore tooling exists. The product must not pass an advanced operations release gate until a repeatable recovery exercise produces inspectable evidence. Operators must define retention, recovery point and recovery time objectives for their own deployment; no objective or achieved duration is promised here.
+R1 implements bounded logical SQL capture and typed restore through a separate authenticated operator gateway. The first rehearsal must use disposable isolated source and target authorities. Actual deployed rehearsal remains a release gate; local Workers results do not satisfy it. Operators define retention, recovery point and recovery time objectives for their own deployment; no achieved objective is promised here.
+
+## Executable R1 recovery boundary
+
+Follow the [R1 recovery runbook](runbooks/r1-recovery.md) for protected input formats and the eight commands: `capture`, `restore`, `verify`, `probe`, `resolve-delivery`, `retire`, `resume` and `status`. Installation remains the separate static credential helper. Commands use exact-target HTTPS and service authentication, encrypted local recovery material and secret file descriptors; no SQL text, catalog override or plaintext secret is accepted in a command flag.
+
+Capture enters persistent maintenance and freezes the authoritative SQL projection. It is an exclusive recovery/cutover workflow, not an online backup that automatically reopens the source. The retained generation fences requests already in flight. The compiled registry covers all 21 application tables plus the event sequence high-water metadata. Every chunk contains typed values, at most 200 rows and at most 1 MiB; the manifest authenticates the exact ordered bytes, schema, environment, mapping and checkpoint. Private R2 writes happen outside SQL transactions, with durable continuation/reservation state for reconciliation after a lost response.
+
+Restore imports only into an empty isolated target. Each chunk and its receipt commit together. The separately authenticated current ledger must match the operator's independent current anchor and install a greater authority epoch. Imported domain history is retained; imported operator outcomes do not become live operator authority. Old sessions and login attempts are invalidated. The target stays in maintenance with uncertain notifications paused, preserving attempts and due history.
+
+Resolve every uncertain delivery using trusted receipt evidence or explicit permanent failure without redrive. Run the actual SQL write/read/forced-rollback and alarm probe. Retire the source permanently, then supply its signed retirement receipt and the matching cutover record to resume the target deliberately. The resumed generation is new, and the source cannot resume or install stale authority. A failure or timeout leaves a durable checkpoint and closed admission; use `status` and the recorded request/job identity to reconcile it.
+
+R1 contains no task, run or artifact bytes. The following coordinated artifact/task recovery requirements remain the R2 extension, not an R1 acceptance claim. The R1 release verifier requires actual capture, interrupted continuation, restore, authority overlay, resolution, probe, retirement and resume receipts from the deployed operator workflow.
 
 ## What must be recoverable
 

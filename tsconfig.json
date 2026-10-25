@@ -17,10 +17,15 @@
     "test/**/*.ts",
     "*.config.ts",
     "worker-configuration.d.ts",
-    "src/**/*.ts"
+    "src/**/*.ts",
+    "packages/client/**/*.ts"
   ],
   "exclude": [
     "test/auth/operator-gateway.test.ts",
-    "workers/operator/**"
+    "workers/operator/**",
+    "src/ui/app.ts",
+    "src/ui/settings.ts",
+    "src/ui/dom.ts",
+    "test/recovery/operator-transport.test.ts"
   ]
 }

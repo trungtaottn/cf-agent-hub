@@ -1,8 +1,26 @@
 # Operations
 
-Status: Design baseline · Contract revision 0.1 · Implementation pending.
+Status: R1 implementation candidate · Contract revision 0.2 · Deployed operating acceptance pending.
 
-This guide defines the planned operating contract for a self-hosted CF Agent Hub. Operator screens, diagnostic exports and maintenance commands still require implementation. Acceptance requirements below must be translated into tested tooling before a release can claim operational support. The [HTTP contract](http-api.md) owns route names; this document defines behavior rather than additional endpoints.
+R1 implements current-authority messaging, bounded inbox/thread/event reads, a truthful dashboard, protected diagnostics and an authenticated recovery gateway. Actual deployed operating acceptance remains pending. The [HTTP contract](http-api.md) owns route names, and the [R1 recovery runbook](runbooks/r1-recovery.md) owns finite operator commands. Task/run, artifact and team sections below describe later releases; those capabilities are unavailable in R1.
+
+## R1 operating procedures
+
+**Read evidence before acting.** `/health/live` reports only ingress liveness. Workspace `/operations` and `/readiness` require a current unrestricted human `operations:read` session. They read existing probe/scheduler records without repairing state. Missing, stale and mismatched probes prevent a ready result. The browser labels independent sections with their source, observation time and request ID; failed reads do not become empty results. A failed notification does not erase healthy inbox storage.
+
+**Recover native polling.** Reconnect with the same still-authorized static credential, read bounded inbox pages and deduplicate by stable message ID. A transport notification or successful poll does not acknowledge a message. Send recipient ACK only after the recipient's own processing decision. If an encrypted cursor expires or its authority/filter binding changes, start a new authorized bounded traversal; do not alter or reuse it for another workspace or thread.
+
+**Roll out revocation.** Assemble the current authenticated authority bundle at a strictly greater config epoch, install it through the operator gateway and retain each workspace's acknowledgement. Verify the revoked token or session is denied on its next request. A changed deployment file alone is not acknowledgement that every Durable Object installed the new authority. An old startup, old request completion or captured database cannot lower that authority or restore a removed grant.
+
+**Diagnose exhausted delivery.** Read the real failed, suppressed, pending and in-flight counts, then inspect the authorized retained event/delivery identity and receiver receipt. The six-attempt budget survives restart. Correcting a receiver does not create a new delivery attempt, ACK a message or establish that a previous effect did not occur. R1 exposes no public redrive endpoint. During recovery, the finite `resolve-delivery` operation records either trusted delivery evidence or an explicit permanent failure without redrive; an unresolved delivery keeps resume blocked.
+
+**Check scheduling.** Due work and attempt budgets remain in SQL. The catalog sweep and scheduler derive the actual alarm from current admission and due work. Use the authenticated operator `probe` workflow to record actual SQL rollback and scheduling evidence. Protected GET diagnostics cannot run that repair. During maintenance, delayed callbacks and physical alarm changes are fenced and reconciled without changing the frozen SQL projection.
+
+**Recover a lost cookie.** Sign in through the configured OIDC provider again. Every browser 401/403 clears sensitive cached records, settings drafts, pending intent and the in-memory CSRF token. The new session is evaluated against current grants and epoch. Browser storage contains no native bearer credential or reusable CSRF material.
+
+**Reconcile uncertain settings writes.** Keep the original key/body while the tab retains the intent, then use the explicit replay action. A known local preflight failure leaves the draft editable; network loss and invalid responses remain uncertain. On a version conflict, review the current revision deliberately before creating another intent. If the tab and its in-memory intent were lost, compare current authoritative values/revisions and relevant events before deciding whether a new write is needed. Never raise the expected revision silently or infer success from a stale response.
+
+**Handle failed rollout.** A first install has no previous known-good version: keep ingress disabled and retain the failure record. A code rollback must support the current schema and authority contract and preserve the current epoch. Otherwise keep writes closed and follow a tested forward repair or isolated restore. Source retirement and target resume require the signed receipts described in [backup and restore](backup-restore.md).
 
 ## State and responsibility map
 

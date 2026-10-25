@@ -1,5 +1,10 @@
 // Generated from spec/openapi.json.
-import type {Operations,OperationsResponse,AuthStartRequest,AuthCallbackQuery,AuthLogoutRequest,MessageCreateRequest,MessageAckRequest,ProfileWriteRequest,PreferencesWriteRequest,Error,Event,Message,MessageNotification,Configuration,ProfileData,ProfilePreview,ProfileExport,PreferencesData,WorkspaceProfile,UserPreferences,ConfigurationResponse,ProfileDataResponse,ProfilePreviewResponse,ProfileExportResponse,PreferencesDataResponse} from "../dto";
+import type {Workspace,WorkspaceResponse,Readiness,ReadinessResponse,Liveness,Operations,OperationsResponse,AuthStartRequest,AuthCallbackQuery,AuthLogoutRequest,MessageCreateRequest,MessageAckRequest,ProfileWriteRequest,PreferencesWriteRequest,Error,Event,Message,MessageNotification,Configuration,ProfileData,ProfilePreview,ProfileExport,PreferencesData,WorkspaceProfile,UserPreferences,ConfigurationResponse,ProfileDataResponse,ProfilePreviewResponse,ProfileExportResponse,PreferencesDataResponse,AuthStartData,AuthSession,AuthLogoutData} from "../dto";
+export declare function validateWorkspace(input:unknown): input is Workspace;
+export declare function validateWorkspaceResponse(input:unknown): input is WorkspaceResponse;
+export declare function validateReadiness(input:unknown): input is Readiness;
+export declare function validateReadinessResponse(input:unknown): input is ReadinessResponse;
+export declare function validateLiveness(input:unknown): input is Liveness;
 export declare function validateOperations(input:unknown): input is Operations;
 export declare function validateOperationsResponse(input:unknown): input is OperationsResponse;
 export declare function validateAuthStartRequest(input:unknown): input is AuthStartRequest;
@@ -25,3 +30,6 @@ export declare function validateProfileDataResponse(input:unknown): input is Pro
 export declare function validateProfilePreviewResponse(input:unknown): input is ProfilePreviewResponse;
 export declare function validateProfileExportResponse(input:unknown): input is ProfileExportResponse;
 export declare function validatePreferencesDataResponse(input:unknown): input is PreferencesDataResponse;
+export declare function validateAuthStartData(input:unknown): input is AuthStartData;
+export declare function validateAuthSession(input:unknown): input is AuthSession;
+export declare function validateAuthLogoutData(input:unknown): input is AuthLogoutData;

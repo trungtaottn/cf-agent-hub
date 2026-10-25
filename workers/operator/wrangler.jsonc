@@ -5,5 +5,23 @@
  "workers_dev":false,
  "preview_urls":false,
  "durable_objects":{"bindings":[{"name":"WORKSPACE","class_name":"WorkspaceDO","script_name":"cf-agent-hub"}]},
- "secrets":{"required":["OPERATOR_POLICY","BOOTSTRAP_INTEGRITY_KEY"]}
+ "secrets":{"required":["OPERATOR_POLICY","BOOTSTRAP_INTEGRITY_KEY"]},
+ "env":{
+  "test":{
+   "name":"cf-agent-hub-operator-test",
+   "workers_dev":false,
+   "preview_urls":false,
+   "routes":[],
+   "durable_objects":{"bindings":[{"name":"WORKSPACE","class_name":"WorkspaceDO","script_name":"cf-agent-hub-test"}]},
+   "secrets":{"required":["OPERATOR_POLICY","BOOTSTRAP_INTEGRITY_KEY"]}
+  },
+  "dev":{
+   "name":"cf-agent-hub-operator-dev",
+   "workers_dev":false,
+   "preview_urls":false,
+   "routes":[],
+   "durable_objects":{"bindings":[{"name":"WORKSPACE","class_name":"WorkspaceDO","script_name":"cf-agent-hub-dev"}]},
+   "secrets":{"required":["OPERATOR_POLICY","BOOTSTRAP_INTEGRITY_KEY"]}
+  }
+ }
 }

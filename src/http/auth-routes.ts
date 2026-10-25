@@ -33,7 +33,8 @@ export async function authRoutes(request:Request,workspace:AuthWorkspace):Promis
   if(route==='start'&&request.method==='POST') {
    if(request.headers.get('origin')!==origin)throw new AuthError('FORBIDDEN',403);
    const input=await parseBoundedJson(request,'AuthStartRequest');if(!validateAuthStartRequest(input))throw new AuthError('INVALID_REQUEST',400);
-   const started=await beginLogin(workspace,input.return_path,origin);headers.append('set-cookie',cookieHeader('cfhub_login',started.cookie,300));
+   withTransaction(workspace.storage,tx=>currentConfiguration(tx,workspace,installed.fence));
+   const started=await beginLogin(workspace,input.return_path,origin);withTransaction(workspace.storage,tx=>currentConfiguration(tx,workspace,installed.fence));headers.append('set-cookie',cookieHeader('cfhub_login',started.cookie,300));
    return Response.json({data:{authorization_url:started.authorizationUrl},request_id:requestId} satisfies AuthStartDataResponse,{headers});
   }
   if(route==='callback'&&request.method==='GET') {
@@ -42,6 +43,7 @@ export async function authRoutes(request:Request,workspace:AuthWorkspace):Promis
    if(!validateAuthCallbackQuery({code,state}))throw new AuthError('INVALID_REQUEST',400);
    if(url.origin+url.pathname!==redirect)throw new AuthError('INVALID_REQUEST',400);
    const issue=await completeLogin(workspace,code,state,readCookie(request.headers.get('cookie'),'cfhub_login'),readCookie(request.headers.get('cookie'),'cfhub_session'));
+   withTransaction(workspace.storage,tx=>currentConfiguration(tx,workspace,installed.fence));
    headers.append('set-cookie',cookieHeader('cfhub_session',issue.cookie,(issue.expiresAt-workspace.clock.nowMs())/1000));headers.set('location',issue.returnPath);return new Response(null,{status:302,headers});
   }
   if((route==='session'&&request.method==='GET')||(route==='logout'&&request.method==='POST')) {
@@ -54,7 +56,7 @@ export async function authRoutes(request:Request,workspace:AuthWorkspace):Promis
    if(route==='logout')assertCsrf(request,{csrfToken:token,origin});
    // HMAC is an external await: re-read config epoch, grant, and original session before response/effect.
    const actor=withTransaction(workspace.storage,tx=>{
-    currentConfiguration(tx,workspace,installed.epoch);const current=resolveActor(tx,identity,workspace.clock.nowMs());
+    currentConfiguration(tx,workspace,installed.fence);const current=resolveActor(tx,identity,workspace.clock.nowMs());
     if(route==='logout')revokeSession(tx,identity.sessionId,workspace.clock.nowMs());return current;
    });
    if(route==='logout'){headers.append('set-cookie',cookieHeader('cfhub_session','',0));return Response.json({data:{logged_out:true},request_id:requestId} satisfies AuthLogoutDataResponse,{headers});}

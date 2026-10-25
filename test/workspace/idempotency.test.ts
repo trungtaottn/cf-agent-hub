@@ -35,7 +35,7 @@ function descriptor(id='message_one',fault=false):CommandDescriptor<{body:string
   return {outcome:{status:201,data:{id}},event:{type:'message.accepted',resourceType:'message',resourceId:id,resourceVersion:null,threadId:'thread_'+id}};
  }};
 }
-async function context(storage:DurableObjectStorage,name:string,body:unknown,key='same',now=Date.now()):Promise<CommandExecutionContext>{return {workspace:workspace(storage,name,now),requestId:'req_'+key,idempotencyKey:key,fingerprint:await fingerprintRequest('POST','/messages',{},body),admissionEpoch:storage.sql.exec<{config_epoch:number}>('SELECT config_epoch FROM workspace_metadata WHERE id=1').one().config_epoch};}
+async function context(storage:DurableObjectStorage,name:string,body:unknown,key='same',now=Date.now()):Promise<CommandExecutionContext>{return {workspace:workspace(storage,name,now),requestId:'req_'+key,idempotencyKey:key,fingerprint:await fingerprintRequest('POST','/messages',{},body),admissionGeneration:storage.sql.exec<{generation:number}>('SELECT generation FROM maintenance_state WHERE id=1').one().generation,admissionEpoch:storage.sql.exec<{config_epoch:number}>('SELECT config_epoch FROM workspace_metadata WHERE id=1').one().config_epoch};}
 it('canonical_key_order_replays_array_order_conflicts',async()=>{
  const {stub,identity,name}=await setup('command-order');
  await runInDurableObject(stub,async(_o,state)=>{
@@ -93,7 +93,7 @@ it('fresh_time_and_admission_are_checked_after_async_preparation',async()=>{
   const stale={...ctx,workspace:{...ctx.workspace,clock:{nowMs:()=>ctx.workspace.clock.nowMs()+1}}};
   expect(()=>executeCommand(stale,identity,descriptor(),body)).toThrowError(expect.objectContaining({status:401}));
   state.storage.sql.exec('UPDATE native_credentials SET expires_at=?',Date.now()+100000);
-  state.storage.sql.exec("INSERT INTO maintenance_state (id,state,authority_epoch,capture_id,updated_at) VALUES (1,'quiescing',1,'capture',1)");
+  state.storage.sql.exec("UPDATE maintenance_state SET state='capturing',capture_id='capture',generation=generation+1,updated_at=1 WHERE id=1");
   expect(()=>executeCommand(ctx,identity,descriptor(),body)).toThrowError(expect.objectContaining({status:503}));
   expect(counts(state.storage)).toMatchObject({messages:0,outbox:0,idempotency_outcomes:0});
  });

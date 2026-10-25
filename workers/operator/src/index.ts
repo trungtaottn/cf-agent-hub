@@ -1,4 +1,5 @@
-import {parseOperatorPolicy,installOperation,type OperatorBindings} from '../../../src/recovery/operator';
+import {encodeHeader} from '../../../src/recovery/encoding';
+import {parseOperatorPolicy,operatorOperation,type OperatorBindings} from '../../../src/recovery/operator';
 import {AuthError} from '../../../src/auth/context';
 const headers={'cache-control':'no-store','content-type':'application/json','x-content-type-options':'nosniff'};
 export default {
@@ -7,8 +8,9 @@ export default {
   try{
    const policy=parseOperatorPolicy(env.OPERATOR_POLICY),url=new URL(request.url);
    if(url.origin!==policy.origin||url.pathname!=='/operator/recovery'||url.search||request.method!=='POST')return Response.json({error:{code:'NOT_FOUND',request_id:requestId}},{status:404,headers});
-   const receipt=await installOperation(request,env,policy,requestId);
-   return Response.json({request_id:requestId,data:{workspace_id:receipt.workspaceId,object_name:receipt.objectName,epoch:receipt.epoch,installation_digest:receipt.installationDigest,operator_principal_id:receipt.operatorPrincipalId,operation_id:receipt.operationId,original_request_id:receipt.originalRequestId}},{headers});
+   const result=await operatorOperation(request,env,policy,requestId);
+   if('chunk' in result&&result.chunk)return new Response(result.chunk.bytes,{headers:{'cache-control':'no-store','x-content-type-options':'nosniff','content-type':'application/octet-stream','X-CFHub-Recovery-Chunk':encodeHeader(result.chunk.metadata)}});
+   return Response.json({request_id:requestId,data:result.data},{headers});
   }catch(error){
    const conflict=error instanceof Error&&['CAS_CONFLICT','STALE_EPOCH','EPOCH_CONFLICT','OPERATION_CONFLICT','CREDENTIAL_IMMUTABLE','RETIREMENT_REQUIRED','ADMISSION_CLOSED','NONADVANCING_INSTALL'].includes(error.message);
    const status=error instanceof AuthError?error.status:conflict?409:400;

@@ -31,7 +31,7 @@ it('original_operation_replay_precedes_cas_but_not_current_maintenance',async()=
   expect(replay).toEqual(original);
   const conflict=await object.installOperation(context(0,null,'install_one','2'.repeat(64)),input);expect(conflict.ok).toBe(false);
   const newId=await object.installOperation(context(3,input.installationDigest,'new_identity'),input);expect(newId.ok).toBe(false);
-  state.storage.sql.exec("INSERT INTO maintenance_state (id,state,barrier_id,authority_epoch,capture_id,updated_at) VALUES (1,'paused','barrier',3,NULL,1)");
+  state.storage.sql.exec("UPDATE maintenance_state SET state='capturing',barrier_id='barrier',generation=generation+1,updated_at=1 WHERE id=1");
   const closed=await object.installOperation(context(),input);expect(closed.ok).toBe(false);
   expect(state.storage.sql.exec('SELECT COUNT(*) AS n FROM idempotency_outcomes').one().n).toBe(1);
   expect(state.storage.sql.exec('SELECT COUNT(*) AS n FROM events').one().n).toBe(1);
@@ -39,7 +39,7 @@ it('original_operation_replay_precedes_cas_but_not_current_maintenance',async()=
 });
 it('snapshot_cas_detects_intervening_install_and_validates_closed_binding_inputs',async()=>{
  const name='operator-snapshot',stub=env.WORKSPACE.getByName(name),input=await prepared(name,3),next=await prepared(name,4);
- const initial=await stub.authoritySnapshot({workspaceId:'ws_example',objectName:name});expect(initial).toEqual({epoch:0,installationDigest:null});
+ const initial=await stub.authoritySnapshot({workspaceId:'ws_example',objectName:name});expect(initial).toEqual({epoch:0,installationDigest:null,recoveryIntegrityKeyId:null});
  await runInDurableObject(stub,async(object,state)=>{
   expect((await object.installOperation(context(),input)).ok).toBe(true);
   expect((await object.installOperation(context(initial.epoch,initial.installationDigest,'interleaved'),next)).ok).toBe(false);

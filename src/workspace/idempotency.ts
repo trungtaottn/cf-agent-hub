@@ -1,3 +1,4 @@
+import {assertAdmissionOpen} from '../recovery/maintenance';
 import {canonicalJson,sha256} from '../config/bootstrap';
 import type {WorkspaceTransaction} from '../storage/transaction';
 import type {CommandOutcome} from './commands';
@@ -33,5 +34,6 @@ export function storeOutcome<T>(tx:WorkspaceTransaction,input:{principalId:strin
 }
 /** Explicit domain-only GC, strictly after the retention boundary. Never a claim about external effects. */
 export function cleanupCompletedOutcomes(tx:WorkspaceTransaction,workspaceId:string,nowMs:number):void{
+ assertAdmissionOpen(tx);
  tx.exec("DELETE FROM idempotency_outcomes WHERE workspace_id=? AND operation LIKE 'domain.%' AND expires_at<?",[workspaceId,nowMs]);
 }

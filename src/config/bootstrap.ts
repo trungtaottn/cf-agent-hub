@@ -1,3 +1,4 @@
+import {maintenanceClosed,retainOpenMaintenance} from '../recovery/maintenance.ts';
 import { parseDeployment, resolveWorkspace, type DeploymentConfig } from './deployment.ts';
 import { validateBundle, type VerificationBundle } from './generated/validators.js';
 import type { WorkspaceTransaction } from '../storage/transaction';
@@ -35,13 +36,27 @@ export function installConfiguration(tx:WorkspaceTransaction,config:DeploymentCo
  const old=tx.one<Metadata>('SELECT * FROM workspace_metadata WHERE id=1');
  if(old) {
   if(old.workspace_id!==workspaceId||old.object_name!==mapping.objectName)throw Error('WORKSPACE_IDENTITY_MISMATCH');
-  if(old.admission_state!=='installed')throw Error('ADMISSION_CLOSED');
+  if(old.admission_state!=='installed'||maintenanceClosed(tx))throw Error('ADMISSION_CLOSED');
   if(config.config_epoch<old.config_epoch)throw Error('STALE_EPOCH');
   if(config.config_epoch===old.config_epoch) {
    if(installationDigest!==old.installation_digest)throw Error('EPOCH_CONFLICT');
-   return {epoch:old.config_epoch,installationDigest};
+   retainOpenMaintenance(tx,old.config_epoch,nowMs);return {epoch:old.config_epoch,installationDigest};
   }
  }
+ applyAuthorityRows(tx,config,input,nowMs);
+ tx.exec("INSERT INTO workspace_metadata (id,workspace_id,object_name,config_epoch,config_digest,installation_digest,config_json,bundle_json,installed_at) VALUES (1,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET config_epoch=excluded.config_epoch,config_digest=excluded.config_digest,installation_digest=excluded.installation_digest,config_json=excluded.config_json,bundle_json=excluded.bundle_json,installed_at=excluded.installed_at",[workspaceId,mapping.objectName,config.config_epoch,bundle.config_digest,installationDigest,canonicalJson(config),canonicalJson(bundle),nowMs]);
+ retainOpenMaintenance(tx,config.config_epoch,nowMs);return {epoch:config.config_epoch,installationDigest};
+}
+
+/** Private authority overlay: caller must already hold the restore barrier and verified ledger. */
+export function restoreAuthorityOverlay(tx:WorkspaceTransaction,input:ValidatedBootstrap,nowMs:number):void {
+ const {config,workspaceId}=input,mapping=resolveWorkspace(config,workspaceId);
+ const metadata=tx.one<Metadata>('SELECT * FROM workspace_metadata WHERE id=1');
+ if(!metadata||metadata.admission_state!=='maintenance'||metadata.workspace_id!==workspaceId||metadata.object_name!==mapping.objectName||metadata.config_epoch!==config.config_epoch||metadata.installation_digest!==input.installationDigest)throw Error('RESTORE_OVERLAY_CONFLICT');
+ applyAuthorityRows(tx,config,input,nowMs);
+}
+function applyAuthorityRows(tx:WorkspaceTransaction,config:DeploymentConfig,input:ValidatedBootstrap,nowMs:number):void {
+ const {workspaceId,bundle}=input;
  const keyed=(workspace:string,credential:string)=>JSON.stringify([workspace,credential]);
  const hashes=new Map(bundle.credentials.map(x=>[keyed(x.workspace_id,x.credential_id),x]));
  const retired=new Map(bundle.retired_credentials.map(x=>[keyed(x.workspace_id,x.credential_id),x]));
@@ -77,6 +92,4 @@ export function installConfiguration(tx:WorkspaceTransaction,config:DeploymentCo
   tx.exec('INSERT INTO native_credentials (credential_id,workspace_id,agent_id,token_sha256,scopes_json,project_ids_json,expires_at,enabled,config_epoch,retired_at_epoch) VALUES (?,?,?,?,?,?,?,?,?,NULL) ON CONFLICT(credential_id) DO UPDATE SET scopes_json=excluded.scopes_json,project_ids_json=excluded.project_ids_json,expires_at=excluded.expires_at,enabled=excluded.enabled,config_epoch=excluded.config_epoch',[ref.credential_id,workspaceId,ref.agent_id,hashes.get(keyed(workspaceId,ref.credential_id))!.token_sha256,canonicalJson(ref.scopes),canonicalJson(ref.project_ids),Date.parse(ref.expires_at),Number(ref.enabled),config.config_epoch]);
  for(const item of bundle.retired_credentials.filter(x=>x.workspace_id===workspaceId))
   tx.exec("INSERT INTO native_credentials (credential_id,workspace_id,agent_id,token_sha256,scopes_json,project_ids_json,expires_at,enabled,config_epoch,retired_at_epoch) VALUES (?,?,?,?,'[]','null',0,0,?,?) ON CONFLICT(credential_id) DO UPDATE SET enabled=0,config_epoch=excluded.config_epoch,retired_at_epoch=excluded.retired_at_epoch",[item.credential_id,workspaceId,item.agent_id,item.token_sha256,config.config_epoch,item.retired_at_epoch]);
- tx.exec("INSERT INTO workspace_metadata (id,workspace_id,object_name,config_epoch,config_digest,installation_digest,config_json,bundle_json,installed_at) VALUES (1,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET config_epoch=excluded.config_epoch,config_digest=excluded.config_digest,installation_digest=excluded.installation_digest,config_json=excluded.config_json,bundle_json=excluded.bundle_json,installed_at=excluded.installed_at",[workspaceId,mapping.objectName,config.config_epoch,bundle.config_digest,installationDigest,canonicalJson(config),canonicalJson(bundle),nowMs]);
- return {epoch:config.config_epoch,installationDigest};
 }

@@ -22,8 +22,8 @@ export async function dispatchCommand<B,T>(request:Request,workspace:AuthWorkspa
   const bearer=request.headers.get('authorization'),cookie=request.headers.get('cookie');
   if(bearer&&cookie?.split(';').some(x=>x.trim().startsWith('cfhub_session=')))throw new HttpError('INVALID_REQUEST',400);
   const key=request.headers.get('idempotency-key');if(!key)throw new HttpError('INVALID_REQUEST',400);
-  const body=await parseBoundedJson(request,route.schema) as B,query=route.query(url.searchParams);
   const installed=withTransaction(workspace.storage,tx=>currentConfiguration(tx,workspace));
+  const body=await parseBoundedJson(request,route.schema) as B,query=route.query(url.searchParams);
   const auth=installed.config.authentication,redirect=auth.redirect_uris.find(x=>x.workspace_id===workspace.workspaceId)!.redirect_uri,origin=new URL(redirect).origin;
   if(url.origin!==origin||request.headers.has('origin')&&request.headers.get('origin')!==origin)throw new HttpError('FORBIDDEN',403);
   if(request.headers.has('origin')){
@@ -38,12 +38,12 @@ export async function dispatchCommand<B,T>(request:Request,workspace:AuthWorkspa
    identity=await verifyHumanSession(workspace,cookie,workspace.clock.nowMs());
    if(identity.kind!=='human')throw new AuthError('UNAUTHENTICATED',401);
    const sessionId=identity.sessionId;
-   const session=withTransaction(workspace.storage,tx=>{currentConfiguration(tx,workspace,installed.epoch);resolveActor(tx,identity,workspace.clock.nowMs());return tx.one<SessionRecord>('SELECT * FROM sessions WHERE id=?',[sessionId])!;});
+   const session=withTransaction(workspace.storage,tx=>{currentConfiguration(tx,workspace,installed.fence);resolveActor(tx,identity,workspace.clock.nowMs());return tx.one<SessionRecord>('SELECT * FROM sessions WHERE id=?',[sessionId])!;});
    assertCsrf(request,{csrfToken:await csrfToken(workspace,session),origin});
   }
   const fingerprint=await fingerprintRequest(route.method,route.path,query,body);
   executing=true;
-  return toHttpResponse(executeCommand({workspace,requestId,idempotencyKey:key,fingerprint,admissionEpoch:installed.epoch},identity,route.command,body),requestId,headers);
+  return toHttpResponse(executeCommand({workspace,requestId,idempotencyKey:key,fingerprint,admissionEpoch:installed.epoch,admissionGeneration:installed.fence.maintenanceGeneration},identity,route.command,body),requestId,headers);
  }catch(error){
   if(!executing)securityLog(error,requestId);
   return toHttpError(error,requestId,headers);

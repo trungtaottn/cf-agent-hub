@@ -1,3 +1,4 @@
+import {assertAdmissionOpen} from '../../src/recovery/maintenance';
 import {it,expect,vi,beforeEach,afterEach} from 'vitest';
 import {runInDurableObject,evictDurableObject} from 'cloudflare:test';
 import {messageFixture,messageInput,owned,commandContext} from '../helpers/messages';
@@ -47,7 +48,7 @@ it('crash_before_fetch_consumes_reserved_attempt',async()=>{
  await evictDurableObject(stub);
  await runInDurableObject(stub,async(_o,state)=>{
   now+=30000;const r=runtime(state.storage,name,()=>now);await r.scheduler.runDueWork(now);expect(row(state.storage)).toMatchObject({attempts:1,status:'pending',last_error:'outcome_unknown',next_due_at:now+4000});
-  withTransaction(state.storage,tx=>finishAttempt(tx,attempt.attemptId,{kind:'delivered',status:200},now));expect(row(state.storage).status).toBe('pending');
+  withTransaction(state.storage,tx=>finishAttempt(tx,attempt.attemptId,{kind:'delivered',status:200},now,attempt.admissionFence));expect(row(state.storage).status).toBe('pending');
   now+=4000;await r.scheduler.runDueWork(now);expect(row(state.storage).attempts).toBe(2);
  });
 });
@@ -120,7 +121,7 @@ it('late_completion_cannot_overwrite_a_new_live_attempt_and_final_crash_exhausts
  const {stub,name,identity}=await messageFixture('outbox-late');await runInDurableObject(stub,async(_o,state)=>{
   await send(state.storage,name,identity);let now=row(state.storage).next_due_at;const old=withTransaction(state.storage,tx=>claimDue(tx,now,25))[0];
   now+=30000;withTransaction(state.storage,tx=>claimDue(tx,now,25));now=row(state.storage).next_due_at;const fresh=withTransaction(state.storage,tx=>claimDue(tx,now,25))[0];
-  withTransaction(state.storage,tx=>finishAttempt(tx,old.attemptId,{kind:'delivered',status:200},now));expect(row(state.storage)).toMatchObject({status:'in_flight',lease_token:fresh.attemptId,attempts:2});
+  withTransaction(state.storage,tx=>finishAttempt(tx,old.attemptId,{kind:'delivered',status:200},now,old.admissionFence));expect(row(state.storage)).toMatchObject({status:'in_flight',lease_token:fresh.attemptId,attempts:2});
   state.storage.sql.exec('UPDATE outbox SET attempts=6');now+=30000;withTransaction(state.storage,tx=>claimDue(tx,now,25));expect(row(state.storage)).toMatchObject({attempts:6,status:'exhausted',last_error:'outcome_unknown'});expect(withTransaction(state.storage,tx=>claimDue(tx,now+99999999,25))).toEqual([]);
  });
 });
@@ -140,7 +141,7 @@ it('legacy_null_routing_cancellation_preserves_transport_and_lease_history_acros
  await evictDurableObject(stub);
  await runInDurableObject(stub,async(_o,state)=>{
   let fetched=false;await runtime(state.storage,name,()=>now+9999999,async()=>{fetched=true;return new Response();}).scheduler.runDueWork(now+9999999);
-  withTransaction(state.storage,tx=>finishAttempt(tx,'legacy-spent-attempt',{kind:'delivered',status:200},now+1));
+  withTransaction(state.storage,tx=>finishAttempt(tx,'legacy-spent-attempt',{kind:'delivered',status:200},now+1,assertAdmissionOpen(tx)));
   expect(row(state.storage)).toEqual(retained);expect(fetched).toBe(false);console.info('LEGACY_NULL_INERT_HISTORY',JSON.stringify(retained));
  });
 });
@@ -149,7 +150,7 @@ it('maintenance_pauses_run_and_repair_without_sql_or_alarm_mutation',async()=>{
  const {stub,name,identity}=await messageFixture('outbox-maintenance-noop');await runInDurableObject(stub,async(_o,state)=>{
   await send(state.storage,name,identity);const now=row(state.storage).next_due_at;let fetched=false,alarms=0;
   const r=runtime(state.storage,name,()=>now,async()=>{fetched=true;return new Response();}),scheduler=new OutboxScheduler(r.workspace,r.dispatcher,{setAlarm:async()=>{alarms++;},deleteAlarm:async()=>{alarms++;}});
-  state.storage.sql.exec("INSERT INTO maintenance_state VALUES (1,'capture',NULL,1,NULL,?)",now);
+  state.storage.sql.exec("UPDATE maintenance_state SET state='capturing',generation=generation+1,updated_at=? WHERE id=1",now);
   const before={outbox:row(state.storage),scheduler:state.storage.sql.exec('SELECT * FROM scheduler_state').one()};
   expect((await scheduler.repairSchedule()).armed).toBe(false);await scheduler.runDueWork(now);
   expect({outbox:row(state.storage),scheduler:state.storage.sql.exec('SELECT * FROM scheduler_state').one()}).toEqual(before);expect(alarms).toBe(0);expect(fetched).toBe(false);
@@ -159,13 +160,13 @@ it('maintenance_entered_during_arm_preserves_scheduler_sql_on_success_and_error'
  for(const fails of [false,true]){const {stub,name,identity}=await messageFixture('outbox-maintenance-arm-'+fails);await runInDurableObject(stub,async(_o,state)=>{
   await send(state.storage,name,identity);const now=row(state.storage).next_due_at,r=runtime(state.storage,name,()=>now);let entered!:()=>void,release!:()=>void;
   const start=new Promise<void>(r=>entered=r),gate=new Promise<void>(r=>release=r),scheduler=new OutboxScheduler(r.workspace,r.dispatcher,{setAlarm:async()=>{entered();await gate;if(fails)throw Error('synthetic arming failure');},deleteAlarm:async()=>{throw Error('unexpected delete');}});
-  const pending=scheduler.repairSchedule();await start;state.storage.sql.exec("INSERT INTO maintenance_state VALUES (1,'capture',NULL,1,NULL,?)",now);const before=state.storage.sql.exec('SELECT * FROM scheduler_state').one();release();await pending;expect(state.storage.sql.exec('SELECT * FROM scheduler_state').one()).toEqual(before);
+  const pending=scheduler.repairSchedule();await start;state.storage.sql.exec("UPDATE maintenance_state SET state='capturing',generation=generation+1,updated_at=? WHERE id=1",now);const before=state.storage.sql.exec('SELECT * FROM scheduler_state').one();release();await pending;expect(state.storage.sql.exec('SELECT * FROM scheduler_state').one()).toEqual(before);
  });}
 });
 it('maintenance_entered_during_fetch_freezes_completion_and_scheduler_sql',async()=>{
  const {stub,name,identity}=await messageFixture('outbox-maintenance-fetch');await runInDurableObject(stub,async(_o,state)=>{
   await send(state.storage,name,identity);const now=row(state.storage).next_due_at;let frozen:any;
-  const r=runtime(state.storage,name,()=>now,async()=>{state.storage.sql.exec("INSERT INTO maintenance_state VALUES (1,'capture',NULL,1,NULL,?)",now);frozen={outbox:row(state.storage),scheduler:state.storage.sql.exec('SELECT * FROM scheduler_state').one()};return new Response(null,{status:204});});
+  const r=runtime(state.storage,name,()=>now,async()=>{state.storage.sql.exec("UPDATE maintenance_state SET state='capturing',generation=generation+1,updated_at=? WHERE id=1",now);frozen={outbox:row(state.storage),scheduler:state.storage.sql.exec('SELECT * FROM scheduler_state').one()};return new Response(null,{status:204});});
   await r.scheduler.runDueWork(now);expect({outbox:row(state.storage),scheduler:state.storage.sql.exec('SELECT * FROM scheduler_state').one()}).toEqual(frozen);expect(row(state.storage)).toMatchObject({status:'in_flight',attempts:1});
  });
 });

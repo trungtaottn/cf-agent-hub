@@ -1,3 +1,4 @@
+import {assertAdmissionOpen} from '../recovery/maintenance';
 import type {WorkspaceTransaction,SqlValue} from '../storage/transaction';
 import type {ActorContext} from '../workspace/context';
 import type {Message,Event} from '../http/dto';
@@ -36,6 +37,7 @@ export function assertCursorRetained(tx:WorkspaceTransaction,cursor:CursorPayloa
 /** Internal retention integration: call in the SAME transaction as proven prefix truncation.
  * Never use for individual deletion or ACK; there is no public retention mutation route. */
 export function recordRetentionFloor(tx:WorkspaceTransaction,workspaceId:string,floor:CursorPosition):void{
+ assertAdmissionOpen(tx);
  const row=tx.one<RetentionRow>('SELECT message_retained_after_created_at,message_retained_after_id,event_retained_after_sequence FROM workspace_metadata WHERE id=1 AND workspace_id=?',[workspaceId]);
  if(!row)return inaccessible();
  if(typeof floor==='number'){

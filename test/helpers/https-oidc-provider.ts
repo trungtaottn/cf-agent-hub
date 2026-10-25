@@ -20,7 +20,7 @@ export interface FixtureWorker {fetch(input:Request|string,init?:RequestInit):Pr
 export interface HttpsFixture {
  proxyPort:number;negativeProxyPort:number;appPort:number;pins:[string,string];
  dispatch:typeof fetch; discovery:Record<string,unknown>;
- selfCheck(transport?:typeof fetch):Promise<void>;close():Promise<void>;
+ selfCheck(transport?:typeof fetch):Promise<void>;selfCheckApp(path?:string):Promise<void>;close():Promise<void>;
 }
 async function certificate(directory:string,label:string,hostname:string):Promise<Certificate> {
  const keyPath=join(directory,label+'.key'),certPath=join(directory,label+'.crt');
@@ -42,7 +42,7 @@ function json(response:ServerResponse,status:number,value:unknown) {
 }
 function formEncode(value:string):string{return new URLSearchParams({x:value}).toString().slice(2);}
 function constantEqual(a:string,b:string) {const x=Buffer.from(a),y=Buffer.from(b);return x.length===y.length&&timingSafeEqual(x,y);}
-export async function startHttpsFixture(worker:FixtureWorker,options:{clientSecret?:string}={}):Promise<HttpsFixture> {
+export async function startHttpsFixture(worker:FixtureWorker,options:{clientSecret?:string;subjects?:readonly string[]}={}):Promise<HttpsFixture> {
  const directory=await mkdtemp(join(tmpdir(),'cfhub-https-'));await chmod(directory,0o700);
  const servers:Server[]=[],sockets=new Set<Socket>();let closed=false;
  const close=async()=>{if(closed)return;closed=true;for(const socket of sockets)socket.destroy();await Promise.all(servers.map(server=>new Promise<void>(resolve=>server.close(()=>resolve()))));await rm(directory,{recursive:true,force:true});};
@@ -59,7 +59,7 @@ export async function startHttpsFixture(worker:FixtureWorker,options:{clientSecr
    subject_types_supported:['public'],id_token_signing_alg_values_supported:['RS256'],
    token_endpoint_auth_methods_supported:['client_secret_basic'],code_challenge_methods_supported:['S256']
   };
-  const codes=new Map<string,{nonce:string;challenge:string;createdAt:number}>();
+  const codes=new Map<string,{nonce:string;challenge:string;createdAt:number;subject:string}>();
   const basic='Basic '+Buffer.from(formEncode(clientId)+':'+formEncode(clientSecret)).toString('base64');
   const providerHandler:Listener=(request,response)=>{void(async()=>{
    if(request.headers.host!==ISSUER_HOST&&request.headers.host!==ISSUER_HOST+':443')return json(response,421,{error:'authority'});
@@ -73,7 +73,9 @@ export async function startHttpsFixture(worker:FixtureWorker,options:{clientSecr
      p.get('response_type')!=='code'||p.get('response_mode')!=='query'||p.get('scope')!=='openid'||p.get('code_challenge_method')!=='S256'||
      !/^[A-Za-z0-9_-]{43}$/.test(p.get('code_challenge')??'')||!p.get('state')||!p.get('nonce'))return json(response,400,{error:'invalid_request'});
     if(codes.size>=1000)return json(response,429,{error:'fixture_capacity'});
-    const code=randomBytes(32).toString('base64url');codes.set(code,{nonce:p.get('nonce')!,challenge:p.get('code_challenge')!,createdAt:Date.now()});
+    const chosen=/\bcfhub_fixture_subject=([^;]+)/.exec(request.headers.cookie??'')?.[1];
+    const subject=chosen&&(options.subjects??[]).includes(chosen)?chosen:'synthetic-subject';
+    const code=randomBytes(32).toString('base64url');codes.set(code,{nonce:p.get('nonce')!,challenge:p.get('code_challenge')!,createdAt:Date.now(),subject});
     const target=new URL(redirectUri);target.searchParams.set('code',code);target.searchParams.set('state',p.get('state')!);
     response.writeHead(302,{location:target.href,'cache-control':'no-store'});response.end();return;
    }
@@ -86,7 +88,7 @@ export async function startHttpsFixture(worker:FixtureWorker,options:{clientSecr
      !record||Date.now()-record.createdAt>=300000||createHash('sha256').update(p.get('code_verifier')??'').digest('base64url')!==record.challenge)return json(response,400,{error:'invalid_grant'});
     codes.delete(code);
     const now=Math.floor(Date.now()/1000);
-    const token=await new SignJWT({nonce:record.nonce}).setProtectedHeader({alg:'RS256',kid:jwk.kid}).setIssuer(ISSUER_ORIGIN).setSubject('synthetic-subject').setAudience(clientId).setIssuedAt(now).setExpirationTime(now+300).sign(privateKey);
+    const token=await new SignJWT({nonce:record.nonce}).setProtectedHeader({alg:'RS256',kid:jwk.kid}).setIssuer(ISSUER_ORIGIN).setSubject(record.subject).setAudience(clientId).setIssuedAt(now).setExpirationTime(now+300).sign(privateKey);
     return json(response,200,{access_token:randomBytes(32).toString('base64url'),token_type:'Bearer',expires_in:300,id_token:token});
    }
    return json(response,404,{error:'not_found'});
@@ -101,7 +103,7 @@ export async function startHttpsFixture(worker:FixtureWorker,options:{clientSecr
    upstream.headers.forEach((value,key)=>{if(key!=='set-cookie')response.setHeader(key,value);});
    const cookies=upstream.headers.getSetCookie();if(cookies.length)response.setHeader('set-cookie',cookies);
    response.end(Buffer.from(await upstream.arrayBuffer()));
-  })().catch(()=>{if(!response.headersSent)json(response,502,{error:'fixture_worker_failure'});else response.destroy();});}));
+  })().catch(error=>{if(error instanceof Error&&error.message==='FIXTURE_DROP_COMMITTED_RESPONSE'){response.destroy();return;}if(!response.headersSent)json(response,502,{error:'fixture_worker_failure'});else response.destroy();});}));
   const negativePort=await listen(httpsServer({key:negative.key,cert:negative.cert},(_request,response)=>{response.end('invalid unpinned fixture certificate');}));
   const proxy=async(appTarget:number)=>{
    const server=httpServer((_request,response)=>{response.writeHead(403);response.end();});
@@ -140,6 +142,19 @@ export async function startHttpsFixture(worker:FixtureWorker,options:{clientSecr
    return relay(request);
   };
   return {proxyPort,negativeProxyPort,appPort,pins:[app.pin,issuer.pin],dispatch,discovery,close,
+   async selfCheckApp(path='/v2/workspaces/ws_example/auth/start'){
+    const mutation=path.startsWith('/v2/');
+    const result=await new Promise<{status:number;code:string|null}>((resolve,reject)=>{
+     const request=httpsRequest({hostname:'127.0.0.1',port:appPort,servername:APP_HOST,ca:app.cert,rejectUnauthorized:true,
+      path,method:mutation?'POST':'GET',headers:{host:APP_HOST,origin:APP_ORIGIN,'content-type':'application/json'},agent:false,timeout:10000},response=>{
+      const chunks:Buffer[]=[];response.on('data',chunk=>chunks.push(Buffer.from(chunk)));response.on('error',reject);
+      response.on('end',()=>{let code:string|null=null;try{const parsed=JSON.parse(Buffer.concat(chunks).toString('utf8'));const value=parsed.error?.code??parsed.error;if(typeof value==='string'&&/^[a-zA-Z0-9_]{1,64}$/.test(value))code=value;}catch{}resolve({status:response.statusCode??0,code});});
+     });
+     request.on('timeout',()=>request.destroy(Error('FIXTURE_APP_TIMEOUT')));request.on('error',reject);
+     request.end(mutation?JSON.stringify({return_path:'/overview'}):undefined);
+    });
+    if(result.status!==200)throw Error('FIXTURE_HTTPS_AUTH_FAILED_'+result.status+'_'+result.code);
+   },
    async selfCheck(transport:typeof fetch=dispatch) {
     const actual=await (await transport(ISSUER_ORIGIN+'/.well-known/openid-configuration')).json();
     if(JSON.stringify(actual)!==JSON.stringify(discovery))throw Error('DISCOVERY_NOT_READY');

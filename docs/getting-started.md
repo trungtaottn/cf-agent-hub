@@ -1,8 +1,8 @@
 # Getting started
 
-Status: Design baseline · Contract revision 0.1 · Implementation pending.
+Status: R1 source candidate · Contract revision 0.2 · Deployed acceptance pending; no released executable.
 
-This is the entry path for evaluating the design and preparing an implementation. There is no released executable to install in this package. Commands in the [CLI reference](cli.md), routes in the [HTTP reference](http-api.md) and JSON examples are proposed contracts; they must not be treated as a working service.
+This is the entry path for reviewing and locally verifying the R1 source candidate. There is no released executable to install. The [R1 implementation page](r1-implementation.md) identifies the implemented HTTP/client/operator surface and its local checks. The native agent [CLI reference](cli.md) and later-round routes/examples still describe future capabilities; the R1 operator recovery CLI is documented separately in the [recovery runbook](runbooks/r1-recovery.md).
 
 ## Review the baseline now
 
@@ -12,13 +12,13 @@ This is the entry path for evaluating the design and preparing an implementation
 4. Inspect the [OpenAPI document](../spec/openapi.json), native request fixtures and [delivery semantics](delivery-semantics.md). Pay particular attention to versions, idempotency, workspace boundaries and recoverable upload stages.
 5. Use [testing](testing.md) to turn each selected capability into executable acceptance evidence. Keep its matrix status Specified until implementation exists.
 
-The documentation validation command is described in [documentation maintenance](docs-maintenance.md). It validates this package's assets only; it cannot validate a nonexistent deployment.
+The documentation validation command is described in [documentation maintenance](docs-maintenance.md). It validates project documentation assets only; it does not execute deployment acceptance.
 
 ## Prepare a first implementation
 
 Before provisioning resources, choose a Cloudflare account/environment, a workspace ID, a stable object mapping, the verified human identity provider and an initial operator. Record the chosen toolchain and platform compatibility in a release manifest. Select workspace policy for WIP, retry budget, approval expiry, retention and allowed webhook destinations. Avoid copying fixture identifiers into a production environment without replacing and validating them.
 
-Provision separate development and production bindings and secrets. The planned architecture requires a Worker entry, a Durable Object namespace with SQLite-backed workspace objects and an R2 bucket. Exact deployment commands belong to the implementation release after its configuration has been tested; this baseline deliberately does not invent a working Wrangler setup. [Deployment](deployment.md) defines the evidence and resource relationships.
+Provision separate development and production bindings and secrets. The candidate has explicit application and operator Wrangler configurations, a SQLite-backed workspace Durable Object and private recovery R2 bindings. Start with disposable isolated resources and reviewed exact catalog/host settings. [Deployment](deployment.md) defines the resources, local runtime checks and evidence required before promotion; no production target is selected by a default test command.
 
 ## First-run acceptance journey
 

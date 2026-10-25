@@ -1,9 +1,11 @@
+import {admissionOpen} from '../recovery/maintenance';
 import type { WorkspaceTransaction } from '../storage/transaction';
 import type { VerifiedIdentity,ActorContext,ResourceAccess } from '../workspace/context';
 import { deny,AuthError } from './context';
 export interface SessionRecord {id:string;workspace_id:string;principal_id:string;issuer:string;subject:string;expires_at:number;revoked_at:number|null;auth_epoch:number;}
 /** Synchronous current-authority check, including the original session, on every command/replay. */
 export function resolveActor(tx:WorkspaceTransaction,identity:VerifiedIdentity,nowMs:number):ActorContext {
+ if(!admissionOpen(tx))deny();
  if(identity.kind==='agent') {
   const row=tx.one<NativeRecord>(`SELECT c.*,m.config_epoch AS installed_epoch,m.admission_state,a.config_epoch AS agent_epoch
    FROM native_credentials c JOIN workspace_metadata m ON m.workspace_id=c.workspace_id

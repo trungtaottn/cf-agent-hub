@@ -2,13 +2,40 @@ import {validateEvent} from '../../src/http/generated/auth-validators.js';
 import {migrate,FOUNDATION_SQL} from '../../src/storage/migrations';
 import {it,expect,vi} from 'vitest';
 import {runInDurableObject,evictDurableObject} from 'cloudflare:test';
-import {settingsFixture,human,actor,commandContext,snapshot,preference} from '../helpers/settings';
+import {settingsFixture,human,actor,commandContext,snapshot,preference,owned} from '../helpers/settings';
 import {withTransaction} from '../../src/storage/transaction';
 import {readConfiguration,readProfile,previewProfile,readPreferences,exportProfile,profileCommand,preferencesCommand} from '../../src/config/settings-service';
 import {executeCommand} from '../../src/workspace/commands';
 import {projectEvent,settingsEventVisibility} from '../../src/audit/events';
 import {sha256,canonicalJson} from '../../src/config/bootstrap';
+import {resolveDiagnosticActor} from '../../src/health/diagnostic-auth';
 const read=(storage:DurableObjectStorage,identity:ReturnType<typeof human>)=>withTransaction(storage,tx=>readProfile(tx,actor(storage,identity)));
+it.each([
+ {label:'unrestricted',projectIds:null,scopes:['workspace:read','operations:read'],enabled:true},
+ {label:'empty_projects',projectIds:[],scopes:['workspace:read','operations:read'],enabled:false},
+ {label:'restricted_project',projectIds:['project_one'],scopes:['workspace:read','operations:read'],enabled:false},
+ {label:'missing_scope',projectIds:null,scopes:['workspace:read'],enabled:false},
+])('configuration_operations_capability_$label',async({label,projectIds,scopes,enabled})=>{
+ const {stub,name}=await settingsFixture('settings-operations-'+label);
+ await runInDurableObject(stub,(_o,state)=>{const identity=human(state.storage),cached=actor(state.storage,identity),workspace=owned(state.storage,name);
+  state.storage.sql.exec('UPDATE human_grants SET scopes_json=?,project_ids_json=? WHERE principal_id=? AND workspace_id=?',JSON.stringify(scopes),JSON.stringify(projectIds),cached.principalId,cached.workspaceId);
+  const diagnostic=()=>withTransaction(state.storage,tx=>resolveDiagnosticActor(tx,workspace,identity,Date.now()));
+  if(enabled)expect(diagnostic().principalId).toBe(cached.principalId);
+  else expect(diagnostic).toThrowError(expect.objectContaining({code:'FORBIDDEN',status:403}));
+  const configuration=withTransaction(state.storage,tx=>readConfiguration(tx,cached));
+  expect(configuration.enabled_features.includes('operations')).toBe(enabled);
+  expect(configuration.enabled_features).toContain('workspace');
+ });
+});
+it('configuration_operations_requires_current_workspace_membership',async()=>{
+ const {stub,name}=await settingsFixture('settings-operations-membership');
+ await runInDurableObject(stub,(_o,state)=>{const identity=human(state.storage),cached=actor(state.storage,identity),workspace=owned(state.storage,name);
+  expect(withTransaction(state.storage,tx=>readConfiguration(tx,cached)).enabled_features).toContain('operations');
+  state.storage.sql.exec('UPDATE human_grants SET enabled=0 WHERE principal_id=? AND workspace_id=?',cached.principalId,cached.workspaceId);
+  expect(()=>withTransaction(state.storage,tx=>readConfiguration(tx,cached))).toThrowError(expect.objectContaining({code:'UNAUTHENTICATED',status:401}));
+  expect(()=>withTransaction(state.storage,tx=>resolveDiagnosticActor(tx,workspace,identity,Date.now()))).toThrowError(expect.objectContaining({code:'UNAUTHENTICATED',status:401}));
+ });
+});
 it('new_workspace_is_neutral_and_empty',async()=>{
  const {stub}=await settingsFixture('settings-neutral');
  await runInDurableObject(stub,(_o,state)=>{const a=actor(state.storage,human(state.storage)),before=snapshot(state.storage);
@@ -137,7 +164,7 @@ it('failure_after_event_insertion_rolls_back_settings_revision_event_and_outcome
 it('forward_migration_backfills_unique_opaque_owners_atomically_and_preserves_legacy_revisions',async()=>{
  const {stub}=await settingsFixture('settings-owner-migration');
  await runInDurableObject(stub,(_o,state)=>{
-  state.storage.sql.exec('DROP TABLE preferences');state.storage.sql.exec(FOUNDATION_SQL.match(/CREATE TABLE preferences \([\s\S]*?\n\);/)![0]);for(const table of ['thread_participants','outbox','scheduler_state']){state.storage.sql.exec('DROP TABLE '+table);state.storage.sql.exec(FOUNDATION_SQL.match(new RegExp(String.raw`CREATE TABLE ${table} \([\s\S]*?\);`))![0]);} for(const column of ['message_retained_after_id','message_retained_after_created_at','event_retained_after_sequence'])state.storage.sql.exec('ALTER TABLE workspace_metadata DROP COLUMN '+column);state.storage.sql.exec('DELETE FROM schema_migrations WHERE version>=3');
+  state.storage.sql.exec('DROP TABLE preferences');state.storage.sql.exec(FOUNDATION_SQL.match(/CREATE TABLE preferences \([\s\S]*?\n\);/)![0]);for(const table of ['thread_participants','outbox','scheduler_state']){state.storage.sql.exec('DROP TABLE '+table);state.storage.sql.exec(FOUNDATION_SQL.match(new RegExp(String.raw`CREATE TABLE ${table} \([\s\S]*?\);`))![0]);} for(const column of ['message_retained_after_id','message_retained_after_created_at','event_retained_after_sequence'])state.storage.sql.exec('ALTER TABLE workspace_metadata DROP COLUMN '+column);state.storage.sql.exec('ALTER TABLE maintenance_state DROP COLUMN generation');state.storage.sql.exec('DELETE FROM schema_migrations WHERE version>=3');
   for(const [id,version]of [['legacy_owner_a',4],['legacy_owner_b',8]] as const)state.storage.sql.exec('INSERT INTO preferences (principal_id,workspace_id,version,document_json,updated_at) VALUES (?,?,?,?,?)',id,'ws_example',version,JSON.stringify(preference),1);
   const before=state.storage.sql.exec('SELECT * FROM preferences ORDER BY principal_id').toArray(),events=state.storage.sql.exec('SELECT * FROM events').toArray();
   const entropy=vi.spyOn(crypto,'randomUUID').mockReturnValue('11111111-1111-4111-8111-111111111111');
@@ -148,7 +175,7 @@ it('forward_migration_backfills_unique_opaque_owners_atomically_and_preserves_le
   expect(()=>state.storage.sql.exec('UPDATE preferences SET workspace_id=? WHERE principal_id=?','foreign','legacy_owner_a')).toThrow();expect(()=>state.storage.sql.exec('INSERT INTO preferences (principal_id,workspace_id,version,document_json,updated_at,record_id) VALUES (?,?,?,?,?,?)','third','ws_example',1,JSON.stringify(preference),1,rows[0].record_id)).toThrow();
   expect(()=>state.storage.sql.exec('INSERT INTO preferences (principal_id,workspace_id,version,document_json,updated_at) VALUES (?,?,?,?,?)','third','ws_example',1,JSON.stringify(preference),1)).toThrow();
   expect(state.storage.sql.exec('SELECT * FROM events').toArray()).toEqual(events);
- });await evictDurableObject(stub);await runInDurableObject(stub,(_o,state)=>{expect(state.storage.sql.exec('SELECT version FROM schema_migrations ORDER BY version').toArray()).toEqual([{version:1},{version:2},{version:3},{version:4},{version:5},{version:6}]);expect(state.storage.sql.exec('SELECT record_id FROM preferences').toArray()).toHaveLength(2);});
+ });await evictDurableObject(stub);await runInDurableObject(stub,(_o,state)=>{expect(state.storage.sql.exec('SELECT version FROM schema_migrations ORDER BY version').toArray()).toEqual([{version:1},{version:2},{version:3},{version:4},{version:5},{version:6},{version:7}]);expect(state.storage.sql.exec('SELECT record_id FROM preferences').toArray()).toHaveLength(2);});
 });
 it('owner_event_projection_rechecks_current_scopes_and_session_before_projection',async()=>{
  const {stub,name}=await settingsFixture('settings-event-authority');await runInDurableObject(stub,async(_o,state)=>{const id=human(state.storage),a=actor(state.storage,id),body={expected_preferences_revision:0,preferences:preference};executeCommand(await commandContext(state.storage,name,body,'event'),id,preferencesCommand('pref_'+'7'.repeat(32)),body);

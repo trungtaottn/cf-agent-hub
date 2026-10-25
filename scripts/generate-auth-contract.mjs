@@ -6,8 +6,8 @@ import standalone from 'ajv/dist/standalone/index.js';
 const spec=JSON.parse(await readFile('spec/openapi.json','utf8')),schemas=spec.components.schemas;
 const settings=['Configuration','ProfileData','ProfilePreview','ProfileExport','PreferencesData','WorkspaceProfile','UserPreferences','ConfigurationResponse','ProfileDataResponse','ProfilePreviewResponse','ProfileExportResponse','PreferencesDataResponse'];
 const inputs=['AuthStartRequest','AuthCallbackQuery','AuthLogoutRequest','MessageCreateRequest','MessageAckRequest','ProfileWriteRequest','PreferencesWriteRequest'];
-const roots=['Operations','OperationsResponse','AckResult',...inputs,'AuthStartDataResponse','AuthSessionResponse','AuthLogoutDataResponse','Error','Event','Message','MessageNotification',...settings];
-const validated=['Operations','OperationsResponse',...inputs,'Error','Event','Message','MessageNotification',...settings];
+const roots=['Workspace','WorkspaceResponse','Readiness','ReadinessResponse','Liveness','Operations','OperationsResponse','AckResult',...inputs,'AuthStartDataResponse','AuthSessionResponse','AuthLogoutDataResponse','Error','Event','Message','MessageNotification',...settings];
+const validated=['Workspace','WorkspaceResponse','Readiness','ReadinessResponse','Liveness','Operations','OperationsResponse',...inputs,'Error','Event','Message','MessageNotification',...settings,'AuthStartData','AuthSession','AuthLogoutData'];
 const seen=new Set(),aliases=[];
 function type(s) {
  if(s.$ref){const parts=s.$ref.split('/').slice(3),name=parts.shift();if(parts.length){let target=schemas[name];for(const part of parts)target=target[part.replaceAll('~1','/').replaceAll('~0','~')];return type(target);}collect(name);return name;}

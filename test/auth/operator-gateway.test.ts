@@ -119,7 +119,7 @@ it('valid_hmac_orphan_retired_participant_rejected_before_authority',async()=>{
  await sign(payload.verification_bundle);
  const target=env.WORKSPACE.getByName('operator-fixture-'+workspace) as any;
  const snapshot=()=>target.authoritySnapshot({workspaceId:workspace,objectName:'operator-fixture-'+workspace});
- const before=await snapshot();expect(before).toEqual({epoch:0,installationDigest:null});
+ const before=await snapshot();expect(before).toEqual({epoch:0,installationDigest:null,recoveryIntegrityKeyId:'recovery_fixture'});
  expect((await call(envelope(payload,'orphan-retirement',0),await assertion())).status).toBe(400);
  expect(await snapshot()).toEqual(before);
  expect((await call(envelope(await material(3),'valid-after-orphan',0),await assertion())).status).toBe(200);

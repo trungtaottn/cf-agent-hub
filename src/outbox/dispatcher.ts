@@ -1,3 +1,4 @@
+import {admissionOpen} from '../recovery/maintenance';
 import type {AuthWorkspace} from '../auth/context';
 import {currentConfiguration,secret} from '../auth/context';
 import {parseDeployment} from '../config/deployment';
@@ -21,7 +22,7 @@ interface PreparedDestination{url:string;signingKeyRef:string;}
 type Checked={ok:true;destination:PreparedDestination}|{ok:false;result:DeliveryResult};
 /** All mutable authority and the exact claim are read synchronously immediately before fetch. */
 function check(tx:WorkspaceTransaction,workspace:AuthWorkspace,attempt:DeliveryAttempt,nowMs:number):Checked{
- if(tx.one('SELECT id FROM maintenance_state WHERE id=1')||tx.one<{admission_state:string}>('SELECT admission_state FROM workspace_metadata WHERE id=1')?.admission_state!=='installed')return {ok:false,result:{kind:'paused'}};
+ if(!admissionOpen(tx,attempt.admissionFence)||tx.one<{admission_state:string}>('SELECT admission_state FROM workspace_metadata WHERE id=1')?.admission_state!=='installed')return {ok:false,result:{kind:'paused'}};
  const row=liveAttempt(tx,attempt,nowMs);if(!row)return {ok:false,result:{kind:'obsolete'}};
  const intent=validateIntent(tx,row);if(!intent)return {ok:false,result:{kind:'permanent',category:'invalid_intent'}};
  try{

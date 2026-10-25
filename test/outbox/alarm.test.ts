@@ -28,9 +28,11 @@ it('scheduled_handler_uses_only_operator_catalog_and_rearms_clean_missing_alarm'
  await worker.scheduled(createScheduledController(),{...env,DEPLOYMENT_CONFIG:'{}'} as Env);
 });
 
-it('request_startup_repairs_dirty_sql_without_disclosing_queue_to_unauthenticated_caller',async()=>{
+it('diagnostics_stay_read_only_and_regular_request_startup_repairs_without_disclosing_queue',async()=>{
  const {stub,name,identity}=await messageFixture('outbox-startup-repair');await runInDurableObject(stub,async(_o,state)=>{const body=messageInput();executeCommand(await commandContext(state.storage,name,body,'send'),identity,messageCommand(owned(state.storage,name)),body);await state.storage.deleteAlarm();});
  await evictDurableObject(stub);const response=await stub.fetch(new Request('https://hub.example.invalid/v2/workspaces/ws_example/operations'));expect(response.status).toBe(401);expect(await response.text()).not.toContain('pending_count');
+ await runInDurableObject(stub,async(_o,state)=>{expect(await state.storage.getAlarm()).toBeNull();expect(state.storage.sql.exec('SELECT dirty FROM scheduler_state').one().dirty).toBe(1);expect(state.storage.sql.exec('SELECT attempts FROM outbox').one().attempts).toBe(0);});
+ const ordinaryRead=await stub.fetch(new Request('https://hub.example.invalid/v2/workspaces/ws_example/events'));expect(ordinaryRead.status).toBe(401);expect(await ordinaryRead.text()).not.toContain('pending_count');
  await runInDurableObject(stub,async(_o,state)=>{expect(await state.storage.getAlarm()).not.toBeNull();expect(state.storage.sql.exec('SELECT dirty FROM scheduler_state').one().dirty).toBe(0);expect(state.storage.sql.exec('SELECT attempts FROM outbox').one().attempts).toBe(0);});
 });
 

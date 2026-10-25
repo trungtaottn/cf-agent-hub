@@ -1,5 +1,13 @@
 {
- "extends":"./tsconfig.operator.json",
- "compilerOptions":{"types":["@cloudflare/vitest-plugin/types"]},
- "include":["test/auth/operator-gateway.test.ts","workers/operator/worker-configuration.d.ts"]
+  "extends": "./tsconfig.operator.json",
+  "compilerOptions": {
+    "types": [
+      "@cloudflare/vitest-plugin/types"
+    ]
+  },
+  "include": [
+    "test/auth/operator-gateway.test.ts",
+    "workers/operator/worker-configuration.d.ts",
+    "test/recovery/operator-transport.test.ts"
+  ]
 }

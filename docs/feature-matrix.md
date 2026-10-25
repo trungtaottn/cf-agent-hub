@@ -1,8 +1,8 @@
 # Feature and evidence matrix
 
-Status: Design baseline · Contract revision 0.1 · Implementation pending.
+Status: R1 source candidate · Contract revision 0.2 · Isolated acceptance pending; no released artifact.
 
-This is the canonical capability-status register. **All 42 capabilities below are Specified; none are currently claimed Implemented or Verified.** A specification means behavior and acceptance expectations exist, not that every later-release field or UI has been finalized. Protocol adapters and team administration still require the additional contract work named in their pages.
+This is the canonical capability-status register. **The 14 R1 capabilities are Implemented in the reviewable source candidate; the 28 later-release capabilities remain Specified. None are claimed Verified or Released.** Implementation references and reproducible local checks are recorded in [R1 implementation and acceptance](r1-implementation.md). Real isolated deployment, recovery, toolchain and final evidence gates remain pending. A specification means behavior and acceptance expectations exist, not that every later-release field or UI has been finalized. Protocol adapters and team administration still require the additional contract work named in their pages.
 
 Status advances in order: **Specified** → **Implemented** → **Verified** → **Released**. Implemented requires reviewable code; Verified requires reproducible evidence for the selected release; Released requires a tagged artifact, operator documentation and completed release gate. A screenshot, mocked response or successful documentation validator does not advance a runtime capability.
 
@@ -10,16 +10,16 @@ Status advances in order: **Specified** → **Implemented** → **Verified** →
 
 | ID | Capability | Gate | Status | Required evidence |
 | --- | --- | --- | --- | --- |
-| F01 | Verified human identity and browser session | R1 | Specified | Invalid issuer/audience/signature, expired session and CSRF denial; no credential in browser storage |
-| F02 | Operator workspace catalog and stable routing | R1 | Specified | Rename preserves object identity; unknown workspace denied; profile cannot reroute storage |
-| F03 | Operator-provisioned static participants | R1 | Specified | Validated deployment registry and grants; no hidden demo participant or fallback identity |
-| F04 | Message send with durable acceptance | R1 | Specified | Atomic persistence/outbox; lost response replay returns original outcome |
-| F05 | Inbox and thread views | R1 | Specified | Authorized bounded pagination; stable order, empty/stale/failure states |
-| F06 | Recipient ACK | R1 | Specified | Idempotent recipient-scoped ACK; foreign message denied; ACK never changes task state |
-| F07 | Notification outbox and retry recovery | R1 | Specified | Restart preserves due time/budget; duplicate alarm safe; exhausted delivery visible |
-| F08 | Payload bounds and cursor validation | R1 | Specified | UTF-8 and aggregate-size boundaries; oversized batch rejected before mutation |
-| F09 | Truthful read dashboard | R1 | Specified | Real source and freshness; disconnected/partial/forbidden distinct; no fabricated activity |
-| F10 | Request correlation and redacted audit | R1 | Specified | Stable request/event linkage; secrets absent; failed authorization recorded appropriately |
+| F01 | Verified human identity and browser session | R1 | Implemented | Invalid issuer/audience/signature, expired session and CSRF denial; no credential in browser storage |
+| F02 | Operator workspace catalog and stable routing | R1 | Implemented | Rename preserves object identity; unknown workspace denied; profile cannot reroute storage |
+| F03 | Operator-provisioned static participants | R1 | Implemented | Validated deployment registry and grants; no hidden demo participant or fallback identity |
+| F04 | Message send with durable acceptance | R1 | Implemented | Atomic persistence/outbox; lost response replay returns original outcome |
+| F05 | Inbox and thread views | R1 | Implemented | Authorized bounded pagination; stable order, empty/stale/failure states |
+| F06 | Recipient ACK | R1 | Implemented | Idempotent recipient-scoped ACK; foreign message denied; ACK never changes task state |
+| F07 | Notification outbox and retry recovery | R1 | Implemented | Restart preserves due time/budget; duplicate alarm safe; exhausted delivery visible |
+| F08 | Payload bounds and cursor validation | R1 | Implemented | UTF-8 and aggregate-size boundaries; oversized batch rejected before mutation |
+| F09 | Truthful read dashboard | R1 | Implemented | Real source and freshness; disconnected/partial/forbidden distinct; no fabricated activity |
+| F10 | Request correlation and redacted audit | R1 | Implemented | Stable request/event linkage; secrets absent; failed authorization recorded appropriately |
 
 ## Durable work and native clients
 
@@ -46,10 +46,10 @@ Status advances in order: **Specified** → **Implemented** → **Verified** →
 
 | ID | Capability | Gate | Status | Required evidence |
 | --- | --- | --- | --- | --- |
-| F27 | Neutral branding and empty catalog | R1 | Specified | Fresh workspace has no personal branding/activity; examples require explicit import |
-| F28 | Typed workspace profile | R1 | Specified | Closed schema; forbidden policy/auth keys rejected; last valid profile survives invalid input |
+| F27 | Neutral branding and empty catalog | R1 | Implemented | Fresh workspace has no personal branding/activity; examples require explicit import |
+| F28 | Typed workspace profile | R1 | Implemented | Closed schema; forbidden policy/auth keys rejected; last valid profile survives invalid input |
 | F29 | Stable projects and work roles | R2 | Specified | Upsert preserves omitted records; referenced archive/remap explicit and audited |
-| F30 | User theme, density and view preference | R1 | Specified | Allowlisted override; forbidden resources remain inaccessible; keyboard access preserved |
+| F30 | User theme, density and view preference | R1 | Implemented | Allowlisted override; forbidden resources remain inaccessible; keyboard access preserved |
 | F31 | Message/task composition UI | R3 | Specified | Same domain validation as API; duplicate submit/lost response safe; draft recovery without secrets |
 | F32 | Checkpoint and versioned human proposal | R3 | Specified | Waiting releases run; checkpoint retained; only current human-scoped decision accepted |
 | F33 | Approval/rejection/expiry interface | R3 | Specified | Exact scope/version shown; stale decision denied; expiry never auto-approves |
@@ -65,8 +65,12 @@ Status advances in order: **Specified** → **Implemented** → **Verified** →
 | F38 | Team membership and invitations | R4 | Specified | Recipient-bound single-use invitation, expiry, revocation, last-admin recovery and isolation |
 | F39 | Real external connectors | R4 | Specified | Provider permissions, genuine source IDs/timestamps, disconnect and stale-source handling |
 | F40 | Backup, restore and import provenance | R2 | Specified | Rehearsed coordinated metadata/artifact restoration with reconciliation report |
-| F41 | Health, readiness and operational signals | R1 | Specified | Distinct liveness/readiness, redacted diagnostics, due-work visibility and failure recovery |
+| F41 | Health, readiness and operational signals | R1 | Implemented | Distinct liveness/readiness, redacted diagnostics, due-work visibility and failure recovery |
 | F42 | Retention, resource quotas and advanced operations | R4 | Specified | Enforced policy, recoverable maintenance, load evidence and documented capacity limits |
+
+## R1 candidate identity and evidence
+
+The implementation is based on commit `dbb708b4318df6944519d6a2b19ada352aef488f` plus the retained uncommitted R1 candidate. The handoff records the exact source inventory, patch, immutable review hashes and command receipts. It is not a tagged release revision. The [source and check mapping](r1-implementation.md#source-and-executable-checks) covers every R1 row; the [remaining acceptance gates](r1-implementation.md#acceptance-still-required-before-verified) are explicit exceptions to promotion. Later-release contracts and fixtures do not imply that their routes or interfaces are available.
 
 ## Gate interpretation
 
@@ -80,4 +84,4 @@ A status change must include implementation references, exact revision, test com
 
 ## R1 contract amendment status
 
-ADR [0007](adr/0007-r1-ingress-and-settings.md) closes the proposed static grant/credential, OIDC session, settings, event-discovery, notification and operator recovery contracts for F01–F10, F27, F28, F30 and F41. Their status remains **Specified** pending runtime implementation and verification. F03 now includes explicit operator-provisioned hashes, immutable credential IDs, scoped grants and monotonic install, without claiming R2 F12 dynamic credential management. F28 includes profile preview/apply/export with revision and size bounds; F30 includes caller-owned preferences and policy overrides; F41 includes public minimal liveness, human-only redacted readiness/operations and an authenticated operator probe. R1 owns first logical SQL/message/outbox recovery; R2 F40 expands it for task/runtime/fence and artifact-byte invariants. Unavailable R2 routes and task/artifact message references do not become R1 features merely because later-release schemas or fixtures exist.
+ADR [0007](adr/0007-r1-ingress-and-settings.md) closes the proposed static grant/credential, OIDC session, settings, event-discovery, notification and operator recovery contracts for F01–F10, F27, F28, F30 and F41. Their source status is **Implemented**, with local runtime checks and independent scoped reviews recorded for the candidate; deployed verification remains pending. F03 now includes explicit operator-provisioned hashes, immutable credential IDs, scoped grants and monotonic install, without claiming R2 F12 dynamic credential management. F28 includes profile preview/apply/export with revision and size bounds; F30 includes caller-owned preferences and policy overrides; F41 includes public minimal liveness, human-only redacted readiness/operations and an authenticated operator probe. R1 owns first logical SQL/message/outbox recovery; R2 F40 expands it for task/runtime/fence and artifact-byte invariants. Unavailable R2 routes and task/artifact message references do not become R1 features merely because later-release schemas or fixtures exist.

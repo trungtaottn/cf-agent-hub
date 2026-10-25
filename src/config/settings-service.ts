@@ -20,7 +20,7 @@ export function readConfiguration(tx:WorkspaceTransaction,actor:ActorContext):Co
  if(live.scopes.has('messages:read')||live.scopes.has('messages:send'))enabled.push('messages');
  if(live.scopes.has('events:read'))enabled.push('events');
  if(live.kind==='human')enabled.push('preferences');
- if(live.kind==='human'&&live.scopes.has('operations:read'))enabled.push('operations');
+ if(live.kind==='human'&&live.scopes.has('operations:read')&&live.projectIds===null)enabled.push('operations');
  return {config_epoch:epoch,profile_revision:storedProfile(tx,live).profile_revision,preferences_revision:live.kind==='human'?readPreferences(tx,live).preferences_revision:null,allowed_user_overrides:live.kind==='human'?[...policy.allowed_user_overrides]:[],enabled_features:enabled};
 }
 export function exportProfile(tx:WorkspaceTransaction,actor:ActorContext):ProfileExport{

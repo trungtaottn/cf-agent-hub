@@ -27,6 +27,8 @@ export type InstallOperationResult={ok:true;receipt:OperatorInstallReceipt}|{ok:
 export interface WorkspaceEnvironment {
  WORKSPACE:DurableObjectNamespace<import('./workspace-do').WorkspaceDO>;
  RECOVERY_BUCKET:R2Bucket;
+ RECOVERY_ENVIRONMENT_ID?:string;RECOVERY_INTEGRITY_KEY_ID?:string;RECOVERY_INTEGRITY_KEY?:string;RECOVERY_RELEASE?:string;
+ CF_VERSION_METADATA?:{id:string;tag?:string;timestamp?:string};
 }
 export interface InstallReceipt {workspaceId:string;objectName:string;epoch:number;installationDigest:string;}
 export interface InternalRequest {workspaceId:string;objectName:string;requestId:string;operation:string;}

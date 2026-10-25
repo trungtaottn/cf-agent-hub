@@ -55,11 +55,11 @@ export async function settingsRoutes(request:Request,workspace:AuthWorkspace):Pr
    if(identity.kind!=='human')throw new HttpError('FORBIDDEN',403);
    if(!request.headers.get('idempotency-key'))throw new HttpError('INVALID_REQUEST',400);
    body=await parseBoundedJson(request,'ProfileWriteRequest') as ProfileWriteRequest;
-   const session=withTransaction(workspace.storage,tx=>{currentConfiguration(tx,workspace,installed.epoch);resolveActor(tx,identity,workspace.clock.nowMs());return tx.one<SessionRecord>('SELECT * FROM sessions WHERE id=?',[(identity as Extract<VerifiedIdentity,{kind:'human'}>).sessionId])!;});
+   const session=withTransaction(workspace.storage,tx=>{currentConfiguration(tx,workspace,installed.fence);resolveActor(tx,identity,workspace.clock.nowMs());return tx.one<SessionRecord>('SELECT * FROM sessions WHERE id=?',[(identity as Extract<VerifiedIdentity,{kind:'human'}>).sessionId])!;});
    assertCsrf(request,{origin,csrfToken:await csrfToken(workspace,session)});
   }
   const data=withTransaction(workspace.storage,tx=>{
-   currentConfiguration(tx,workspace,installed.epoch);const nowMs=workspace.clock.nowMs(),actor=resolveActor(tx,identity,nowMs);
+   currentConfiguration(tx,workspace,installed.fence);const nowMs=workspace.clock.nowMs(),actor=resolveActor(tx,identity,nowMs);
    if(endpoint==='configuration')return readConfiguration(tx,actor);
    if(endpoint==='profile')return readProfile(tx,actor);
    if(endpoint==='profile:export')return exportProfile(tx,actor);

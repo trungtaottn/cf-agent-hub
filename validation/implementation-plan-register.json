@@ -802,5 +802,123 @@
       ],
       "acceptance": "Enforced policy, recoverable maintenance, load evidence and documented capacity limits"
     }
-  ]
+  ],
+  "r1_source_candidate": {
+    "implementation_path": "docs/r1-implementation.md",
+    "amendment_review_path": "validation/implementation-plan-review.r1-recovery-amendment.2026-10-25.json",
+    "feature_references": {
+      "F01": {
+        "implementation": [
+          "src/auth/sessions.ts"
+        ],
+        "tests": [
+          "test/auth/human-session.test.ts"
+        ]
+      },
+      "F02": {
+        "implementation": [
+          "src/config/deployment.ts"
+        ],
+        "tests": [
+          "test/storage/workspace-bootstrap.test.ts"
+        ]
+      },
+      "F03": {
+        "implementation": [
+          "src/auth/native.ts"
+        ],
+        "tests": [
+          "test/auth/static-grants.test.ts"
+        ]
+      },
+      "F04": {
+        "implementation": [
+          "src/messages/commands.ts"
+        ],
+        "tests": [
+          "test/messages/acceptance.test.ts"
+        ]
+      },
+      "F05": {
+        "implementation": [
+          "src/messages/reads.ts"
+        ],
+        "tests": [
+          "test/messages/reads-ack.test.ts"
+        ]
+      },
+      "F06": {
+        "implementation": [
+          "src/messages/ack.ts"
+        ],
+        "tests": [
+          "test/messages/reads-ack.test.ts"
+        ]
+      },
+      "F07": {
+        "implementation": [
+          "src/outbox/dispatcher.ts"
+        ],
+        "tests": [
+          "test/outbox/recovery.test.ts"
+        ]
+      },
+      "F08": {
+        "implementation": [
+          "src/http/cursors.ts"
+        ],
+        "tests": [
+          "test/http/cursors.test.ts"
+        ]
+      },
+      "F09": {
+        "implementation": [
+          "src/ui/read-state.ts"
+        ],
+        "tests": [
+          "test/ui/read-dashboard.spec.ts"
+        ]
+      },
+      "F10": {
+        "implementation": [
+          "src/workspace/commands.ts"
+        ],
+        "tests": [
+          "test/audit/redaction.test.ts"
+        ]
+      },
+      "F27": {
+        "implementation": [
+          "src/ui/app.ts"
+        ],
+        "tests": [
+          "test/ui/read-dashboard.spec.ts"
+        ]
+      },
+      "F28": {
+        "implementation": [
+          "src/config/settings-service.ts"
+        ],
+        "tests": [
+          "test/config/settings.test.ts"
+        ]
+      },
+      "F30": {
+        "implementation": [
+          "src/ui/settings.ts"
+        ],
+        "tests": [
+          "test/ui/preferences.spec.ts"
+        ]
+      },
+      "F41": {
+        "implementation": [
+          "src/health/readiness.ts"
+        ],
+        "tests": [
+          "test/health/readiness.test.ts"
+        ]
+      }
+    }
+  }
 }
