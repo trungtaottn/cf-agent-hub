@@ -47,6 +47,7 @@ Read this set as a proposed contract for CF Agent Hub. A feature page describes 
 | [Troubleshooting](troubleshooting.md) | Symptom-driven diagnosis and safe recovery |
 | [Integrations](integrations.md) | Connector classification, permissions and truthful connection state |
 | [Release checklist](release-checklist.md) | Concrete evidence required before public availability |
+| [Branch governance and releases](branching-and-releases.md) | PR-only dev/beta and main/stable promotion policy; GitHub Ruleset setup |
 | [Security reporting](../SECURITY.md) | How to handle security findings without public secret disclosure |
 
 ## Contributor references
