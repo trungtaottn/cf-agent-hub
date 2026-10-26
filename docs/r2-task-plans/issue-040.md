@@ -10,7 +10,7 @@ Status: Implementation pending; planning review and R1 acceptance required.
 
 **Tech Stack:** Existing pinned TypeScript, Node 24.22.1/npm 11.19.1, Cloudflare Worker/SQLite DO, Vitest and Playwright. No new UI framework or general-purpose retry engine.
 
-**Spec:** `docs/superpowers/plans/2026-10-23-r2-durable-work.md` Tasks 1, 8–11; `spec/openapi.json`; `docs/cli.md`; `docs/kanban.md`; existing issues #21, #36–38, #40–42, #44–45 and #48. Exact issue snapshots are in `research/issues-clients.json`.
+**Spec:** `docs/superpowers/plans/2026-10-23-r2-durable-work.md` Tasks 1, 8–11; `spec/openapi.json`; `docs/cli.md`; `docs/kanban.md`; existing issues #21, #36–38, #40–42, #44–45 and #48. Exact issue snapshots are in [historical issue snapshot](https://github.com/trungtaottn/cf-agent-hub/blob/fdabd716b4af7ef0e5082e660dc2c397f003c303/docs/superpowers/plans/261026-0727-r2-agent-handoff/research/issues-clients.json) (prior evidence only; current live issue remains authority).
 
 ## Global Constraints
 
@@ -67,7 +67,7 @@ Consume enabled operation map from #23 and native facade #38. Produce a table-dr
 - [ ] Add foreign path IDs and embedded IDs for task/run/agent/credential/runtime/message/thread/artifact/content/search/event/catalog/import/cursor. Test null projects versus [] and no union of separate credentials.
 - [ ] Add revocation/expiry barriers before mutation/replay, between pages, during artifact verification and before background dispatch; wrong runtime of the same agent denies.
 - [ ] After process/DO restart replay all representative protected reads/mutations with revoked proof; inspect outputs/audit/cursor bytes for hidden IDs, snippets/counts and assert zero partial writes.
-- [ ] Add R1 regression coverage and negative unavailable R3/R4/recovery-product-credential cases; no test-only auth bypass.
+- [ ] Add server idempotency namespace cases showing principal/target separation rather than treating a reused key as global deduplication; cross-link #41/#44 no-send tests for changed client identity/target. Add R1 regression coverage and negative unavailable R3/R4/recovery-product-credential cases; no test-only auth bypass.
 - [ ] Run full matrix plus `npm run check`, record exact revision/runtime/case counts and skips as incomplete.
 - [ ] Independent security reviewer maps route/predicate to each case and requires fixes in the owning feature issue; commit only matrix/docs evidence work.
 
