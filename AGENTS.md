@@ -1,6 +1,6 @@
 # CF Agent Hub — Agent Contributor Guide
 
-Status: Repository-wide agent guidance · R1 source implemented; application releases and active GitHub branch protection require separate verification.
+Status: Repository-wide agent guidance · R1 source implemented; application releases and active GitHub branch protection remain pending verification.
 
 This is the **canonical instruction entry point for coding and automation agents working in this repository**. Read it before changing files, creating an issue/PR, running a deployment, or reporting completion. [`AGENT.md`](AGENT.md) is a compatibility pointer, not a separate policy. [`docs/agents.md`](docs/agents.md) specifies how **product users' external runtime agents** behave; it is not a substitute for this contributor guide.
 
