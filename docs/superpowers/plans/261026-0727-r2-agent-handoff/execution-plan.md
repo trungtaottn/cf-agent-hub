@@ -109,3 +109,7 @@ These are **planning branches**, not an instruction to implement directly on an 
 ## Release/readiness gate
 
 All runtime children remain blocked now. #19 is available as owner-directed planning only and still needs independent amendment review/integration. “Agent-readable” is not “ready to cook”. There is no safe automatically executable runtime queue until #17 and the recorded prerequisites are satisfied.
+
+## Revision 2 synchronization
+
+The approved four corrections and W1 workflow alignment are recorded in [decision delta](research/revision2-decision-delta.json). Whole-plan task/phase/common interfaces and tests must remain equivalent. Dependency types, shared-file ownership and hard #17 are unchanged. Historical receipts refer only to their original bytes; this revision requires fresh independent review. Corrections append to existing task branches under unchanged-tip guards, without force/rebase or extra task queues.

@@ -28,7 +28,7 @@ Publish the prior R1 fix as PR and close that workspace, then analyze R2 issues 
 
 ## Architecture invariants
 
-One authoritative workspace DO; one synchronous transaction for domain/event/outbox/replay. Recheck current session/credential/proof and maintenance generation after every await. 60s execution lease, 20s suggested renewal, 90s presence; presence never renews execution. Same-key/same-body replay reauthorizes; changed body conflicts. Submit is Review, independent acceptance is Done. Unknown/exhausted holds never silently requeue. Native agents cannot use human-only management lanes. R3 approvals remain unavailable. Immutable private artifacts commit only after verified byte generation; recovery completion grants no live admission.
+One authoritative workspace DO; one synchronous transaction for domain/event/outbox/replay. Recheck current session/credential/proof and maintenance generation after every await. 60s execution lease, 20s suggested renewal, 90s presence; presence never renews execution. Replay reauthorizes and binds principal plus full method/path/query/body/target/key; CLI redispatch also requires a proven retention window, otherwise no-send reconciliation. Changed request conflicts. Submit is Review, independent acceptance is Done. Unknown/exhausted holds never silently requeue. Native agents cannot use human-only management lanes. R3 approvals remain unavailable. Immutable private artifacts commit only after verified byte generation; recovery completion grants no live admission.
 
 ## Existing partial implementation versus gaps
 
@@ -42,7 +42,7 @@ Do not label the entire system absent: auth, transactional command wrapper, dura
 | D2 | Trusted product artifact/recovery binding map | Distinct product ARTIFACT_BUCKET and existing RECOVERY_BUCKET; RecoveryWorkspace exposes trusted artifactBucket, server-side copy under existing protocol; absent binding fails closed. No provisioning implied. | #22/#32/#39/#43/#46 |
 | D3 | Protected CLI secret backend and supported OS matrix | Select the supported OS/threat model first: phase04 proposes a narrow POSIX owner-only-file pilot (access control, not encryption/keychain) or an OS credential-vault adapter for stronger/cross-platform guarantees. Neither is approved; never silently fall back after secure storage failure. | #41/#44/#48 |
 | D-HISTORY | Full historical result read seam | Current Task.result/getRun/events do not expose previous result details after requeue. #20/#23 must freeze a public operation/schema before #27/#35 query/projection and #42 full history. Show unavailable honestly; do not narrow completion criteria or invent private routes. | #42/#49 full acceptance |
-| D-JOURNAL | CLI journal storage cap/retention | Select explicit reviewed values; unresolved operations never silently evict, block new admission at limit. | #41/#44 |
+| D-JOURNAL | CLI journal storage cap/retention | Select explicit reviewed values; unresolved operations never silently evict, block new admission at limit. Local retention does not extend server replay guarantees; expired/unknown windows require no-send reconciliation. | #41/#44 |
 | D4 | Final planning-branch base | Publication is now authorized as32 separate docs/r2-NNN-plan branches and corresponding issue comments, not32 PRs. Pin one base and reconcile accepted dev before runtime pickup. | Source-drift review; no additional publication approval needed |
 
 These are not invented approvals or a request to redesign already-fixed constants. Detailed canonical policy limits, catalog semantics, import bounds and search rules are retained. D1/D2 are gaps revealed by current code; they cannot be silently settled by a coding agent.
@@ -54,3 +54,7 @@ Historical migration0002 and illustrative recovery names are superseded by actua
 ## Non-goals
 
 No LLM hosting, agent execution sandbox, connectors, R3 approval activation, new authority service, global dependency bump, deployment/secret provisioning, automatic issue closure, merge or release.
+
+## Revision 2 synchronization
+
+The approved four corrections and W1 workflow alignment are recorded in [decision delta](research/revision2-decision-delta.json). Whole-plan task/phase/common interfaces and tests must remain equivalent. Dependency types, shared-file ownership and hard #17 are unchanged. Historical receipts refer only to their original bytes; this revision requires fresh independent review. Corrections append to existing task branches under unchanged-tip guards, without force/rebase or extra task queues.

@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "revision": 2,
+  "state": "awaiting-fresh-three-complete-review-passes",
+  "preFixCoverage": {
+    "reviewers": 3,
+    "tasksEach": 32
+  },
+  "ownerApproval": "four corrections and recommended recovery ordering approved; W1 workflow requested",
+  "productTests": "not run; planning only",
+  "structuralChecks": "revision2 pending; original source-equivalent docs107MD131JSON1206links/plans636 checks passed via parent separate environment at08:53:26UTC",
+  "readiness": "BLOCKED; no #17 or product decision approval inferred"
+}

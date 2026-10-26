@@ -51,7 +51,7 @@ Verify these acceptance conditions in isolation:
 - Every committed artifact has matching bytes, size and checksum; a missing byte stream blocks acceptance of that recovery set.
 - Unknown, removed and cross-workspace principals are denied; restored revoked credentials cannot be used.
 - Old lease owners fail, new claims obtain valid authority, and approvals still require the current proposal and authorized human.
-- A representative task can reach Review and be independently accepted; delivery remains paused throughout this check.
+- While the shared maintenance gate is closed, reconcile historical effects without redrive and complete ledger/probe/retirement/exclusive-cutover checks; unresolved effects deny resume. Explicitly resume the existing shared gate, then verify a fresh representative task reaches Review and independent acceptance. Normal post-resume delivery scheduling is not paused; no separate dispatch-only gate is introduced.
 - A repeated restore using the same manifest yields the same logical records and artifact coverage without duplicating effects.
 
 For production cutover, gate ingress, stop old dispatchers and runtimes, preserve the failed environment for investigation, update the operator-controlled workspace map only through an explicit recovery deployment, and run readiness again. Ensure exactly one authoritative environment is accepting commands. Resume delivery only after reconciliation and remove the maintenance gate deliberately.

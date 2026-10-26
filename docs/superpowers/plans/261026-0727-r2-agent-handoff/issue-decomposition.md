@@ -63,3 +63,7 @@ Read [synthesis](brainstorm-synthesis.md) for source-backed partial implementati
 ## Reconciliation recommendation
 
 Keep every existing child. Add exact plan/branch/commit comments only after verified publication. Do not rewrite older candidate claims as if they were historically false; date the new snapshot. Keep epic4 organizational and non-pickable. No duplicate new issue justified by current research; discovered provenance/binding/platform choices belong to #20/#22/#41 and their consumers.
+
+## Revision 2 synchronization
+
+The approved four corrections and W1 workflow alignment are recorded in [decision delta](research/revision2-decision-delta.json). Whole-plan task/phase/common interfaces and tests must remain equivalent. Dependency types, shared-file ownership and hard #17 are unchanged. Historical receipts refer only to their original bytes; this revision requires fresh independent review. Corrections append to existing task branches under unchanged-tip guards, without force/rebase or extra task queues.

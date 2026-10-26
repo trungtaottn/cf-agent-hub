@@ -1,0 +1,597 @@
+{
+  "snapshot": "2026-10-26T09:08:50Z",
+  "source": "https://github.com/trungtaottn/cf-agent-hub/issues/4",
+  "baseline": "7ab5cbf90ace18bbdce87db6804da14da1f92b9e",
+  "nodes": [
+    {
+      "issue": 19,
+      "title": "Amend the R2 implementation plan against the published R1 interfaces",
+      "state": "blocked",
+      "dependencies": [
+        {
+          "type": "hard",
+          "issue": 7
+        },
+        {
+          "type": "interface",
+          "issue": 9
+        }
+      ]
+    },
+    {
+      "issue": 20,
+      "title": "Amend execution policy, catalog lifecycle and R2 scope contracts",
+      "state": "blocked",
+      "dependencies": [
+        {
+          "type": "hard",
+          "issue": 17
+        },
+        {
+          "type": "hard",
+          "issue": 19
+        }
+      ]
+    },
+    {
+      "issue": 21,
+      "title": "Specify bounded import plans and confidential literal search",
+      "state": "blocked",
+      "dependencies": [
+        {
+          "type": "hard",
+          "issue": 17
+        },
+        {
+          "type": "hard",
+          "issue": 19
+        }
+      ]
+    },
+    {
+      "issue": 22,
+      "title": "Define V2 recovery byte coverage and V1 compatibility",
+      "state": "blocked",
+      "dependencies": [
+        {
+          "type": "hard",
+          "issue": 17
+        },
+        {
+          "type": "hard",
+          "issue": 19
+        }
+      ]
+    },
+    {
+      "issue": 23,
+      "title": "Extend canonical R1 boundaries and discover R2 verification files",
+      "state": "blocked",
+      "dependencies": [
+        {
+          "type": "hard",
+          "issue": 17
+        },
+        {
+          "type": "interface",
+          "issue": 20
+        },
+        {
+          "type": "interface",
+          "issue": 21
+        },
+        {
+          "type": "interface",
+          "issue": 22
+        }
+      ]
+    },
+    {
+      "issue": 24,
+      "title": "Migrate R1 identity and the complete R2 storage boundary",
+      "state": "blocked",
+      "dependencies": [
+        {
+          "type": "hard",
+          "issue": 23
+        },
+        {
+          "type": "hard",
+          "issue": 19
+        }
+      ]
+    },
+    {
+      "issue": 25,
+      "title": "Implement human-authorized agent and native credential lifecycle",
+      "state": "blocked",
+      "dependencies": [
+        {
+          "type": "hard",
+          "issue": 24
+        },
+        {
+          "type": "interface",
+          "issue": 20
+        }
+      ]
+    },
+    {
+      "issue": 26,
+      "title": "Enroll credential-bound runtimes and separate presence from leases",
+      "state": "blocked",
+      "dependencies": [
+        {
+          "type": "hard",
+          "issue": 25
+        },
+        {
+          "type": "interface",
+          "issue": 24
+        }
+      ]
+    },
+    {
+      "issue": 27,
+      "title": "Implement versioned task metadata, eligibility and authorized reads",
+      "state": "blocked",
+      "dependencies": [
+        {
+          "type": "hard",
+          "issue": 26
+        },
+        {
+          "type": "interface",
+          "issue": 20
+        },
+        {
+          "type": "interface",
+          "issue": 24
+        }
+      ]
+    },
+    {
+      "issue": 28,
+      "title": "Apply version-bound catalog archive and remap plans atomically",
+      "state": "blocked",
+      "dependencies": [
+        {
+          "type": "hard",
+          "issue": 27
+        },
+        {
+          "type": "hard",
+          "issue": 25
+        },
+        {
+          "type": "interface",
+          "issue": 20
+        }
+      ]
+    },
+    {
+      "issue": 29,
+      "title": "Enforce atomic claim, WIP, fences and execution lease renewal",
+      "state": "blocked",
+      "dependencies": [
+        {
+          "type": "hard",
+          "issue": 26
+        },
+        {
+          "type": "hard",
+          "issue": 28
+        },
+        {
+          "type": "interface",
+          "issue": 27
+        }
+      ]
+    },
+    {
+      "issue": 30,
+      "title": "Settle failed and expired attempts without losing uncertainty",
+      "state": "blocked",
+      "dependencies": [
+        {
+          "type": "hard",
+          "issue": 29
+        },
+        {
+          "type": "interface",
+          "issue": 20
+        }
+      ]
+    },
+    {
+      "issue": 31,
+      "title": "Cancel and requeue tasks with preserved holds and history",
+      "state": "blocked",
+      "dependencies": [
+        {
+          "type": "hard",
+          "issue": 30
+        },
+        {
+          "type": "interface",
+          "issue": 27
+        }
+      ]
+    },
+    {
+      "issue": 32,
+      "title": "Implement immutable artifact stage, upload, commit and authorized download",
+      "state": "blocked",
+      "dependencies": [
+        {
+          "type": "hard",
+          "issue": 31
+        },
+        {
+          "type": "interface",
+          "issue": 26
+        },
+        {
+          "type": "interface",
+          "issue": 24
+        }
+      ]
+    },
+    {
+      "issue": 33,
+      "title": "Reconcile expired artifact intents and orphans without deleting committed bytes",
+      "state": "blocked",
+      "dependencies": [
+        {
+          "type": "hard",
+          "issue": 32
+        },
+        {
+          "type": "interface",
+          "issue": 30
+        }
+      ]
+    },
+    {
+      "issue": 34,
+      "title": "Enable task and committed artifact references in existing messages",
+      "state": "blocked",
+      "dependencies": [
+        {
+          "type": "hard",
+          "issue": 32
+        },
+        {
+          "type": "interface",
+          "issue": 27
+        },
+        {
+          "type": "interface",
+          "issue": 25
+        }
+      ]
+    },
+    {
+      "issue": 35,
+      "title": "Submit results and require independent current-authority acceptance",
+      "state": "blocked",
+      "dependencies": [
+        {
+          "type": "hard",
+          "issue": 33
+        },
+        {
+          "type": "interface",
+          "issue": 32
+        },
+        {
+          "type": "hard",
+          "issue": 31
+        },
+        {
+          "type": "interface",
+          "issue": 29
+        }
+      ]
+    },
+    {
+      "issue": 36,
+      "title": "Search authorized resources with bounded confidential continuation",
+      "state": "blocked",
+      "dependencies": [
+        {
+          "type": "hard",
+          "issue": 35
+        },
+        {
+          "type": "hard",
+          "issue": 34
+        },
+        {
+          "type": "interface",
+          "issue": 21
+        }
+      ]
+    },
+    {
+      "issue": 37,
+      "title": "Apply reviewed import plans without overwriting local work",
+      "state": "blocked",
+      "dependencies": [
+        {
+          "type": "interface",
+          "issue": 21
+        },
+        {
+          "type": "hard",
+          "issue": 27
+        },
+        {
+          "type": "hard",
+          "issue": 31
+        },
+        {
+          "type": "interface",
+          "issue": 36
+        }
+      ]
+    },
+    {
+      "issue": 38,
+      "title": "Extend the existing transport with a typed native client facade",
+      "state": "blocked",
+      "dependencies": [
+        {
+          "type": "hard",
+          "issue": 37
+        },
+        {
+          "type": "interface",
+          "issue": 23
+        },
+        {
+          "type": "hard",
+          "issue": 34
+        }
+      ]
+    },
+    {
+      "issue": 39,
+      "title": "Capture a complete V2 SQL and artifact recovery set under durable quiescence",
+      "state": "blocked",
+      "dependencies": [
+        {
+          "type": "interface",
+          "issue": 22
+        },
+        {
+          "type": "hard",
+          "issue": 37
+        },
+        {
+          "type": "hard",
+          "issue": 33
+        },
+        {
+          "type": "interface",
+          "issue": 24
+        }
+      ]
+    },
+    {
+      "issue": 40,
+      "title": "Verify complete R2 workspace and current-authority isolation",
+      "state": "blocked",
+      "dependencies": [
+        {
+          "type": "hard",
+          "issue": 36
+        },
+        {
+          "type": "hard",
+          "issue": 37
+        },
+        {
+          "type": "hard",
+          "issue": 38
+        },
+        {
+          "type": "hard",
+          "issue": 34
+        }
+      ]
+    },
+    {
+      "issue": 41,
+      "title": "Persist CLI mutation intent and runtime proofs before dispatch",
+      "state": "blocked",
+      "dependencies": [
+        {
+          "type": "hard",
+          "issue": 38
+        },
+        {
+          "type": "interface",
+          "issue": 26
+        }
+      ]
+    },
+    {
+      "issue": 42,
+      "title": "Render the authorized task board and retained evidence honestly",
+      "state": "blocked",
+      "dependencies": [
+        {
+          "type": "hard",
+          "issue": 38
+        },
+        {
+          "type": "hard",
+          "issue": 35
+        },
+        {
+          "type": "interface",
+          "issue": 36
+        }
+      ]
+    },
+    {
+      "issue": 43,
+      "title": "Restore V2 in isolation and invalidate all recovered execution authority",
+      "state": "blocked",
+      "dependencies": [
+        {
+          "type": "hard",
+          "issue": 39
+        },
+        {
+          "type": "interface",
+          "issue": 31
+        },
+        {
+          "type": "interface",
+          "issue": 26
+        }
+      ]
+    },
+    {
+      "issue": 44,
+      "title": "Implement explicit native CLI commands and safe artifact file handling",
+      "state": "blocked",
+      "dependencies": [
+        {
+          "type": "hard",
+          "issue": 41
+        },
+        {
+          "type": "hard",
+          "issue": 38
+        },
+        {
+          "type": "interface",
+          "issue": 34
+        }
+      ]
+    },
+    {
+      "issue": 45,
+      "title": "Add accessible version-bound board commands and conflict recovery",
+      "state": "blocked",
+      "dependencies": [
+        {
+          "type": "hard",
+          "issue": 42
+        },
+        {
+          "type": "interface",
+          "issue": 38
+        },
+        {
+          "type": "interface",
+          "issue": 35
+        }
+      ]
+    },
+    {
+      "issue": 46,
+      "title": "Extend existing operator tooling for V2 recovery and explicit cutover",
+      "state": "blocked",
+      "dependencies": [
+        {
+          "type": "hard",
+          "issue": 43
+        },
+        {
+          "type": "interface",
+          "issue": 39
+        },
+        {
+          "type": "interface",
+          "issue": 19
+        }
+      ]
+    },
+    {
+      "issue": 47,
+      "title": "Extend the existing release verifier with additive R2 evidence gates",
+      "state": "blocked",
+      "dependencies": [
+        {
+          "type": "hard",
+          "issue": 17
+        },
+        {
+          "type": "interface",
+          "issue": 22
+        },
+        {
+          "type": "interface",
+          "issue": 38
+        },
+        {
+          "type": "hard",
+          "issue": 19
+        }
+      ]
+    },
+    {
+      "issue": 48,
+      "title": "Prove native CLI conformance against a real isolated HTTPS deployment",
+      "state": "blocked",
+      "dependencies": [
+        {
+          "type": "hard",
+          "issue": 44
+        },
+        {
+          "type": "evidence",
+          "issue": 40
+        }
+      ]
+    },
+    {
+      "issue": 49,
+      "title": "Close R2 on one reviewed candidate with real recovery and multi-agent evidence",
+      "state": "blocked",
+      "dependencies": [
+        {
+          "type": "evidence",
+          "issue": 17
+        },
+        {
+          "type": "evidence",
+          "issue": 40
+        },
+        {
+          "type": "evidence",
+          "issue": 48
+        },
+        {
+          "type": "evidence",
+          "issue": 45
+        },
+        {
+          "type": "hard",
+          "issue": 46
+        },
+        {
+          "type": "hard",
+          "issue": 47
+        }
+      ]
+    },
+    {
+      "issue": 50,
+      "title": "Prepare the reproducible R2 artifact and operator handoff after acceptance",
+      "state": "blocked",
+      "dependencies": [
+        {
+          "type": "hard",
+          "issue": 49
+        }
+      ]
+    }
+  ],
+  "historical_snapshot": "2026-10-26T07:26:00Z",
+  "note": "Pre-edit remote refs unchanged; all dependency classes retained. No runtime readiness inferred."
+}
