@@ -1,12 +1,12 @@
 # R2 Common Agent Pickup Contract
 
-Status: Implementation pending; no runtime task is ready to cook.
+Status: R2 MVP development authorized on isolated stacked draft PRs; technical prerequisites and live acceptance remain pending.
 
 ## Authority and base
 
 These are plan-only branches authorized by the owner, one per existing issue19–50. Candidate baseline: 4c8e487eee7b8a3d4f76562ecca2369819aa0a9a (PR93); dev at analysis: fcbe6139c65f9baafee9804a5c50867a1fcc0968. They do not contain accepted predecessor implementations. Before execution create/reconcile a work branch from then-current accepted dev and integrate all hard predecessors; do not implement directly against stale planning code. Read AGENTS and live issue state. No labels/body edits, automatic PR, merge, deployment or release are authorized by plan publication.
 
-#17 Verified R1 is a HARD start gate for runtime and #20–23 contract implementation. #19 is owner-directed planning only. #11 embedded tooling findings and #10/#14–18 live gates remain unresolved. Source CI, a plan branch, review or merge is not acceptance.
+#17 remains outstanding live acceptance, but is no longer a development start gate under the [owner amendment](owner-development-amendment-2026-10-26.md). The owner authorized sequential R2 MVP development and deferred live acceptance until after R4 development. Current coding scope is R2 only. #19 remains planning/reconciliation. #11 embedded tooling findings and #10/#14–18 evidence remain unresolved; source CI, review or a PR is not acceptance. All PRs stay draft and unmerged; each successor starts from and targets the preceding PR branch. Technical dependencies, contract review and source tests remain required.
 
 ## Canonical design and invariants
 
@@ -29,7 +29,7 @@ These are not invented approvals or a request to redesign already-fixed constant
 
 ## Whole-system issue/dependency index
 
-Hard blocks start; interface must be frozen before consumption; evidence blocks acceptance. Interface review can occur before successor implementation. No epic edge creates a cycle.
+The table below preserves the original dependency record. The owner amendment supersedes #17 only as a development-start dependency; other hard edges still block their consumers until the predecessor interface/source is reviewed and present in the stack. Interface must be frozen before consumption; evidence blocks acceptance. Interface review can occur before successor implementation. No epic edge creates a cycle.
 
 | Issue | Hard | Interface | Evidence |
 | --- | --- | --- | --- |
@@ -76,7 +76,7 @@ Every implementation task begins with its named failing assertions under the cor
 
 ## Handoff
 
-Report current base/HEAD, live issue gates, unresolved decisions and exact files before edits. If blocked, return blocker evidence without implementing. When authorized and eligible, implement only the selected issue. Return scoped commit, focused/full checks, review findings and remaining evidence gates.
+Report current base/HEAD, live issue gates, unresolved decisions and exact files before edits. If a technical prerequisite or unresolved owner design decision blocks the selected work, return precise blocker evidence; the deferred #17 live gate alone does not prohibit authorized MVP development. When authorized and eligible, implement only the selected issue. Return scoped commit, focused/full checks, review findings and remaining evidence gates.
 
 ## Approved review corrections — 2026-10-26
 
@@ -85,3 +85,7 @@ The owner approved complete immutable CLI request/principal binding, conservativ
 ## AgentKit workflow alignment (W1)
 
 Repository AGENTS.md and the current issue remain authority. Inspect actual installed AgentKit CLI/version/help and available skill files; read the applicable ak-plan red-team/validate workflow before planning. CLI plan parse/validate checks format, not semantic review or owner approval. Record exact plan/source hashes, source-evidenced findings, user decisions and a whole-plan consistency sweep; preserve unresolved blockers. Only after explicit implementation authorization and all gates clear, read the actual installed ak-cook workflow and follow its applicable bounded task/TDD steps. Use installed ak-code-review for independent review and ak-debug for diagnosed failures when available; if unavailable, report the gap rather than invent commands. Never enable automatic execution flags, emulate unsupported ak-team, assume hooks are active, or create another transaction/workflow authority. Existing one-or-two-subtask handoffs, nonzero test collection and truthful evidence requirements still apply. W1 records the owner's requested workflow synchronization, not a newly discovered defect or implementation permission.
+
+## Current owner direction — development and stacked PRs
+
+The [2026-10-26 owner amendment](owner-development-amendment-2026-10-26.md) supersedes conflicting historical start-gate and publication-only clauses above and in retained task plans. It authorizes current R2 code, tests, review and issue-scoped commits/draft PRs on own cloud, not merge, deployment, credentials, live operations or release. Earlier review status/authorization paragraphs remain historical records. Do not use the old #17 start condition to block this authorized development; do not infer D1/D2/D3/D-HISTORY/D-JOURNAL approval.
