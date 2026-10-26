@@ -1,0 +1,41 @@
+{
+  "native_export": "separately retained AK-native artifact",
+  "records": [
+    {
+      "file": "phase-01-start.md",
+      "native_sha256": "3aa2ccc647d5c8f028f7f96c9cd2590cc99f1b5caf18a752fa276f6178588625",
+      "repository_sha256": "1e93c43fc6691db3faf90aed767473762a039cd8e768c913b4c9fdf55e6c0018",
+      "transformation": "Remove YAML frontmatter and leading blank line; remaining body identical"
+    },
+    {
+      "file": "phase-02-identity-storage.md",
+      "native_sha256": "e9913d71a6567096e57e662f3fe3313316a6cf6731783aeeced0f5bc9f185e73",
+      "repository_sha256": "f13bd5eefa0451d1b1d07caebc20f65870332411326fedd8be232783b6a1ce92",
+      "transformation": "Remove YAML frontmatter and leading blank line; remaining body identical"
+    },
+    {
+      "file": "phase-03-durable-execution.md",
+      "native_sha256": "b448d499edf0ee437d185835fe75e0e4634d56894ee8c30a944bc9c9be36f8a4",
+      "repository_sha256": "0a08b51a9d3528c04e5ac6c8fa22d9cdbe8e858c730e615ec5a46054c42434ba",
+      "transformation": "Remove YAML frontmatter and leading blank line; remaining body identical"
+    },
+    {
+      "file": "phase-04-clients-ui-import-search.md",
+      "native_sha256": "4c31657ec109bb51aa3843ec78e4632ff49b9e31987f230f3e180635b46d6f7a",
+      "repository_sha256": "a5a2461d11beacdf52ae73141558b9bbdb9996befd31de9231f0db73bbd5d834",
+      "transformation": "Remove YAML frontmatter and leading blank line; remaining body identical"
+    },
+    {
+      "file": "phase-05-recovery-evidence.md",
+      "native_sha256": "37e64ff91e3d8ff84785896a88cdb88ff2df2da1ad1d2d3815f376ad383fb224",
+      "repository_sha256": "217b25a79cf76ed4d58c9100cd4b7e3e6c94e36ab99424fb8cb16bda918f1ef7",
+      "transformation": "Remove YAML frontmatter and leading blank line; remaining body identical"
+    },
+    {
+      "file": "plan.md",
+      "native_sha256": "0c5263cc50d1acce6f3e6d284e9bbb4c1d5c15e00a9f2531f2b4275b61a7c6c8",
+      "repository_sha256": "1690bada7d0fb163a50dc85e530d7e6285b3ea82380d7c955d73bd7df211b6cc",
+      "transformation": "Remove YAML frontmatter and leading blank line; remaining body identical"
+    }
+  ]
+}
