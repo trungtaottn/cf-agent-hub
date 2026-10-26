@@ -14,10 +14,29 @@ import { beforeEach } from 'vitest';
 import { runInDurableObject } from 'cloudflare:test';
 import { installed,control,start,callback,login,request,cookie } from '../helpers/auth';
 beforeEach(async()=>{await control('reset');});
-it.each(['signature','wrong_algorithm','unknown_refresh_failed','issuer','audience','extra_audience','azp','nonce','subject','future_iat','old_iat','invalid_iat','missing_iat','missing_exp','expired','equal_exp_iat','future_nbf','invalid_nbf','unknown_key','jwks-down','jwks-redirect','jwks-oversize'])('rejects_invalid_signature_issuer_audience_and_nonce: %s',async(mode)=>{
+it.each(['signature','wrong_algorithm','unknown_refresh_failed','issuer','audience','extra_audience','azp','nonce','subject','old_iat','invalid_iat','missing_iat','missing_exp','expired','equal_exp_iat','invalid_nbf','unknown_key','jwks-down','jwks-redirect','jwks-oversize'])('rejects_invalid_signature_issuer_audience_and_nonce: %s',async(mode)=>{
  const {stub}=await installed('reject-'+mode);const result=await login(stub,mode);
  expect(result.response.status).toBe(401);expect(Boolean(result.cookie)).toBe(false);
  expect(await runInDurableObject(stub,(_o,state)=>state.storage.sql.exec('SELECT COUNT(*) AS n FROM sessions').one().n)).toBe(0);
+});
+// Keep one-second claim boundaries deterministic across signing/JWKS transport.
+// A real wall clock can cross into the claimed second before verification.
+it.each(['future_iat','future_nbf','normal'])('verifies_claim_time_against_fixed_clock: %s',async(mode)=>{
+ const name='fixed-time-'+mode,{stub}=await installed(name),attempt=await start(stub);
+ const instant=Date.now();
+ const issued=await (await control('issue',{authorization_url:attempt.authorization_url,mode,now:instant})).json() as {code:string};
+ const outcome=await runInDurableObject(stub,async(_o,state)=>{
+  try {
+   await completeLogin({storage:state.storage,workspaceId:'ws_example',objectName:name,secrets:env as unknown as Record<string,unknown>,clock:{nowMs:()=>instant},entropy:systemEntropy},issued.code,new URL(attempt.authorization_url).searchParams.get('state')!,attempt.cookie.split('=')[1]);
+   return 'accepted';
+  } catch(error) {
+   if(!(error instanceof AuthError))throw error;
+   expect(error.status).toBe(401);
+   return error.code;
+  }
+ });
+ expect(outcome).toBe(mode==='normal'?'accepted':'UNAUTHENTICATED');
+ expect(await runInDurableObject(stub,(_o,state)=>state.storage.sql.exec('SELECT COUNT(*) AS n FROM sessions').one().n)).toBe(mode==='normal'?1:0);
 });
 it.each(['pin-mismatch','issuer-mismatch','unsupported-auth','unsupported-mode','discovery-redirect','discovery-oversize','discovery-down'])('refuses_unapproved_discovery_before_endpoint_use: %s',async(mode)=>{
  const {stub}=await installed('discovery-'+mode);await control('mode',mode);
@@ -63,6 +82,7 @@ it('no_tokens_in_browser_storage_or_redirect',async()=>{
  const rows=await runInDurableObject(stub,(_o,state)=>state.storage.sql.exec('SELECT * FROM sessions').toArray());expect(JSON.stringify(rows).includes(result.cookie.split('=')[1])).toBe(false);expect(rows[0].auth_epoch).toBe(1);
 });
 
+import { AuthError } from '../../src/auth/context';
 import { completeLogin,beginLogin } from '../../src/auth/sessions';
 import { installConfiguration } from '../../src/config/bootstrap';
 import { withTransaction } from '../../src/storage/transaction';
