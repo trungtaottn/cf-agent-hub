@@ -143,6 +143,25 @@ test('network fault fixture: uncertain preference write replays exact key/body a
  expect(writes.length).toBe(attemptsBeforeReplay+1);expect(writes.length).toBeGreaterThanOrEqual(2);
  for(const write of writes)expect(write).toEqual(writes[0]);
 });
+test('local profile validation shows safe field paths and never dispatches rejected or malformed JSON',async({page})=>{
+ await login(page);await page.getByRole('link',{name:'Settings',exact:true}).click();
+ await page.getByText('Edit complete portable profile').click();
+ const editor=page.getByLabel('Portable profile JSON',{exact:true});
+ const draft=JSON.parse(await editor.inputValue());
+ draft.projects=[{id:'project_one',display_name:9,description:'',archived:false}];
+ let previewWrites=0;
+ await page.route('**/v2/workspaces/ws_example/profile:preview',async route=>{++previewWrites;await route.continue();});
+ await editor.fill(JSON.stringify(draft));
+ await page.getByRole('button',{name:'Preview profile',exact:true}).click();
+ await expect(page.getByTestId('profile-result')).toContainText('Invalid request');
+ await expect(page.getByTestId('profile-result')).toContainText('/profile/projects/0/display_name');
+ expect(previewWrites).toBe(0);
+ await editor.fill('{"contract_revision":');
+ await page.getByRole('button',{name:'Preview profile',exact:true}).click();
+ await expect(page.getByTestId('profile-result')).toContainText('Correct the profile JSON');
+ expect(previewWrites).toBe(0);
+});
+
 test('profile preview/apply/export use authoritative revisions and text-safe labels',async({page})=>{
  await login(page);await page.getByRole('link',{name:'Settings',exact:true}).click();
  const label='<svg onload=alert(1)> Long profile label';
