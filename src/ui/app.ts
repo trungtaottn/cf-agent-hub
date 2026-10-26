@@ -83,7 +83,11 @@ function renderNavigation():void{
   return true;
  });
  const visible=new Set<string>(entries.map(([name])=>name));
- for(const [name,link]of navigationLinks)if(!visible.has(name))link.remove();
+ let removedFocusedLink=false;
+ for(const [name,link]of navigationLinks)if(!visible.has(name)){
+  if(document.activeElement===link)removedFocusedLink=true;
+  link.remove();
+ }
  // Keep retained links mounted: asynchronous reads and stale-state ticks must not steal keyboard focus.
  for(const [index,[name,label]]of entries.entries()){
   let link=navigationLinks.get(name);
@@ -94,6 +98,7 @@ function renderNavigation():void{
   if(currentView===name&&!threadId)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');
   if(navigation.children.item(index)!==link)navigation.insertBefore(link,navigation.children.item(index));
  }
+ if(removedFocusedLink)navigationLinks.get('overview')?.focus();
 }
 const statuses:Record<ReadState<unknown>['status'],string>={
  loading:'Loading — waiting for an authenticated response',ready:'Current response',empty:'Successful empty response',

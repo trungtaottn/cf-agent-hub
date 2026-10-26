@@ -1,0 +1,26 @@
+{
+  "scope": "r1-contributor-status-marker-correction-only",
+  "recorded_at": "2026-10-26T06:53:42Z",
+  "independent_review": true,
+  "reviewer": "review_r1_docs_amendment",
+  "recorded_by": "reconcile_r1_docs_ch",
+  "review_outcome": "no_blocking_documentation_findings",
+  "open_blocking_findings": [],
+  "owner_approval": false,
+  "product_runtime_tests_run_by_this_review": false,
+  "reviewed_sha256": {
+    "AGENTS.md": "3b3419e9eaac9df3622bd5e32b75588bc63e9bf0820638882a45e353a26c21cc"
+  },
+  "previous_review": {
+    "path": "validation/implementation-plan-review.r1-entrypoints.2026-10-26.json",
+    "sha256": "8761806f355224398801f77def7d42235cd846f032e9778af534b8d462d2fa59",
+    "previous_agents_sha256": "1767e803c04620962cbb87103d3a0855d592bcf3788d978462d5d3f5e02e2c6d",
+    "relationship": "Additive follow-on review; previous receipt and its exact reviewed bytes remain historical."
+  },
+  "summary": "Reviewer independently inspected the one-line diff and final AGENTS.md hash. Replacing 'require separate verification' with 'remain pending verification' preserves unresolved release/enforcement status and satisfies the documented status-marker vocabulary without changing authority or policy. No other AGENTS.md change was part of this correction.",
+  "validation": "Main-worker final documentation validator rerun required; no validator pass is asserted by this review.",
+  "limitations": [
+    "Documentation-only review; not owner approval, product acceptance, release or active enforcement evidence.",
+    "Historical review receipts are preserved; this correction supersedes only the earlier AGENTS.md file hash."
+  ]
+}

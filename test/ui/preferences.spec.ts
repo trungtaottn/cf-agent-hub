@@ -155,6 +155,7 @@ test('local profile validation shows safe field paths and never dispatches rejec
  await page.getByRole('button',{name:'Preview profile',exact:true}).click();
  await expect(page.getByTestId('profile-result')).toContainText('Invalid request');
  await expect(page.getByTestId('profile-result')).toContainText('/profile/projects/0/display_name');
+ await screenshot(page,'validation-safe-field');
  expect(previewWrites).toBe(0);
  await editor.fill('{"contract_revision":');
  await page.getByRole('button',{name:'Preview profile',exact:true}).click();

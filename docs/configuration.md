@@ -88,7 +88,7 @@ Register the exact configured GET callback with the provider and choose the Basi
 
 ### Executable R1 settings transport
 
-The R1 source implements the settings routes described above using the canonical OpenAPI DTOs and generated validators. Browser settings screens and live deployment verification are later gates. Public deployment and policy writes remain outside these routes.
+The R1 source implements the settings routes described above using the canonical OpenAPI DTOs and generated validators. [Browser settings screens](../src/ui/settings.ts) are also implemented; live deployment verification remains a separate pending gate. Public deployment and policy writes remain outside these routes.
 
 An absent personal preference has revision `0`, neutral values (`system`, `comfortable`, `overview`), and no stored row or edit event. A first `PUT /preferences` supplies `expected_preferences_revision:0` and commits revision `1`. Stored row versions, profile revisions, installed epochs and settings event resource versions remain positive. A stale first-write request can report `current_revision:0`.
 

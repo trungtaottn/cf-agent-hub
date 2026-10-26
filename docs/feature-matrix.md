@@ -70,7 +70,7 @@ Status advances in order: **Specified** → **Implemented** → **Verified** →
 
 ## R1 candidate identity and evidence
 
-The implementation is based on commit `dbb708b4318df6944519d6a2b19ada352aef488f` plus the retained uncommitted R1 candidate. The handoff records the exact source inventory, patch, immutable review hashes and command receipts. It is not a tagged release revision. The [source and check mapping](r1-implementation.md#source-and-executable-checks) covers every R1 row; the [remaining acceptance gates](r1-implementation.md#acceptance-still-required-before-verified) are explicit exceptions to promotion. Later-release contracts and fixtures do not imply that their routes or interfaces are available.
+The source baseline observed on published `dev` on 2026-10-26 is [`fcbe6139c65f9baafee9804a5c50867a1fcc0968`](https://github.com/trungtaottn/cf-agent-hub/commit/fcbe6139c65f9baafee9804a5c50867a1fcc0968). This is committed and published source, not an uncommitted candidate, deployed-byte attestation or tagged release. Subsequent changes require their own exact revision and evidence; this baseline does not attest the current working diff. See the [dated historical-plan amendment](superpowers/plans/2026-10-26-r1-source-reconciliation.md). The [source and check mapping](r1-implementation.md#source-and-executable-checks) covers every R1 row; the [remaining acceptance gates](r1-implementation.md#acceptance-still-required-before-verified) are explicit exceptions to promotion. Later-release contracts and fixtures do not imply that their routes or interfaces are available.
 
 ## Gate interpretation
 
