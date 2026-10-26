@@ -1,6 +1,6 @@
 # CF Agent Hub — Agent Contributor Guide
 
-Status: Repository-wide agent guidance pending review and merge; application releases and GitHub branch protection remain pending verification.
+Status: Repository-wide agent guidance · R1 source implemented; application releases and active GitHub branch protection require separate verification.
 
 This is the **canonical instruction entry point for coding and automation agents working in this repository**. Read it before changing files, creating an issue/PR, running a deployment, or reporting completion. [`AGENT.md`](AGENT.md) is a compatibility pointer, not a separate policy. [`docs/agents.md`](docs/agents.md) specifies how **product users' external runtime agents** behave; it is not a substitute for this contributor guide.
 
@@ -10,7 +10,7 @@ This is the **canonical instruction entry point for coding and automation agents
 
 The planned deployment comprises a Cloudflare Worker for authenticated entry, a workspace-scoped SQLite-backed Durable Object for authoritative domain state and the durable outbox, and R2 for private artifact bytes when the relevant capability exists. The HTTP API, UI, CLI, MCP, and future A2A adapters must share **one** domain command/authorization model.
 
-**Do not mistake a design contract, committed code, a green source test, or an opened PR for a released feature.** The authoritative [capability matrix](docs/feature-matrix.md) tracks the progression **Specified → Implemented → Verified → Released**, with exact evidence. The default `main` / `dev` design baseline does not itself contain the unfinished R1 application implementation. A separate R1 implementation exists on the [Draft PR #1](https://github.com/trungtaottn/cf-agent-hub/pull/1) branch; it must not be counted as verified or released until its open defects, security audit, and real acceptance evidence are resolved.
+**Do not mistake a design contract, committed code, a green source test, or an opened PR for a released feature.** The authoritative [capability matrix](docs/feature-matrix.md) tracks the progression **Specified → Implemented → Verified → Released**, with exact evidence. Published `dev` contains the R1 source implementation; the exact observed baseline and remaining gates are recorded in [R1 implementation and acceptance](docs/r1-implementation.md). Do not infer the contents of `main` or any other checkout from that observation. Source publication or integration must not be counted as verification or release until the applicable defects, toolchain review and real acceptance gates are resolved.
 
 **Authority and conflict resolution:**
 
@@ -34,7 +34,7 @@ The planned deployment comprises a Cloudflare Worker for authenticated entry, a 
 | Execution task contracts | [Round implementation plans](docs/superpowers/plans/README.md) and [GitHub roadmap #2](https://github.com/trungtaottn/cf-agent-hub/issues/2) | [R1 #3](https://github.com/trungtaottn/cf-agent-hub/issues/3), [R2 #4](https://github.com/trungtaottn/cf-agent-hub/issues/4), [R3 #5](https://github.com/trungtaottn/cf-agent-hub/issues/5), [R4 #6](https://github.com/trungtaottn/cf-agent-hub/issues/6) and their child issues |
 | Branch policy / SemVer | [Branch-governance PR #89](https://github.com/trungtaottn/cf-agent-hub/pull/89) and [Semantic Release Draft PR #90](https://github.com/trungtaottn/cf-agent-hub/pull/90) | `docs/branching-and-releases.md`, `docs/github-rulesets/`, and `.github/workflows/` **when present on the checked-out branch** |
 
-**Branch-awareness is mandatory.** The default design baseline has documentation and Python validators, not necessarily a root `package.json` or the implementation's `src/`, `workers/`, `packages/` and browser tests. Those paths exist on an implementation branch only when that branch actually contains them. Read the current file tree before invoking commands. Do not create a second runtime or duplicate a generated API contract merely because a file is absent from `dev`.
+**Branch-awareness is mandatory.** Published R1 source includes `package.json`, `src/`, `workers/`, `packages/` and browser tests alongside documentation and Python validators. Historical design-only checkouts may not contain those paths. Read the current file tree before invoking commands. Do not create a second runtime or duplicate a generated API contract merely because a file is absent from `dev`.
 
 ## 3. Round boundaries — do not cross a release gate accidentally
 
@@ -47,7 +47,7 @@ The planned deployment comprises a Cloudflare Worker for authenticated entry, a 
 
 Read the [round plans](docs/superpowers/plans/README.md) **and** current child issues before implementing. R2–R4 are not an excuse to expose unfinished routes in R1. The complete list of 42 capabilities and their actual evidence is in the [feature matrix](docs/feature-matrix.md); never turn “Specified” into “Verified” from a plan checkbox.
 
-**Dated context (2026-10-25; always recheck):** The R1 PR is still an unmerged candidate; its dependency security findings are owned by [R1-TOOLCHAIN #11](https://github.com/trungtaottn/cf-agent-hub/issues/11), and integrated acceptance by [R1-ACCEPT #17](https://github.com/trungtaottn/cf-agent-hub/issues/17). Earlier R1 source passes are not deployment/release evidence. The governance and Semantic Release proposals are separate PRs and must not be treated as already active just because their files or branches exist.
+**Dated context (2026-10-26; always recheck):** R1 source is published on `dev`, without implying deployed acceptance. Its remaining toolchain review is owned by [R1-TOOLCHAIN #11](https://github.com/trungtaottn/cf-agent-hub/issues/11), and integrated acceptance by [R1-ACCEPT #17](https://github.com/trungtaottn/cf-agent-hub/issues/17). Earlier R1 source passes are not deployment/release evidence. The governance and Semantic Release proposals are separate PRs and must not be treated as already active just because their files or branches exist.
 
 ## 4. Non-negotiable product invariants
 

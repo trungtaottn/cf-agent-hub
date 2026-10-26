@@ -1,8 +1,8 @@
 # Contributing
 
-Status: Contribution policy for design baseline 0.1 · Runtime implementation pending.
+Status: Contribution policy · R1 source implemented; isolated acceptance and release pending.
 
-Contributions should make the proposed product easier to implement, operate and verify. The current package contains design contracts and documentation checks, not a released application. Keep implementation status accurate and use synthetic examples.
+Contributions should make the product easier to implement, operate and verify. The current package contains R1 source, tests, design contracts and documentation checks, not a released application. The [feature matrix](docs/feature-matrix.md) and [R1 implementation record](docs/r1-implementation.md) distinguish implemented source from pending deployed acceptance. Keep implementation status accurate and use synthetic examples.
 
 Coding and automation contributors must also follow the [repository agent guide](AGENTS.md). [AGENT.md](AGENT.md) is a pointer, not an alternate policy; product runtime-agent behavior is separately specified in [docs/agents.md](docs/agents.md).
 

@@ -1,0 +1,67 @@
+{
+  "scope": "r1-documentation-reconciliation-only",
+  "recorded_at": "2026-10-26T06:48:43Z",
+  "source_baseline": "fcbe6139c65f9baafee9804a5c50867a1fcc0968",
+  "independent_review": true,
+  "reviewer": "review_r1_docs_amendment",
+  "recorded_by": "reconcile_r1_docs_ch",
+  "review_outcome": "no_blocking_documentation_findings",
+  "open_blocking_findings": [],
+  "owner_approval": false,
+  "product_runtime_tests_run_by_this_review": false,
+  "reviewed_sha256": {
+    "docs/configuration.md": "39a38253209b19c45f5e9a467f420327d601b01b91f7e5630b61076cb4cb8b89",
+    "docs/customization.md": "45ec382cafe6fcd9c8ee3a61c269f31e19e6f9641dc90e2e9188024a9dd24735",
+    "docs/feature-matrix.md": "2a8af027df7cf8ca0052d234de349407025a725364760b09736bd1b8d6b0b134",
+    "docs/r1-implementation.md": "9e844298e24a2ce09ac9613c89bbf5de9b906b5752227bc5ac4f35c509969cd6",
+    "docs/release-checklist.md": "0184fdd8e575e92799334e2758e0b9e0bfaca73b96e4d6a8e9388086c202897d",
+    "docs/runbooks/toolchain.md": "a059139d4b1b179b3d3967e863f6cedc3b3a773264a279c6af2ce0bdddb44938",
+    "docs/superpowers/plans/2026-10-26-r1-source-reconciliation.md": "fad62c7a6040befe91c44d619ea10b8afc875a98f76aa55d901af98616bd23e1"
+  },
+  "preserved_historical_sha256": {
+    "docs/superpowers/plans/2026-10-23-r1-foundation.md": "beec9d0ca34e10297774754a1f75d1310b3b5728ff1f16efcae9a36c9d30724e",
+    "docs/superpowers/plans/2026-10-23-r2-durable-work.md": "7bd7520370bf058ca4e69218210666bce4544d468cb2312f7f813bc320cc6c1b",
+    "docs/superpowers/plans/README.md": "ade7c4fb7a3a0042c4eb36af62b0745767fd316bc991242388d62394ca13a2ed",
+    "validation/implementation-plan-review.json": "6b48f8e8a5b9455a142bdbeb435a72bb91cc9be4fd0f24dc247c1ded7e896e86",
+    "validation/implementation-plan-register.json": "8673e2bcf66db60c6b7b66da3aed14a804ee6e7852c30f5144dbacec41d0d2f0",
+    "validation/implementation-plan-review.r1-recovery-amendment.2026-10-25.json": "9c52ca7c7d8fc9e134504317c2869dbca9b2c4a993579b99bc60c24e8a18516c"
+  },
+  "summary": "Independent read-only review checked the six current-document deltas and additive dated amendment against source, actual CLI, migrations 1–7, browser settings/navigation, remote baseline/publication status, and preserved historical hashes. Status remains Implemented, not Verified or Released. The amendment supersedes obsolete instructions without rewriting historical approvals.",
+  "evidence": [
+    {
+      "kind": "independently_read_installed_tree_audit",
+      "sha256": "35e0426803b28f102cdd1eba85d65f3fa1b51d66d21f2d8403514054bcd55c49",
+      "observation": "Retained npm audit report has zero total findings; this is not embedded dependency clearance."
+    },
+    {
+      "kind": "independently_read_embedded_inventory",
+      "sha256": "afecea32462119dc251484df414bc5b22499f95fbe39d4103b05a24d960b333c",
+      "observation": "Bundle markers match independently read operation receipts; inventory is explicitly incomplete and blocked."
+    }
+  ],
+  "validation": {
+    "scope": "documentation-and-plan-structure-only",
+    "reported_by": "complete_relay_r1_ch",
+    "task_id": "task_UwgCYy9RoxbuOEFuNE837N3OIB1V9EcD",
+    "environment": "Task-local Debian Python 3.11.2 with pinned documentation requirements",
+    "docs": {
+      "command": "python -B scripts/validate_docs.py",
+      "exit_code": 0,
+      "markdown_files": 63,
+      "json_files": 120,
+      "links": 962
+    },
+    "plans": {
+      "command": "python -B scripts/validate_plans.py",
+      "exit_code": 0,
+      "checks": 636
+    },
+    "receipt_not_in_prior_validation": true
+  },
+  "limitations": [
+    "This records the separate reviewer's reported independent documentation review, not self-review or owner approval.",
+    "The reviewer read the retained zero-audit report; clean-install provenance was supplied by the main worker. The supplied install operation ID was unavailable, so this receipt does not claim independent retrieval or rerun of that install.",
+    "No product-test pass, advisory-applicability decision, complete security inventory, deployed identity journey, recovery acceptance, deployed-byte provenance or release approval is established.",
+    "Historical plan validators cover their registered artifacts; they do not independently approve this additive amendment. This new receipt must be included in a subsequent documentation validation pass."
+  ]
+}

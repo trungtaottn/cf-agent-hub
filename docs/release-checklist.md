@@ -1,8 +1,8 @@
 # Release checklist
 
-Status: Design baseline · Contract revision 0.1 · Implementation pending.
+Status: R1 source implemented · Contract revision 0.2 · Isolated acceptance and release pending.
 
-This checklist is a release gate specification. All capabilities are currently **Specified**. Unchecked requirements below are not reported test failures; they identify evidence that implementation must produce. No release can claim “Implemented” or “Verified” by checking a documentation box without the corresponding runtime results.
+This checklist is a release gate specification. The [feature matrix](feature-matrix.md) records 14 R1 capabilities as **Implemented** and 28 later-round capabilities as **Specified**; none are Verified or Released. The published source baseline and remaining gates are recorded in [R1 implementation and acceptance](r1-implementation.md). Unchecked requirements below identify required acceptance evidence, not automatically test failures. Documentation checks and source passes do not replace deployed acceptance or authorize release.
 
 ## Evidence record
 

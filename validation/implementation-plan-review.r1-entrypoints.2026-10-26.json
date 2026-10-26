@@ -1,0 +1,33 @@
+{
+  "scope": "r1-contributor-entrypoint-status-correction-only",
+  "recorded_at": "2026-10-26T06:51:13Z",
+  "independent_review": true,
+  "reviewer": "review_r1_docs_amendment",
+  "recorded_by": "reconcile_r1_docs_ch",
+  "review_outcome": "no_blocking_documentation_findings",
+  "open_blocking_findings": [],
+  "owner_approval": false,
+  "product_runtime_tests_run_by_this_review": false,
+  "reviewed_sha256": {
+    "AGENTS.md": "1767e803c04620962cbb87103d3a0855d592bcf3788d978462d5d3f5e02e2c6d",
+    "CONTRIBUTING.md": "2b2acac0a0435e302e1975f61f3ca947581168be0d9af3c9e18ca1b2770f4d63"
+  },
+  "prior_separate_review": {
+    "path": "validation/implementation-plan-review.r1-docs-amendment.2026-10-26.json",
+    "sha256": "1d65d054c906afc2cd0b72881a6e492d224b048cf1c26ac7a8613cce0fc1ae65",
+    "relationship": "Supplementary two-file review only; prior seven-file receipt remains unchanged."
+  },
+  "source_baseline": "fcbe6139c65f9baafee9804a5c50867a1fcc0968",
+  "summary": "Reviewer independently read the exact two-file diff and verified both final hashes. Factual status wording now reflects published R1 source on dev, without inferring main contents, PR merge status, active enforcement, deployed verification or release. Existing branch-awareness, authority, policy and acceptance boundaries are preserved.",
+  "validation": {
+    "whitespace_check": "git diff --check",
+    "exit_code": 0,
+    "documentation_validator": "Final main-worker rerun required after this receipt; no new validator pass claimed here."
+  },
+  "limitations": [
+    "This records an independent documentation review, not maintainer or owner approval.",
+    "The reviewer reran no product tests and exercised no approval authority.",
+    "No branch-protection state, release, deployment, product acceptance or toolchain security clearance is asserted.",
+    "Historical plan artifacts and review receipts are unchanged; this review applies only to the two identified entrypoint files."
+  ]
+}

@@ -4,6 +4,12 @@ Status: R1 source candidate · Implementation and local verification records ret
 
 The candidate implements the R1 foundation for CF Agent Hub: current human/static-native authority, durable messages and recipient ACK, bounded reads, truthful browser state, policy-preserving settings and logical SQL recovery. This document identifies reviewable source and the remaining acceptance boundary. It is not a release evidence manifest or a claim that a deployed environment passed.
 
+## Published baseline and remaining work
+
+The published `dev` baseline observed on 2026-10-26 is [`fcbe6139c65f9baafee9804a5c50867a1fcc0968`](https://github.com/trungtaottn/cf-agent-hub/commit/fcbe6139c65f9baafee9804a5c50867a1fcc0968). [Publication #7](https://github.com/trungtaottn/cf-agent-hub/issues/7) is closed. This identity records published source, not deployment provenance or acceptance of subsequent working changes.
+
+Track unavailable-Agents preference fallback in [#8](https://github.com/trungtaottn/cf-agent-hub/issues/8), safe client validation locations in [#12](https://github.com/trungtaottn/cf-agent-hub/issues/12), and profile navigation in [#13](https://github.com/trungtaottn/cf-agent-hub/issues/13). The baseline contains validation-location and navigation implementations; an open issue is not proof that its original source defect is still present, nor does source presence prove acceptance. Exact candidate checks and independent review must reconcile each issue. [Toolchain #11](https://github.com/trungtaottn/cf-agent-hub/issues/11), [provenance #14](https://github.com/trungtaottn/cf-agent-hub/issues/14), and [integrated acceptance #17](https://github.com/trungtaottn/cf-agent-hub/issues/17) remain separate gates. The [dated amendment](superpowers/plans/2026-10-26-r1-source-reconciliation.md) supersedes obsolete historical command and migration assumptions without rewriting their review receipts.
+
 ## Source and executable checks
 
 | R1 scope | Implementation | Main checks |
@@ -48,7 +54,7 @@ The CLI smoke exercises the complete recovery sequence against local HTTPS and s
 | Deployed recovery | Authenticated operator denial, interrupted continuation and complete capture → restore → resolution → probe → retirement → resume on disposable isolated authorities |
 | Final release evidence | The single [release verifier](runtime-evidence.md) accepts all required actual evidence for the reviewed revision/build/environment; missing or failed gates keep R1 unpromoted |
 
-The current work session has no configured deployment target or Cloudflare/OIDC/operator credentials. Those external workflows have not been executed. The pinned dependency graph also retains known toolchain advisories, including embedded copies; a passing local suite does not clear that gate. The first real rehearsal must use a separately authorized disposable source and target, with the current ledger and signing/encryption material held outside captured SQL and the checkout.
+No deployed acceptance receipt is established by this document. External workflows remain pending until an explicitly authorized target and protected inputs are available and actual receipts are reviewed. The 2026-10-26 clean install reported zero installed-tree audit findings; this does not clear the distinct embedded/toolchain inventory gate. The package manifest includes Undici/Zod overrides, while bundled distributions require separate inspection under #11. A passing local suite or installed-tree audit does not clear that gate. The first real rehearsal must use a separately authorized disposable source and target, with the current ledger and signing/encryption material held outside captured SQL and the checkout.
 
 No feature is promoted to Verified or Released from this document. R2–R4 features remain unavailable. In particular, R1 has no task engine, runtime enrollment/claims, artifact API, team administration, MCP or A2A implementation, and its recovery binding does not establish artifact-byte recovery.
 

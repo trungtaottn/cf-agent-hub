@@ -19,7 +19,7 @@ CF Agent Hub uses exact project dependencies and a committed npm lockfile. Run `
 | workerd | 1.20261019.1 |
 | Chromium headless shell | 156.0.8078.4, revision 1248 |
 
-The beta Miniflare version is part of the published Wrangler/plugin dependency graph. No forced overrides or legacy peer resolution are used. `npm ls --all` reports the actual resolved tree.
+The beta Miniflare version is part of the published Wrangler/plugin dependency graph. The current package manifest declares `undici: ^7.30.1` and `zod: ^4.6.6` overrides. The lockfile owns their resolved versions; overrides do not rewrite copies embedded in distributed bundles. Do not use forced installation or legacy peer resolution to bypass compatibility checks. `npm ls --all` reports the actual resolved tree.
 
 ## Commands
 
@@ -94,6 +94,6 @@ The exact pins are recorded in package metadata, the lockfile, the runtime versi
 
 ## Dependency gate remains blocked
 
-The 2026-10-25 assessment found affected Undici and Zod versions in the locked toolchain and in bundled Wrangler/Miniflare distributions. Changing only a leaf lockfile entry would leave embedded code unchanged. The selected npm distribution also contains an affected bundled Undici copy. No override, downgrade or hand-edited vendor bundle is treated as a fix. CI runs the installed-tree audit; the release evidence gate additionally requires a complete reviewed embedded inventory. Runtime production reachability has not been established by this toolchain finding.
+The 2026-10-25 assessment is historical: it found affected Undici and Zod versions in the then-locked toolchain and bundled Wrangler/Miniflare distributions. On 2026-10-26 a clean pinned install reported zero installed-tree audit findings, but separate inspection still found Wrangler bundle markers for Undici 7.29.1 and Zod 4.6.5, Miniflare Zod 4.6.5, and npm's bundled Undici 6.28.0. These markers require advisory applicability and exact-byte review; installed-tree audit output does not cover or clear them. Track the unresolved gate in [R1-TOOLCHAIN #11](https://github.com/trungtaottn/cf-agent-hub/issues/11). Changing only a leaf lockfile entry would leave embedded code unchanged. The selected npm distribution also contains an affected bundled Undici copy. No override, downgrade or hand-edited vendor bundle is treated as a fix. CI runs the installed-tree audit; the release evidence gate additionally requires a complete reviewed embedded inventory. Runtime production reachability has not been established by this toolchain finding.
 
 Resolve the coordinated toolchain update, regenerate its inventory, review the exact shipped bytes and rerun the candidate gates before real release use. Reference the official [Node 24.22.1 release](https://nodejs.org/en/blog/release/v24.22.1) and the upstream Undici advisories [GHSA-4qv8-2p9j-2685](https://github.com/nodejs/undici/security/advisories/GHSA-4qv8-2p9j-2685), [GHSA-f72v-6w45-q472](https://github.com/nodejs/undici/security/advisories/GHSA-f72v-6w45-q472) and [GHSA-xjj6-f33q-929c](https://github.com/nodejs/undici/security/advisories/GHSA-xjj6-f33q-929c).
