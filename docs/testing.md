@@ -18,6 +18,14 @@ This page defines the evidence needed to trust a future implementation. The curr
 
 Record the revision, environment, command, expected outcome, observed result and retained evidence for each gate. A result with an unknown environment is not reproducible evidence.
 
+## Runtime discovery and shared boundaries
+
+The [runner ownership matrix](../test/helpers/runtime-suites.ts) is consumed by the Node, ordinary Workers and operator Vitest configurations. Future domain paths are reservations, not passing tests. The live native conformance suite is excluded from all three; its dedicated runner belongs to the later CLI owner. Existing recovery CLI `.mjs` tests remain under Node's test runner.
+
+Use the installed Vitest `list --json` against each configuration to collect actual tests, and require nonzero counts with no cross-runner file overlap. `--filesOnly` inventories paths; it does not prove test execution. Do not use `--passWithNoTests` or count absent future files as coverage. Explicit acceptance filenames prevent live credentials or operator bindings from leaking into ordinary source tests.
+
+Generated native DTO aliases share the HTTP schema source; generation does not make a route available. Domain owners must extend event/cursor maps only with implemented current-resource predicates and persisted evidence. Unknown producers and unsupported cursor operations deny; task/search/history retention semantics are not inherited from message cursors. See the [shared-boundary execution record](r2-task-plans/issue-023-execution.md) for scoped local evidence and limitations.
+
 ## Core scenario matrix
 
 | Scenario | Failure injected | Required assertion |

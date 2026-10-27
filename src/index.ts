@@ -1,3 +1,4 @@
+import {r2Routes} from './http/r2-routes';
 import {isUiRequest,serveUi} from './http/ui-routes';
 import {operationsPath} from './http/operations-routes';
 import {readinessPath} from './http/readiness-routes';
@@ -8,7 +9,6 @@ import {settingsPath} from './http/settings-routes';
 import { parseDeployment,resolveWorkspace } from './config/deployment';
 import { authFailure,securityHeaders } from './http/auth-routes';
 import { AuthError,cookieHeader } from './auth/context';
-import {HttpError,toHttpError} from './http/envelopes';
 export { WorkspaceDO } from './workspace/workspace-do';
 export default {
  async scheduled(_controller:ScheduledController,env:Env):Promise<void>{
@@ -31,6 +31,6 @@ export default {
     const workspace=resolveWorkspace(config,selected[1]);return await env.WORKSPACE.getByName(workspace.objectName).fetch(request);
    }catch(error){const headers=new Headers(securityHeaders);if(match?.[2]==='callback')headers.append('set-cookie',cookieHeader('cfhub_login','',0));return authFailure(match?.[2]==='callback'&&(!(error instanceof AuthError)||error.status===503)?new AuthError('UNAUTHENTICATED',401):error,crypto.randomUUID(),headers);}
   }
-  return toHttpError(new HttpError('NOT_FOUND',404),crypto.randomUUID());
+  return r2Routes(request);
  }
 };
