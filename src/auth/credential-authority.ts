@@ -53,6 +53,18 @@ export function credentialGrantAllowed(tx:WorkspaceTransaction,row:CredentialAut
  if(!ceiling||!grantsCover(ceiling.scopes,ceiling.projects,grant.scopes,grant.projects))return false;
  if(agent.origin==='human_managed')return true;
  if(agent.origin!=='operator_static')return false;
- const sources=tx.all<CredentialAuthorityRow>("SELECT * FROM native_credentials WHERE workspace_id=? AND agent_id=? AND origin='operator_static' AND enabled=1 AND retired_at_epoch IS NULL AND revoked_at IS NULL AND config_epoch=? AND expires_at>=? AND expires_at>?",[row.workspace_id,row.agent_id,metadata.config_epoch,row.expires_at,nowMs]);
- return sources.some(source=>{const allowed=grants(source);return !!allowed&&grantsCover(allowed.scopes,allowed.projects,grant.scopes,grant.projects);});
+ // The installed static reference set is bounded by the canonical configuration
+ // (1000 globally). Historical retired credentials can grow without bound; never
+ // filter-scan that table to discover current adoption authority.
+ const installed=tx.one<{config_json:string}>('SELECT config_json FROM workspace_metadata WHERE workspace_id=?',[row.workspace_id]);
+ if(!installed)return false;
+ try{
+  const config=parseDeployment(JSON.parse(installed.config_json));if(config.config_epoch!==metadata.config_epoch)return false;
+  return config.static_credential_refs.some(ref=>{
+   if(ref.workspace_id!==row.workspace_id||ref.agent_id!==row.agent_id||!ref.enabled||Date.parse(ref.expires_at)<row.expires_at||Date.parse(ref.expires_at)<=nowMs||!grantsCover(ref.scopes,ref.project_ids,grant.scopes,grant.projects))return false;
+   const source=tx.one<CredentialAuthorityRow>('SELECT * FROM native_credentials WHERE workspace_id=? AND credential_id=?',[row.workspace_id,ref.credential_id]);
+   if(!source||source.agent_id!==row.agent_id||source.origin!=='operator_static'||source.enabled!==1||source.retired_at_epoch!==null||source.revoked_at!=null||source.config_epoch!==metadata.config_epoch||source.expires_at<row.expires_at||source.expires_at<=nowMs)return false;
+   const allowed=grants(source);return !!allowed&&grantsCover(allowed.scopes,allowed.projects,grant.scopes,grant.projects);
+  });
+ }catch{return false;}
 }

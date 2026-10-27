@@ -1,3 +1,4 @@
+import {parseExecutionPolicy} from './execution-policy-validation.ts';
 import { validateDeployment, type DeploymentConfig } from './generated/validators.js';
 export type { DeploymentConfig } from './generated/validators.js';
 function invalid(field:string):never {throw Error('INVALID_CONFIGURATION: '+field);}
@@ -45,6 +46,7 @@ export function parseDeployment(input:unknown):DeploymentConfig {
  for(const ref of config.static_credential_refs)if(!agentExists(ref.workspace_id,ref.agent_id))invalid('static_credential_refs.agent_id');
  if(config.workspace_policies.length!==catalog.length)invalid('workspace_policies');
  for(const policy of config.workspace_policies) {
+  if(policy.execution_policy!==undefined){try{parseExecutionPolicy(policy.execution_policy);}catch{invalid("workspace_policies.execution_policy");}}
   unique(policy.notification_destinations,x=>x.destination_id,'notification_destinations.destination_id');
   for(const dest of policy.notification_destinations)if(!approvedHttpsUrl(dest.url)||!agentExists(policy.workspace_id,dest.agent_id))invalid('notification_destinations');
  }

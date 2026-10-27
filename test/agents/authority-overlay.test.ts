@@ -1,7 +1,8 @@
 import {it,expect} from 'vitest';
+import {env} from 'cloudflare:workers';
 import {runInDurableObject} from 'cloudflare:test';
 import {identityFixture as settingsFixture} from '../helpers/identity';
-import {fixture} from '../helpers/environment';
+import {fixture,operator} from '../helpers/environment';
 import {prepareBootstrap,installConfiguration,restoreAuthorityOverlay} from '../../src/config/bootstrap';
 import {withTransaction,type WorkspaceTransaction} from '../../src/storage/transaction';
 import {resolveActor} from '../../src/auth/authorize';
@@ -67,13 +68,21 @@ it('same_epoch_install_is_noop_but_restore_overlay_revokes_dynamic_rows',async()
  }));
 });
 it('partial_static_grants_are_never_unioned_for_dynamic_adoption_or_dispatch',async()=>{
- const {stub}=await settingsFixture('identity-nonunion-ceiling');
+ const name='identity-nonunion-ceiling',raw=await fixture(name);
+ raw.config.human_grants[0].scopes=['messages:read','messages:send','credentials:manage'];
+ raw.config.static_credential_refs[0].scopes=['messages:read'];
+ raw.config.static_credential_refs.push({...raw.config.static_credential_refs[0],credential_id:'static_second',scopes:['messages:read','messages:send']});
+ raw.bundle.credentials.push({...raw.bundle.credentials[0],credential_id:'static_second',token_sha256:'c'.repeat(64)});
+ const {canonicalJson,sha256}=await import('../../src/config/bootstrap');raw.bundle.config_digest=await sha256(canonicalJson(raw.config));
+ const input=await prepareBootstrap(raw.config,raw.bundle,workspaceId),stub=env.WORKSPACE.getByName(name);await stub.reconcileConfiguration(operator(),input);
  await runInDurableObject(stub,(_o,state)=>withTransaction(state.storage,tx=>{
   const now=Date.now();seed(tx,now,true);
   tx.exec(`UPDATE human_grants SET scopes_json='["messages:read","messages:send","credentials:manage"]'`);
   tx.exec(`UPDATE native_credentials SET scopes_json='["messages:read","messages:send"]' WHERE origin='human_managed'`);
   tx.exec(`UPDATE native_credentials SET scopes_json='["messages:read"]' WHERE origin='operator_static'`);
-  tx.exec(`INSERT INTO native_credentials(credential_id,workspace_id,agent_id,token_sha256,scopes_json,project_ids_json,expires_at,enabled,config_epoch) VALUES ('static_second','ws_example','agent_research',?,'["messages:send"]','null',?,1,1)`,['c'.repeat(64),now+200000]);
+  // Narrow the installed second source for the no-union case, then restore only
+  // within its real configured ceiling for the coherent-source positive case.
+  tx.exec(`UPDATE native_credentials SET scopes_json='["messages:send"]' WHERE credential_id='static_second'`);
   expect(()=>resolveActor(tx,identity,now)).toThrow();
   expect(participantCanReadMessages(tx,workspaceId,{kind:'agent',id:'agent_research'},[],now,'messages:send')).toBe(false);
   tx.exec(`UPDATE native_credentials SET scopes_json='["messages:read","messages:send"]' WHERE credential_id='static_second'`);

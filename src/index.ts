@@ -1,3 +1,4 @@
+import {taskPath} from './http/task-routes';
 import {r2Routes,identityPath} from './http/r2-routes';
 import {isUiRequest,serveUi} from './http/ui-routes';
 import {operationsPath} from './http/operations-routes';
@@ -21,8 +22,8 @@ export default {
   if(request.method==='GET'&&url.pathname==='/health/live')return Response.json({status:'alive'},{headers:securityHeaders});
   const match=/^\/v2\/workspaces\/([a-zA-Z0-9_-]{1,128})\/auth\/(start|callback|session|logout)$/.exec(url.pathname);
   const settings=settingsPath.exec(url.pathname),message=messagePath.exec(url.pathname),operations=operationsPath.exec(url.pathname),readiness=readinessPath.exec(url.pathname),base=workspacePath.exec(url.pathname);
-  const identity=identityPath.exec(url.pathname);
-  const selected=match??settings??message??operations??readiness??base??identity;
+  const identity=identityPath.exec(url.pathname),task=taskPath.exec(url.pathname);
+  const selected=match??settings??message??operations??readiness??base??identity??task;
   if(selected) {
    try {
     const raw=(env as unknown as Record<string,unknown>).DEPLOYMENT_CONFIG;

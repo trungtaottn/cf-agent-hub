@@ -1,6 +1,6 @@
 # Task lifecycle
 
-Status: Design baseline · Contract revision 0.1 · Implementation pending.
+Status: Local metadata source with broader lifecycle implementation and live acceptance pending · Contract revision 0.1.
 
 This is the canonical proposed state machine. A task represents a durable unit of work and its review outcome. A run represents one execution attempt. A notification or ACK represents message delivery. These objects have independent lifecycles and must never substitute for one another.
 
@@ -86,3 +86,11 @@ If a client loses the response to a claim or submit, it retries the same idempot
 ## Acceptance scenarios
 
 Required evidence includes simultaneous claims, WIP contention, a stale owner's submit after reassignment, heartbeat at the lease boundary, an old approval after a new proposal, rejection/expiry without execution, cancellation concurrent with submit, replay after a committed-but-lost response, retry exhaustion, and denied self-acceptance through a different credential belonging to the submitting agent. Assert persisted state, event, outbox and idempotency outcome together. A board screenshot alone cannot prove this contract.
+
+## Local issue27 source boundary
+
+Local source now implements server-owned Backlog creation, metadata-only Backlog/Ready edits, explicit Ready scheduling, current task reads and retained-result queries. This is not deployed verification. Create fixes retry policy at admission; PATCH cannot change retry/hold/state/run/result/approval authority, and any retained approval pointer blocks edits. Ready creates no run and grants no execution lease. Unsupported claim/submit/review/approval routes remain unavailable.
+
+All mutation responses and original replay outcomes undergo current complete resource visibility. A current result with an unreadable artifact hides the whole task in lists and denies single-task/mutation responses rather than replacing the result with null. Replay does not reapply an old version or state precondition, but loss of current or original returned-reference visibility denies it. Events, task history and sanitized outcomes commit with the task in one synchronous transaction.
+
+See the [issue27 ledger](r2-task-plans/issue-027-execution.md) for source tests, bounded-query limits and remaining live gates. Later result producers and restore must validate both the standalone history result and its embedded resulting Task against the supported response envelope; this issue supplies the shared fit guard, not those successor write operations.
