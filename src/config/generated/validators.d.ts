@@ -35,7 +35,7 @@ export type DeploymentConfig = {
 "principal_id": string;
 "issuer": string;
 "subject": string;
-"scopes": Array<"workspace:read" | "messages:send" | "messages:read" | "messages:review" | "events:read" | "profile:edit" | "operations:read">;
+"scopes": Array<"workspace:read" | "messages:send" | "messages:read" | "messages:review" | "events:read" | "profile:edit" | "operations:read" | "tasks:read" | "tasks:create" | "tasks:edit" | "tasks:schedule" | "tasks:review" | "tasks:cancel" | "agents:read" | "agents:manage" | "credentials:manage" | "artifacts:read" | "artifacts:write" | "search:read" | "imports:manage">;
 "project_ids": unknown;
 "enabled": boolean;
 }>;
@@ -43,7 +43,7 @@ export type DeploymentConfig = {
 "workspace_id": string;
 "credential_id": string;
 "agent_id": string;
-"scopes": Array<"workspace:read" | "messages:send" | "messages:read" | "messages:ack" | "events:read">;
+"scopes": Array<"workspace:read" | "messages:send" | "messages:read" | "messages:ack" | "events:read" | "tasks:read" | "tasks:create" | "tasks:edit" | "tasks:schedule" | "tasks:claim" | "tasks:execute" | "tasks:review" | "tasks:cancel" | "agents:read" | "runtimes:manage" | "artifacts:read" | "artifacts:write" | "search:read">;
 "project_ids": unknown;
 "expires_at": string;
 "enabled": boolean;

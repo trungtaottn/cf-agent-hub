@@ -1,6 +1,6 @@
 // Generated from spec/openapi.json; npm run generate:auth.
 export type Actor = {"kind":"human" | "agent" | "system";"principal_id":string;"agent_id":string | null};
-export type Scope = "workspace:read" | "tasks:read" | "tasks:create" | "tasks:edit" | "tasks:schedule" | "tasks:claim" | "tasks:execute" | "tasks:review" | "tasks:cancel" | "approvals:read" | "approvals:decide" | "agents:read" | "agents:manage" | "runtimes:manage" | "messages:read" | "messages:send" | "messages:ack" | "artifacts:read" | "artifacts:write" | "events:read" | "credentials:manage" | "search:read" | "messages:review" | "profile:edit" | "operations:read";
+export type Scope = "workspace:read" | "tasks:read" | "tasks:create" | "tasks:edit" | "tasks:schedule" | "tasks:claim" | "tasks:execute" | "tasks:review" | "tasks:cancel" | "approvals:read" | "approvals:decide" | "agents:read" | "agents:manage" | "runtimes:manage" | "messages:read" | "messages:send" | "messages:ack" | "artifacts:read" | "artifacts:write" | "events:read" | "credentials:manage" | "search:read" | "messages:review" | "profile:edit" | "operations:read" | "imports:manage";
 export type Workspace = {"id":string;"display_name":string;"contract_revision":"0.1";"actor":Actor;"effective_scopes":Array<Scope>};
 export type WorkspaceResponse = {"data":Workspace;"request_id":string};
 export type ReadinessCheck = {"name":string;"status":"pass" | "fail" | "unknown";"code":string;"checked_at":string | null};

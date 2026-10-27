@@ -1,0 +1,720 @@
+{
+  "label": "model transcripts, not actual API test",
+  "checks": "5 assertions passed",
+  "cases": [
+    {
+      "hidden": 0,
+      "candidate_limit1": [
+        {
+          "data": [
+            "a"
+          ],
+          "more": true
+        },
+        {
+          "data": [
+            "b"
+          ],
+          "more": false
+        }
+      ],
+      "fixed4_limit1": [
+        {
+          "data": [
+            "a"
+          ],
+          "more": true
+        },
+        {
+          "data": [
+            "b"
+          ],
+          "more": false
+        }
+      ],
+      "authorized_limit1": [
+        {
+          "data": [
+            "a"
+          ],
+          "more": true
+        },
+        {
+          "data": [
+            "b"
+          ],
+          "more": false
+        }
+      ]
+    },
+    {
+      "hidden": 1,
+      "candidate_limit1": [
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [
+            "a"
+          ],
+          "more": true
+        },
+        {
+          "data": [
+            "b"
+          ],
+          "more": false
+        }
+      ],
+      "fixed4_limit1": [
+        {
+          "data": [
+            "a"
+          ],
+          "more": true
+        },
+        {
+          "data": [
+            "b"
+          ],
+          "more": false
+        }
+      ],
+      "authorized_limit1": [
+        {
+          "data": [
+            "a"
+          ],
+          "more": true
+        },
+        {
+          "data": [
+            "b"
+          ],
+          "more": false
+        }
+      ]
+    },
+    {
+      "hidden": 2,
+      "candidate_limit1": [
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [
+            "a"
+          ],
+          "more": true
+        },
+        {
+          "data": [
+            "b"
+          ],
+          "more": false
+        }
+      ],
+      "fixed4_limit1": [
+        {
+          "data": [
+            "a"
+          ],
+          "more": true
+        },
+        {
+          "data": [
+            "b"
+          ],
+          "more": false
+        }
+      ],
+      "authorized_limit1": [
+        {
+          "data": [
+            "a"
+          ],
+          "more": true
+        },
+        {
+          "data": [
+            "b"
+          ],
+          "more": false
+        }
+      ]
+    },
+    {
+      "hidden": 3,
+      "candidate_limit1": [
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [
+            "a"
+          ],
+          "more": true
+        },
+        {
+          "data": [
+            "b"
+          ],
+          "more": false
+        }
+      ],
+      "fixed4_limit1": [
+        {
+          "data": [
+            "a"
+          ],
+          "more": true
+        },
+        {
+          "data": [
+            "b"
+          ],
+          "more": false
+        }
+      ],
+      "authorized_limit1": [
+        {
+          "data": [
+            "a"
+          ],
+          "more": true
+        },
+        {
+          "data": [
+            "b"
+          ],
+          "more": false
+        }
+      ]
+    },
+    {
+      "hidden": 4,
+      "candidate_limit1": [
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [
+            "a"
+          ],
+          "more": true
+        },
+        {
+          "data": [
+            "b"
+          ],
+          "more": false
+        }
+      ],
+      "fixed4_limit1": [
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [
+            "a"
+          ],
+          "more": true
+        },
+        {
+          "data": [
+            "b"
+          ],
+          "more": false
+        }
+      ],
+      "authorized_limit1": [
+        {
+          "data": [
+            "a"
+          ],
+          "more": true
+        },
+        {
+          "data": [
+            "b"
+          ],
+          "more": false
+        }
+      ]
+    },
+    {
+      "hidden": 5,
+      "candidate_limit1": [
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [
+            "a"
+          ],
+          "more": true
+        },
+        {
+          "data": [
+            "b"
+          ],
+          "more": false
+        }
+      ],
+      "fixed4_limit1": [
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [
+            "a"
+          ],
+          "more": true
+        },
+        {
+          "data": [
+            "b"
+          ],
+          "more": false
+        }
+      ],
+      "authorized_limit1": [
+        {
+          "data": [
+            "a"
+          ],
+          "more": true
+        },
+        {
+          "data": [
+            "b"
+          ],
+          "more": false
+        }
+      ]
+    },
+    {
+      "hidden": 7,
+      "candidate_limit1": [
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [
+            "a"
+          ],
+          "more": true
+        },
+        {
+          "data": [
+            "b"
+          ],
+          "more": false
+        }
+      ],
+      "fixed4_limit1": [
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [
+            "a"
+          ],
+          "more": true
+        },
+        {
+          "data": [
+            "b"
+          ],
+          "more": false
+        }
+      ],
+      "authorized_limit1": [
+        {
+          "data": [
+            "a"
+          ],
+          "more": true
+        },
+        {
+          "data": [
+            "b"
+          ],
+          "more": false
+        }
+      ]
+    },
+    {
+      "hidden": 8,
+      "candidate_limit1": [
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [
+            "a"
+          ],
+          "more": true
+        },
+        {
+          "data": [
+            "b"
+          ],
+          "more": false
+        }
+      ],
+      "fixed4_limit1": [
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [
+            "a"
+          ],
+          "more": true
+        },
+        {
+          "data": [
+            "b"
+          ],
+          "more": false
+        }
+      ],
+      "authorized_limit1": [
+        {
+          "data": [
+            "a"
+          ],
+          "more": true
+        },
+        {
+          "data": [
+            "b"
+          ],
+          "more": false
+        }
+      ]
+    },
+    {
+      "hidden": 9,
+      "candidate_limit1": [
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [
+            "a"
+          ],
+          "more": true
+        },
+        {
+          "data": [
+            "b"
+          ],
+          "more": false
+        }
+      ],
+      "fixed4_limit1": [
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [
+            "a"
+          ],
+          "more": true
+        },
+        {
+          "data": [
+            "b"
+          ],
+          "more": false
+        }
+      ],
+      "authorized_limit1": [
+        {
+          "data": [
+            "a"
+          ],
+          "more": true
+        },
+        {
+          "data": [
+            "b"
+          ],
+          "more": false
+        }
+      ]
+    },
+    {
+      "hidden": 16,
+      "candidate_limit1": [
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [
+            "a"
+          ],
+          "more": true
+        },
+        {
+          "data": [
+            "b"
+          ],
+          "more": false
+        }
+      ],
+      "fixed4_limit1": [
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [],
+          "more": true
+        },
+        {
+          "data": [
+            "a"
+          ],
+          "more": true
+        },
+        {
+          "data": [
+            "b"
+          ],
+          "more": false
+        }
+      ],
+      "authorized_limit1": [
+        {
+          "data": [
+            "a"
+          ],
+          "more": true
+        },
+        {
+          "data": [
+            "b"
+          ],
+          "more": false
+        }
+      ]
+    }
+  ]
+}

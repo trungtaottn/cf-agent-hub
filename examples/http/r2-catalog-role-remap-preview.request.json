@@ -1,0 +1,8 @@
+{
+  "expected_profile_revision": 1,
+  "kind": "work_role",
+  "id": "role_a",
+  "operation": "remap",
+  "replacement_id": "role_b",
+  "reason": "Consolidate roles"
+}

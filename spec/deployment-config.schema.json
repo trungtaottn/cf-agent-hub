@@ -228,7 +228,20 @@
                 "messages:review",
                 "events:read",
                 "profile:edit",
-                "operations:read"
+                "operations:read",
+                "tasks:read",
+                "tasks:create",
+                "tasks:edit",
+                "tasks:schedule",
+                "tasks:review",
+                "tasks:cancel",
+                "agents:read",
+                "agents:manage",
+                "credentials:manage",
+                "artifacts:read",
+                "artifacts:write",
+                "search:read",
+                "imports:manage"
               ]
             },
             "maxItems": 1000,
@@ -300,7 +313,20 @@
                 "messages:send",
                 "messages:read",
                 "messages:ack",
-                "events:read"
+                "events:read",
+                "tasks:read",
+                "tasks:create",
+                "tasks:edit",
+                "tasks:schedule",
+                "tasks:claim",
+                "tasks:execute",
+                "tasks:review",
+                "tasks:cancel",
+                "agents:read",
+                "runtimes:manage",
+                "artifacts:read",
+                "artifacts:write",
+                "search:read"
               ]
             },
             "maxItems": 1000,

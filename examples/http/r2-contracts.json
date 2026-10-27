@@ -1,0 +1,166 @@
+{
+  "execution_policy": {
+    "policy_version": 1,
+    "agent_wip_limit": 1,
+    "task_retry_limit": 2,
+    "artifact_upload_ttl_seconds": 900,
+    "eligibility_rules": [
+      {
+        "project_id": null,
+        "work_role_id": null,
+        "eligible_agent_ids": [
+          "agent_a",
+          "agent_b"
+        ]
+      }
+    ],
+    "replay_safety_rules": [
+      {
+        "id": "rule_a",
+        "project_id": null,
+        "work_role_id": null,
+        "classification": "replay_safe",
+        "evidence_ref": "reviewed-evidence-a"
+      }
+    ]
+  },
+  "invalid_execution_policies": [
+    {
+      "name": "invalid_wip",
+      "expected_code": "invalid_shape",
+      "value": {
+        "policy_version": 1,
+        "agent_wip_limit": 0,
+        "task_retry_limit": 2,
+        "artifact_upload_ttl_seconds": 900,
+        "eligibility_rules": [
+          {
+            "project_id": null,
+            "work_role_id": null,
+            "eligible_agent_ids": [
+              "agent_a",
+              "agent_b"
+            ]
+          }
+        ],
+        "replay_safety_rules": [
+          {
+            "id": "rule_a",
+            "project_id": null,
+            "work_role_id": null,
+            "classification": "replay_safe",
+            "evidence_ref": "reviewed-evidence-a"
+          }
+        ]
+      }
+    },
+    {
+      "name": "duplicate_tuple",
+      "expected_code": "duplicate_eligibility_tuple",
+      "value": {
+        "policy_version": 1,
+        "agent_wip_limit": 1,
+        "task_retry_limit": 2,
+        "artifact_upload_ttl_seconds": 900,
+        "eligibility_rules": [
+          {
+            "project_id": null,
+            "work_role_id": null,
+            "eligible_agent_ids": [
+              "agent_a",
+              "agent_b"
+            ]
+          },
+          {
+            "project_id": null,
+            "work_role_id": null,
+            "eligible_agent_ids": [
+              "agent_c"
+            ]
+          }
+        ],
+        "replay_safety_rules": [
+          {
+            "id": "rule_a",
+            "project_id": null,
+            "work_role_id": null,
+            "classification": "replay_safe",
+            "evidence_ref": "reviewed-evidence-a"
+          }
+        ]
+      }
+    },
+    {
+      "name": "duplicate_rule_id",
+      "expected_code": "duplicate_replay_id",
+      "value": {
+        "policy_version": 1,
+        "agent_wip_limit": 1,
+        "task_retry_limit": 2,
+        "artifact_upload_ttl_seconds": 900,
+        "eligibility_rules": [
+          {
+            "project_id": null,
+            "work_role_id": null,
+            "eligible_agent_ids": [
+              "agent_a",
+              "agent_b"
+            ]
+          }
+        ],
+        "replay_safety_rules": [
+          {
+            "id": "rule_a",
+            "project_id": null,
+            "work_role_id": null,
+            "classification": "replay_safe",
+            "evidence_ref": "reviewed-evidence-a"
+          },
+          {
+            "id": "rule_a",
+            "project_id": "project_a",
+            "work_role_id": null,
+            "classification": "replay_safe",
+            "evidence_ref": "reviewed-evidence-a"
+          }
+        ]
+      }
+    },
+    {
+      "name": "conflicting_replay",
+      "expected_code": "conflicting_replay_tuple",
+      "value": {
+        "policy_version": 1,
+        "agent_wip_limit": 1,
+        "task_retry_limit": 2,
+        "artifact_upload_ttl_seconds": 900,
+        "eligibility_rules": [
+          {
+            "project_id": null,
+            "work_role_id": null,
+            "eligible_agent_ids": [
+              "agent_a",
+              "agent_b"
+            ]
+          }
+        ],
+        "replay_safety_rules": [
+          {
+            "id": "rule_a",
+            "project_id": null,
+            "work_role_id": null,
+            "classification": "replay_safe",
+            "evidence_ref": "reviewed-evidence-a"
+          },
+          {
+            "id": "rule_b",
+            "project_id": null,
+            "work_role_id": null,
+            "classification": "replay_safe",
+            "evidence_ref": "other-evidence"
+          }
+        ]
+      }
+    }
+  ]
+}

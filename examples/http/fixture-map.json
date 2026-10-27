@@ -467,6 +467,50 @@
       "direction": "response",
       "http_status": 200,
       "scenario": "First committed write produces revision one; stable opaque owner record remains server-only."
+    },
+    {
+      "file": "r2-catalog-archive-preview.request.json",
+      "schema": "#/components/schemas/CatalogPreviewRequest",
+      "operation_id": "previewCatalogChange",
+      "direction": "request",
+      "scenario": "Synthetic R2 catalog contract only; no runtime endpoint or authorization evidence."
+    },
+    {
+      "file": "r2-catalog-role-remap-preview.request.json",
+      "schema": "#/components/schemas/CatalogPreviewRequest",
+      "operation_id": "previewCatalogChange",
+      "direction": "request",
+      "scenario": "Synthetic R2 catalog contract only; no runtime endpoint or authorization evidence."
+    },
+    {
+      "file": "r2-catalog-preview.response.json",
+      "schema": "#/components/schemas/CatalogPlanResponse",
+      "operation_id": "previewCatalogChange",
+      "direction": "response",
+      "http_status": 200,
+      "scenario": "Synthetic R2 catalog contract only; no runtime endpoint or authorization evidence."
+    },
+    {
+      "file": "r2-catalog-apply.request.json",
+      "schema": "#/components/schemas/CatalogApplyRequest",
+      "operation_id": "applyCatalogChange",
+      "direction": "request",
+      "scenario": "Synthetic R2 catalog contract only; no runtime endpoint or authorization evidence."
+    },
+    {
+      "file": "r2-catalog-apply.response.json",
+      "schema": "#/components/schemas/ProfileDataResponse",
+      "operation_id": "applyCatalogChange",
+      "direction": "response",
+      "http_status": 200,
+      "scenario": "Synthetic R2 catalog contract only; no runtime endpoint or authorization evidence."
+    },
+    {
+      "file": "r2-task-results.response.json",
+      "schema": "#/components/schemas/TaskResultListResponse",
+      "operation_id": "listTaskResults",
+      "direction": "response",
+      "http_status": 200
     }
   ],
   "amendment_id": "r1-foundation-1"

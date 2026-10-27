@@ -99,3 +99,17 @@ The response-only `default_view_fallback_reason` is required and is `null`, `VIE
 Preference rows have an immutable, unique opaque server record ID bound to their workspace/principal. Forward SQL migration 3 backfills legacy rows without changing their document or revision; new IDs are allocated before the first committed write. The ID is not portable preference content and never encodes a principal slug. The actual settings event predicate checks current scopes and the persisted owner association before projecting a preference event ID or summary. Configuration events require a human with events:read and operations:read. Profile events require events:read and workspace:read.
 
 An ordinary same-intent replay returns the original outcome and creates no new event. Replays reauthorize the current actor and resource; a preference outcome whose former effective projection conflicts with current policy is denied, and a fresh GET supplies the current effective values. This preserves both immutable command outcomes and the current policy ceiling.
+
+## R2 contract amendment — 2026-10-26
+
+These are source/design contracts, not available R1 endpoints or an installed policy. The selected technical direction was made under the owner's research-and-review delegation; it is not a claim of personal owner selection or live acceptance. See [ADR 0008](adr/0008-r2-authority-and-history.md).
+
+The closed [ExecutionPolicy schema](../spec/execution-policy.schema.json) requires `policy_version >= 1`, `agent_wip_limit` in 1–100, `task_retry_limit` in 0–10, `artifact_upload_ttl_seconds` in 60–3,600, and explicit `eligibility_rules` and `replay_safety_rules`. All numeric values are integers. Missing policy never permits unlimited execution. WIP 1, retries 2 and TTL 900 are fixture choices, not production defaults. Rule project/work-role components are exact nullable identifiers, not wildcards. Eligible IDs must be distinct and currently eligible; duplicate eligibility tuples and duplicate/conflicting replay rules are rejected. Replay-safe classification must come from an operator-reviewed rule with evidence; no match is unsafe, and `outcome_unknown` overrides classification. Static shape/tuple checks do not establish current grants or evidence applicability.
+
+### R2 recognized grant lanes
+
+Human recognized scopes retain `workspace:read`, `messages:send`, `messages:read`, `messages:review`, `events:read`, `profile:edit`, `operations:read`, and add `tasks:read`, `tasks:create`, `tasks:edit`, `tasks:schedule`, `tasks:review`, `tasks:cancel`, `agents:read`, `agents:manage`, `credentials:manage`, `artifacts:read`, `artifacts:write`, `search:read`, `imports:manage`.
+
+Native recognized scopes retain `workspace:read`, `messages:send`, `messages:read`, `messages:ack`, `events:read`, and add `tasks:read`, `tasks:create`, `tasks:edit`, `tasks:schedule`, `tasks:claim`, `tasks:execute`, `tasks:review`, `tasks:cancel`, `agents:read`, `runtimes:manage`, `artifacts:read`, `artifacts:write`, `search:read`.
+
+Recognition is not a grant or route activation. New authority requires a strictly greater operator epoch and explicit valid grant installation. `imports:manage`, `profile:edit`, `operations:read`, `credentials:manage`, `agents:manage` and `messages:review` are human-only. No approvals actor lane is enabled. Runtime-execution operations still require the native credential plus current server-verified runtime proof; role labels do not authenticate.
