@@ -4,15 +4,17 @@ import {verifyHumanSession} from '../auth/sessions';
 import {csrfToken,assertCsrf} from '../auth/csrf';
 import {resolveActor,type SessionRecord} from '../auth/authorize';
 import {withTransaction} from '../storage/transaction';
-import {executeCommand,type CommandDescriptor} from '../workspace/commands';
+import {executeCommandDetailed,type CommandDescriptor} from '../workspace/commands';
 import {fingerprintRequest} from '../workspace/idempotency';
 import type {VerifiedIdentity} from '../workspace/context';
 import type {HttpSchemaName} from './generated/http-schemas';
 import {parseBoundedJson} from './bounds';
 import {HttpError,securityHeaders,toHttpError,toHttpResponse} from './envelopes';
 import {securityLog} from '../audit/redact';
+/** Private preparation result; raw secrets remain only in initialResponse closure. */
+export interface PreparedCommand<B,T>{command:CommandDescriptor<B,T>;initialResponse?:(data:T)=>T;}
 /** Constructed by the domain owner in the DO, never a public command descriptor. */
-export interface CommandRoute<B,T>{method:string;path:string;schema:HttpSchemaName;query(params:URLSearchParams):unknown;command:CommandDescriptor<B,T>;}
+export interface CommandRoute<B,T>{method:string;path:string;schema:HttpSchemaName;query(params:URLSearchParams):unknown;command:CommandDescriptor<B,T>|((body:B)=>Promise<PreparedCommand<B,T>>);}
 /** Authenticated framework hook for domain owners. Does not register any public route. */
 export async function dispatchCommand<B,T>(request:Request,workspace:AuthWorkspace,route:CommandRoute<B,T>):Promise<Response>{
  const requestId=crypto.randomUUID(),headers=new Headers(securityHeaders);let executing=false;
@@ -42,8 +44,12 @@ export async function dispatchCommand<B,T>(request:Request,workspace:AuthWorkspa
    assertCsrf(request,{csrfToken:await csrfToken(workspace,session),origin});
   }
   const fingerprint=await fingerprintRequest(route.method,route.path,query,body);
+  const prepared=typeof route.command==='function'?await route.command(body):{command:route.command};
   executing=true;
-  return toHttpResponse(executeCommand({workspace,requestId,idempotencyKey:key,fingerprint,admissionEpoch:installed.epoch,admissionGeneration:installed.fence.maintenanceGeneration},identity,route.command,body),requestId,headers);
+  const result=executeCommandDetailed({workspace,requestId,idempotencyKey:key,fingerprint,admissionEpoch:installed.epoch,admissionGeneration:installed.fence.maintenanceGeneration},identity,prepared.command,body);
+  // No await follows commit. Projection is not passed to descriptors, persistence or logs.
+  const outcome=result.firstExecution&&prepared.initialResponse?{...result.outcome,data:prepared.initialResponse(result.outcome.data)}:result.outcome;
+  return toHttpResponse(outcome,requestId,headers);
  }catch(error){
   if(!executing)securityLog(error,requestId);
   return toHttpError(error,requestId,headers);

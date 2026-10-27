@@ -14,6 +14,16 @@ A successful higher-epoch install and every restore-authority overlay revoke hum
 
 A backup cannot reconstruct later dynamic status edits that it never contained. No external newer-status ledger is introduced here. Revocation after restore is conservative and does not claim to recover unbacked edits.
 
+## Issue25 implementation amendment — 2026-10-27
+
+Local identity/credential source implements the provenance decision without adding another registry. A human-managed credential remains beneath its issuing human's current enabled, same-epoch grant, including `credentials:manage` and every delegated scope/project. The original issuance browser session need not stay alive. Recognition of a native scope never grants it, and native-disallowed human scopes cannot be delegated.
+
+For adoption of an operator-static identity, one current enabled, unretired, locally unrevoked static credential must cover the complete requested scopes, projects and expiry. Separate static credentials cannot be unioned. Authentication and background eligibility recheck that same ceiling; loss of the surviving static ceiling disables the dynamic credential. This preserves static authority rather than silently reclassifying it. Independent local `revoked_at` and archived identity state remain denial ceilings across later operator installation.
+
+Agent identities are workspace-wide metadata, so their reads/management require an unrestricted project grant. Credential metadata/revoke requires the complete credential grant to fit the current administrator's ceiling; replay also checks the original retained outcome. `null` and `[]` project grants remain distinct. Operator changes to public static metadata or credential status/grants advance the corresponding version; repeated identical retirement does not. All new lifecycle events retain canonical `resource_version:null` for agent/credential resources; command DTO versions enforce mutation preconditions.
+
+These choices were source-reviewed under delegated engineering authority; [research](../research/r2-identity-lifecycle.md) and [execution evidence](../r2-task-plans/issue-025-execution.md) record the alternatives and checks. No runtime enrollment, task transition, schema8 recovery activation or live acceptance is implied.
+
 ## Selected historical-results contract — 2026-10-26
 
 Use additive GET `/v2/workspaces/{workspace_id}/tasks/{task_id}/results`, operationId `listTaskResults`, with closed `TaskResultListResponse={data:TaskResult[],page:Page,request_id}`. Reuse unchanged TaskResult, Page, Cursor and ListLimit (default 50, range 1–200). No Task/TaskResult fields, scope, total count or R1 route availability are added. Both human and native lanes require current `tasks:read`, workspace admission and current task/project access. `events:read` is neither sufficient nor additionally required.

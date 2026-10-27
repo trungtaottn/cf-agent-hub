@@ -10,13 +10,16 @@ const unavailable=Object.entries(spec.paths).flatMap(([path,item])=>Object.entri
  const op=value as {operationId?:string;'x-r1-available'?:boolean};
  return op.operationId&&op['x-r1-available']!==true?[{path,method:method.toUpperCase(),operation:op.operationId}]:[];
 }));
-for(const route of unavailable)it('unavailable '+route.operation+' has no R1 mutation surface',async()=>{
+// These #25 operations now exist, but recognition does not grant old R1 callers authority.
+const identityOperations=new Set(['listAgents','createAgent','getAgent','patchAgent','archiveAgent','listCredentials','createCredential','revokeCredential']);
+const identityBody:Record<string,unknown>={createAgent:{display_name:'Denied synthetic',description:'',work_role_ids:[]},patchAgent:{expected_agent_version:1,description:'Denied'},archiveAgent:{expected_agent_version:1,reason:'Denied'},createCredential:{agent_id:'agent_research',label:'Denied',scopes:['messages:read'],project_ids:null,expires_at:new Date(Date.now()+3600000).toISOString()},revokeCredential:{expected_credential_version:1,reason:'Denied'}};
+for(const route of unavailable)it((identityOperations.has(route.operation)?'ungranted identity ':'unavailable ')+route.operation+' has no R1 mutation surface',async()=>{
  const f=await acceptanceFixture(('r1_unavailable_'+route.operation).toLowerCase());
  const path=route.path.replace('/v2/workspaces/{workspace_id}','').replace(/\{[^}]+\}/g,'unavailable_fixture');
  const beforeA=await sqlSnapshot(f.a),beforeB=await sqlSnapshot(f.b);
- const response=await f.http(apiRequest(f.a,path,route.method,['GET','HEAD'].includes(route.method)?undefined:{},{cookie:f.sessionCookie,'x-csrf-token':f.csrf,'idempotency-key':'unavailable'}));
- expect(response.status,'unavailable route must fail before any domain handler').toBe(404);
- const value=await response.json() as {error:{code:string}};expect(validateError(value)).toBe(true);expect(value.error.code).toBe('NOT_FOUND');
+ const response=await f.http(apiRequest(f.a,path,route.method,['GET','HEAD'].includes(route.method)?undefined:identityBody[route.operation]??{},{cookie:f.sessionCookie,'x-csrf-token':f.csrf,'idempotency-key':'unavailable'}));
+ expect(response.status,'unavailable or ungranted route must fail without effects').toBe(identityOperations.has(route.operation)?403:404);
+ const value=await response.json() as {error:{code:string}};expect(validateError(value)).toBe(true);expect(value.error.code).toBe(identityOperations.has(route.operation)?'FORBIDDEN':'NOT_FOUND');
  expect((await sqlSnapshot(f.a)).digest).toBe(beforeA.digest);expect((await sqlSnapshot(f.b)).digest).toBe(beforeB.digest);
 },30_000);
 

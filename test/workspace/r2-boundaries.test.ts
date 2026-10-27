@@ -26,7 +26,7 @@ it('unknown_event_resource_and_missing_producer_deny_even_with_permissive_hook',
 });
 it('r3_and_unimplemented_r2_routes_remain_unavailable_without_durable_writes',async()=>{
  const {stub}=await setup('r2-unavailable');
- const paths=['tasks','tasks/task_a:request-decision','tasks/task_a:claim','tasks/task_a/results','approvals','approvals/approval_a:approve','agents','credentials','runtimes','artifacts','search','imports:preview','catalog:apply'];
+ const paths=['tasks','tasks/task_a:request-decision','tasks/task_a:claim','tasks/task_a/results','approvals','approvals/approval_a:approve','runtimes','artifacts','search','imports:preview','catalog:apply'];
  const snapshot=()=>runInDurableObject(stub,(_o,state)=>({events:state.storage.sql.exec('SELECT * FROM events').toArray(),outcomes:state.storage.sql.exec('SELECT * FROM idempotency_outcomes').toArray(),scheduler:state.storage.sql.exec('SELECT * FROM scheduler_state').toArray(),tables:state.storage.sql.exec("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").toArray()}));
  const before=await snapshot();
  for(const path of paths){

@@ -3,7 +3,7 @@ import {HttpError} from './envelopes';
 import type {Entropy} from '../workspace/context';
 /** Only routes with implemented query/retention semantics may mint cursors.
  * Future task/search/history owners extend this closed map with their own bindings. */
-const cursorOperations={inbox:'message',thread:'message',events:'sequence'} as const;
+const cursorOperations={inbox:'message',thread:'message',events:'sequence',agents:'message',credentials:'message'} as const;
 export interface CursorBinding {workspaceId:string;principalId:string;lane:'human'|'agent';credentialId:string|null;sessionId:string|null;operation:keyof typeof cursorOperations;queryHash:string;}
 export interface MessagePosition {createdAt:number;id:string;}
 export type CursorPosition=MessagePosition|number;

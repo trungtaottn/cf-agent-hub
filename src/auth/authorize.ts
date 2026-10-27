@@ -1,3 +1,4 @@
+import {credentialGrantAllowed,type CredentialAuthorityRow} from './credential-authority';
 import {admissionOpen} from '../recovery/maintenance';
 import type { WorkspaceTransaction } from '../storage/transaction';
 import type { VerifiedIdentity,ActorContext,ResourceAccess } from '../workspace/context';
@@ -11,7 +12,7 @@ export function resolveActor(tx:WorkspaceTransaction,identity:VerifiedIdentity,n
    FROM native_credentials c JOIN workspace_metadata m ON m.workspace_id=c.workspace_id
    JOIN static_agents a ON a.agent_id=c.agent_id AND a.workspace_id=c.workspace_id
    WHERE c.credential_id=? AND c.workspace_id=?`,[identity.credentialId,identity.workspaceId]);
-  if(!row||row.enabled!==1||row.retired_at_epoch!==null||row.expires_at<=nowMs||row.admission_state!=='installed'||row.config_epoch!==row.installed_epoch||row.agent_epoch!==row.installed_epoch||!equalDigest(identity.tokenDigest,row.token_sha256))deny();
+  if(!row||!credentialGrantAllowed(tx,row,nowMs)||row.enabled!==1||row.retired_at_epoch!==null||row.expires_at<=nowMs||row.admission_state!=='installed'||row.config_epoch!==row.installed_epoch||row.agent_epoch!==row.installed_epoch||!equalDigest(identity.tokenDigest,row.token_sha256))deny();
   return {workspaceId:row!.workspace_id,principalId:row!.agent_id,kind:'agent',agentId:row!.agent_id,scopes:new Set(JSON.parse(row!.scopes_json) as string[]),projectIds:JSON.parse(row!.project_ids_json) as string[]|null,credentialId:row!.credential_id,runtimeId:null,sessionId:null};
  }
  const human=identity as Extract<VerifiedIdentity,{kind:'human'}>;
@@ -45,7 +46,7 @@ export function authorize(tx:WorkspaceTransaction,actor:ActorContext,operation:s
  if(!live.scopes.has(operation)||resource&&live.projectIds!==null&&(resource.projectId===null||!live.projectIds.includes(resource.projectId)))throw new AuthError('FORBIDDEN',403);
 }
 
-interface NativeRecord {
+interface NativeRecord extends CredentialAuthorityRow {
  credential_id:string;workspace_id:string;agent_id:string;token_sha256:string;scopes_json:string;project_ids_json:string;
  expires_at:number;enabled:number;retired_at_epoch:number|null;config_epoch:number;installed_epoch:number;agent_epoch:number;admission_state:string;
 }
