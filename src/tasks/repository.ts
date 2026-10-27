@@ -16,7 +16,7 @@ export function taskRecord(tx:WorkspaceTransaction,workspaceId:string,id:string)
  return tx.one<TaskRow>('SELECT * FROM tasks WHERE workspace_id=? AND id=?',[workspaceId,id])!;
 }
 /** Pure relationship predicate: caller must pass one current coherent grant, never a synthetic actor. */
-export function taskVisible(actor:ActorContext,row:Pick<TaskRow,'workspace_id'|'project_id'>,scope='tasks:read'):boolean {
+export function taskVisible(actor:Pick<ActorContext,'workspaceId'|'scopes'|'projectIds'>,row:Pick<TaskRow,'workspace_id'|'project_id'>,scope='tasks:read'):boolean {
  return row.workspace_id===actor.workspaceId&&actor.scopes.has(scope)&&(actor.projectIds===null||row.project_id!==null&&actor.projectIds.includes(row.project_id));
 }
 export function taskAccess(tx:WorkspaceTransaction,actor:ActorContext,scope:string,id:string|null,nowMs:number):ActorContext {

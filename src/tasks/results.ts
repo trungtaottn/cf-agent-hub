@@ -1,3 +1,4 @@
+import {assertResourceReferences,actorResourceGrant} from '../auth/resource-visibility';
 import type {WorkspaceTransaction} from '../storage/transaction';
 import type {ActorContext} from '../workspace/context';
 import type {TaskResult} from '../http/dto';
@@ -32,6 +33,9 @@ export function projectTaskResult(tx:WorkspaceTransaction,actor:ActorContext,tas
  // Visibility is a projection, never a filter that can scan unbounded hidden rows.
  if(refs.length>5)throw new HttpError('INTERNAL_ERROR',500);
  if(refs.length&&!actor.scopes.has('artifacts:read')||refs.some(ref=>ref.visible!==1))return null;
+ // Newly attached message associations must also remain visible in retained results/history.
+ try{assertResourceReferences(tx,actorResourceGrant(actor),refs.map(ref=>({kind:'artifact',id:ref.artifact_id})));}
+ catch(error){if(error instanceof HttpError&&error.code==='NOT_FOUND')return null;throw error;}
  const row=tx.one<TaskResultRow>('SELECT * FROM task_results WHERE workspace_id=? AND task_id=? AND id=?',[actor.workspaceId,taskId,resultId])!;
  const result:TaskResult={summary:row.summary,artifact_ids:refs.map(x=>x.artifact_id),run_id:row.run_id,submitted_by:{kind:row.submitted_kind,principal_id:row.submitted_principal_id,agent_id:row.submitted_agent_id},submitted_at:new Date(row.created_at).toISOString()};
  if(!validateTaskResult(result))throw new HttpError('INTERNAL_ERROR',500);assertTaskItemFits(result);return result;

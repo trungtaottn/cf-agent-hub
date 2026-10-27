@@ -1,3 +1,4 @@
+import {referenceBudget} from '../auth/resource-visibility';
 import {admissionOpen} from '../recovery/maintenance';
 import type {AuthWorkspace} from '../auth/context';
 import {currentConfiguration,secret} from '../auth/context';
@@ -40,9 +41,9 @@ function check(tx:WorkspaceTransaction,workspace:AuthWorkspace,attempt:DeliveryA
   const participants=threadParticipants(tx,workspace.workspaceId,intent.notification.thread_id);
   const member=(p:Participant)=>participants.some(x=>x.kind===p.kind&&x.id===p.id);
   const refs:unknown=JSON.parse(message.refs_json);
-  if(!Array.isArray(refs)||refs.some(r=>!r||typeof r!=='object'||Object.keys(r).length!==2||r.kind!=='message'||typeof r.id!=='string'||!r.id))return {ok:false,result:{kind:'permanent',category:'invalid_intent'}};
-  const resources=[intent.notification.message_id,...refs.map(r=>(r as {id:string}).id)];
-  if(!member(sender)||!member(recipient)||!participantCanReadMessages(tx,workspace.workspaceId,sender,resources,nowMs,'messages:send')||!participantCanReadMessages(tx,workspace.workspaceId,recipient,resources,nowMs))return {ok:false,result:{kind:'permanent',category:'authority_revoked'}};
+  if(!Array.isArray(refs)||refs.some(r=>!r||typeof r!=='object'||Object.keys(r).length!==2||!['message','task','artifact'].includes(r.kind)||typeof r.id!=='string'||!r.id))return {ok:false,result:{kind:'permanent',category:'invalid_intent'}};
+  const resources=[intent.notification.message_id],budget=referenceBudget();
+  if(!member(sender)||!member(recipient)||!participants.every(participant=>participantCanReadMessages(tx,workspace.workspaceId,participant,resources,nowMs,participant.kind===sender.kind&&participant.id===sender.id?'messages:send':undefined,budget)))return {ok:false,result:{kind:'permanent',category:'authority_revoked'}};
   return {ok:true,destination:{url:destination.url,signingKeyRef:destination.signing_key_ref}};
  }catch{return {ok:false,result:{kind:'permanent',category:'authority_revoked'}};}
 }

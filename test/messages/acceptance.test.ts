@@ -75,10 +75,10 @@ it('foreign_or_private_reference_rejected_including_omitted_fixed_participants',
   await expect(send(state.storage,name,identity,messageInput({refs:[{kind:'message',id:privateMessage.data.id}]}),'foreign')).rejects.toMatchObject({code:'NOT_FOUND'});
  });
 });
-it('disabled_artifact_task_refs_rejected_atomically',async()=>{
+it('missing_artifact_task_refs_rejected_atomically',async()=>{
  const {stub,name,identity}=await messageFixture('message-disabled');await runInDurableObject(stub,async(_o,state)=>{
   const before=messageSnapshot(state.storage);
-  for(const [feature,body] of [['artifacts',messageInput({artifact_ids:['absent']})],['artifacts',messageInput({refs:[{kind:'artifact',id:'absent'}]})],['tasks',messageInput({refs:[{kind:'task',id:'absent'}]})]] as const)await expect(send(state.storage,name,identity,body)).rejects.toMatchObject({code:'INVALID_REQUEST',details:{feature}});
+  for(const body of [messageInput({artifact_ids:['absent']}),messageInput({refs:[{kind:'artifact',id:'absent'}]}),messageInput({refs:[{kind:'task',id:'absent'}]})])await expect(send(state.storage,name,identity,body)).rejects.toMatchObject({code:'NOT_FOUND',details:undefined});
   expect(messageSnapshot(state.storage)).toEqual(before);
  });
 });

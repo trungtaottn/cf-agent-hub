@@ -1,3 +1,4 @@
+import {messageArtifactIds} from '../auth/resource-visibility';
 import {assertAdmissionOpen} from '../recovery/maintenance';
 import type {WorkspaceTransaction,SqlValue} from '../storage/transaction';
 import type {ActorContext} from '../workspace/context';
@@ -54,7 +55,7 @@ export function projectMessage(tx:WorkspaceTransaction,actor:ActorContext,id:str
  const row=tx.one<MessageRow>('SELECT * FROM messages WHERE id=? AND workspace_id=?',[id,actor.workspaceId]);if(!row)return null;
  const recipients=tx.all<{recipient_agent_id:string;acknowledged_at:number|null}>('SELECT recipient_agent_id,acknowledged_at FROM inbox WHERE message_id=? AND workspace_id=? ORDER BY recipient_agent_id',[id,actor.workspaceId]);
  const ack=actor.kind==='agent'?recipients.find(x=>x.recipient_agent_id===actor.agentId)?.acknowledged_at:null;
- const message:Message={id:row.id,workspace_id:row.workspace_id,thread_id:row.thread_id,sender:{kind:row.sender_kind,principal_id:row.sender_principal_id,agent_id:row.sender_agent_id},recipient_agent_ids:recipients.map(x=>x.recipient_agent_id),body:row.body,refs:JSON.parse(row.refs_json) as Message['refs'],artifact_ids:[],created_at:new Date(row.created_at).toISOString(),acknowledged_at:ack==null?null:new Date(ack).toISOString()};
+ const message:Message={id:row.id,workspace_id:row.workspace_id,thread_id:row.thread_id,sender:{kind:row.sender_kind,principal_id:row.sender_principal_id,agent_id:row.sender_agent_id},recipient_agent_ids:recipients.map(x=>x.recipient_agent_id),body:row.body,refs:JSON.parse(row.refs_json) as Message['refs'],artifact_ids:messageArtifactIds(tx,actor.workspaceId,id),created_at:new Date(row.created_at).toISOString(),acknowledged_at:ack==null?null:new Date(ack).toISOString()};
  if(!validateMessage(message))throw new HttpError('INTERNAL_ERROR',500);return message;
 }
 function continuation(query:PageQuery,highWater:CursorPosition,lastScanned:CursorPosition,more:boolean):CursorPayload|null{
