@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
-    "title": "CF Agent Hub — Proposed Native HTTP API",
+    "title": "CF Agent Hub \u2014 Proposed Native HTTP API",
     "version": "0.1.0-design",
     "description": "Pre-implementation design baseline dated 2026-10-23; contract revision 0.1. All operations are proposed and require implementation verification. No running service, SDK, protocol certification or exactly-once external execution is claimed. docs/http-api.md defines authorization, pagination, idempotency and concurrency semantics. docs/limits.md owns numerical operational limits. All JSON writes reject unknown fields and enforce UTF-8 envelope limits. Runtime-bound writes additionally require X-Runtime-Token proof; native bearer alone is insufficient. R1 amendment r1-foundation-1 specifies identity, settings, audit and protected recovery contracts; implementation remains pending. Portable contracts stay 0.1; deployment is 0.2.",
     "x-amendment-id": "r1-foundation-1"
@@ -3960,7 +3960,7 @@
       "get": {
         "operationId": "searchWorkspace",
         "summary": "Search authorized tasks, message bodies and artifact metadata",
-        "description": "search:read plus tasks:read/messages:read/artifacts:read for each returned kind and its project/thread scope. Filter before ranking/pagination; no invisible hit counts or snippets. Stable order created_at,id with cursor high-water boundary; bounded substring matching is baseline, not semantic search. Message hits obey fixed thread participation or human-only messages:review; search:read never bypasses it.",
+        "description": "search:read plus tasks:read/messages:read/artifacts:read for each returned kind and current project/thread access. Message participation or human messages:review is still required. Normalize text/query to NFC and compare literal case-sensitive substrings. Authorize before snippets and pagination; artifact metadata only, never object bytes. Globally distinct searchable IDs ordered by immutable (created_at,id), fixed initial high-water. Authorized-only lookahead determines continuation from the last returned authorized hit, never a hidden scanned frontier. No total or successful empty progress page. Preserve hard 2000 examined-candidate cap; if lookahead or high-water exhaustion cannot be established within the budget, fail entire request with generic503 DEPENDENCY_UNAVAILABLE, no partial data or cursor. This explicitly supersedes older empty-filtered continuation requirements. Successful page shape must not change merely because hidden records are inserted within feasible budget; status/timing availability leakage remains, not constant-time or total noninterference. Physical SQLite/index/authorization-work proof remains required before activation; output LIMIT is not that proof. Shared padded/fixed-width AES-GCM cursor binds workspace/principal/lane/credential/session, operation, normalized query, kind, limit, sort, high-water, authority epoch and restore incarnation; retain absolute3600-second expiry and2048-byte token bound. Reauthorize after decode and encode before final synchronous projection. Proven message truncation floor applies only when messages are searched; never invalidate task/artifact-only search using the message floor.",
         "security": [
           {
             "NativeBearer": []
@@ -4035,9 +4035,11 @@
             "in": "query",
             "schema": {
               "type": "string",
-              "minLength": 1
+              "minLength": 1,
+              "x-utf8-max-bytes": 2048,
+              "x-normalized-utf8-max-bytes": 2048
             },
-            "description": "Literal normalized text query; no raw SQL, regex or executable expressions.",
+            "description": "Nonempty decoded query, at most 2048 UTF-8 bytes both before and after Unicode NFC. NFC literal case-sensitive substring matching against NFC text. No trimming, case/compatibility folding, SQL wildcard, regex or executable expression semantics.",
             "required": true
           },
           {
@@ -4054,7 +4056,16 @@
             "description": "Optional entity filter."
           }
         ],
-        "x-r1-available": false
+        "x-r1-available": false,
+        "x-max-candidates": 2000,
+        "x-pagination-model": "authorized-results",
+        "x-budget-exhaustion": "DEPENDENCY_UNAVAILABLE",
+        "x-empty-continuation": false,
+        "x-cursor-confidentiality": "padded-aead",
+        "x-search-retention": {
+          "message_inclusive": "proven-message-floor",
+          "task_artifact_only": "no-message-floor"
+        }
       }
     },
     "/v2/workspaces/{workspace_id}/auth/start": {
@@ -5280,6 +5291,270 @@
         "x-max-response-bytes": 1048576,
         "x-query-work-proof-required": true
       }
+    },
+    "/v2/workspaces/{workspace_id}/imports:preview": {
+      "parameters": [
+        {
+          "name": "workspace_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque stable identifier; never infer authority from its value."
+          }
+        }
+      ],
+      "post": {
+        "operationId": "previewImport",
+        "summary": "previewImport",
+        "description": "Proposed human-only import contract, not enabled in R1. Recheck verified current human, workspace, owning principal, scopes and every relevant resource before preview/read/apply/replay; possession of import ID or digest grants nothing. Deny generically if an immutable saved preview/report can no longer be disclosed; never redact it into a different plan. Mapping visibility precedes classification. POST requires exact origin, CSRF and idempotency. Apply revalidates original references and mapping snapshots and atomically creates only reviewed Backlog tasks, mappings, provenance/report, event/audit and sanitized replay. Source text and source_ref are inert; no fetch or imported authority. Changed source never overwrites local work. Enforce actual raw 65,536-byte request bound before decoding, validate ImportEnvelope, then validate each ImportRow. Strict ImportBatch represents wholly valid input; an invalid row is a rejected preview row, not necessarily an envelope failure.",
+        "security": [
+          {
+            "HumanSession": []
+          }
+        ],
+        "x-required-scopes": [
+          "imports:manage",
+          "tasks:read"
+        ],
+        "x-actor-kind": "human",
+        "x-contract-status": "proposed",
+        "x-r1-available": false,
+        "responses": {
+          "200": {
+            "description": "Proposed bounded result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportPreviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Required on cookie-authenticated writes. Must match the same-origin human session. Not a substitute for authentication."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportBatch"
+              }
+            }
+          }
+        },
+        "x-envelope-schema": {
+          "$ref": "#/components/schemas/ImportEnvelope"
+        }
+      }
+    },
+    "/v2/workspaces/{workspace_id}/imports/{import_id}:apply": {
+      "parameters": [
+        {
+          "name": "workspace_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque stable identifier; never infer authority from its value."
+          }
+        },
+        {
+          "name": "import_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      ],
+      "post": {
+        "operationId": "applyImport",
+        "summary": "applyImport",
+        "description": "Proposed human-only import contract, not enabled in R1. Recheck verified current human, workspace, owning principal, scopes and every relevant resource before preview/read/apply/replay; possession of import ID or digest grants nothing. Deny generically if an immutable saved preview/report can no longer be disclosed; never redact it into a different plan. Mapping visibility precedes classification. POST requires exact origin, CSRF and idempotency. Apply revalidates original references and mapping snapshots and atomically creates only reviewed Backlog tasks, mappings, provenance/report, event/audit and sanitized replay. Source text and source_ref are inert; no fetch or imported authority. Changed source never overwrites local work.",
+        "security": [
+          {
+            "HumanSession": []
+          }
+        ],
+        "x-required-scopes": [
+          "imports:manage",
+          "tasks:read",
+          "tasks:create"
+        ],
+        "x-actor-kind": "human",
+        "x-contract-status": "proposed",
+        "x-r1-available": false,
+        "responses": {
+          "200": {
+            "description": "Proposed bounded result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportReportResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Required on cookie-authenticated writes. Must match the same-origin human session. Not a substitute for authentication."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportApplyRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/workspaces/{workspace_id}/imports/{import_id}": {
+      "parameters": [
+        {
+          "name": "workspace_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque stable identifier; never infer authority from its value."
+          }
+        },
+        {
+          "name": "import_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getImport",
+        "summary": "getImport",
+        "description": "Proposed human-only import contract, not enabled in R1. Recheck verified current human, workspace, owning principal, scopes and every relevant resource before preview/read/apply/replay; possession of import ID or digest grants nothing. Deny generically if an immutable saved preview/report can no longer be disclosed; never redact it into a different plan. Mapping visibility precedes classification. POST requires exact origin, CSRF and idempotency. Apply revalidates original references and mapping snapshots and atomically creates only reviewed Backlog tasks, mappings, provenance/report, event/audit and sanitized replay. Source text and source_ref are inert; no fetch or imported authority. Changed source never overwrites local work.",
+        "security": [
+          {
+            "HumanSession": []
+          }
+        ],
+        "x-required-scopes": [
+          "imports:manage",
+          "tasks:read"
+        ],
+        "x-actor-kind": "human",
+        "x-contract-status": "proposed",
+        "x-r1-available": false,
+        "responses": {
+          "200": {
+            "description": "Proposed bounded result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -6281,7 +6556,7 @@
           "created_at",
           "acknowledged_at"
         ],
-        "description": "Nonrecipient accepted/view DTO acknowledgment is null; recipient reads expose only that actor’s ACK. acknowledged_at is not execution or completion."
+        "description": "Nonrecipient accepted/view DTO acknowledgment is null; recipient reads expose only that actor\u2019s ACK. acknowledged_at is not execution or completion."
       },
       "AckResult": {
         "type": "object",
@@ -6985,7 +7260,8 @@
             "type": "string"
           },
           "snippet": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 256
           },
           "created_at": {
             "type": "string",
@@ -6999,7 +7275,7 @@
           "snippet",
           "created_at"
         ],
-        "description": "Results are authorization-filtered before pagination. Artifact search covers metadata, not extracted file contents."
+        "description": "Closed currently authorized hit over task text, message body or artifact metadata; no object/file bytes. Snippet contains at most256 Unicode code points after NFC normalization, never hidden resource text."
       },
       "Error": {
         "type": "object",
@@ -8197,6 +8473,79 @@
           "data",
           "page",
           "request_id"
+        ],
+        "description": "Authorized-only results with no totals or hidden progress. An empty successful page is terminal. A nonterminal successful page has a nonempty authorized result set and opaque padded continuation; unproven termination/lookahead at the2000candidate cap yields whole-request503 without this success envelope.",
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "data": {
+                  "maxItems": 0
+                }
+              },
+              "required": [
+                "data"
+              ]
+            },
+            "then": {
+              "properties": {
+                "page": {
+                  "properties": {
+                    "has_more": {
+                      "const": false
+                    },
+                    "next_cursor": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "page": {
+                  "properties": {
+                    "has_more": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "has_more"
+                  ]
+                }
+              },
+              "required": [
+                "page"
+              ]
+            },
+            "then": {
+              "properties": {
+                "page": {
+                  "properties": {
+                    "next_cursor": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 2048,
+                      "pattern": "^[A-Za-z0-9_-]+$"
+                    }
+                  }
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "page": {
+                  "properties": {
+                    "next_cursor": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            }
+          }
         ]
       },
       "RuntimeIssue": {
@@ -9530,6 +9879,849 @@
         "required": [
           "data",
           "page",
+          "request_id"
+        ]
+      },
+      "ImportRow": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "external_id",
+          "source_updated_at",
+          "title",
+          "description",
+          "project_id",
+          "work_role_id",
+          "source_state",
+          "source_ref"
+        ],
+        "properties": {
+          "external_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "source_updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "(?:[Zz]|\\+00:00)$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "work_role_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source_state": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "source_ref": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2048
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Inert provenance text. Never fetched or interpreted as executable authority."
+          }
+        }
+      },
+      "ImportBatch": {
+        "title": "R2 import batch input contract",
+        "description": "Strict shape of a completely valid import batch. Raw request bytes are separately limited to 65,536 before decoding. For partial rejection, validate ImportEnvelope first, then each ImportRow independently. Strict root failure alone must not reject a preview request. Shape validation grants no authority and does not resolve current references or duplicate external IDs.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_namespace",
+          "source_revision",
+          "rows"
+        ],
+        "properties": {
+          "source_namespace": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "source_revision": {
+            "type": "string",
+            "maxLength": 256
+          },
+          "rows": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/ImportRow"
+            }
+          }
+        }
+      },
+      "ImportEnvelope": {
+        "description": "Closed envelope admission only; row validity is reported separately. Null, primitive and unknown-field rows are not silently accepted as valid ImportRows.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_namespace",
+          "source_revision",
+          "rows"
+        ],
+        "properties": {
+          "source_namespace": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "source_revision": {
+            "type": "string",
+            "maxLength": 256
+          },
+          "rows": {
+            "type": "array",
+            "maxItems": 100,
+            "items": true
+          }
+        }
+      },
+      "ImportProvenance": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "source_namespace": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "external_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "source_revision": {
+            "type": "string",
+            "maxLength": 256
+          },
+          "source_updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "(?:[Zz]|\\+00:00)$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source_state": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "source_ref": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2048
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Inert provenance text. Never fetched or interpreted as executable authority."
+          },
+          "source_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "import_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "task_id": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "source_namespace",
+          "external_id",
+          "source_revision",
+          "source_updated_at",
+          "source_state",
+          "source_ref",
+          "source_sha256",
+          "import_id",
+          "task_id"
+        ],
+        "description": "Inert provenance of this import attempt, including current batch source_revision for unchanged rows. source_sha256 hashes the canonical complete ImportRow, excluding batch revision metadata. It does not change local task state or confer authority. Source references are never fetched."
+      },
+      "ImportPreviewRow": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "index": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 99
+          },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "disposition": {
+            "type": "string",
+            "enum": [
+              "create",
+              "unchanged",
+              "conflict",
+              "rejected"
+            ]
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "SOURCE_CHANGED",
+                  "DUPLICATE_EXTERNAL_ID",
+                  "INVALID_ROW",
+                  "INVALID_REFERENCE"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "index",
+          "external_id",
+          "disposition",
+          "task_id",
+          "code"
+        ],
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "disposition": {
+                  "const": "create"
+                }
+              },
+              "required": [
+                "disposition"
+              ]
+            },
+            "then": {
+              "properties": {
+                "external_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "task_id": {
+                  "type": "null"
+                },
+                "code": {
+                  "type": "null"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "disposition": {
+                  "const": "unchanged"
+                }
+              },
+              "required": [
+                "disposition"
+              ]
+            },
+            "then": {
+              "properties": {
+                "external_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "task_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "code": {
+                  "type": "null"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "disposition": {
+                  "const": "conflict"
+                }
+              },
+              "required": [
+                "disposition"
+              ]
+            },
+            "then": {
+              "properties": {
+                "external_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "task_id": {
+                  "type": "null"
+                },
+                "code": {
+                  "enum": [
+                    "SOURCE_CHANGED",
+                    "DUPLICATE_EXTERNAL_ID"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "disposition": {
+                  "const": "rejected"
+                }
+              },
+              "required": [
+                "disposition"
+              ]
+            },
+            "then": {
+              "properties": {
+                "external_id": {
+                  "type": "null"
+                },
+                "task_id": {
+                  "type": "null"
+                },
+                "code": {
+                  "enum": [
+                    "INVALID_ROW",
+                    "INVALID_REFERENCE"
+                  ]
+                }
+              }
+            }
+          }
+        ],
+        "description": "Every rejected row suppresses external_id, task_id and provenance. Absent and inaccessible references share INVALID_REFERENCE. Mapping visibility is checked before unchanged/conflict classification; inaccessible mapping targets are rejected, not disclosed as conflicts."
+      },
+      "ImportReportRow": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "index": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 99
+          },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "disposition": {
+            "type": "string",
+            "enum": [
+              "created",
+              "unchanged",
+              "conflict",
+              "rejected"
+            ]
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "SOURCE_CHANGED",
+                  "DUPLICATE_EXTERNAL_ID",
+                  "INVALID_ROW",
+                  "INVALID_REFERENCE"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "provenance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImportProvenance"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "index",
+          "external_id",
+          "disposition",
+          "task_id",
+          "code",
+          "provenance"
+        ],
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "disposition": {
+                  "const": "created"
+                }
+              },
+              "required": [
+                "disposition"
+              ]
+            },
+            "then": {
+              "properties": {
+                "external_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "task_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "code": {
+                  "type": "null"
+                },
+                "provenance": {
+                  "$ref": "#/components/schemas/ImportProvenance"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "disposition": {
+                  "const": "unchanged"
+                }
+              },
+              "required": [
+                "disposition"
+              ]
+            },
+            "then": {
+              "properties": {
+                "external_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "task_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "code": {
+                  "type": "null"
+                },
+                "provenance": {
+                  "$ref": "#/components/schemas/ImportProvenance"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "disposition": {
+                  "const": "conflict"
+                }
+              },
+              "required": [
+                "disposition"
+              ]
+            },
+            "then": {
+              "properties": {
+                "external_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "task_id": {
+                  "type": "null"
+                },
+                "code": {
+                  "enum": [
+                    "SOURCE_CHANGED",
+                    "DUPLICATE_EXTERNAL_ID"
+                  ]
+                },
+                "provenance": {
+                  "type": "null"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "disposition": {
+                  "const": "rejected"
+                }
+              },
+              "required": [
+                "disposition"
+              ]
+            },
+            "then": {
+              "properties": {
+                "external_id": {
+                  "type": "null"
+                },
+                "task_id": {
+                  "type": "null"
+                },
+                "code": {
+                  "enum": [
+                    "INVALID_ROW",
+                    "INVALID_REFERENCE"
+                  ]
+                },
+                "provenance": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        ],
+        "description": "Every rejected row suppresses external_id, task_id and provenance. Absent and inaccessible references share INVALID_REFERENCE. Mapping visibility is checked before unchanged/conflict classification; inaccessible mapping targets are rejected, not disclosed as conflicts."
+      },
+      "ImportPreview": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "import_version": {
+            "const": 1
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "(?:[Zz]|\\+00:00)$"
+          },
+          "source_namespace": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "source_revision": {
+            "type": "string",
+            "maxLength": 256
+          },
+          "counts": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "received": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "create": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "unchanged": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "conflict": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "rejected": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              }
+            },
+            "required": [
+              "received",
+              "create",
+              "unchanged",
+              "conflict",
+              "rejected"
+            ]
+          },
+          "rows": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/ImportPreviewRow"
+            }
+          },
+          "preview_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        },
+        "required": [
+          "id",
+          "import_version",
+          "expires_at",
+          "source_namespace",
+          "source_revision",
+          "counts",
+          "rows",
+          "preview_sha256"
+        ],
+        "x-plan-ttl-seconds": 900,
+        "description": "Immutable version-1 plan. Ordered row indices are contiguous from zero; rows.length and disposition counts partition received exactly. Expires exactly 900 seconds after internally stored trusted creation time. preview_sha256 is lowercase SHA-256 of UTF-8 canonicalJson of this public object excluding preview_sha256 (sorted object keys, array order retained). This public digest does not hash omitted source bodies: id separately binds immutable original source rows/hashes and mapping/reference version snapshots server-side. Internal snapshots cannot be replaced under the same id. No tasks or mappings are created by preview. Every disclosed duplicate external-ID group is entirely conflict/DUPLICATE_EXTERNAL_ID; malformed or inaccessible rows remain generic rejected/null identifiers."
+      },
+      "ImportApplyRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "expected_import_version": {
+            "const": 1
+          },
+          "preview_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "accept_rejected_rows": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "expected_import_version",
+          "preview_sha256",
+          "accept_rejected_rows"
+        ],
+        "description": "Requires exact version and preview digest. False with any conflict/rejected row yields INVALID_STATE. Expired previews yield INVALID_STATE; digest/version mismatch or any changed mapping/reference snapshot yields VERSION_CONFLICT for the whole apply. Recheck current authority before replay and apply; no partial transaction on failure. True only admits the reviewed create rows, never overwrites conflicts or bypasses invalid references."
+      },
+      "ImportReport": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "import_version": {
+            "const": 2
+          },
+          "status": {
+            "const": "applied"
+          },
+          "counts": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "received": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "created": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "unchanged": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "conflict": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "rejected": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              }
+            },
+            "required": [
+              "received",
+              "created",
+              "unchanged",
+              "conflict",
+              "rejected"
+            ]
+          },
+          "rows": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/ImportReportRow"
+            }
+          },
+          "applied_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "(?:[Zz]|\\+00:00)$"
+          }
+        },
+        "required": [
+          "id",
+          "import_version",
+          "status",
+          "counts",
+          "rows",
+          "applied_at"
+        ],
+        "description": "Applied version-2 immutable report. Preview create becomes report created; all other dispositions retain meaning. Counts partition received and match contiguous ordered rows. Created and unchanged rows include current-attempt inert provenance, with task/import/external IDs consistent with their report and input. All valid new source states map to unassigned Backlog with no run, result, approval, credential or grant. Failed apply leaves preview and task/mapping state unchanged."
+      },
+      "Import": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ImportPreview"
+          },
+          {
+            "$ref": "#/components/schemas/ImportReport"
+          }
+        ],
+        "description": "Closed GET union discriminated by import_version: 1 preview or 2 applied report. Current authorization and visibility precede any projection; deny rather than redact immutable rows/counts/digest."
+      },
+      "ImportPreviewResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ImportPreview"
+          },
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "data",
+          "request_id"
+        ]
+      },
+      "ImportReportResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ImportReport"
+          },
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "data",
+          "request_id"
+        ]
+      },
+      "ImportResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Import"
+          },
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "data",
           "request_id"
         ]
       }

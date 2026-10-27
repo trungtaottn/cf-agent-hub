@@ -1,0 +1,168 @@
+{
+  "contract_revision": "0.1",
+  "status": "design-baseline",
+  "batch": {
+    "source_namespace": "example",
+    "source_revision": "revision_2",
+    "rows": [
+      {
+        "external_id": "external_new",
+        "source_updated_at": null,
+        "title": "Source external_new",
+        "description": "Synthetic inert source text",
+        "project_id": null,
+        "work_role_id": null,
+        "source_state": "Done",
+        "source_ref": "source reference (never fetched)"
+      },
+      {
+        "external_id": "external_same",
+        "source_updated_at": null,
+        "title": "Source external_same",
+        "description": "Synthetic inert source text",
+        "project_id": null,
+        "work_role_id": null,
+        "source_state": "Doing",
+        "source_ref": "source reference (never fetched)"
+      },
+      {
+        "external_id": "external_changed",
+        "source_updated_at": null,
+        "title": "Source external_changed",
+        "description": "Synthetic inert source text",
+        "project_id": null,
+        "work_role_id": null,
+        "source_state": "Review",
+        "source_ref": "source reference (never fetched)"
+      },
+      {
+        "external_id": "external_invalid",
+        "source_updated_at": null,
+        "title": "Source external_invalid",
+        "description": "Synthetic inert source text",
+        "project_id": null,
+        "work_role_id": null,
+        "source_state": "Ready",
+        "source_ref": "source reference (never fetched)",
+        "owner": "not-importable"
+      }
+    ]
+  },
+  "preview": {
+    "id": "import_example",
+    "import_version": 1,
+    "expires_at": "2026-10-27T00:15:00Z",
+    "source_namespace": "example",
+    "source_revision": "revision_2",
+    "counts": {
+      "received": 4,
+      "create": 1,
+      "unchanged": 1,
+      "conflict": 1,
+      "rejected": 1
+    },
+    "rows": [
+      {
+        "index": 0,
+        "external_id": "external_new",
+        "disposition": "create",
+        "task_id": null,
+        "code": null
+      },
+      {
+        "index": 1,
+        "external_id": "external_same",
+        "disposition": "unchanged",
+        "task_id": "task_existing",
+        "code": null
+      },
+      {
+        "index": 2,
+        "external_id": "external_changed",
+        "disposition": "conflict",
+        "task_id": null,
+        "code": "SOURCE_CHANGED"
+      },
+      {
+        "index": 3,
+        "external_id": null,
+        "disposition": "rejected",
+        "task_id": null,
+        "code": "INVALID_ROW"
+      }
+    ],
+    "preview_sha256": "a569e0adfafd2095797e3f9e86bf6bcfbd512c95fe808346467c76ae62c38717"
+  },
+  "apply": {
+    "expected_import_version": 1,
+    "preview_sha256": "a569e0adfafd2095797e3f9e86bf6bcfbd512c95fe808346467c76ae62c38717",
+    "accept_rejected_rows": true
+  },
+  "report": {
+    "id": "import_example",
+    "import_version": 2,
+    "status": "applied",
+    "counts": {
+      "received": 4,
+      "created": 1,
+      "unchanged": 1,
+      "conflict": 1,
+      "rejected": 1
+    },
+    "rows": [
+      {
+        "index": 0,
+        "external_id": "external_new",
+        "disposition": "created",
+        "task_id": "task_created",
+        "code": null,
+        "provenance": {
+          "external_id": "external_new",
+          "source_updated_at": null,
+          "source_state": "Done",
+          "source_ref": "source reference (never fetched)",
+          "source_namespace": "example",
+          "source_revision": "revision_2",
+          "source_sha256": "796e2808d143ae69c350888d7e7bc660cc5818316fe768f9b7bf6ed4f987007b",
+          "import_id": "import_example",
+          "task_id": "task_created"
+        }
+      },
+      {
+        "index": 1,
+        "external_id": "external_same",
+        "disposition": "unchanged",
+        "task_id": "task_existing",
+        "code": null,
+        "provenance": {
+          "external_id": "external_same",
+          "source_updated_at": null,
+          "source_state": "Doing",
+          "source_ref": "source reference (never fetched)",
+          "source_namespace": "example",
+          "source_revision": "revision_2",
+          "source_sha256": "6589def48349b3f33d29c3fcf9215a9d58c46bd7f4945f8dac659cc70339358c",
+          "import_id": "import_example",
+          "task_id": "task_existing"
+        }
+      },
+      {
+        "index": 2,
+        "external_id": "external_changed",
+        "disposition": "conflict",
+        "task_id": null,
+        "code": "SOURCE_CHANGED",
+        "provenance": null
+      },
+      {
+        "index": 3,
+        "external_id": null,
+        "disposition": "rejected",
+        "task_id": null,
+        "code": "INVALID_ROW",
+        "provenance": null
+      }
+    ],
+    "applied_at": "2026-10-27T00:01:00Z"
+  }
+}

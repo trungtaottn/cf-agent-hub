@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cf-agent-hub:import-reconciliation-examples:1",
+  "title": "Static import reconciliation example; no working endpoint evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "contract_revision": {
+      "const": "0.1"
+    },
+    "status": {
+      "const": "design-baseline"
+    },
+    "batch": {
+      "$ref": "urn:cf-agent-hub:openapi-components:1#/components/schemas/ImportEnvelope"
+    },
+    "preview": {
+      "$ref": "urn:cf-agent-hub:openapi-components:1#/components/schemas/ImportPreview"
+    },
+    "apply": {
+      "$ref": "urn:cf-agent-hub:openapi-components:1#/components/schemas/ImportApplyRequest"
+    },
+    "report": {
+      "$ref": "urn:cf-agent-hub:openapi-components:1#/components/schemas/ImportReport"
+    }
+  },
+  "required": [
+    "contract_revision",
+    "status",
+    "batch",
+    "preview",
+    "apply",
+    "report"
+  ]
+}

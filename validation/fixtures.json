@@ -69,6 +69,14 @@
     {
       "file": "examples/http/r2-catalog-contracts.json",
       "schema": "spec/r2-catalog-examples.schema.json"
+    },
+    {
+      "file": "examples/imports/reconciliation.json",
+      "schema": "spec/import-reconciliation-examples.schema.json"
+    },
+    {
+      "file": "examples/search/literal-cases.json",
+      "schema": "spec/search-literal-examples.schema.json"
     }
   ]
 }
