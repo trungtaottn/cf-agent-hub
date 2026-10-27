@@ -18,11 +18,12 @@ import {getArtifact} from '../artifacts/repository';
 import {listArtifacts} from '../artifacts/reads';
 import {uploadArtifactContent,commitArtifact,downloadArtifactContent,currentArtifactContext,type ArtifactOperationContext} from '../artifacts/content';
 import {jsonBytes,TASK_RESPONSE_BYTES,TASK_CURSOR_BYTES} from '../tasks/bounds';
-/** Internal composition seam only. Worker/DO do not register it until cleanup exclusion is reviewed. */
+export const artifactPath=/^\/v2\/workspaces\/([a-zA-Z0-9_-]{1,128})\/artifacts(?:\/([^/:]+)(\/content|:commit)?)?$/;
+/** Shared authenticated handler; ingress requires a trusted separate product binding. */
 export async function artifactRoutes(request:Request,workspace:AuthWorkspace,bucket?:R2Bucket):Promise<Response>{
  const requestId=crypto.randomUUID(),headers=new Headers(securityHeaders);
  try{
-  const url=new URL(request.url),match=/^\/v2\/workspaces\/([a-zA-Z0-9_-]{1,128})\/artifacts(?:\/([^/:]+)(\/content|:commit)?)?$/.exec(url.pathname);
+  const url=new URL(request.url),match=artifactPath.exec(url.pathname);
   if(!match||match[1]!==workspace.workspaceId)throw new HttpError('NOT_FOUND',404);
   let id:string|null=null;try{id=match[2]?decodeURIComponent(match[2]):null;}catch{throw new HttpError('INVALID_REQUEST',400);}
   const content=match[3]==='/content',commit=match[3]===':commit',list=request.method==='GET'&&id===null,read=request.method==='GET';

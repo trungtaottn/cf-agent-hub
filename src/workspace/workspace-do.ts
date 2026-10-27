@@ -1,3 +1,5 @@
+import {artifactPath,artifactRoutes} from '../http/artifact-routes';
+import {productArtifactBucket} from '../artifacts/binding';
 import {catalogPath,catalogRoutes} from '../http/catalog-routes';
 import {taskPath,taskRoutes} from '../http/task-routes';
 import {r2Routes,identityPath} from '../http/r2-routes';
@@ -151,8 +153,8 @@ export class WorkspaceDO extends DurableObject<WorkspaceEnvironment> {
   if(!metadata||this.env.WORKSPACE.idFromName(metadata.object_name).toString()!==this.ctx.id.toString())return null;
   return {storage:this.ctx.storage,workspaceId:metadata.workspace_id,objectName:metadata.object_name,secrets:this.env as unknown as Record<string,unknown>,clock:systemClock,entropy:systemEntropy};
  }
- async repairSchedule(){const workspace=this.#outboxWorkspace();if(!workspace)throw Error('WORKSPACE_IDENTITY_MISMATCH');return new OutboxScheduler(workspace,new DeliveryDispatcher(workspace)).repairSchedule();}
- async runDueWork(nowMs:number):Promise<void>{const workspace=this.#outboxWorkspace();if(!workspace)return;await new OutboxScheduler(workspace,new DeliveryDispatcher(workspace)).runDueWork(nowMs);}
+ async repairSchedule(){const workspace=this.#outboxWorkspace();if(!workspace)throw Error('WORKSPACE_IDENTITY_MISMATCH');return new OutboxScheduler(workspace,new DeliveryDispatcher(workspace),undefined,productArtifactBucket(this.env)).repairSchedule();}
+ async runDueWork(nowMs:number):Promise<void>{const workspace=this.#outboxWorkspace();if(!workspace)return;await new OutboxScheduler(workspace,new DeliveryDispatcher(workspace),undefined,productArtifactBucket(this.env)).runDueWork(nowMs);}
  async alarm():Promise<void>{await this.runDueWork(systemClock.nowMs());}
  async #repairDirty():Promise<void>{try{if(withTransaction(this.ctx.storage,tx=>tx.one<{dirty:number}>('SELECT dirty FROM scheduler_state WHERE id=1')?.dirty===1))await this.repairSchedule();}catch{/* Persisted work and catalog sweep remain authoritative. */}}
  async fetch(request:Request):Promise<Response> {
@@ -160,21 +162,24 @@ export class WorkspaceDO extends DurableObject<WorkspaceEnvironment> {
   const path=new URL(request.url).pathname;
   const settings=settingsPath.exec(path),message=messagePath.exec(path),operations=operationsPath.exec(path),readiness=readinessPath.exec(path),base=workspacePath.exec(path);
   const identity=identityPath.exec(path),task=taskPath.exec(path),catalog=catalogPath.exec(path);
-  const selected=match??settings??message??operations??readiness??base??identity??task??catalog;
+  const bucket=productArtifactBucket(this.env),artifact=bucket?artifactPath.exec(path):null;
+  const selected=match??settings??message??operations??readiness??base??identity??task??catalog??artifact;
   if(!selected)return r2Routes(request);
   // Protected diagnostics observe persisted scheduler/probe state. A GET must
   // not repair that state or manufacture a fresh health observation.
   // Identity lifecycle emits only local audit/outcome rows, never outbox work.
   // Do not await unrelated alarm repair after its final authority/secret projection.
-  const diagnostic=Boolean(operations||readiness||identity||task||catalog);
+  const diagnostic=Boolean(operations||readiness||identity||task||catalog||artifact);
   if(!diagnostic)await this.#repairDirty();
   const metadata=withTransaction(this.ctx.storage,tx=>tx.one<{workspace_id:string;object_name:string}>('SELECT workspace_id,object_name FROM workspace_metadata WHERE id=1'));
   if(!metadata||metadata.workspace_id!==selected[1]||this.env.WORKSPACE.idFromName(metadata.object_name).toString()!==this.ctx.id.toString()){const headers=new Headers(securityHeaders);if(match?.[2]==='callback')headers.append('set-cookie',cookieHeader('cfhub_login','',0));return authFailure(new AuthError('UNAUTHENTICATED',401),crypto.randomUUID(),headers);}
-  const response=await (catalog?catalogRoutes:task?taskRoutes:identity?r2Routes:operations?operationsRoutes:readiness?readinessRoutes:base?workspaceRoutes:message?messageRoutes:settings?settingsRoutes:authRoutes)(request,{storage:this.ctx.storage,workspaceId:metadata.workspace_id,objectName:metadata.object_name,secrets:this.env as unknown as Record<string,unknown>,clock:systemClock,entropy:systemEntropy});
+  const workspace={storage:this.ctx.storage,workspaceId:metadata.workspace_id,objectName:metadata.object_name,secrets:this.env as unknown as Record<string,unknown>,clock:systemClock,entropy:systemEntropy};
+  const response=await (artifact?artifactRoutes(request,workspace,bucket):(catalog?catalogRoutes:task?taskRoutes:identity?r2Routes:operations?operationsRoutes:readiness?readinessRoutes:base?workspaceRoutes:message?messageRoutes:settings?settingsRoutes:authRoutes)(request,workspace));
   // Ownership commands commit a durable generation. Schedule its shared repair
   // within the DO lifetime without awaiting after the final authorized projection.
   // Failure remains dirty for the existing scheduled catalog sweep/restart repair.
   if(task&&request.method==='POST'&&/:(claim|fail|cancel|heartbeat)$/.test(path)&&response.ok)this.ctx.waitUntil(this.#repairDirty());
+  if(artifact&&request.method!=='GET'&&request.method!=='OPTIONS'&&response.ok)this.ctx.waitUntil(this.#repairDirty());
   if(!diagnostic)await this.#repairDirty();return response;
  }
  async command(request:InternalRequest):Promise<InternalResponse> {

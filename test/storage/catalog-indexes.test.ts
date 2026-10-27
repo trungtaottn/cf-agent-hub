@@ -1,3 +1,4 @@
+import frozenStorage from '../../validation/r2-storage-contract.json';
 import {it,expect} from 'vitest';
 import {env} from 'cloudflare:workers';
 import {runInDurableObject,evictDurableObject} from 'cloudflare:test';
@@ -18,7 +19,7 @@ const v8=[m1,m2,m3,m4,m5,m6,m7,m8].map((sql,i)=>({version:i+1,sql}));
 const v9=[...v8,{version:9,sql:m9}];
 const target=(name:string)=>env.WORKSPACE.getByName('catalog_indexes_'+name);
 const schema=(s:DurableObjectStorage)=>s.sql.exec('SELECT type,name,tbl_name,sql FROM sqlite_schema ORDER BY type,name').toArray();
-const rows=(s:DurableObjectStorage)=>Object.fromEntries(TABLE_REGISTRY.filter(t=>t.name!=='schema_migrations').map(t=>[t.name,s.sql.exec('SELECT * FROM '+t.name).toArray()]));
+const rows=(s:DurableObjectStorage)=>Object.fromEntries(frozenStorage.tables.filter(t=>t.name!=='schema_migrations').map(t=>[t.name,s.sql.exec('SELECT * FROM '+t.name).toArray()]));
 function seedTask(s:DurableObjectStorage,id:string,project='project_source',role='role_source'){
  s.sql.exec("INSERT INTO tasks(id,workspace_id,title,description,state,task_version,proposal_version,project_id,work_role_id,retry_count,retry_limit,flags_json,created_at,updated_at) VALUES(?,'ws_example','Retained 日本語','Exact metadata','backlog',3,0,?,?,1,2,'[]',1,2)",id,project,role);
 }
@@ -31,7 +32,7 @@ it('catalog_schema9_upgrade_preserves_all_existing_domain_bytes_and_registers_on
   const before=rows(state.storage),oldSchema=schema(state.storage),versions=state.storage.sql.exec('SELECT * FROM schema_migrations ORDER BY version').toArray();
   expect(()=>withTransaction(state.storage,assertCurrentSchema)).toThrow('UNSUPPORTED_SCHEMA');
   migrate(state.storage,v9);
-  expect(CURRENT_SCHEMA_VERSION).toBe(12);expect(rows(state.storage)).toEqual(before);
+  expect(CURRENT_SCHEMA_VERSION).toBe(13);expect(rows(state.storage)).toEqual(before);
   const afterSchema=schema(state.storage);expect(afterSchema.filter(x=>!['tasks_catalog_project','tasks_catalog_role'].includes(String(x.name)))).toEqual(oldSchema);
   expect(afterSchema.filter(x=>['tasks_catalog_project','tasks_catalog_role'].includes(String(x.name)))).toHaveLength(2);
   expect(state.storage.sql.exec('SELECT * FROM schema_migrations WHERE version<=8 ORDER BY version').toArray()).toEqual(versions);
@@ -62,7 +63,7 @@ it('current_schema_restart_is_idempotent_and_gapped_sequence_rejects',async()=>{
  await evictDurableObject(stub);
  await runInDurableObject(stub,(_o,state)=>{
   expect({schema:schema(state.storage),rows:rows(state.storage),versions:state.storage.sql.exec('SELECT * FROM schema_migrations ORDER BY version').toArray()}).toEqual(before);
-  expect(before.versions).toHaveLength(12);state.storage.sql.exec('DELETE FROM schema_migrations WHERE version=8');
+  expect(before.versions).toHaveLength(13);state.storage.sql.exec('DELETE FROM schema_migrations WHERE version=8');
   expect(()=>withTransaction(state.storage,assertCurrentSchema)).toThrow('UNSUPPORTED_SCHEMA');
   expect(()=>withTransaction(state.storage,inspectRegistry)).toThrow('RECOVERY_SCHEMA_MISMATCH');
  });

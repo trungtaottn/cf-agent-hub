@@ -13,7 +13,7 @@
     "test": "vitest run --config vitest.config.ts",
     "test:workers": "vitest run --config vitest.workers.config.ts",
     "test:ui": "playwright test",
-    "check": "npm run verify:generated && npm run typecheck && npm run verify:r1-contract && npm test && npm run test:workers && npm run test:operator && npm run test:deployment-verifier && npm run test:recovery-cli",
+    "check": "npm run verify:generated && npm run verify:artifact-bindings && npm run typecheck && npm run verify:r1-contract && npm test && npm run test:workers && npm run test:operator && npm run test:deployment-verifier && npm run test:recovery-cli",
     "verify:r1-contract": "node scripts/verify-r1-contract.mjs",
     "verify:release": "node scripts/verify-release.mjs",
     "generate:config": "node scripts/generate-config-validators.mjs",
@@ -27,7 +27,8 @@
     "verify:deployment": "node scripts/verify-r1-deployment.mjs",
     "recover:workspace": "node scripts/recover-workspace.mjs",
     "test:deployment-verifier": "node --test test/deployment/verify-r1-deployment.test.mjs",
-    "test:recovery-cli": "node --test test/cli/*.test.mjs"
+    "test:recovery-cli": "node --test test/cli/*.test.mjs",
+    "verify:artifact-bindings": "node scripts/verify-artifact-bindings.mjs"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "1.4.7",
