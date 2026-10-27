@@ -59,7 +59,7 @@ it('task_http_options_checks_exact_origin_and_successors_stay_unavailable',async
   const {workspace,req}=await session(state.storage,name);
   const options=(origin:string)=>new Request(base+'tasks',{method:'OPTIONS',headers:{origin,'access-control-request-method':'POST','access-control-request-headers':'content-type, idempotency-key, x-csrf-token'}});
   expect((await taskRoutes(options('https://hub.example.invalid'),workspace)).status).toBe(204);expect((await taskRoutes(options('https://foreign.example.invalid'),workspace)).status).toBe(403);
-  for(const operation of ['claim','submit-result','accept-result','fail','cancel','requeue','request-decision']){const path='tasks/task_a:'+operation;expect(taskPath.test(new URL(req(path).url).pathname)).toBe(false);expect((await taskRoutes(req(path,'POST',{}),workspace)).status).toBe(404);}
+  for(const operation of ['submit-result','accept-result','request-decision']){const path='tasks/task_a:'+operation;expect(taskPath.test(new URL(req(path).url).pathname)).toBe(false);expect((await taskRoutes(req(path,'POST',{}),workspace)).status).toBe(404);}
  });
 });
 it('task_http_continuation_survives_restart_and_preserves_initial_highwater',async()=>{

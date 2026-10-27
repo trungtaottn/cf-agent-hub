@@ -4,7 +4,7 @@ import type {WorkspaceTransaction} from '../storage/transaction';
 import type {ActorContext,ResourceAccess} from '../workspace/context';
 import type {EventDraft} from '../workspace/commands';
 import type {Event} from '../http/dto';
-import {validateEvent} from '../http/generated/auth-validators.js';
+import {validateEvent,validateTaskReasonRequest} from '../http/generated/auth-validators.js';
 import {canonicalJson} from '../config/bootstrap';
 import {authorize,refreshActor} from '../auth/authorize';
 import {grantsCover,delegationCeiling} from '../auth/credential-authority';
@@ -27,6 +27,8 @@ const definitions={
  'runtime.heartbeat':{resource:'runtime',summary:'Runtime presence refreshed.'},
  'task.created':{resource:'task',summary:'Task created.'},
  'task.updated':{resource:'task',summary:'Task metadata updated.'},
+ 'task.cancelled':{resource:'task',summary:'Task cancelled.'},
+ 'task.requeued':{resource:'task',summary:'Task requeued.'},
  'task.ready':{resource:'task',summary:'Task scheduled Ready.'},
  'task.failed':{resource:'task',summary:'Task attempt failed.'},
  'task.expired':{resource:'task',summary:'Task execution lease expired.'},
@@ -59,14 +61,23 @@ export function appendEvent(tx:WorkspaceTransaction,event:RedactedEventInput):{i
   if(!run||task.active_run_id!==null||event.actor.kind!=='agent'||event.actor.agentId!==run.agent_id||event.actor.credentialId!==run.credential_id||run.ended_at!==event.nowMs)throw new HttpError('INTERNAL_ERROR',500);
   row.run_id=run.id;row.fence=run.fence;
  }
- return persistEvent(tx,row,historyTaskId);
+ if(event.type==='task.cancelled'||event.type==='task.requeued'){
+  if(!validateTaskReasonRequest({expected_version:1,reason:event.historyReason})||new TextEncoder().encode(JSON.stringify({expected_version:1,reason:event.historyReason})).byteLength>65536)throw new HttpError('INTERNAL_ERROR',500);
+  const task=taskRecord(tx,event.workspaceId,event.resourceId);
+  if(task.state!==(event.type==='task.cancelled'?'cancelled':'ready')||task.active_run_id!==null||task.current_result_id!==null||task.approval_id!==null)throw new HttpError('INTERNAL_ERROR',500);
+  if(event.type==='task.cancelled'&&task.latest_run_id!==null){
+   const run=tx.one<{id:string;fence:number;status:string;ended_at:number}>('SELECT id,fence,status,ended_at FROM runs WHERE workspace_id=? AND task_id=? AND id=?',[event.workspaceId,task.id,task.latest_run_id]);
+   if(run?.status==='cancelled'&&run.ended_at===event.nowMs){row.run_id=run.id;row.fence=run.fence;}
+  }
+ }else if(event.historyReason!==undefined)throw new HttpError('INTERNAL_ERROR',500);
+ return persistEvent(tx,row,historyTaskId,event.historyReason??null);
 }
-function persistEvent(tx:WorkspaceTransaction,row:EventRow,historyTaskId:string|null):{id:string;sequence:number}{
+function persistEvent(tx:WorkspaceTransaction,row:EventRow,historyTaskId:string|null,historyReason:string|null=null):{id:string;sequence:number}{
  if(!validateEvent(projection(row)))throw new HttpError('INTERNAL_ERROR',500);
  tx.exec('INSERT INTO events (id,workspace_id,type,actor_json,resource_type,resource_id,resource_version,thread_id,request_id,occurred_at,summary) VALUES (?,?,?,?,?,?,?,?,?,?,?)',[row.id,row.workspace_id,row.type,row.actor_json,row.resource_type,row.resource_id,row.resource_version,row.thread_id,row.request_id,row.occurred_at,row.summary]);
  if(historyTaskId!==null){
   tx.exec('UPDATE events SET task_version=?,run_id=?,fence=? WHERE id=?',[row.task_version!,row.run_id??null,row.fence??null,row.id]);
-  tx.exec('INSERT INTO task_history(id,workspace_id,event_id,task_id,task_version,run_id,kind,created_at) VALUES(?,?,?,?,?,?,?,?)',[row.id,row.workspace_id,row.id,historyTaskId,row.task_version!,row.run_id??null,row.type,row.occurred_at]);
+  tx.exec('INSERT INTO task_history(id,workspace_id,event_id,task_id,task_version,run_id,kind,created_at,reason) VALUES(?,?,?,?,?,?,?,?,?)',[row.id,row.workspace_id,row.id,historyTaskId,row.task_version!,row.run_id??null,row.type,row.occurred_at,historyReason]);
  }
  const stored=tx.one<{sequence:number}>('SELECT sequence FROM events WHERE id=?',[row.id])!;
  return {id:row.id,sequence:stored.sequence};

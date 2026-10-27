@@ -29,7 +29,7 @@ it('actual_worker_DO_catalog_preview_apply_replay_and_foreign_routing_are_closed
  const body={preview_id:plan.id,expected_profile_revision:1};const applied=await entry.fetch(request('catalog:apply',body,'apply'),bindings);expect(applied.status).toBe(200);const result=await applied.json() as {data:unknown};
  const repeated=await entry.fetch(request('catalog:apply',body,'apply'),bindings);expect(repeated.status).toBe(200);expect((await repeated.json() as {data:unknown}).data).toEqual(result.data);
  const foreign=request('catalog:preview',preview,'foreign');expect((await entry.fetch(new Request(foreign.url.replace('ws_example','ws_foreign'),foreign),bindings)).status).toBe(401);expect(seen).toEqual([name,name,name,name]);
- expect((await entry.fetch(request('tasks/task_a:claim',{},'claim'),bindings)).status).toBe(404);expect(seen).toHaveLength(4);
+ expect((await entry.fetch(request('tasks/task_a:claim',{},'claim'),bindings)).status).toBe(400);expect(seen).toHaveLength(5);
  await runInDurableObject(stub,(_o,state)=>{expect(state.storage.sql.exec("SELECT project_id,task_version FROM tasks WHERE id='task_a'").one()).toEqual({project_id:'project_b',task_version:2});expect(state.storage.sql.exec('SELECT COUNT(*) AS n FROM catalog_plans').one()).toEqual({n:1});expect(state.storage.sql.exec('SELECT COUNT(*) AS n FROM idempotency_outcomes').one()).toEqual({n:2});});
 });
 it('actual_DO_two_distinct_apply_keys_have_one_winner_and_no_duplicate_commit',async()=>{

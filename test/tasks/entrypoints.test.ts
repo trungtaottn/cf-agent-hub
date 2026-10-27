@@ -18,7 +18,7 @@ it('actual_worker_maps_task_routes_to_operator_owned_DO_and_rejects_foreign_cata
  const response=await entry.fetch(request('tasks','POST',{title:'Worker task',description:''},'worker-create'),bindings);expect(response.status).toBe(201);const created=await response.json() as {data:{id:string}};expect(seen).toEqual(['task-entry-worker']);
   const listed=await entry.fetch(request('tasks'),bindings);expect(listed.status).toBe(200);expect(await listed.json()).toMatchObject({data:[{id:created.data.id}]});
   const foreign=await entry.fetch(new Request(base.replace('ws_example','ws_foreign')+'tasks',{headers:{authorization:'Bearer '+token}}),bindings);expect(foreign.status).toBe(401);expect(seen).toHaveLength(2);
-  expect((await entry.fetch(request('tasks/'+created.data.id+':claim','POST',{}),bindings)).status).toBe(404);expect(seen).toHaveLength(2);
+  expect((await entry.fetch(request('tasks/'+created.data.id+':claim','POST',{}),bindings)).status).toBe(400);expect(seen).toHaveLength(3);
 });
 it('actual_DO_task_commands_reads_and_history_leave_scheduler_dirty_and_unarmed',async()=>{
  const {stub}=await setup('task-entry-do');await runInDurableObject(stub,(_o,state)=>{state.storage.sql.exec('INSERT INTO scheduler_state(id,dirty,generation) VALUES(1,1,1) ON CONFLICT(id) DO UPDATE SET dirty=1');});
@@ -28,7 +28,7 @@ it('actual_DO_task_commands_reads_and_history_leave_scheduler_dirty_and_unarmed'
  expect((await stub.fetch(request('tasks/'+created.data.id+':ready','POST',{expected_version:2},'ready'))).status).toBe(200);
  const list=await stub.fetch(request('tasks'));expect(list.status).toBe(200);expect(await list.json()).toMatchObject({data:[{id:created.data.id,state:'ready'}]});
  expect((await stub.fetch(request('tasks/'+created.data.id))).status).toBe(200);const results=await stub.fetch(request('tasks/'+created.data.id+'/results'));expect(results.status).toBe(200);expect(await results.json()).toMatchObject({data:[],page:{next_cursor:null,has_more:false}});
- for(const suffix of [':claim',':submit-result',':accept-result',':requeue',':cancel',':request-decision'])expect((await stub.fetch(request('tasks/'+created.data.id+suffix,'POST',{}))).status).toBe(404);
+ for(const suffix of [':submit-result',':accept-result',':request-decision'])expect((await stub.fetch(request('tasks/'+created.data.id+suffix,'POST',{}))).status).toBe(404);
  const after=await runInDurableObject(stub,async(_o,state)=>({scheduler:state.storage.sql.exec('SELECT * FROM scheduler_state').toArray(),alarm:await state.storage.getAlarm(),outbox:state.storage.sql.exec('SELECT * FROM outbox').toArray()}));expect(after).toEqual({scheduler:before,alarm:null,outbox:[]});
  // Proves the retained dirty marker was actionable, not an inert assertion.
  await stub.repairSchedule();expect(await runInDurableObject(stub,(_o,state)=>state.storage.sql.exec('SELECT dirty FROM scheduler_state WHERE id=1').one())).toEqual({dirty:0});
