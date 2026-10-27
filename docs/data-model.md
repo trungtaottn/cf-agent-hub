@@ -1,8 +1,8 @@
 # Data model
 
-Status: Design baseline · Contract revision 0.1 · Implementation pending.
+Status: R2 schema8 source implemented locally · Contract revision 0.1 · Domain commands and live acceptance pending.
 
-This page defines conceptual ownership and invariants. It is not an executed SQL migration. JSON field spelling and request schemas are defined in [HTTP API](http-api.md) and [OpenAPI](../spec/openapi.json). Database table/index design must preserve these invariants while being verified against the chosen runtime.
+This page defines conceptual ownership and invariants. The issue24 storage implementation is described below; conceptual behavior is not automatically an enabled command. JSON field spelling and request schemas are defined in [HTTP API](http-api.md) and [OpenAPI](../spec/openapi.json). Database table/index design must preserve these invariants while being verified against the chosen runtime.
 
 ## Entity ownership
 
@@ -80,3 +80,19 @@ Migration 4 preserves old outbox bytes, identities, destinations, status and att
 The future unique mapping is `(workspace, source_namespace, external_id)` to local task ID and canonical source-row SHA-256. Exact repeats do not rewrite tasks; changed source conflicts. Source revision belongs to attempt metadata, not the row hash. A preview ID immutably binds original source rows/hashes and mapping/reference snapshots, trusted creation and owning principal/workspace internally. The public digest commits its public preview, not omitted input bodies. Apply cannot replace those internal snapshots or partially commit after a revalidation failure.
 
 Version-1 preview rows use create/unchanged/conflict/rejected. Version-2 report rows use created/unchanged/conflict/rejected with exact partitioned counts and contiguous indices. Authorized created/unchanged report rows carry the closed ImportProvenance for the current attempt (including revision, original state and inert reference); rejected/conflict rows carry null provenance. Unchanged provenance records this attempt without asserting a task/mapping overwrite. Preserve provenance in permitted audit history as well. Task remains its existing closed DTO; imported state is never local authority and every newly created task starts Backlog. Storage tables, uniqueness enforcement and recovery integration belong to later owners, not this contract amendment.
+
+## Executed storage boundary (issue24)
+
+Migration `0008-durable-work.sql` appends to unchanged versions1–7. The [complete storage manifest](../validation/r2-storage-contract.json) enumerates all35 application tables, every column/default/primary/foreign key and complete SQLite table/index SQL (including CHECK predicates). The typed current registry is reviewed source, not generated from the live database being captured. `sqlite_sequence` remains the sole recognized engine table and only events uses it.
+
+`static_agents` retains its historical physical name and is the single identity registry. Existing agent/credential IDs, verification hashes, ceilings (including JSON null versus []), retired/disabled/expired rows and message/outbox/replay bytes survive adoption. Metadata defaults are neutral; existing installed_at supplies creation time. Fresh static installations use trusted install time. Cross-workspace/origin collisions reject atomically. Dynamic issuance, epoch revocation and active/archived authentication rules remain #25/#26; no dynamic route is activated by migration.
+
+New families are runtimes; tasks/runs; results, ordered artifact links, acceptances and history; artifacts and immutable generations; artifact/message associations; catalog/import previews and provenance mappings. Runtime restore mode is invalidate and generation mode paused-effects; these are obligations for #43, not implemented recovery transformations. Existing modes remain unchanged. Nullable task proposal/approval and event evidence fields preserve compatibility without enabling R3.
+
+Immediate composite foreign keys bind workspace/task/run/result/generation identity. One partial unique index enforces at most one active run per task; terminal runs require ended_at and task Doing requires a non-null active pointer. Counters are positive and task-local fences/submission sequences are unique. The allocator fields next_fence and next_result_sequence must advance in the owning command; schema alone does not enforce monotonic updates, pointed-run status, immutable history, independent acceptance or current artifact authorization.
+
+**Ordered mutation protocol:** create task with nullable pointers; insert its run; set Doing and active/latest pointers in the same synchronous transaction. Insert result/generation before attaching its pointer. Immediate checks reject cross-task/workspace IDs. Any later failure rolls back all writes. Deferred constraints were rejected after actual Workers savepoint tests demonstrated delayed violations could reset the object; no second global transaction validator was introduced.
+
+Artifact generation rows retain expected and observed digest/size, admission epoch/generation and current effect identity/kind/state/start/drain evidence. A single slot requires serialized external operations: never replace in-flight/uncertain work or dispatch cleanup delete until the prior put is conclusively drained. Future effect owners retain immutable evidence needed before advancing a drained slot; no simultaneous put/delete tracking or optimistic drain is promised. Polymorphic associations and actor/creator consistency require command guards. Imports retain original source rows, preview/report snapshots, digest, scoped mapping identity, originating import and provenance JSON.
+
+Schema8 operational recovery is deliberately unavailable until #39/#43 implement the complete versioned restore/capture semantics. V1/schema7 codec/registry remains frozen; it cannot omit new tables to produce a partial backup. See [backup/restore](backup-restore.md). Source tests and index observations do not establish deployment, throughput or R2 acceptance.

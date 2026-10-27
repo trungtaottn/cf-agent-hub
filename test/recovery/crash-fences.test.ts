@@ -1,3 +1,4 @@
+// Historical schema7 SQLite recovery regression, not schema8 operational acceptance.
 import {describe,it,expect} from 'vitest';
 import {evictDurableObject} from 'cloudflare:test';
 import {recoveryFixture,captureFixture,withRecoveryWorkspace,recoveryContext} from '../helpers/recovery-fixture';

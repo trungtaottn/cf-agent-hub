@@ -1,3 +1,4 @@
+// Historical schema7 SQLite recovery regression, not schema8 operational acceptance.
 import {describe,it,expect} from 'vitest';
 import {withTransaction} from '../../src/storage/transaction';
 import {restoredFixture,recoveryFixture,captureFixture,restoreFixture,withRecoveryWorkspace,recoveryContext,fixtureIntegrity} from '../helpers/recovery-fixture';
@@ -7,7 +8,6 @@ import {readRecoveryStatus} from '../../src/recovery/capture';
 import {beginRestore,writeRestoreChunk} from '../../src/recovery/restore';
 import {recordProbe,readStoredProbe} from '../../src/recovery/probes';
 import {resolveDelivery,retireWorkspace,resumeWorkspace} from '../../src/recovery/controls';
-import {currentConfiguration} from '../../src/auth/context';
 import type {CutoverRecord} from '../../src/recovery/protocol';
 describe('R1 bounded actual Workers recovery',()=>{
  it('captures typed chunks, restores revoked authority, retains history, and stays paused across eviction',async()=>{

@@ -6,7 +6,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import {spawnSync} from 'node:child_process';
 import {canonicalBytes,encodeChunk} from '../../src/recovery/encoding.ts';
-import {TABLE_REGISTRY,tableDefinition} from '../../src/recovery/table-registry.ts';
+import {TABLE_REGISTRY,tableDefinition} from '../../src/recovery/table-registry-v1.ts';
 import {signRecord} from '../../src/recovery/manifest.ts';
 import {readSecretFd,readEncryptedArtifact,writeEncryptedArtifact} from '../../scripts/lib/recovery-io.mjs';
 

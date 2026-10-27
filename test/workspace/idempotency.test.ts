@@ -55,7 +55,7 @@ it('same_key_other_principal_is_separate',async()=>{
  await runInDurableObject(stub,async(_o,state)=>{
   const body={body:'safe'},ctx=await context(state.storage,name,body);
   executeCommand(ctx,identity,descriptor(),body);
-  withTransaction(state.storage,tx=>{const row=tx.one<{token_sha256:string}>('SELECT token_sha256 FROM native_credentials')!;tx.exec('INSERT INTO static_agents VALUES (?,?,?,?)',['agent_other','ws_example','Other',1]);tx.exec('INSERT INTO native_credentials (credential_id,workspace_id,agent_id,token_sha256,scopes_json,project_ids_json,expires_at,enabled,config_epoch) VALUES (?,?,?,?,?,?,?,?,?)',['credential_other','ws_example','agent_other',row.token_sha256,'["messages:send","messages:read"]','null',Date.now()+100000,1,1]);});
+  withTransaction(state.storage,tx=>{const row=tx.one<{token_sha256:string}>('SELECT token_sha256 FROM native_credentials')!;tx.exec('INSERT INTO static_agents (agent_id,workspace_id,display_name,config_epoch) VALUES (?,?,?,?)',['agent_other','ws_example','Other',1]);tx.exec('INSERT INTO native_credentials (credential_id,workspace_id,agent_id,token_sha256,scopes_json,project_ids_json,expires_at,enabled,config_epoch) VALUES (?,?,?,?,?,?,?,?,?)',['credential_other','ws_example','agent_other',row.token_sha256,'["messages:send","messages:read"]','null',Date.now()+100000,1,1]);});
   const other={...identity,credentialId:'credential_other'} as VerifiedIdentity;
   executeCommand(ctx,other,descriptor('message_two'),body);
   expect(counts(state.storage)).toMatchObject({messages:2,outbox:2,idempotency_outcomes:2});

@@ -2,6 +2,8 @@
 
 Status: R1 source candidate · Contract revision 0.2 · Isolated acceptance pending; no released artifact.
 
+Issue24 adds the schema8 persistence boundary only (35 application tables and a complete typed registry). R2 command capabilities remain unactivated. Current schema8 operational recovery/probe is intentionally unavailable until #39/#43; historical V1/schema7 tests are not current recovery acceptance. See [execution evidence](r2-task-plans/issue-024-execution.md).
+
 This is the canonical capability-status register. **The 14 R1 capabilities are Implemented in the reviewable source candidate; the 28 later-release capabilities remain Specified. None are claimed Verified or Released.** Implementation references and reproducible local checks are recorded in [R1 implementation and acceptance](r1-implementation.md). Real isolated deployment, recovery, toolchain and final evidence gates remain pending. A specification means behavior and acceptance expectations exist, not that every later-release field or UI has been finalized. Protocol adapters and team administration still require the additional contract work named in their pages.
 
 Status advances in order: **Specified** → **Implemented** → **Verified** → **Released**. Implemented requires reviewable code; Verified requires reproducible evidence for the selected release; Released requires a tagged artifact, operator documentation and completed release gate. A screenshot, mocked response or successful documentation validator does not advance a runtime capability.

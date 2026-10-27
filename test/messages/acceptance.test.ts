@@ -1,3 +1,4 @@
+import {resetLegacyAuthorityFixture} from '../helpers/legacy-migration-fixture';
 import {it,expect} from 'vitest';
 import {runInDurableObject,evictDurableObject} from 'cloudflare:test';
 import {executeCommand} from '../../src/workspace/commands';
@@ -14,7 +15,7 @@ import {canonicalJson} from '../../src/config/bootstrap';
 import {validateEvent,validateMessageNotification} from '../../src/http/generated/auth-validators.js';
 import {messageRoutes} from '../../src/http/message-routes';
 function addAgent(storage:DurableObjectStorage,id:string,scopes=['messages:read'],projects:string[]|null=null){
- storage.sql.exec('INSERT INTO static_agents VALUES (?,?,?,1)',id,'ws_example',id);
+ storage.sql.exec('INSERT INTO static_agents (agent_id,workspace_id,display_name,config_epoch) VALUES (?,?,?,1)',id,'ws_example',id);
  storage.sql.exec('INSERT INTO native_credentials (credential_id,workspace_id,agent_id,token_sha256,scopes_json,project_ids_json,expires_at,enabled,config_epoch) VALUES (?,?,?,?,?,?,?,1,1)','credential_'+id,'ws_example',id,'b'.repeat(64),JSON.stringify(scopes),JSON.stringify(projects),Date.now()+1000000);
 }
 async function send(storage:DurableObjectStorage,name:string,identity:Parameters<typeof executeCommand>[1],body=messageInput(),key='send'){
@@ -55,11 +56,11 @@ it('recipient_must_be_enabled_static_agent',async()=>{
 it('disjoint_credentials_cannot_be_combined_and_caller_proof_cannot_be_broadened',async()=>{
  const {stub,name,identity}=await messageFixture('message-coherent');await runInDurableObject(stub,async(_o,state)=>{
   addAgent(state.storage,'split',['messages:read'],[]);
-  state.storage.sql.exec("INSERT INTO native_credentials SELECT 'split_other',workspace_id,agent_id,token_sha256,'[]','null',expires_at,enabled,config_epoch,retired_at_epoch FROM native_credentials WHERE agent_id='split'");
-  await expect(send(state.storage,name,identity,messageInput({recipient_agent_ids:['split']}))).rejects.toMatchObject({code:'NOT_FOUND'});state.storage.sql.exec("INSERT INTO native_credentials SELECT 'split_valid',workspace_id,agent_id,token_sha256,'[\"messages:read\"]','null',expires_at,enabled,config_epoch,retired_at_epoch FROM native_credentials WHERE credential_id='credential_split'");expect((await send(state.storage,name,identity,messageInput({recipient_agent_ids:['split']}),'coherent')).status).toBe(201);
+  state.storage.sql.exec("INSERT INTO native_credentials (credential_id,workspace_id,agent_id,token_sha256,scopes_json,project_ids_json,expires_at,enabled,config_epoch,retired_at_epoch) SELECT 'split_other',workspace_id,agent_id,token_sha256,'[]','null',expires_at,enabled,config_epoch,retired_at_epoch FROM native_credentials WHERE agent_id='split'");
+  await expect(send(state.storage,name,identity,messageInput({recipient_agent_ids:['split']}))).rejects.toMatchObject({code:'NOT_FOUND'});state.storage.sql.exec("INSERT INTO native_credentials (credential_id,workspace_id,agent_id,token_sha256,scopes_json,project_ids_json,expires_at,enabled,config_epoch,retired_at_epoch) SELECT 'split_valid',workspace_id,agent_id,token_sha256,'[\"messages:read\"]','null',expires_at,enabled,config_epoch,retired_at_epoch FROM native_credentials WHERE credential_id='credential_split'");expect((await send(state.storage,name,identity,messageInput({recipient_agent_ids:['split']}),'coherent')).status).toBe(201);
   const reference=await send(state.storage,name,identity,messageInput(),'reference');
   state.storage.sql.exec("UPDATE native_credentials SET scopes_json='[\"messages:send\"]' WHERE credential_id='credential_research_1'");
-  state.storage.sql.exec("INSERT INTO native_credentials SELECT 'caller_other',workspace_id,agent_id,token_sha256,'[\"messages:read\"]','null',expires_at,enabled,config_epoch,retired_at_epoch FROM native_credentials WHERE credential_id='credential_research_1'");
+  state.storage.sql.exec("INSERT INTO native_credentials (credential_id,workspace_id,agent_id,token_sha256,scopes_json,project_ids_json,expires_at,enabled,config_epoch,retired_at_epoch) SELECT 'caller_other',workspace_id,agent_id,token_sha256,'[\"messages:read\"]','null',expires_at,enabled,config_epoch,retired_at_epoch FROM native_credentials WHERE credential_id='credential_research_1'");
   await expect(send(state.storage,name,identity,messageInput({refs:[{kind:'message',id:reference.data.id}]}),'leak')).rejects.toMatchObject({code:'NOT_FOUND'});
  });
 });
@@ -118,9 +119,8 @@ it('http_message_admission_uses_real_command_and_byte_boundaries',async()=>{
 });
 import {migrate,FOUNDATION_SQL} from '../../src/storage/migrations';
 it('forward_migration_preserves_legacy_membership_bytes_attempts_and_unproven_route',async()=>{
- const {stub}=await messageFixture('message-legacy');await runInDurableObject(stub,(_o,state)=>{
-  for(const table of ['thread_participants','outbox','scheduler_state']){state.storage.sql.exec('DROP TABLE '+table);state.storage.sql.exec(FOUNDATION_SQL.match(new RegExp(String.raw`CREATE TABLE ${table} \([\s\S]*?\);`))![0]);}
-  for(const column of ['message_retained_after_id','message_retained_after_created_at','event_retained_after_sequence'])state.storage.sql.exec('ALTER TABLE workspace_metadata DROP COLUMN '+column);state.storage.sql.exec('ALTER TABLE maintenance_state DROP COLUMN generation');state.storage.sql.exec('DELETE FROM schema_migrations WHERE version>=4');
+ const {stub}=await messageFixture('message-legacy');await runInDurableObject(stub,async(_o,state)=>{
+  await resetLegacyAuthorityFixture(state.storage,3);
   state.storage.sql.exec("INSERT INTO threads VALUES ('legacy-thread','ws_example','',1)");state.storage.sql.exec("INSERT INTO thread_participants VALUES ('legacy-thread','agent_research')");
   state.storage.sql.exec("INSERT INTO outbox (id,workspace_id,message_id,destination_id,notification_id,payload_json,status,attempts,next_due_at,retry_multiplier,created_at,updated_at) VALUES ('legacy','ws_example','legacy-message','research','original-notification','{\"old\": true}','exhausted',6,100,.9,1,2)");state.storage.sql.exec('INSERT INTO scheduler_state VALUES (1,100,90,80)');
   const before=state.storage.sql.exec('SELECT * FROM outbox').one();state.storage.sql.exec("CREATE TRIGGER migration_fault BEFORE INSERT ON schema_migrations WHEN NEW.version=4 BEGIN SELECT RAISE(ABORT,'migration_fault'); END");
@@ -157,7 +157,7 @@ it('fixed_human_visibility_uses_current_grant_without_a_fabricated_session',asyn
 });
 it('caller_project_restriction_cannot_be_broadened_by_another_credential',async()=>{
  const {stub,name,identity}=await messageFixture('message-caller-project');await runInDurableObject(stub,async(_o,state)=>{
-  state.storage.sql.exec("INSERT INTO native_credentials SELECT 'read_only_other',workspace_id,agent_id,token_sha256,'[\"messages:read\"]','null',expires_at,enabled,config_epoch,retired_at_epoch FROM native_credentials WHERE credential_id='credential_research_1'");state.storage.sql.exec("UPDATE native_credentials SET project_ids_json='[]' WHERE credential_id='credential_research_1'");
+  state.storage.sql.exec("INSERT INTO native_credentials (credential_id,workspace_id,agent_id,token_sha256,scopes_json,project_ids_json,expires_at,enabled,config_epoch,retired_at_epoch) SELECT 'read_only_other',workspace_id,agent_id,token_sha256,'[\"messages:read\"]','null',expires_at,enabled,config_epoch,retired_at_epoch FROM native_credentials WHERE credential_id='credential_research_1'");state.storage.sql.exec("UPDATE native_credentials SET project_ids_json='[]' WHERE credential_id='credential_research_1'");
   const before=messageSnapshot(state.storage);await expect(send(state.storage,name,identity)).rejects.toMatchObject({code:'FORBIDDEN'});expect(messageSnapshot(state.storage)).toEqual(before);
  });
 });

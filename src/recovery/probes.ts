@@ -1,7 +1,7 @@
 import {withTransaction,type WorkspaceTransaction} from '../storage/transaction';
 import {canonicalJson} from '../config/bootstrap';
-import {admissionOpen,maintenanceRow,readAdmissionFence,sameFence} from './maintenance';
-import {inspectRegistry,RECOVERY_SCHEMA_VERSION} from './table-registry';
+import {admissionOpen,maintenanceRow,readAdmissionFence,sameFence} from './maintenance-v1';
+import {inspectRegistry,RECOVERY_SCHEMA_VERSION} from './table-registry-v1';
 import {assertRecoveryContext,priorOperation,storeOperation,type RecoveryContext,type RecoveryWorkspace,type ProbeReceipt,type ResumeReceipt} from './protocol';
 import {validateProbeReceipt,validateResumeReceipt} from './generated/recovery-validators.js';
 import {closed,digestBytes,canonicalBytes} from './encoding';

@@ -1,7 +1,7 @@
 import {prepareBootstrap,type ValidatedBootstrap} from '../config/bootstrap.ts';
 import {resolveWorkspace} from '../config/deployment.ts';
 import {canonicalBytes,digestBytes,fromBase64,hex,CONTROL_LIMIT,CHUNK_LIMIT,CHUNK_COUNT} from './encoding.ts';
-import {TABLE_REGISTRY} from './table-registry.ts';
+import {TABLE_REGISTRY} from './table-registry-v1.ts';
 import {validateRecoveryManifest,validateCurrentLedger,validateRetirementReceipt,validateCutoverRecord,type RecoveryManifest,type CurrentLedger,type RetirementReceipt,type CutoverRecord} from './generated/recovery-validators.js';
 import type {RecoveryIntegrity,RecoveryWorkspace,LedgerAnchor} from './protocol';
 interface Authenticated {auth:{key_id:string;algorithm:'HMAC-SHA256';tag:string};}

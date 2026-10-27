@@ -2,9 +2,9 @@ import {UNRESOLVED_EFFECT_IDS_LIMIT} from './generated/recovery-validators.js';
 import {canonicalJson} from '../config/bootstrap';
 import {withTransaction,type WorkspaceTransaction,type SqlValue} from '../storage/transaction';
 import {canonicalBytes,digestBytes,hex,decodeChunk,CHUNK_LIMIT,type SqlCell} from './encoding';
-import {TABLE_REGISTRY,type RecoveryTableName} from './table-registry';
+import {TABLE_REGISTRY,type RecoveryTableName} from './table-registry-v1';
 import {assertRecoveryContext,boundedData,controlTarget,type RecoveryContext,type RecoveryWorkspace,type RecoveryManifest,type CurrentLedger,type RecoveryReceipt,type RecoveryJobProgress} from './protocol';
-import type {AdmissionFence} from './maintenance';
+import type {AdmissionFence} from './maintenance-v1';
 export interface RecoveryBudget {max_rows:number;max_artifacts:number;max_total_bytes:number;}
 export interface PendingStep {operationId:string;fingerprint:string;kind:'page'|'hash'|'write'|'verify'|'overlay';endedAt:string;index:number|null;}
 export interface JobDetails {

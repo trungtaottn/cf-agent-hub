@@ -1,7 +1,7 @@
 import {withTransaction,type WorkspaceTransaction,type SqlValue} from '../storage/transaction';
 import {canonicalJson,prepareBootstrap,restoreAuthorityOverlay} from '../config/bootstrap';
-import {TABLE_REGISTRY,tableDefinition,inspectRegistry,type RecoveryTableName} from './table-registry';
-import {transitionMaintenance,maintenanceRow} from './maintenance';
+import {TABLE_REGISTRY,tableDefinition,inspectRegistry,type RecoveryTableName} from './table-registry-v1';
+import {transitionMaintenance,maintenanceRow} from './maintenance-v1';
 import {canonicalBytes,digestBytes,decodeChunk,sqlBinding,sqlCell,primaryKey,compareKeys,type RecoveryChunk,type SqlCell} from './encoding';
 import {verifyManifest,verifyCurrentLedger} from './manifest';
 import {assertRecoveryContext,priorOperation,storeOperation,type RecoveryContext,type RecoveryWorkspace,type RecoveryJobProgress,type RecoveryManifest,type CurrentLedger} from './protocol';

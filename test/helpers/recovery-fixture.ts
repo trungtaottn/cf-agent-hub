@@ -1,7 +1,10 @@
 import {env} from 'cloudflare:workers';
 import {runInDurableObject,evictDurableObject} from 'cloudflare:test';
-import {fixture,operator} from './environment';
-import {canonicalJson,prepareBootstrap,sha256} from '../../src/config/bootstrap';
+import {fixture} from './environment';
+import type {HistoricalStorageDO} from './historical-storage';
+import {HistoricalOutboxScheduler} from './historical-scheduler';
+import {DeliveryDispatcher} from '../../src/outbox/dispatcher';
+import {canonicalJson,prepareBootstrap,sha256,installConfiguration} from '../../src/config/bootstrap';
 import {systemClock,systemEntropy} from '../../src/workspace/context';
 import {withTransaction} from '../../src/storage/transaction';
 import {canonicalBytes,digestBytes} from '../../src/recovery/encoding';
@@ -12,9 +15,11 @@ import type {RecoveryWorkspace,RecoveryContext,RecoveryOperation,RecoveryManifes
 export const fixtureIntegrity={keyId:'recovery_fixture',key:btoa('r'.repeat(32))};
 export async function recoveryFixture(name:string,options:{disableCredential?:boolean;seed?:boolean}={}){
  const sourceName=name+'_source',targetName=name+'_target',captureId='capture_'+name;
- const source=env.WORKSPACE.getByName(sourceName),target=env.WORKSPACE.getByName(targetName);
+ // Explicit historical schema7 host: these fixtures do not exercise production schema8 recovery.
+ const namespace=(env as unknown as {HISTORICAL_WORKSPACE:DurableObjectNamespace<HistoricalStorageDO>}).HISTORICAL_WORKSPACE;
+ const source=namespace.getByName(sourceName),target=namespace.getByName(targetName);
  const sourceMaterial=await fixture(sourceName,1);sourceMaterial.bundle.credentials[0].token_sha256=await sha256('A'.repeat(43));
- const sourceInput=await prepareBootstrap(sourceMaterial.config,sourceMaterial.bundle,'ws_example');const installed=await source.installOperation({...operator(),operationId:'source_install',requestFingerprint:await digestBytes(canonicalBytes(sourceInput)),proofExpiresAt:Date.now()+120000},sourceInput);if(!installed.ok)throw Error('Fixture install failed');
+ const sourceInput=await prepareBootstrap(sourceMaterial.config,sourceMaterial.bundle,'ws_example');await runInDurableObject(source,(_instance,state)=>withTransaction(state.storage,tx=>installConfiguration(tx,sourceInput.config,sourceInput,Date.now())));
  const targetMaterial=await fixture(targetName,2);targetMaterial.bundle.credentials[0].token_sha256=sourceMaterial.bundle.credentials[0].token_sha256;
  if(options.disableCredential??true){targetMaterial.config.static_credential_refs[0].enabled=false;targetMaterial.config.human_grants[0].enabled=false;}
  targetMaterial.bundle.config_digest=await sha256(canonicalJson(targetMaterial.config));
@@ -27,7 +32,7 @@ export async function recoveryFixture(name:string,options:{disableCredential?:bo
 export type RecoveryFixture=Awaited<ReturnType<typeof recoveryFixture>>;
 export async function withRecoveryWorkspace<T>(f:RecoveryFixture,lane:'source'|'target',body:(workspace:RecoveryWorkspace)=>Promise<T>|T):Promise<T>{
  const name=lane==='source'?f.sourceName:f.targetName,stub=lane==='source'?f.source:f.target;
- return runInDurableObject(stub,(instance,state)=>body({storage:state.storage,bucket:env.RECOVERY_BUCKET,workspaceId:'ws_example',objectName:name,environmentId:'fixture_'+lane,clock:systemClock,entropy:systemEntropy,integrity:fixtureIntegrity,release:{revision:'synthetic_fixture',worker_version:'synthetic_fixture',binding_ids:['workspace_fixture','recovery_fixture'],catalog_mapping:{workspace_id:'ws_example',object_name:name}},repairSchedule:()=>instance.repairSchedule()}));
+ return runInDurableObject(stub,(_instance,state)=>{const auth={storage:state.storage,workspaceId:'ws_example',objectName:name,secrets:env as unknown as Record<string,unknown>,clock:systemClock,entropy:systemEntropy};return body({storage:state.storage,bucket:env.RECOVERY_BUCKET,workspaceId:'ws_example',objectName:name,environmentId:'fixture_'+lane,clock:systemClock,entropy:systemEntropy,integrity:fixtureIntegrity,release:{revision:'synthetic_fixture',worker_version:'synthetic_fixture',binding_ids:['workspace_fixture','recovery_fixture'],catalog_mapping:{workspace_id:'ws_example',object_name:name}},repairSchedule:()=>new HistoricalOutboxScheduler(auth,new DeliveryDispatcher(auth)).repairSchedule()});});
 }
 export async function recoveryContext(w:RecoveryWorkspace,operation:RecoveryOperation,payload:unknown,captureId:string|null,options:{operationId?:string;anchor?:LedgerAnchor|null;expectedEpoch?:number}={}):Promise<RecoveryContext>{
  const current=withTransaction(w.storage,tx=>tx.one<{config_epoch:number;installation_digest:string}>('SELECT config_epoch,installation_digest FROM workspace_metadata WHERE id=1'));
