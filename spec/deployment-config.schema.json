@@ -267,6 +267,34 @@
           },
           "enabled": {
             "type": "boolean"
+          },
+          "delegable_native_scopes": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "workspace:read",
+                "messages:send",
+                "messages:read",
+                "messages:ack",
+                "events:read",
+                "tasks:read",
+                "tasks:create",
+                "tasks:edit",
+                "tasks:schedule",
+                "tasks:claim",
+                "tasks:execute",
+                "tasks:review",
+                "tasks:cancel",
+                "agents:read",
+                "runtimes:manage",
+                "artifacts:read",
+                "artifacts:write",
+                "search:read"
+              ]
+            },
+            "maxItems": 1000,
+            "uniqueItems": true,
+            "description": "Optional exact operator-owned native delegation ceiling, not human executable scopes. Omitted retains the legacy native-compatible human scope intersection; [] disables delegation. Removing this field restores legacy fallback. Requires current credentials:manage and current project ceiling."
           }
         },
         "required": [

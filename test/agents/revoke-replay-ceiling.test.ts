@@ -1,6 +1,7 @@
+import {identityFixture as settingsFixture} from '../helpers/identity';
 import {it,expect} from 'vitest';
 import {runInDurableObject} from 'cloudflare:test';
-import {settingsFixture,human,commandContext} from '../helpers/settings';
+import {human,commandContext} from '../helpers/settings';
 import {executeCommand} from '../../src/workspace/commands';
 import {revokeCredentialCommand} from '../../src/auth/native-credentials';
 it('revoke_replay_does_not_disclose_original_grant_after_current_ceiling_narrows',async()=>{

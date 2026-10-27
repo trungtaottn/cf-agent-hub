@@ -3754,7 +3754,7 @@
       "post": {
         "operationId": "createCredential",
         "summary": "Issue a scoped native credential with one-time reveal",
-        "description": "Authorized human administrator only. Verify delegated scopes/project restrictions are a subset of issuer authority and native actor policy. Bearer value is revealed once; retain verification hash only. Replays return same metadata with token null/revealed false. Never log token or use it in browser localStorage.",
+        "description": "Authorized human administrator with current credentials:manage only. Requested native scopes must fit the exact operator-installed delegable_native_scopes ceiling when present; omitted uses the legacy native-compatible intersection of human executable scopes, and [] disables delegation. Delegation does not grant human native execution. Projects must fit both installed and current human restrictions. Current issuer identity, enablement and epoch are rechecked. Bearer value is revealed once; retain verification hash only. Replays return same metadata with token null/revealed false and recheck original grant visibility. Never log token or use it in browser localStorage.",
         "security": [
           {
             "HumanSession": []
@@ -8030,7 +8030,7 @@
           "project_ids",
           "expires_at"
         ],
-        "description": "Human administrator cannot delegate scopes they do not hold or any human-only authority to a native token. Workspace is always taken from route. Human-only scopes approvals:decide, credentials:manage, agents:manage, messages:review, profile:edit, operations:read, imports:manage cannot be issued to native credentials. Recognition does not enable a route or grant authority; explicit current operator ceilings and current actor authorization remain required.",
+        "description": "Requested scopes must fit the human administrator's current operator-installed delegation ceiling and the native allowlist. Optional human_grants.delegable_native_scopes is an exact ceiling when present; [] disables delegation, omission preserves the legacy native-compatible executable-scope intersection. Removing the field restores that fallback; it is not revocation. Human executable scopes remain unchanged. Workspace derives from the route; project restrictions must fit configured and current human ceilings. Human-only scopes approvals:decide, credentials:manage, agents:manage, messages:review, profile:edit, operations:read, imports:manage cannot be issued to native credentials. Recognition does not enable a route or grant authority.",
         "x-native-disallowed-scopes": [
           "approvals:decide",
           "credentials:manage",

@@ -1,6 +1,7 @@
+import {identityFixture as settingsFixture} from '../helpers/identity';
 import {it,expect} from 'vitest';
 import {runInDurableObject} from 'cloudflare:test';
-import {settingsFixture,human,commandContext} from '../helpers/settings';
+import {human,commandContext} from '../helpers/settings';
 import {withTransaction} from '../../src/storage/transaction';
 import {resolveActor} from '../../src/auth/authorize';
 import {createAgent,patchAgent,archiveAgent,getAgent,createAgentCommand,patchAgentCommand} from '../../src/agents/commands';

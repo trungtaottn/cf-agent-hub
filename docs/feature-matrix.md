@@ -2,7 +2,7 @@
 
 Status: R1/R2 local source candidate · Contract revision 0.2 · Isolated acceptance pending; no released artifact.
 
-Issue24 adds the schema8 persistence boundary (35 application tables and a complete typed registry). Issue25 adds local agent identity and native credential lifecycle source, without enabling runtime enrollment or task commands. Current schema8 operational recovery/probe is intentionally unavailable until #39/#43; historical V1/schema7 tests are not current recovery acceptance. See [storage execution evidence](r2-task-plans/issue-024-execution.md) and [identity execution evidence](r2-task-plans/issue-025-execution.md).
+Issue24 adds the schema8 persistence boundary (35 application tables and a complete typed registry). Issue25 adds local agent identity and native credential lifecycle source, without enabling task commands. Issue26 adds local native runtime enrollment and presence. Current schema8 operational recovery/probe is intentionally unavailable until #39/#43; historical V1/schema7 tests are not current recovery acceptance. See [storage execution evidence](r2-task-plans/issue-024-execution.md) and [identity execution evidence](r2-task-plans/issue-025-execution.md).
 
 This is the canonical capability-status register. **The formal register retains 14 R1 capabilities as Implemented and 28 later-release capabilities as Specified. Issue25 supplies local F11–F12 implementation source; formal status promotion awaits the separately reviewed R2 evidence-register amendment. None are claimed Verified or Released.** Implementation references and reproducible local checks are recorded in [R1 implementation and acceptance](r1-implementation.md). Real isolated deployment, recovery, toolchain and final evidence gates remain pending. A specification means behavior and acceptance expectations exist, not that every later-release field or UI has been finalized. Protocol adapters and team administration still require the additional contract work named in their pages.
 
@@ -29,7 +29,7 @@ Status advances in order: **Specified** → **Implemented** → **Verified** →
 | --- | --- | --- | --- | --- |
 | F11 | Dynamic logical-agent registry | R2 | Specified | Local issue25 source: human-authorized create/edit/archive, bounded reads and retained attribution; live acceptance pending |
 | F12 | Workspace-scoped native credential lifecycle | R2 | Specified | Local issue25 source: one-time reveal, safe replay, current ceilings and revocation; replacement is explicit issuance/revoke, runtime rotation integration and live acceptance pending |
-| F13 | Runtime registration and presence | R2 | Specified | Agent binding and expiry; runtime heartbeat cannot renew a task lease |
+| F13 | Runtime registration and presence | R2 | Specified | Local issue26 source: exact credential proof, initial-only reveal, current replay/deadline checks and presence-only heartbeat; publication and live acceptance pending |
 | F14 | Workspace isolation across resources | R2 | Specified | Two-workspace deny matrix for tasks/messages/artifacts/search/cursors and adapter calls |
 | F15 | Durable task creation and metadata | R2 | Specified | Valid references, explicit versions, forbidden field/state patches denied |
 | F16 | Six-column Kanban and archive | R2 | Specified | Persisted state after restart; permitted command actions; cancelled tasks retained |

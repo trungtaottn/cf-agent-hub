@@ -38,6 +38,7 @@ export type DeploymentConfig = {
 "scopes": Array<"workspace:read" | "messages:send" | "messages:read" | "messages:review" | "events:read" | "profile:edit" | "operations:read" | "tasks:read" | "tasks:create" | "tasks:edit" | "tasks:schedule" | "tasks:review" | "tasks:cancel" | "agents:read" | "agents:manage" | "credentials:manage" | "artifacts:read" | "artifacts:write" | "search:read" | "imports:manage">;
 "project_ids": unknown;
 "enabled": boolean;
+"delegable_native_scopes"?: Array<"workspace:read" | "messages:send" | "messages:read" | "messages:ack" | "events:read" | "tasks:read" | "tasks:create" | "tasks:edit" | "tasks:schedule" | "tasks:claim" | "tasks:execute" | "tasks:review" | "tasks:cancel" | "agents:read" | "runtimes:manage" | "artifacts:read" | "artifacts:write" | "search:read">;
 }>;
 "static_credential_refs": Array<{
 "workspace_id": string;

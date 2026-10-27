@@ -1,6 +1,6 @@
 import {it,expect} from 'vitest';
 import {runInDurableObject} from 'cloudflare:test';
-import {settingsFixture} from '../helpers/settings';
+import {identityFixture as settingsFixture} from '../helpers/identity';
 import {fixture} from '../helpers/environment';
 import {prepareBootstrap,installConfiguration,restoreAuthorityOverlay} from '../../src/config/bootstrap';
 import {withTransaction,type WorkspaceTransaction} from '../../src/storage/transaction';
