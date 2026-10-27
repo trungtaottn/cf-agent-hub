@@ -107,7 +107,9 @@
                   "maximum": 1000000
                 },
                 "max_artifacts": {
-                  "const": 0
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000
                 },
                 "max_total_bytes": {
                   "type": "integer",

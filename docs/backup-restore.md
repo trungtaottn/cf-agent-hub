@@ -59,3 +59,7 @@ For production cutover, gate ingress, stop old dispatchers and runtimes, preserv
 ## Evidence and deletion
 
 A recovery receipt must name the manifest, verifier, compatible version, validation results, unresolved side effects and cutover decision. Periodically test recovery from a separately retained copy rather than the active bucket. Retention deletion must respect legal holds and operator policy while remaining consistent across metadata, bytes and backups. Do not delete keys needed to decrypt retained recovery sets. Record failed restore attempts and their causes; a successful backup upload without a restore exercise is not evidence of recoverability.
+
+## R2 recovery contract boundary
+
+The [issue #22 recovery decision](adr/r2-recovery-contract.md) defines the closed V1/V2 envelope, simultaneous SQL-plus-artifact bounds, trusted private bindings and bounded future restart state. This is a contract, not enabled V2 recovery. Current runtime remains V1-only; nonzero artifact capture budgets and V2 restore are unavailable. No new CLI command or caller-selected bucket/key/URL is added. Existing protected files, HMAC authentication, separate AES-GCM file protection, operator Access identity, current ledger, maintenance and explicit resume remain required.

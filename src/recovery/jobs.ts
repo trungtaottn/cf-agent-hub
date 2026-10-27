@@ -5,7 +5,7 @@ import {canonicalBytes,digestBytes,hex,decodeChunk,CHUNK_LIMIT,type SqlCell} fro
 import {TABLE_REGISTRY,type RecoveryTableName} from './table-registry';
 import {assertRecoveryContext,boundedData,controlTarget,type RecoveryContext,type RecoveryWorkspace,type RecoveryManifest,type CurrentLedger,type RecoveryReceipt,type RecoveryJobProgress} from './protocol';
 import type {AdmissionFence} from './maintenance';
-export interface RecoveryBudget {max_rows:number;max_artifacts:0;max_total_bytes:number;}
+export interface RecoveryBudget {max_rows:number;max_artifacts:number;max_total_bytes:number;}
 export interface PendingStep {operationId:string;fingerprint:string;kind:'page'|'hash'|'write'|'verify'|'overlay';endedAt:string;index:number|null;}
 export interface JobDetails {
  version:1;fence:AdmissionFence;budget:RecoveryBudget|null;checkpoint:RecoveryManifest['checkpoint'];
@@ -81,4 +81,13 @@ export async function databaseDigest(w:RecoveryWorkspace,ctx:RecoveryContext,job
  const stream=new Stream('SHA-256'),writer=stream.getWriter();
  try{for(const [index,chunk] of chunks.entries()){if(chunk.chunk_index!==index)throw Error('RECOVERY_CHUNK_MISMATCH');const bytes=await readStoredChunk(w,ctx,job,chunk);await writer.write(bytes);withTransaction(w.storage,tx=>assertJob(tx,w,ctx,job.id));}await writer.close();const result=hex(await stream.digest);withTransaction(w.storage,tx=>assertJob(tx,w,ctx,job.id));return result;}
  catch(error){await writer.abort().catch(()=>{});throw error;}
+}
+
+/** Future #39/#43 persistence contract; rowJob intentionally still rejects version 2.
+ * Serialize the entire details document within RECOVERY_JOB_DETAILS_LIMIT.
+ * The immutable manifest is the only inventory; never duplicate it per receipt. */
+export interface JobDetailsV2 extends Omit<JobDetails,'version'|'manifest'|'phase'> {
+ version:2;manifest:Extract<RecoveryManifest,{format_version:2}>;
+ phase:JobDetails['phase']|'capture_artifacts'|'restore_artifacts'|'verify_artifacts';
+ artifactTransfer:import('./generated/recovery-validators.js').RecoveryArtifactTransferState;
 }

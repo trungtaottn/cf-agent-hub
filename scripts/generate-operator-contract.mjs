@@ -37,7 +37,7 @@ const names={...Object.fromEntries(Object.entries(roots).map(([name,s])=>['valid
 let runtime=standalone(full,names).replaceAll('require("ajv/dist/runtime/ucs2length").default','ucs2Length').replaceAll('require("ajv/dist/runtime/equal").default','equalValues');
 const effectLimit=responses.$defs.RecoveryReceipt.properties.unresolved_effect_ids.maxItems;
 if(effectLimit!==64)throw Error('Review unresolved-effect summary bound before changing it');
-for(const name of ['RecoveryReceipt','RecoveryJobProgress']){
+for(const name of ['RecoveryReceipt','RecoveryJobProgress','RecoveryArtifactTransferState']){
  const exportName='export const validate'+name+' =';
  if(!runtime.includes(exportName))throw Error('Recovery validator export changed');
  runtime=runtime.replace(exportName,'const validate'+name+'Shape =');
@@ -46,6 +46,10 @@ for(const name of ['RecoveryReceipt','RecoveryJobProgress']){
 // enforce cross-field count/ordering semantics in every Worker and CLI consumer.
 const responseSemantics=`
 export const UNRESOLVED_EFFECT_IDS_LIMIT=${effectLimit};
+export function validateRecoveryArtifactTransferState(value){
+ return validateRecoveryArtifactTransferStateShape(value)&&
+  (value.pending===null||(value.phase!=='complete'&&value.pending.index===value.artifact_index));
+}
 export function validateRecoveryReceipt(value){
  if(!validateRecoveryReceiptShape(value))return false;
  const ids=value.unresolved_effect_ids,count=value.unresolved_effect_count;

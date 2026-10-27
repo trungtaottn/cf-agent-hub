@@ -412,6 +412,109 @@
         "byte_size"
       ],
       "additionalProperties": false
+    },
+    "RecoveryArtifactTransferState": {
+      "type": "object",
+      "description": "Future V2 transfer checkpoint within bounded details_json. Not exposed or persisted by R1 runtime. Immutable inventory is retained once in manifest; pending refers to exactly one entry.",
+      "properties": {
+        "version": {
+          "const": 2
+        },
+        "manifest_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "artifact_index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "artifact_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 268435456
+        },
+        "phase": {
+          "enum": [
+            "capture_artifacts",
+            "restore_artifacts",
+            "verify_artifacts",
+            "complete"
+          ]
+        },
+        "pending": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "artifact_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                },
+                "object_key": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 512
+                },
+                "recovery_object_key": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 768
+                },
+                "byte_size": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10485760
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "operation_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                },
+                "request_fingerprint": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "index": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 999
+                }
+              },
+              "required": [
+                "artifact_id",
+                "object_key",
+                "recovery_object_key",
+                "byte_size",
+                "sha256",
+                "operation_id",
+                "request_fingerprint",
+                "index"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "version",
+        "manifest_sha256",
+        "artifact_index",
+        "artifact_bytes",
+        "phase",
+        "pending"
+      ],
+      "additionalProperties": false
     }
   },
   "oneOf": [

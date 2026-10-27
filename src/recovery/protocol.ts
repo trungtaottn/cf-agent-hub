@@ -51,3 +51,9 @@ export function recoveryError(error:unknown):Extract<RecoveryRpcResult,{ok:false
  const code=error instanceof Error?error.message:'';
  return {ok:false,code:code==='OPERATOR_PROOF_EXPIRED'?'UNAUTHENTICATED':/CONFLICT|CLOSED|RETIRED|BUSY|STALE|UNRESOLVED|PROBE_REQUIRED|TARGET_NOT_EMPTY/.test(code)?'CONFLICT':/INVALID|MISMATCH|LIMIT|NONCANONICAL|UNKNOWN|RECOVERY_(INTEGER|REAL|TEXT|BLOB|PRIMARY|NULL|BYTES|EVENT_SEQUENCE)/.test(code)?'INVALID_RECOVERY':'RECOVERY_UNAVAILABLE'};
 }
+
+/** Contract-only capability. Existing R1 construction does not provide or activate it. */
+export interface RecoveryWorkspaceV2 extends RecoveryWorkspace {artifactBucket:R2Bucket;}
+export type RecoveryManifestV1=Extract<RecoveryManifest,{format_version:1}>;
+export type RecoveryManifestV2=Extract<RecoveryManifest,{format_version:2}>;
+export type RecoveryArtifactEntry=RecoveryManifestV2['artifacts'][number];

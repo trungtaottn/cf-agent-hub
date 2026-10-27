@@ -1,393 +1,834 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "R1 typed logical recovery manifest format 1",
-  "type": "object",
-  "properties": {
-    "format_version": {
-      "const": 1
-    },
-    "capture_id": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 128,
-      "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
-    },
-    "workspace_id": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 128,
-      "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
-    },
-    "environment_id": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 128,
-      "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
-    },
-    "started_at": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "ended_at": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "checkpoint": {
+  "$id": "urn:cf-agent-hub:recovery-manifest:1",
+  "title": "Closed V1 and V2 recovery envelope union",
+  "oneOf": [
+    {
+      "title": "R1 typed logical recovery manifest format 1",
       "type": "object",
       "properties": {
-        "barrier_id": {
+        "format_version": {
+          "const": 1
+        },
+        "capture_id": {
           "type": "string",
           "minLength": 1,
           "maxLength": 128,
           "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
         },
-        "event_sequence": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 9007199254740991
-        },
-        "schema_version": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 9007199254740991
-        },
-        "contract_revision": {
-          "const": "0.1"
-        },
-        "authority_epoch": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 9007199254740991
-        }
-      },
-      "required": [
-        "barrier_id",
-        "event_sequence",
-        "schema_version",
-        "contract_revision",
-        "authority_epoch"
-      ],
-      "additionalProperties": false
-    },
-    "release": {
-      "type": "object",
-      "properties": {
-        "revision": {
+        "workspace_id": {
           "type": "string",
           "minLength": 1,
-          "maxLength": 2048
+          "maxLength": 128,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
         },
-        "worker_version": {
+        "environment_id": {
           "type": "string",
           "minLength": 1,
-          "maxLength": 2048
+          "maxLength": 128,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
         },
-        "binding_ids": {
-          "type": "array",
-          "minItems": 1,
-          "maxItems": 32,
-          "uniqueItems": true,
-          "items": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 256
-          }
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
         },
-        "catalog_mapping": {
+        "ended_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "checkpoint": {
           "type": "object",
           "properties": {
-            "workspace_id": {
+            "barrier_id": {
               "type": "string",
               "minLength": 1,
               "maxLength": 128,
               "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
             },
-            "object_name": {
+            "event_sequence": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "schema_version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "contract_revision": {
+              "const": "0.1"
+            },
+            "authority_epoch": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "barrier_id",
+            "event_sequence",
+            "schema_version",
+            "contract_revision",
+            "authority_epoch"
+          ],
+          "additionalProperties": false
+        },
+        "release": {
+          "type": "object",
+          "properties": {
+            "revision": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            },
+            "worker_version": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            },
+            "binding_ids": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 32,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              }
+            },
+            "catalog_mapping": {
+              "type": "object",
+              "properties": {
+                "workspace_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                },
+                "object_name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                }
+              },
+              "required": [
+                "workspace_id",
+                "object_name"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "revision",
+            "worker_version",
+            "binding_ids",
+            "catalog_mapping"
+          ],
+          "additionalProperties": false
+        },
+        "database": {
+          "type": "object",
+          "properties": {
+            "sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "byte_size": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 268435456
+            },
+            "table_counts": {
+              "type": "object",
+              "properties": {
+                "schema_migrations": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "workspace_metadata": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "human_grants": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "static_agents": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "native_credentials": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "login_attempts": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "sessions": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "profiles": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "preferences": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "threads": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "thread_participants": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "messages": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "inbox": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "events": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "idempotency_outcomes": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "outbox": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "scheduler_state": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "maintenance_state": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "recovery_jobs": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "recovery_chunks": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "probe_receipts": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                }
+              },
+              "required": [
+                "schema_migrations",
+                "workspace_metadata",
+                "human_grants",
+                "static_agents",
+                "native_credentials",
+                "login_attempts",
+                "sessions",
+                "profiles",
+                "preferences",
+                "threads",
+                "thread_participants",
+                "messages",
+                "inbox",
+                "events",
+                "idempotency_outcomes",
+                "outbox",
+                "scheduler_state",
+                "maintenance_state",
+                "recovery_jobs",
+                "recovery_chunks",
+                "probe_receipts"
+              ],
+              "additionalProperties": false
+            },
+            "chunks": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "index": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 255
+                  },
+                  "table": {
+                    "enum": [
+                      "schema_migrations",
+                      "workspace_metadata",
+                      "human_grants",
+                      "static_agents",
+                      "native_credentials",
+                      "login_attempts",
+                      "sessions",
+                      "profiles",
+                      "preferences",
+                      "threads",
+                      "thread_participants",
+                      "messages",
+                      "inbox",
+                      "events",
+                      "idempotency_outcomes",
+                      "outbox",
+                      "scheduler_state",
+                      "maintenance_state",
+                      "recovery_jobs",
+                      "recovery_chunks",
+                      "probe_receipts"
+                    ]
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "byte_size": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1048576
+                  },
+                  "row_count": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 200
+                  }
+                },
+                "required": [
+                  "index",
+                  "table",
+                  "sha256",
+                  "byte_size",
+                  "row_count"
+                ],
+                "additionalProperties": false
+              },
+              "maxItems": 256
+            }
+          },
+          "required": [
+            "sha256",
+            "byte_size",
+            "table_counts",
+            "chunks"
+          ],
+          "additionalProperties": false
+        },
+        "artifacts": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "unfinished_artifact_ids": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "auth": {
+          "type": "object",
+          "properties": {
+            "key_id": {
               "type": "string",
               "minLength": 1,
               "maxLength": 128,
               "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+            },
+            "algorithm": {
+              "const": "HMAC-SHA256"
+            },
+            "tag": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
             }
           },
           "required": [
-            "workspace_id",
-            "object_name"
+            "key_id",
+            "algorithm",
+            "tag"
           ],
           "additionalProperties": false
         }
       },
       "required": [
-        "revision",
-        "worker_version",
-        "binding_ids",
-        "catalog_mapping"
+        "format_version",
+        "capture_id",
+        "workspace_id",
+        "environment_id",
+        "started_at",
+        "ended_at",
+        "checkpoint",
+        "release",
+        "database",
+        "artifacts",
+        "unfinished_artifact_ids",
+        "auth"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "description": "Maximum canonical UTF-8 size 65536 bytes. Complete registry, sum/count/digest checks, relationships, 200-row pages, 1MiB chunks and 1000000 total rows are semantic requirements before signing. Empty artifact arrays are mandatory in R1."
     },
-    "database": {
+    {
+      "title": "V2 recovery envelope; runtime activation requires reviewed registry coverage",
       "type": "object",
       "properties": {
-        "sha256": {
+        "format_version": {
+          "const": 2
+        },
+        "capture_id": {
           "type": "string",
-          "pattern": "^[a-f0-9]{64}$"
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
         },
-        "byte_size": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 268435456
+        "workspace_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
         },
-        "table_counts": {
+        "environment_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "ended_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "checkpoint": {
           "type": "object",
           "properties": {
-            "schema_migrations": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 1000000
+            "barrier_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
             },
-            "workspace_metadata": {
+            "event_sequence": {
               "type": "integer",
               "minimum": 0,
-              "maximum": 1000000
+              "maximum": 9007199254740991
             },
-            "human_grants": {
+            "schema_version": {
               "type": "integer",
-              "minimum": 0,
-              "maximum": 1000000
+              "minimum": 1,
+              "maximum": 9007199254740991
             },
-            "static_agents": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 1000000
+            "contract_revision": {
+              "const": "0.1"
             },
-            "native_credentials": {
+            "authority_epoch": {
               "type": "integer",
-              "minimum": 0,
-              "maximum": 1000000
-            },
-            "login_attempts": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 1000000
-            },
-            "sessions": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 1000000
-            },
-            "profiles": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 1000000
-            },
-            "preferences": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 1000000
-            },
-            "threads": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 1000000
-            },
-            "thread_participants": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 1000000
-            },
-            "messages": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 1000000
-            },
-            "inbox": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 1000000
-            },
-            "events": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 1000000
-            },
-            "idempotency_outcomes": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 1000000
-            },
-            "outbox": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 1000000
-            },
-            "scheduler_state": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 1000000
-            },
-            "maintenance_state": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 1000000
-            },
-            "recovery_jobs": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 1000000
-            },
-            "recovery_chunks": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 1000000
-            },
-            "probe_receipts": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 1000000
+              "minimum": 1,
+              "maximum": 9007199254740991
             }
           },
           "required": [
-            "schema_migrations",
-            "workspace_metadata",
-            "human_grants",
-            "static_agents",
-            "native_credentials",
-            "login_attempts",
-            "sessions",
-            "profiles",
-            "preferences",
-            "threads",
-            "thread_participants",
-            "messages",
-            "inbox",
-            "events",
-            "idempotency_outcomes",
-            "outbox",
-            "scheduler_state",
-            "maintenance_state",
-            "recovery_jobs",
-            "recovery_chunks",
-            "probe_receipts"
+            "barrier_id",
+            "event_sequence",
+            "schema_version",
+            "contract_revision",
+            "authority_epoch"
           ],
           "additionalProperties": false
         },
-        "chunks": {
+        "release": {
+          "type": "object",
+          "properties": {
+            "revision": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            },
+            "worker_version": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            },
+            "binding_ids": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 32,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              }
+            },
+            "catalog_mapping": {
+              "type": "object",
+              "properties": {
+                "workspace_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                },
+                "object_name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                }
+              },
+              "required": [
+                "workspace_id",
+                "object_name"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "revision",
+            "worker_version",
+            "binding_ids",
+            "catalog_mapping"
+          ],
+          "additionalProperties": false
+        },
+        "database": {
+          "type": "object",
+          "properties": {
+            "sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "byte_size": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 268435456
+            },
+            "table_counts": {
+              "type": "object",
+              "properties": {
+                "schema_migrations": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "workspace_metadata": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "human_grants": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "static_agents": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "native_credentials": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "login_attempts": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "sessions": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "profiles": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "preferences": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "threads": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "thread_participants": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "messages": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "inbox": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "events": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "idempotency_outcomes": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "outbox": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "scheduler_state": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "maintenance_state": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "recovery_jobs": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "recovery_chunks": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "probe_receipts": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                }
+              },
+              "required": [
+                "schema_migrations",
+                "workspace_metadata",
+                "human_grants",
+                "static_agents",
+                "native_credentials",
+                "login_attempts",
+                "sessions",
+                "profiles",
+                "preferences",
+                "threads",
+                "thread_participants",
+                "messages",
+                "inbox",
+                "events",
+                "idempotency_outcomes",
+                "outbox",
+                "scheduler_state",
+                "maintenance_state",
+                "recovery_jobs",
+                "recovery_chunks",
+                "probe_receipts"
+              ],
+              "additionalProperties": false
+            },
+            "chunks": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "index": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 255
+                  },
+                  "table": {
+                    "enum": [
+                      "schema_migrations",
+                      "workspace_metadata",
+                      "human_grants",
+                      "static_agents",
+                      "native_credentials",
+                      "login_attempts",
+                      "sessions",
+                      "profiles",
+                      "preferences",
+                      "threads",
+                      "thread_participants",
+                      "messages",
+                      "inbox",
+                      "events",
+                      "idempotency_outcomes",
+                      "outbox",
+                      "scheduler_state",
+                      "maintenance_state",
+                      "recovery_jobs",
+                      "recovery_chunks",
+                      "probe_receipts"
+                    ]
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "byte_size": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1048576
+                  },
+                  "row_count": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 200
+                  }
+                },
+                "required": [
+                  "index",
+                  "table",
+                  "sha256",
+                  "byte_size",
+                  "row_count"
+                ],
+                "additionalProperties": false
+              },
+              "maxItems": 256
+            }
+          },
+          "required": [
+            "sha256",
+            "byte_size",
+            "table_counts",
+            "chunks"
+          ],
+          "additionalProperties": false
+        },
+        "artifacts": {
           "type": "array",
+          "maxItems": 1000,
           "items": {
             "type": "object",
             "properties": {
-              "index": {
+              "artifact_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              "object_key": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512
+              },
+              "recovery_object_key": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 768
+              },
+              "byte_size": {
                 "type": "integer",
                 "minimum": 0,
-                "maximum": 255
-              },
-              "table": {
-                "enum": [
-                  "schema_migrations",
-                  "workspace_metadata",
-                  "human_grants",
-                  "static_agents",
-                  "native_credentials",
-                  "login_attempts",
-                  "sessions",
-                  "profiles",
-                  "preferences",
-                  "threads",
-                  "thread_participants",
-                  "messages",
-                  "inbox",
-                  "events",
-                  "idempotency_outcomes",
-                  "outbox",
-                  "scheduler_state",
-                  "maintenance_state",
-                  "recovery_jobs",
-                  "recovery_chunks",
-                  "probe_receipts"
-                ]
+                "maximum": 10485760
               },
               "sha256": {
                 "type": "string",
                 "pattern": "^[a-f0-9]{64}$"
-              },
-              "byte_size": {
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 1048576
-              },
-              "row_count": {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 200
               }
             },
             "required": [
-              "index",
-              "table",
-              "sha256",
+              "artifact_id",
+              "object_key",
+              "recovery_object_key",
               "byte_size",
-              "row_count"
+              "sha256"
             ],
             "additionalProperties": false
+          }
+        },
+        "unfinished_artifact_ids": {
+          "type": "array",
+          "maxItems": 1000,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+          }
+        },
+        "auth": {
+          "type": "object",
+          "properties": {
+            "key_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+            },
+            "algorithm": {
+              "const": "HMAC-SHA256"
+            },
+            "tag": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
           },
-          "maxItems": 256
+          "required": [
+            "key_id",
+            "algorithm",
+            "tag"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [
-        "sha256",
-        "byte_size",
-        "table_counts",
-        "chunks"
+        "format_version",
+        "capture_id",
+        "workspace_id",
+        "environment_id",
+        "started_at",
+        "ended_at",
+        "checkpoint",
+        "release",
+        "database",
+        "artifacts",
+        "unfinished_artifact_ids",
+        "auth"
       ],
-      "additionalProperties": false
-    },
-    "artifacts": {
-      "type": "array",
-      "maxItems": 0
-    },
-    "unfinished_artifact_ids": {
-      "type": "array",
-      "maxItems": 0
-    },
-    "auth": {
-      "type": "object",
-      "properties": {
-        "key_id": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 128,
-          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
-        },
-        "algorithm": {
-          "const": "HMAC-SHA256"
-        },
-        "tag": {
-          "type": "string",
-          "pattern": "^[a-f0-9]{64}$"
-        }
-      },
-      "required": [
-        "key_id",
-        "algorithm",
-        "tag"
-      ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "description": "Format contract only. Existing schema7 coverage is synthetic; no V2 runtime capture/restore is enabled. All budgets are simultaneous ceilings."
     }
-  },
-  "required": [
-    "format_version",
-    "capture_id",
-    "workspace_id",
-    "environment_id",
-    "started_at",
-    "ended_at",
-    "checkpoint",
-    "release",
-    "database",
-    "artifacts",
-    "unfinished_artifact_ids",
-    "auth"
-  ],
-  "additionalProperties": false,
-  "description": "Maximum canonical UTF-8 size 65536 bytes. Complete registry, sum/count/digest checks, relationships, 200-row pages, 1MiB chunks and 1000000 total rows are semantic requirements before signing. Empty artifact arrays are mandatory in R1.",
-  "$id": "urn:cf-agent-hub:recovery-manifest:1"
+  ]
 }
