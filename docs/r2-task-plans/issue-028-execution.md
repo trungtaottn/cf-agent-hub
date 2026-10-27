@@ -1,0 +1,53 @@
+# Issue 28 local execution ledger
+
+Status: Local source reviewed with recorded environment blockers; publication and live acceptance pending. No released capability.
+
+## Source and authority
+
+Live issue 28 is catalog archive/remap, not leases; the controller's initial shorthand was corrected before production work. Read the live issue and both comments, then retained the exact [pinned plan](issue-028.md) from e4f970a0b0895d332583b038b17710f331a8ca52. Local predecessor is issue 27 HEAD 3bc7bba3d05672f8895f0796677334a819bcec51, tree efa0be61ae78f278c3136744b71da9443f0a5085. Independent no-hardlinks clone has no origin. Original remote branch history/stack ancestry reconciliation remains controller-owned. No remote write, merge, deploy, real credentials, provisioning or Cloud Harness operation occurred.
+
+The [owner amendment](owner-development-amendment-2026-10-26.md) permits local MVP development and defers real acceptance until after R4; it does not pass issue 17 or release gates. Scope is only issue 28; issue 29 claims/leases remain unavailable. Installed AgentKit ak-vibe 1.4.1 workflow was read and followed through intake, actual-source research, plan validation/red-team, meaningful TDD, bounded implementation, independent reviews, tests/docs and local handoff. User delegated technical choices after evidence, so no routine preference questions were introduced. Publication/PR review/CI wait for the controller baton; no --ship or --both.
+
+## Research and selected design
+
+[Research](research/r2-catalog-lifecycle.md) compares pinned MPL OpenTofu saved-plan lineage/serial with Apache Kubernetes UID/resourceVersion conditional updates, plus current Cloudflare transactionSync documentation. No source copied or dependency added. A global workspace revision overrejects unrelated writes; captured-row-only version tests miss new references; long-lived review locks stall ordinary work. Choose immutable plan plus exact complete reference-set/version equality and profile revision in one current-authorized synchronous transaction.
+
+Actual Workers SQLite measured 1,000 / 10,000 task and agent candidates. At10000 tasks, filtered LIMIT201 reads 10,000 rows for 0 / 1 / 201 refs; narrow reference indexes read 0 / 2 / 201. A capped unrelated-task scan denies valid empty/one-reference operations. Forward index-only migration 0009 is therefore justified and independently reviewed: preserve0008 exactly, no table/domain changes, update current schema/admission/bootstrap/registry consumers, preserve explicit V1 / schema 7 separation. Current schema 9 operational recovery remains unavailable pending39/43. Agent JSON arrays remain unindexed; the documented 2,048-agent completeness cap can deny an otherwise empty work-role operation. A normalized projection requires future synchronized writers, not a hidden ad hoc index claim.
+
+## Plan validation and red-team
+
+Two independent lenses (security and assumptions) reviewed the reconciled plan before implementation. Accepted corrections: persist original task/agent write-scope obligations for replay; visibly encode the selected remap destination; add canonical DUPLICATE_NAME advisory code and classify only that code nonblocking in backend/browser; explicitly scope live/approved/policy conflicts to remap, with archive retaining references. Whole-plan sweep reconciled the initial scan-only choice with measured forward indexes. Public DTO shapes and task lifecycle remain canonical. Schema8 storage already supplied the plan table; only index schema advances.
+
+## Test-first implementation batches
+
+1. Ordinary profile guard tests collected 2 genuine failures: unreferenced archive bypass and missing duplicate-name warning. Catalog scaffold collected30 tests with 29 failures and 1 concurrently passing profile case; initial missing-import/no-discovery runs were recorded as setup failures, not meaningful red. Tests use actual Workers SQLite, installed synthetic configuration and only narrowed grants.
+2. Catalog commands capture immutable public plan/private exact request, all referring task/agent versions, original mutation obligations and 900,000 ms expiry. Only creator-principal access is allowed. Apply checks complete current and retained resource visibility before conflicts, preserves history, remaps eligible rows and archives source atomically. Wrapper owns fixed-summary event and sanitized replay outcome. Ordinary imports cannot archive/reactivate; equal labels remain advisory. HTTP uses existing current auth/CSRF/idempotency/fence router and no post-projection scheduler wait.
+3. Schema9 tests captured 9 initial failures, then 12 passing migration/index cases: genuine8-to9 row preservation, indexes-only schema delta, frozen states, rollback, restart, schema gaps,10000-row query bound and current-schema V1 recovery denial. The historical schema 8 manifest remains unchanged; regression tests compare current schema minus exactly the two additive indexes to it.
+
+## Independent implementation review
+
+Security pass1 found three Important defects: catalog task-ID projection lacked whole-current-result visibility; stored private request/scope flags were not cross-bound to reviewed public changes; an invented 8 KiB agent-role cap rejected valid requests. All accepted and repaired: reuse bounded taskRecord/taskView, structurally cross-check immutable public/private plan plus recomputed original scope obligations, and use the existing65,536-byte request envelope. Nine Workers regressions cover hidden results across preview/apply/replay, destination/flag corruption and valid long role arrays. An independent mutant copy is used only to prove these tests fail when fixes are removed; no production fixture/security weakening.
+
+Separate independent schema 9 review reported no Critical/Important blocker and freshly passed 61 targeted tests. Historical0008 hash remains dd8c050997774cf3259f2ef453812b99bbe94818d32b366d18e54b5ebefeb0f8. Final exact-diff review and final checks are recorded below once complete; intermediate green runs are not substituted for changed inputs.
+
+## Verification checkpoints
+
+Initial focused core/profile/schema run: 91 Workers tests passed. Real Worker-to-DO HTTP suite: 15 passed, including duplicate preview/different-key apply races, current write-scope replay, crypto-time session/epoch/maintenance changes and scheduler-await exclusion. Typecheck passed after canonical event/schema integration. UI build passed; initial two-browser-case run was blocked before launch by the missing exact pinned Chromium; official task-local installation was then authorized, with final result pending. Full check initially stopped at the historical ProfilePreview hash assertion; the compatibility test now removes only the reviewed additive advisory code/description before checking the original immutable hash, while retaining exact profile transport and Workspace hashes. All final results remain pending below until observed.
+
+## Final review refinements
+
+The required scoped simplifier pass found no architecture blocker. Adopted a shared pure eligible-task predicate, removed an unreachable null branch, and reduced agent evidence to ID/version/status. Role arrays are read in keyset chunks of 32 and fetched again for mutation only after complete set/version comparison within the same transaction. This removes avoidable preview rejection for multiple valid large agents. A new regression first failed with LIMIT_EXCEEDED, then validates compact evidence and all role updates. No domain semantics or authority boundary changed.
+
+The official task-local pinned Playwright install was authorized and attempted, but Chromium build 1248 download failed with an invalid/truncated ZIP (`End of central directory record signature not found`, exit 1). The two browser assertions remain not run; no different executable or security setting was substituted. Existing `/tmp/.git` recovery-CLI output-path protection is preserved. Full integration also found old catalog-unavailable expectations and fixed schema-row cost assertions; valid-body forbidden tests replace obsolete route assumptions, and schema 9 adds exactly one row to the fixed authority proof cost without changing credential seeks.
+
+## Final local verification
+
+Final `npm run check` exited 1 solely at the unchanged protected-output recovery CLI gate: generated files, all TypeScript projects, R1 contract probe, 813 Node tests, 732 Workers tests, 18 operator tests and 13 deployment-verifier tests passed. Recovery CLI reported 8 passed / 18 failed because the host `/tmp/.git` marker makes the protected artifact path invalid (`RECOVERY_INPUT_REJECTED` / `RECOVERY_OUTPUT_INVALID`). Neither marker, assertions nor permissions were weakened. The current-schema CLI test now correctly expects schema 9 but reaches the same existing guard; operational schema 9 recovery is not claimed.
+
+Fresh runtime boot and UI build passed. Documentation validator passed (108 baseline Markdown documents, 169 JSON files, 18 schemas, 61 OpenAPI operations, 119 components, 101 mapped fixtures); plan validator passed 636 checks. `git diff --check` passed. Browser tests were collected but did not execute assertions because the exact browser was missing and all five official download attempts produced invalid ZIPs. No npm dependency/lock change or live deployment/acceptance test occurred.
+
+Independent final catalog review records 0 Critical / 0 Important / 0 Minor remaining at core SHA256 `48522887ed2e927588e123038b10b8bb98aeb0188d5ea7d0a4f8bef272847246`; independent schema review excludes its implementer. Security final review re-ran 9 passing regressions; the separate removed-fix mutant had 9 meaningful failures. Targeted 67-case catalog checks and migration checks supplement, not replace, the final aggregate counts. Exact local commit/tree, issue-only patch, source hashes and full command logs are emitted in the controller handoff manifest outside the repository.
+
+AgentKit CLI 2.19.0 persisted and validated the technical journal. AgentWiki publication was skipped. Local disposition: ready for controller review and actual remote ancestry reconciliation, not publication permission, merge eligibility or release acceptance. Preserve original issue 28 branch history; issue 29 can consume archived-selection denial only after its own current pickup/plan gates.
+
+The generated AgentKit journal uses YAML frontmatter, while this repository's Markdown gate requires H1/status at the beginning. Its successfully validated original is retained in the external local handoff `journals/` directory, not forced into the product docs or used to weaken the repository validator. The ledger remains the repository's durable execution record.

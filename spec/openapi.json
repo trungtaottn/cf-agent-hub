@@ -5010,7 +5010,7 @@
       "post": {
         "operationId": "previewCatalogChange",
         "summary": "previewCatalogChange",
-        "description": "Proposed R2 catalog contract; not an implemented R1 endpoint. Requires a current human session, profile:edit, exact allowed origin, CSRF and durable idempotency. Task remap additionally requires tasks:edit; agent role changes additionally require human agents:manage. Recheck current workspace authority on preview, apply and replay. Preview stores a bounded plan expiring exactly 15 minutes after trusted creation, with touched versions retained internally. Apply rejects expired plans, stale profile or touched entity versions, and conflicts; it cannot bypass archive/reference checks. Apply returns the existing ProfileView (ProfileData), not a new profile shape.",
+        "description": "R2 local source catalog endpoint; publication and live acceptance are separate. Requires a current human session, profile:edit, exact allowed origin, CSRF and durable idempotency. Task remap additionally requires tasks:edit; agent role changes additionally require human agents:manage. Recheck current workspace authority on preview, apply and replay. Preview stores a bounded plan expiring exactly 15 minutes after trusted creation, with touched versions retained internally. Apply rejects expired plans, stale profile, changed complete reference sets or touched entity versions, and conflicts; it cannot bypass archive/reference checks. Apply returns the existing ProfileView (ProfileData), not a new profile shape. Preview belongs to its creating principal. Same-key replay rechecks original write scopes and current whole-resource visibility but does not rerun expired/stale first-execution preconditions. Archive retains all existing references; remap archives source and changes only eligible metadata, never live/approved intent or operator policy. Work-role previews fail closed with DEPENDENCY_UNAVAILABLE above 2048 agent candidates; task references use schema9 indexes.",
         "security": [
           {
             "HumanSession": []
@@ -5106,7 +5106,7 @@
       "post": {
         "operationId": "applyCatalogChange",
         "summary": "applyCatalogChange",
-        "description": "Proposed R2 catalog contract; not an implemented R1 endpoint. Requires a current human session, profile:edit, exact allowed origin, CSRF and durable idempotency. Task remap additionally requires tasks:edit; agent role changes additionally require human agents:manage. Recheck current workspace authority on preview, apply and replay. Preview stores a bounded plan expiring exactly 15 minutes after trusted creation, with touched versions retained internally. Apply rejects expired plans, stale profile or touched entity versions, and conflicts; it cannot bypass archive/reference checks. Apply returns the existing ProfileView (ProfileData), not a new profile shape.",
+        "description": "R2 local source catalog endpoint; publication and live acceptance are separate. Requires a current human session, profile:edit, exact allowed origin, CSRF and durable idempotency. Task remap additionally requires tasks:edit; agent role changes additionally require human agents:manage. Recheck current workspace authority on preview, apply and replay. Preview stores a bounded plan expiring exactly 15 minutes after trusted creation, with touched versions retained internally. Apply rejects expired plans, stale profile, changed complete reference sets or touched entity versions, and conflicts; it cannot bypass archive/reference checks. Apply returns the existing ProfileView (ProfileData), not a new profile shape. Preview belongs to its creating principal. Same-key replay rechecks original write scopes and current whole-resource visibility but does not rerun expired/stale first-execution preconditions. Archive retains all existing references; remap archives source and changes only eligible metadata, never live/approved intent or operator policy. Work-role previews fail closed with DEPENDENCY_UNAVAILABLE above 2048 agent candidates; task references use schema9 indexes.",
         "security": [
           {
             "HumanSession": []
@@ -6962,9 +6962,6 @@
             },
             "then": {
               "properties": {
-                "type": {
-                  "const": "profile.updated"
-                },
                 "actor": {
                   "properties": {
                     "kind": {
@@ -6974,11 +6971,40 @@
                       "type": "null"
                     }
                   }
-                },
-                "summary": {
-                  "const": "Workspace profile updated."
                 }
-              }
+              },
+              "oneOf": [
+                {
+                  "properties": {
+                    "type": {
+                      "const": "profile.updated"
+                    },
+                    "summary": {
+                      "const": "Workspace profile updated."
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "type": {
+                      "const": "catalog.previewed"
+                    },
+                    "summary": {
+                      "const": "Catalog change previewed."
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "type": {
+                      "const": "catalog.applied"
+                    },
+                    "summary": {
+                      "const": "Catalog change applied."
+                    }
+                  }
+                }
+              ]
             }
           },
           {
@@ -7083,7 +7109,11 @@
             "if": {
               "properties": {
                 "type": {
-                  "const": "profile.updated"
+                  "enum": [
+                    "profile.updated",
+                    "catalog.previewed",
+                    "catalog.applied"
+                  ]
                 }
               },
               "required": [
@@ -8933,7 +8963,8 @@
                   "pattern": "^[A-Z][A-Z0-9_]*$",
                   "enum": [
                     "REFERENCED_ARCHIVE",
-                    "REFERENCED_REMAP"
+                    "REFERENCED_REMAP",
+                    "DUPLICATE_NAME"
                   ]
                 }
               },
@@ -8951,7 +8982,7 @@
           "changes",
           "conflicts"
         ],
-        "description": "field is a JSON Pointer into canonical merged profile. Arrays <=200; entire UTF-8 response envelope <=65536 bytes. Reject overflow, never truncate. Stale revision409; malformed shapes/duplicates use normal validation errors."
+        "description": "field is a JSON Pointer into canonical merged profile. Arrays <=200; entire UTF-8 response envelope <=65536 bytes. Reject overflow, never truncate. Stale revision409; malformed shapes/duplicates use normal validation errors. DUPLICATE_NAME is advisory and does not block PUT; other conflicts block apply. Ordinary imports cannot change archived flags or introduce archived IDs."
       },
       "ProfileExport": {
         "type": "object",
@@ -9836,7 +9867,7 @@
         ],
         "x-max-affected-entities": 200,
         "x-plan-ttl-seconds": 900,
-        "description": "Persisted catalog preview, distinct from advisory profile preview. At most 200 affected entities combined across affected_task_ids and affected_agent_ids; reject overflow, never truncate. The combined limit is a semantic constraint, not enforced by the per-array JSON Schema limits alone. expires_at is exactly 900 seconds (15 minutes) after trusted server creation time. Store touched entity versions internally, not in this public DTO. Apply checks current profile revision against both the request and stored plan, all touched entity versions, current human authority and plan expiry using transaction time; stale or expired plans conflict. IDs and references must belong to the current workspace. These contracts do not implement runtime enforcement."
+        "description": "Persisted catalog preview, distinct from advisory profile preview. At most 200 affected entities combined across affected_task_ids and affected_agent_ids; reject overflow, never truncate. The combined limit is a semantic constraint, not enforced by the per-array JSON Schema limits alone. expires_at is exactly 900 seconds (15 minutes) after trusted server creation time. Store touched entity versions internally, not in this public DTO. Apply checks current profile revision against both the request and stored plan, all touched entity versions, current human authority and plan expiry using transaction time; stale or expired plans conflict. IDs and references must belong to the current workspace. Archive changes show source before/archived after. Remap adds a second change with operation remap, source id/before and the selected active destination as after; both effects are reviewed. All referencing records, including retained terminal tasks and archived agents, count toward the combined ceiling and version snapshot."
       },
       "CatalogPlanResponse": {
         "type": "object",

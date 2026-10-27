@@ -134,7 +134,7 @@ async function actualOperatorFixture(directory){
 // after_commit/before_dispatch/unrelated_epoch restore journeys are not exercised
 // by this current-runtime test; #43 owns their R2 runtime replacements. Historical
 // V1 controller crash cases remain separate tests, not schema8 acceptance.
-test('actual Worker/HTTPS recovery CLI rejects schema8 before recovery effects', {timeout:120000},async()=>{
+test('actual Worker/HTTPS recovery CLI rejects schema9 before recovery effects', {timeout:120000},async()=>{
  const directory=fs.mkdtempSync(path.join(os.tmpdir(),'cfhub-cli-recovery-smoke-'));fs.chmodSync(directory,0o700);
  let actual;const descriptors=[];
  try{
@@ -159,7 +159,7 @@ test('actual Worker/HTTPS recovery CLI rejects schema8 before recovery effects',
   const invoke=(command,lane,config)=>runRecovery(command,config,{transport:transports[lane]});
   const sourceBefore=await actual.snapshot('source'),targetBefore=await actual.snapshot('target');
   const source=await actual.storage('source');
-  assert.equal((await source.exec('SELECT MAX(version) AS version FROM schema_migrations'))[0].version,8);
+  assert.equal((await source.exec('SELECT MAX(version) AS version FROM schema_migrations'))[0].version,9);
   const denied=error=>error?.code==='RECOVERY_HTTP_DENIED'&&error.status===503&&error.serverCode==='AUTH_UNAVAILABLE'&&error.canonicalError===true&&typeof error.requestId==='string'&&error.requestId.length>0;
   await assert.rejects(invoke('capture','source',input('capture','source',{budget:{max_rows:10000,max_artifacts:0,max_total_bytes:16777216}})),denied);
   await assert.rejects(invoke('probe','source',input('probe','source')),denied);

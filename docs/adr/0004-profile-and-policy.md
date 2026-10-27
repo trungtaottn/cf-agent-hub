@@ -21,3 +21,7 @@ A single unrestricted settings object is convenient for a prototype but makes pr
 Configuration has more deliberate ownership and validation, while presets become safe to inspect and share. Custom themes and assets are limited to the explicitly versioned schema; arbitrary script/CSS injection is not a profile feature. User preference cannot expose a forbidden resource.
 
 Acceptance includes forbidden-field rejection, stable-ID reimport, referenced archive behavior, allowed precedence and secret-free export. See [configuration](../configuration.md), [customization](../customization.md) and [design guidelines](../design-guidelines.md).
+
+## Local issue 28 implementation clarification — 2026-10-27
+
+A reviewed catalog preview is immutable evidence, not authority. Exact profile revision and complete referencing ID/version equality are rechecked inside the workspace transaction; known-row-only comparison is insufficient because new references can appear. No lock spans human review and no policy rewrite is implicit. Public remap changes show destination identity explicitly. Archive retains references; remap rejects live or approved intent. Duplicate labels receive an additive advisory `DUPLICATE_NAME` conflict code; every other profile-preview conflict remains blocking. See [research and measured alternatives](../r2-task-plans/research/r2-catalog-lifecycle.md) and [catalog semantics](../customization.md#local-catalog-operation-semantics).

@@ -1,3 +1,4 @@
+import {catalogPath,catalogRoutes} from '../http/catalog-routes';
 import {taskPath,taskRoutes} from '../http/task-routes';
 import {r2Routes,identityPath} from '../http/r2-routes';
 import {advanceCapture,readRecoveryChunk,readRecoveryStatus} from '../recovery/capture';
@@ -158,18 +159,18 @@ export class WorkspaceDO extends DurableObject<WorkspaceEnvironment> {
   const match=/^\/v2\/workspaces\/([a-zA-Z0-9_-]{1,128})\/auth\/(start|callback|session|logout)$/.exec(new URL(request.url).pathname);
   const path=new URL(request.url).pathname;
   const settings=settingsPath.exec(path),message=messagePath.exec(path),operations=operationsPath.exec(path),readiness=readinessPath.exec(path),base=workspacePath.exec(path);
-  const identity=identityPath.exec(path),task=taskPath.exec(path);
-  const selected=match??settings??message??operations??readiness??base??identity??task;
+  const identity=identityPath.exec(path),task=taskPath.exec(path),catalog=catalogPath.exec(path);
+  const selected=match??settings??message??operations??readiness??base??identity??task??catalog;
   if(!selected)return r2Routes(request);
   // Protected diagnostics observe persisted scheduler/probe state. A GET must
   // not repair that state or manufacture a fresh health observation.
   // Identity lifecycle emits only local audit/outcome rows, never outbox work.
   // Do not await unrelated alarm repair after its final authority/secret projection.
-  const diagnostic=Boolean(operations||readiness||identity||task);
+  const diagnostic=Boolean(operations||readiness||identity||task||catalog);
   if(!diagnostic)await this.#repairDirty();
   const metadata=withTransaction(this.ctx.storage,tx=>tx.one<{workspace_id:string;object_name:string}>('SELECT workspace_id,object_name FROM workspace_metadata WHERE id=1'));
   if(!metadata||metadata.workspace_id!==selected[1]||this.env.WORKSPACE.idFromName(metadata.object_name).toString()!==this.ctx.id.toString()){const headers=new Headers(securityHeaders);if(match?.[2]==='callback')headers.append('set-cookie',cookieHeader('cfhub_login','',0));return authFailure(new AuthError('UNAUTHENTICATED',401),crypto.randomUUID(),headers);}
-  const response=await (task?taskRoutes:identity?r2Routes:operations?operationsRoutes:readiness?readinessRoutes:base?workspaceRoutes:message?messageRoutes:settings?settingsRoutes:authRoutes)(request,{storage:this.ctx.storage,workspaceId:metadata.workspace_id,objectName:metadata.object_name,secrets:this.env as unknown as Record<string,unknown>,clock:systemClock,entropy:systemEntropy});
+  const response=await (catalog?catalogRoutes:task?taskRoutes:identity?r2Routes:operations?operationsRoutes:readiness?readinessRoutes:base?workspaceRoutes:message?messageRoutes:settings?settingsRoutes:authRoutes)(request,{storage:this.ctx.storage,workspaceId:metadata.workspace_id,objectName:metadata.object_name,secrets:this.env as unknown as Record<string,unknown>,clock:systemClock,entropy:systemEntropy});
   if(!diagnostic)await this.#repairDirty();return response;
  }
  async command(request:InternalRequest):Promise<InternalResponse> {

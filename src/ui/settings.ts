@@ -160,7 +160,7 @@ export class SettingsPanel{
     const data=response.data as ProfilePreview;previewBody=structuredClone(intent!);
     const list=el('ul');for(const change of data.changes)list.append(el('li',change.operation+' '+change.field));for(const conflict of data.conflicts)list.append(el('li',conflict.code+' '+conflict.field));
     preview.replaceChildren(el('p','Preview at revision '+data.base_revision+' · '+data.changes.length+' changes · '+data.conflicts.length+' conflicts'),list);
-    if(data.conflicts.length)previewBody=null;
+    if(data.conflicts.some(conflict=>conflict.code!=='DUPLICATE_NAME'))previewBody=null;
     result.textContent='Preview complete. Review changes before applying.';
    }else if(response.ok){
     const saved=response as Extract<ApiResult<ProfileData>,{ok:true}>;expected=saved.data.profile_revision;revisionLabel.textContent='Expected profile revision: '+expected;this.#profile=structuredClone(saved.data);previewBody=null;
