@@ -93,3 +93,5 @@ Issue #22 adds a [V2 recovery envelope contract](adr/r2-recovery-contract.md), n
 Issue #23 integrates generated shared DTOs, runtime test ownership and fail-closed boundary plumbing. Its [local execution record](r2-task-plans/issue-023-execution.md) is source evidence only; it does not implement the R2 domains or promote any capability to Verified or Released.
 
 Issue 28 local source evidence: [catalog execution ledger](r2-task-plans/issue-028-execution.md). Immutable bounded previews, atomic archive/remap and ordinary-import archive guards are implemented locally; publication, browser-runtime verification and post-R4 live acceptance remain distinct. No claim/run endpoint is enabled.
+
+Issue 29 staged claim/lease source and local engine evidence: [execution ledger](r2-task-plans/issue-029-execution.md). Public claim/run routes remain unavailable until expiry and settlement integration; formal capability promotion and live acceptance are pending.

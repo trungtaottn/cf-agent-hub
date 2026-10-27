@@ -26,7 +26,9 @@ const definitions={
  'runtime.heartbeat':{resource:'runtime',summary:'Runtime presence refreshed.'},
  'task.created':{resource:'task',summary:'Task created.'},
  'task.updated':{resource:'task',summary:'Task metadata updated.'},
- 'task.ready':{resource:'task',summary:'Task scheduled Ready.'}
+ 'task.ready':{resource:'task',summary:'Task scheduled Ready.'},
+ 'task.claimed':{resource:'task',summary:'Task claimed.'},
+ 'run.heartbeat':{resource:'run',summary:'Execution lease renewed.'}
 } as const;
 interface EventRow{id:string;workspace_id:string;sequence:number;type:string;actor_json:string;resource_type:Event['resource_type'];resource_id:string;resource_version:number|null;thread_id:string|null;request_id:string;occurred_at:number;summary:string;task_version?:number|null;run_id?:string|null;fence?:number|null;}
 function projection(row:EventRow):Event{
@@ -40,11 +42,19 @@ export function appendEvent(tx:WorkspaceTransaction,event:RedactedEventInput):{i
   event.resourceType==='profile'&&event.resourceId!==event.workspaceId)throw new HttpError('INTERNAL_ERROR',500);
  const row:EventRow={id:event.id,workspace_id:event.workspaceId,sequence:1,type:event.type,actor_json:canonicalJson({kind:event.actor.kind,principal_id:event.actor.principalId,agent_id:event.actor.agentId}),resource_type:event.resourceType,resource_id:event.resourceId,resource_version:event.resourceVersion,thread_id:event.threadId,request_id:event.requestId,occurred_at:event.nowMs,summary:definition.summary};
  if(event.resourceType==='task'){const task=taskRecord(tx,event.workspaceId,event.resourceId);if(event.resourceVersion!==null)throw new HttpError('INTERNAL_ERROR',500);row.task_version=task.task_version;}
+ let historyTaskId=event.resourceType==='task'?event.resourceId:null;
+ if(event.type==='task.claimed'||event.type==='run.heartbeat'){
+  const run=tx.one<{id:string;task_id:string;agent_id:string;credential_id:string;fence:number;status:string}>(event.type==='task.claimed'?'SELECT r.id,r.task_id,r.agent_id,r.credential_id,r.fence,r.status FROM tasks t JOIN runs r ON r.workspace_id=t.workspace_id AND r.task_id=t.id AND r.id=t.active_run_id WHERE t.workspace_id=? AND t.id=?':'SELECT id,task_id,agent_id,credential_id,fence,status FROM runs WHERE workspace_id=? AND id=?',[event.workspaceId,event.resourceId]);
+  if(!run||event.actor.kind!=='agent'||event.actor.agentId!==run.agent_id||event.actor.credentialId!==run.credential_id||run.status!=='active'||event.resourceVersion!==null)throw new HttpError('INTERNAL_ERROR',500);
+  const task=taskRecord(tx,event.workspaceId,run.task_id);
+  if(task.active_run_id!==run.id||task.state!=='doing')throw new HttpError('INTERNAL_ERROR',500);
+  historyTaskId=task.id;row.task_version=task.task_version;row.run_id=run.id;row.fence=run.fence;
+ }
  if(!validateEvent(projection(row)))throw new HttpError('INTERNAL_ERROR',500);
  tx.exec('INSERT INTO events (id,workspace_id,type,actor_json,resource_type,resource_id,resource_version,thread_id,request_id,occurred_at,summary) VALUES (?,?,?,?,?,?,?,?,?,?,?)',[row.id,row.workspace_id,row.type,row.actor_json,row.resource_type,row.resource_id,row.resource_version,row.thread_id,row.request_id,row.occurred_at,row.summary]);
- if(event.resourceType==='task'){
-  tx.exec('UPDATE events SET task_version=? WHERE id=?',[row.task_version!,event.id]);
-  tx.exec('INSERT INTO task_history(id,workspace_id,event_id,task_id,task_version,run_id,kind,created_at) VALUES(?,?,?,?,?,NULL,?,?)',[event.id,event.workspaceId,event.id,event.resourceId,row.task_version!,event.type,event.nowMs]);
+ if(historyTaskId!==null){
+  tx.exec('UPDATE events SET task_version=?,run_id=?,fence=? WHERE id=?',[row.task_version!,row.run_id??null,row.fence??null,event.id]);
+  tx.exec('INSERT INTO task_history(id,workspace_id,event_id,task_id,task_version,run_id,kind,created_at) VALUES(?,?,?,?,?,?,?,?)',[event.id,event.workspaceId,event.id,historyTaskId,row.task_version!,row.run_id??null,event.type,event.nowMs]);
  }
  const stored=tx.one<{sequence:number}>('SELECT sequence FROM events WHERE id=?',[row.id])!;
  return {id:row.id,sequence:stored.sequence};
@@ -79,9 +89,15 @@ export function projectEvent(tx:WorkspaceTransaction,actor:ActorContext,id:strin
 export const resourceEventVisibility:EventVisibility=(tx,actor,resource,event,nowMs)=>{
  if(!validateEvent(event)||event.workspace_id!==actor.workspaceId||resource.id!==event.resource_id||resource.kind!==event.resource_type)return false;
  try{
-  authorize(tx,actor,'events:read',resource.kind==='credential'||resource.kind==='task'?undefined:resource,nowMs);
+  authorize(tx,actor,'events:read',resource.kind==='credential'||resource.kind==='task'||resource.kind==='run'?undefined:resource,nowMs);
   if(event.type==='message.accepted'||event.type==='message.acknowledged'){
    assertMessageVisible(tx,actor,event.resource_id,nowMs);return true;
+  }
+  if(resource.kind==='run'||event.type==='task.claimed'){
+   if(event.run_id===null||event.fence===null||event.task_version===null)return false;
+   const run=tx.one<{task_id:string;fence:number;agent_id:string}>('SELECT task_id,fence,agent_id FROM runs WHERE workspace_id=? AND id=?',[actor.workspaceId,event.run_id]);
+   if(!run||run.fence!==event.fence||event.actor.kind!=='agent'||event.actor.agent_id!==run.agent_id||resource.kind==='run'&&resource.id!==event.run_id||resource.kind==='task'&&resource.id!==run.task_id)return false;
+   const task=taskRecord(tx,actor.workspaceId,run.task_id);if(!taskVisible(actor,task)||event.task_version>task.task_version)return false;taskView(tx,actor,task,nowMs);return true;
   }
   if(resource.kind==='task'){const task=taskRecord(tx,actor.workspaceId,resource.id);if(!taskVisible(actor,task)||event.task_version===null)return false;taskView(tx,actor,task,nowMs);return true;}
   if(resource.kind==='agent'){

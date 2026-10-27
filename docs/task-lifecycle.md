@@ -94,3 +94,9 @@ Local source now implements server-owned Backlog creation, metadata-only Backlog
 All mutation responses and original replay outcomes undergo current complete resource visibility. A current result with an unreadable artifact hides the whole task in lists and denies single-task/mutation responses rather than replacing the result with null. Replay does not reapply an old version or state precondition, but loss of current or original returned-reference visibility denies it. Events, task history and sanitized outcomes commit with the task in one synchronous transaction.
 
 See the [issue27 ledger](r2-task-plans/issue-027-execution.md) for source tests, bounded-query limits and remaining live gates. Later result producers and restore must validate both the standalone history result and its embedded resulting Task against the supported response envelope; this issue supplies the shared fit guard, not those successor write operations.
+
+## Issue 29 staged execution engine
+
+The issue 29 engine is being implemented behind the closed production route gate. Its internal claim and renewal tests do not make public claims executable. Activation requires issue 30's shared scheduler/expiry transition and issue 31's conservative settlement/cancellation protocol, plus their integration tests. Artifact issue 32 has separate ownership. A dirty scheduler generation without those due-time sources is not a production lease scheduler.
+
+Claim captures a trusted matching replay-safe rule's policy version, rule ID and evidence reference inside the same transaction as the run, task pointer, event and sanitized outcome. Without a matching rule, the existing schema stores all three fields as null: this means unknown, not permission to retry. Later policy edits cannot retroactively classify that attempt safe. Unsettled active rows retain agent WIP even after their deadline; claims never steal them.
