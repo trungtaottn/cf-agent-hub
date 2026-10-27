@@ -239,3 +239,5 @@ Same-key identical replay returns the original outcome only after current whole-
 ## Staged claim and execution-lease engine
 
 The internal issue 29 command and read interfaces do not register public claim or run routes. Production Worker entry and direct DO ingress remain closed to those operations. Their activation depends on issue 30's existing-scheduler extension and issue 31's conservative settlement/cancellation integration; absence of an alarm must never imply a usable expired lease. See the [issue 29 execution ledger](r2-task-plans/issue-029-execution.md) for exact source evidence and remaining gates. Public DTOs and unavailable-route responses are unchanged.
+
+Issue 30 adds internal fail/expiry and shared scheduler source only. It does not register `:fail`, claim or run routes. Issue 31 must finish submission/cancellation and its activation tests before those routes become available. No public DTO, scope, retry-control field or client-supplied system actor is added; see [issue 30 execution evidence](r2-task-plans/issue-030-execution.md).

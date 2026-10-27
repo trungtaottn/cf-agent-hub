@@ -2,7 +2,7 @@
  * Source: src/outbox/scheduler.ts at 3ea0fbf9a2d541919b611ac1e299b069e0bbb2c2
  * Git blob: 51393b8dfe3c5de0e48ed14c5a2084f4b716ff93
  * Adaptations only: relative import paths, explicit schema7 maintenance adapter,
- * and exported class name. The scheduler algorithm is the predecessor source.
+ * exported class name, and explicit delivery-ID completion argument adapter. The scheduler algorithm is the predecessor source.
  */
 import type {AuthWorkspace} from '../../src/auth/context';
 import type {WorkspaceTransaction} from '../../src/storage/transaction';
@@ -65,7 +65,7 @@ export class HistoricalOutboxScheduler{
    await this.repairSchedule();
    const completed=await Promise.allSettled(attempts.map(async attempt=>{
     const result=await this.dispatcher.dispatchAttempt(attempt);
-    withTransaction(this.workspace.storage,tx=>finishAttempt(tx,attempt.attemptId,result,this.workspace.clock.nowMs(),attempt.admissionFence));
+    withTransaction(this.workspace.storage,tx=>finishAttempt(tx,attempt.deliveryId,attempt.attemptId,result,this.workspace.clock.nowMs(),attempt.admissionFence));
    }));
    if(completed.some(result=>result.status==='rejected'))throw Error('DUE_WORK_FAILED');
    withTransaction(this.workspace.storage,tx=>{if(fence&&admissionOpen(tx,fence))tx.exec("UPDATE scheduler_state SET last_error_code=NULL WHERE last_error_code='DUE_WORK_FAILED'");});

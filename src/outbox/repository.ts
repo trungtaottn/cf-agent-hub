@@ -92,13 +92,30 @@ function retryCap(tx:WorkspaceTransaction,workspaceId:string):number{
  const raw=tx.one<{config_json:string}>('SELECT config_json FROM workspace_metadata WHERE id=1')?.config_json;
  try{const config=JSON.parse(raw??'null') as {workspace_policies?:{workspace_id:string;retry_after_max_seconds:number}[]};const cap=config?.workspace_policies?.find(p=>p.workspace_id===workspaceId)?.retry_after_max_seconds;return typeof cap==='number'&&Number.isInteger(cap)&&cap>=0&&cap<=3600?cap:0;}catch{return 0;}
 }
+/** Two covering seeks, not a MIN over the live backlog. NULL leases retain MIN semantics. */
+export function nextOutboxDue(tx:WorkspaceTransaction):number|null{
+ const pending=tx.one<{due:number}>("SELECT next_due_at AS due FROM outbox WHERE status='pending' ORDER BY next_due_at,id LIMIT 1")?.due??null;
+ const flight=tx.one<{due:number}>("SELECT lease_expires_at AS due FROM outbox WHERE status='in_flight' AND lease_expires_at IS NOT NULL ORDER BY lease_expires_at,id LIMIT 1")?.due??null;
+ return pending===null?flight:flight===null?pending:Math.min(pending,flight);
+}
+/** Each ordered source contributes at most limit rows; SQLite retains exact BINARY ID ordering.
+ * The outer sort sees at most 50 candidates, never payloads or the whole live backlog. */
+function dueRows(tx:WorkspaceTransaction,nowMs:number,limit:number):readonly OutboxRow[]{
+ const bounded=Math.min(25,Math.max(0,limit));
+ const candidates=tx.all<{id:string;due:number}>(`SELECT id,due FROM (
+  SELECT id,next_due_at AS due FROM (SELECT id,next_due_at FROM outbox WHERE status='pending' AND next_due_at<=? ORDER BY next_due_at,id LIMIT ?)
+  UNION ALL
+  SELECT id,lease_expires_at AS due FROM (SELECT id,lease_expires_at FROM outbox WHERE status='in_flight' AND lease_expires_at<=? ORDER BY lease_expires_at,id LIMIT ?)
+ ) ORDER BY due,id LIMIT ?`,[nowMs,bounded,nowMs,bounded,bounded]);
+ return candidates.map(candidate=>{const row=tx.one<OutboxRow>('SELECT * FROM outbox WHERE id=?',[candidate.id]);if(!row)throw Error('OUTBOX_DUE_ROW_MISSING');return row;});
+}
 /** A transaction reserves the spent budget and unique token before any async preparation. */
 export function claimDue(tx:WorkspaceTransaction,nowMs:number,limit:25):readonly DeliveryAttempt[]{
  const claimed:DeliveryAttempt[]=[];
  const metadata=tx.one<{admission_state:string}>('SELECT admission_state FROM workspace_metadata WHERE id=1');
  if(metadata?.admission_state!=='installed'||!admissionOpen(tx))return claimed;
  const admissionFence=assertAdmissionOpen(tx);
- const rows=tx.all<OutboxRow>(`SELECT * FROM outbox WHERE (status='pending' AND next_due_at<=?) OR (status='in_flight' AND lease_expires_at<=?) ORDER BY CASE WHEN status='in_flight' THEN lease_expires_at ELSE next_due_at END,id LIMIT ?`,[nowMs,nowMs,Math.min(25,Math.max(0,limit))]);
+ const rows=dueRows(tx,nowMs,limit);
  for(const row of rows){
   // Legacy NULL routing is non-executable history. Preserve its prior transport and lease evidence.
   if(row.destination_snapshot_json===null){tx.exec("UPDATE outbox SET status='cancelled',updated_at=? WHERE id=?",[nowMs,row.id]);markSchedulerDirty(tx);continue;}
@@ -124,11 +141,11 @@ export function liveAttempt(tx:WorkspaceTransaction,attempt:DeliveryAttempt,nowM
  return row&&row.lease_expires_at===attempt.leaseExpiresAt&&row.payload_json===attempt.payloadJson&&row.destination_id===attempt.destinationId&&row.destination_snapshot_json===canonicalJson(attempt.destination)?row:null;
 }
 /** Late responses cannot overwrite another attempt or reclaim an expired lease. */
-export function finishAttempt(tx:WorkspaceTransaction,attemptId:string,result:DeliveryResult,nowMs:number,expected:AdmissionFence):void{
+export function finishAttempt(tx:WorkspaceTransaction,deliveryId:string,attemptId:string,result:DeliveryResult,nowMs:number,expected:AdmissionFence):void{
  if(!admissionOpen(tx,expected))return;
  if(result.kind==='obsolete'||result.kind==='paused'||!admissionOpen(tx)||
   tx.one<{admission_state:string}>('SELECT admission_state FROM workspace_metadata WHERE id=1')?.admission_state!=='installed')return;
- const row=tx.one<OutboxRow>("SELECT * FROM outbox WHERE status='in_flight' AND lease_token=? AND lease_expires_at>?",[attemptId,nowMs]);if(!row)return;
+ const row=tx.one<OutboxRow>("SELECT * FROM outbox WHERE id=? AND status='in_flight' AND lease_token=? AND lease_expires_at>?",[deliveryId,attemptId,nowMs]);if(!row)return;
  if(result.kind==='delivered'){disposition(tx,row,'succeeded',null,nowMs,result.status);return;}
  if(result.kind==='permanent'){disposition(tx,row,'cancelled',result.category,nowMs,result.status??null);return;}
  const intent=validateIntent(tx,row);

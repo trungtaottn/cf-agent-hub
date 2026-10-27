@@ -1,3 +1,4 @@
+import {EXPECTED_SCHEMA_VERSIONS} from '../../src/storage/schema-version';
 import {it,expect} from 'vitest';
 import {env} from 'cloudflare:workers';
 import {runInDurableObject} from 'cloudflare:test';
@@ -20,7 +21,7 @@ async function setup(name:string,count=2){
  const input=await prepareBootstrap(raw.config,raw.bundle,'ws_example'),stub=env.WORKSPACE.getByName(name);await stub.reconcileConfiguration(operator(),input);return stub;
 }
 function candidate(nowMs:number):CredentialAuthorityRow{return {credential_id:'dynamic_candidate',workspace_id:'ws_example',agent_id:'agent_research',scopes_json:'["messages:read"]',project_ids_json:'null',expires_at:nowMs+60000,enabled:1,retired_at_epoch:null,config_epoch:1,origin:'human_managed',revoked_at:null,issued_by_principal_id:'human_operator'};}
-// Schema9 adds one schema_migrations row to the fixed authority proof cost; credential seeks remain unchanged.
+// Exact compiled migration-row cost is separate from the fixed authority/credential seeks.
 function measure(storage:DurableObjectStorage,row:CredentialAuthorityRow,nowMs:number){
  let rowsRead=0;const queries:{sql:string;rowsRead:number;plan:unknown[]}[]=[];
  const query=<T>(sql:string,bindings:readonly SqlValue[]=[])=>{const cursor=storage.sql.exec(sql,...bindings),rows=cursor.toArray() as T[];rowsRead+=cursor.rowsRead;queries.push({sql,rowsRead:cursor.rowsRead,plan:storage.sql.exec('EXPLAIN QUERY PLAN '+sql,...bindings).toArray()});return rows;};
@@ -30,7 +31,7 @@ function measure(storage:DurableObjectStorage,row:CredentialAuthorityRow,nowMs:n
 it('adoption current installed refs bound physical authority work independently of historical rows',async()=>{
  const stub=await setup('adoption-bound');const evidence=await runInDurableObject(stub,(_o,state)=>{
   const samples:unknown[]=[];
-  const now=Date.now(),row=candidate(now),before=measure(state.storage,row,now);expect(before.allowed).toBe(true);expect(before.rowsRead).toBe(19);
+  const now=Date.now(),row=candidate(now),before=measure(state.storage,row,now);expect(before.allowed).toBe(true);expect(before.rowsRead).toBe(EXPECTED_SCHEMA_VERSIONS.length+10);expect(before.queries.filter(q=>q.sql.includes('FROM schema_migrations')).reduce((sum,q)=>sum+q.rowsRead,0)).toBe(EXPECTED_SCHEMA_VERSIONS.length);
   for(const count of [100,1000]){
    state.storage.sql.exec(`WITH RECURSIVE n(x) AS (SELECT 1 UNION ALL SELECT x+1 FROM n WHERE x<?) INSERT INTO native_credentials(credential_id,workspace_id,agent_id,token_sha256,scopes_json,project_ids_json,expires_at,enabled,config_epoch,retired_at_epoch,origin) SELECT 'history_'||?||'_'||x,'ws_example','agent_research',printf('%064x',?+x),'[]','null',0,0,1,1,'operator_static' FROM n`,count,count,count*100);
    const measured=measure(state.storage,row,now);samples.push({historicalRows:count,baseline:before.rowsRead,...measured});
@@ -81,7 +82,7 @@ it('adoption can use the final one of the canonical maximum 1000 current sources
  const stub=await setup('adoption-maximum-current',1000);await runInDurableObject(stub,(_o,state)=>{
   const now=Date.now();state.storage.sql.exec("UPDATE native_credentials SET revoked_at=? WHERE credential_id<>'bounded_source_999'",now);
   const measured=measure(state.storage,candidate(now),now),lookups=measured.queries.filter(q=>q.sql.includes('FROM native_credentials'));
-  expect(measured.allowed).toBe(true);expect(lookups).toHaveLength(1000);expect(measured.rowsRead).toBe(1018);
+  expect(measured.allowed).toBe(true);expect(lookups).toHaveLength(1000);expect(measured.rowsRead).toBe(1000+EXPECTED_SCHEMA_VERSIONS.length+9);
   expect(lookups.every(q=>q.rowsRead===1&&JSON.stringify(q.plan).includes('SEARCH'))).toBe(true);
   state.storage.sql.exec("UPDATE native_credentials SET revoked_at=? WHERE credential_id='bounded_source_999'",now);
   expect(measure(state.storage,candidate(now),now).allowed).toBe(false);

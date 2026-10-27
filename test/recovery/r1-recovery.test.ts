@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../../src/storage/schema-version';
 import {resetLegacyAuthorityFixture} from '../helpers/legacy-migration-fixture';
 import {migrate} from '../../src/storage/migrations';
 import {describe,it,expect} from 'vitest';
@@ -19,7 +20,7 @@ describe('R1 recovery registry and durable admission',()=>{
   await runInDurableObject(stub,(_instance,state)=>{
    const names=state.storage.sql.exec<{name:string}>("SELECT name FROM sqlite_schema WHERE type='table' ORDER BY name").toArray().map(x=>x.name);
    expect(names).toEqual([...TABLE_REGISTRY.map(x=>x.name),'sqlite_sequence'].sort());
-   expect(withTransaction(state.storage,inspectRegistry)).toEqual({schemaVersion:9,eventSequence:1,tables:36});
+   expect(withTransaction(state.storage,inspectRegistry)).toEqual({schemaVersion:CURRENT_SCHEMA_VERSION,eventSequence:1,tables:36});
   });
  });
  it('fails closed when a durable maintenance fence is present',async()=>{
