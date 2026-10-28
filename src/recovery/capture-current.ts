@@ -3,7 +3,7 @@ import {canonicalJson} from '../config/bootstrap';
 import {TABLE_REGISTRY,inspectRegistry} from './table-registry';
 import {assertAdmissionOpen,assertArtifactEffectsDrained,maintenanceRow,transitionMaintenance} from './maintenance';
 import {canonicalBytes,digestBytes,encodeCurrentChunk,primaryKey,sqlCell,closed,type CurrentRecoveryChunk,type SqlCell} from './encoding';
-import {assertRecoveryContext,priorOperation,storeOperation,type RecoveryContext,type RecoveryWorkspace,type RecoveryJobProgress,type CurrentRecoveryManifest} from './protocol';
+import {assertRecoveryContext,priorOperation,storeOperation,type RecoveryContext,type RecoveryWorkspace,type RecoveryJobProgress,type CurrentRecoveryManifest,recoverySchema} from './protocol';
 import {validateRecoveryJobProgress,validateRecoveryManifest} from './generated/recovery-validators.js';
 import {signRecord,validateManifestShape} from './manifest';
 import {jobIdFor,loadCurrentCaptureJob,saveJob,assertCurrentCaptureJob,reserveStep,assertPending,progress,projection,objectKey,currentChunkRecords,terminalReceipt,readStoredChunk,databaseDigest,type CurrentCaptureJob,type RecoveryBudget} from './jobs';
@@ -22,13 +22,13 @@ function completeStep(tx:WorkspaceTransaction,w:RecoveryWorkspace,ctx:RecoveryCo
 }
 /** No checkpoint is recorded until exact previously dispatched effects are terminal. */
 function checkpoint(tx:WorkspaceTransaction,w:RecoveryWorkspace,ctx:RecoveryContext,job:CurrentCaptureJob):RecoveryJobProgress{
- inspectRegistry(tx);
+ inspectRegistry(tx,recoverySchema(tx,ctx) as 15|16);
  try{assertArtifactEffectsDrained(tx);}catch(error){if(!(error instanceof Error)||error.message!=='ARTIFACT_EFFECTS_NOT_DRAINED')throw error;job.details.diagnostic={code:'RECOVERY_ARTIFACT_EFFECTS_NOT_DRAINED',at:w.clock.nowMs(),attempts:Math.min(Number.MAX_SAFE_INTEGER,(job.details.diagnostic?.attempts??0)+1)};saveJob(tx,job);const result=progress(job);storeOperation(tx,ctx,result,w.clock.nowMs());return result;}
- const schema=inspectRegistry(tx),inventory=captureArtifactInventory(tx,w,job.capture_id,job.details.budget.max_artifacts);
+ const schema=inspectRegistry(tx,recoverySchema(tx,ctx) as 15|16),inventory=captureArtifactInventory(tx,w,job.capture_id,job.details.budget.max_artifacts);
  const counts=Object.fromEntries(TABLE_REGISTRY.map(table=>{const p=projection(table.name,job);return [table.name,table.name==='maintenance_state'?1:tx.one<{n:number}>('SELECT COUNT(*) AS n FROM "'+table.name+'" WHERE '+p.where,p.bindings)!.n];})) as CurrentRecoveryManifest['database']['table_counts'];
  const rows=Object.values(counts).reduce((n,x)=>n+x,0);if(!Number.isSafeInteger(rows)||rows>job.details.budget.max_rows||inventory.bytes>job.details.budget.max_total_bytes)throw Error('RECOVERY_BUDGET_LIMIT');
- const point:CurrentRecoveryManifest['checkpoint']={barrier_id:job.details.barrierId,event_sequence:schema.eventSequence,schema_version:15,contract_revision:'0.2',authority_epoch:ctx.expectedEpoch};
- const draft:CurrentRecoveryManifest={format_version:2,capture_id:job.capture_id,workspace_id:w.workspaceId,environment_id:w.environmentId,started_at:new Date(job.created_at).toISOString(),ended_at:new Date(w.clock.nowMs()).toISOString(),checkpoint:point,release:structuredClone(w.release),database:{sha256:'0'.repeat(64),byte_size:0,table_counts:counts,chunks:[]},artifacts:inventory.artifacts,unfinished_artifact_ids:inventory.unfinished,auth:{key_id:w.integrity.keyId,algorithm:'HMAC-SHA256',tag:'0'.repeat(64)}};
+ const point:CurrentRecoveryManifest['checkpoint']={barrier_id:job.details.barrierId,event_sequence:schema.eventSequence,schema_version:schema.schemaVersion,contract_revision:'0.2',authority_epoch:ctx.expectedEpoch};
+ const draft={format_version:2 as const,capture_id:job.capture_id,workspace_id:w.workspaceId,environment_id:w.environmentId,started_at:new Date(job.created_at).toISOString(),ended_at:new Date(w.clock.nowMs()).toISOString(),checkpoint:point,release:structuredClone(w.release),database:{sha256:'0'.repeat(64),byte_size:0,table_counts:counts,chunks:[]},artifacts:inventory.artifacts,unfinished_artifact_ids:inventory.unfinished,auth:{key_id:w.integrity.keyId,algorithm:'HMAC-SHA256' as const,tag:'0'.repeat(64)}};
  if(!validateRecoveryManifest(draft)||canonicalBytes(draft).length>65536)throw Error('RECOVERY_MANIFEST_LIMIT');
  job.details.checkpoint=point;job.details.draft=draft;job.details.sourceMaintenance=TABLE_REGISTRY.find(t=>t.name==='maintenance_state')!.columns.map(c=>sqlCell((maintenanceRow(tx)! as unknown as Record<string,SqlValue>)[c.name]));job.details.phase='capture_pages';return completeStep(tx,w,ctx,job);
 }
@@ -48,7 +48,7 @@ function page(tx:WorkspaceTransaction,job:CurrentCaptureJob):CurrentRecoveryChun
   rows=found.map(row=>{if(Object.hasOwn(row,'workspace_id')&&row.workspace_id!==job.workspace_id)throw Error('RECOVERY_WORKSPACE_ROW_MISMATCH');if(table.name==='login_attempts'){row.nonce='';row.pkce_verifier='';}return table.columns.map(c=>sqlCell(row[c.name]));});
  }
  if(!rows.length){d.tableIndex++;d.cursor=null;return null;}
- return {format_version:2,schema_version:15,capture_id:job.capture_id,index:d.counts.chunks,table:table.name,columns:table.columns.map(c=>c.name),rows};
+ return {format_version:2,schema_version:m.checkpoint.schema_version,capture_id:job.capture_id,index:d.counts.chunks,table:table.name,columns:table.columns.map(c=>c.name),rows};
 }
 function guard(w:RecoveryWorkspace,ctx:RecoveryContext,job:CurrentCaptureJob):CurrentCaptureJob{return withTransaction(w.storage,tx=>{requireArtifactBucket(w);const current=assertCurrentCaptureJob(tx,w,ctx,job.id);assertPending(current,ctx);return current;});}
 const diagnosticCodes=new Set(['RECOVERY_BUDGET_LIMIT','RECOVERY_MANIFEST_LIMIT','RECOVERY_JOB_DETAILS_LIMIT','RECOVERY_ARTIFACT_COUNT_LIMIT','RECOVERY_UNFINISHED_ARTIFACT_LIMIT','RECOVERY_ARTIFACT_IDENTITY_MISMATCH','RECOVERY_ARTIFACT_RELATIONSHIP_MISMATCH','RECOVERY_ARTIFACT_MISSING','RECOVERY_ARTIFACT_BYTES_MISMATCH','RECOVERY_ARTIFACT_COPY_UNAVAILABLE','RECOVERY_ARTIFACT_BINDING_UNAVAILABLE','RECOVERY_CHUNK_MISMATCH','RECOVERY_DATABASE_DIGEST_MISMATCH','RECOVERY_SCHEMA_MISMATCH','RECOVERY_RESULT_LIMIT','RECOVERY_SOURCE_IDENTITY_MISMATCH']);
@@ -75,7 +75,7 @@ export async function advanceCurrentCapture(w:RecoveryWorkspace,ctx:RecoveryCont
    return withTransaction(w.storage,tx=>{const current=assertCurrentCaptureJob(tx,w,ctx,id);const prior=priorOperation(tx,ctx);if(prior){if(!validateRecoveryJobProgress(prior))throw Error('RECOVERY_OPERATION_CONFLICT');return prior;}assertPending(current,ctx);current.details.artifactIndex++;current.details.artifactBytes+=entry.byte_size;current.details.counts.bytes+=entry.byte_size;if(current.details.artifactIndex===current.details.draft!.artifacts.length)current.details.phase='capture_finalize';return completeStep(tx,w,ctx,current);});
   }
   if(job.details.phase==='capture_finalize')return await finish(w,ctx,job,()=>stepGuard(job));
-  const selected=withTransaction(w.storage,tx=>{job=assertCurrentCaptureJob(tx,w,ctx,id);assertPending(job,ctx);inspectRegistry(tx);assertArtifactEffectsDrained(tx);return {job,chunk:page(tx,job)};});job=selected.job;
+  const selected=withTransaction(w.storage,tx=>{job=assertCurrentCaptureJob(tx,w,ctx,id);assertPending(job,ctx);inspectRegistry(tx,recoverySchema(tx,ctx) as 15|16);assertArtifactEffectsDrained(tx);return {job,chunk:page(tx,job)};});job=selected.job;
   if(!selected.chunk)return withTransaction(w.storage,tx=>{const current=assertCurrentCaptureJob(tx,w,ctx,id);assertPending(current,ctx);current.details.tableIndex=job.details.tableIndex;current.details.cursor=job.details.cursor;current.details.phase=job.details.phase;return completeStep(tx,w,ctx,current);});
   const chunk=selected.chunk;let bytes:Uint8Array<ArrayBuffer>;for(;;){try{bytes=encodeCurrentChunk(chunk);break;}catch(error){if(error instanceof Error&&error.message==='RECOVERY_CHUNK_LIMIT'&&chunk.rows.length>1)chunk.rows=chunk.rows.slice(0,Math.floor(chunk.rows.length/2));else throw error;}}
   const artifactBytes=job.details.draft!.artifacts.reduce((n,e)=>n+e.byte_size,0);
@@ -96,8 +96,8 @@ async function finish(w:RecoveryWorkspace,ctx:RecoveryContext,job:CurrentCapture
  for(const entry of draft.artifacts){await verifyCapturedArtifact(w,ctx,job,entry);stepGuard();}
  const digest=await databaseDigest(w,ctx,job);stepGuard();if(digest!==draft.database.sha256)throw Error('RECOVERY_DATABASE_DIGEST_MISMATCH');
  draft.ended_at=d.pending!.endedAt;validateManifestShape(draft);const proposed=structuredClone(job);proposed.details.draft=null;proposed.details.manifest=draft;proposed.details.pending=null;proposed.details.phase='complete';proposed.details.step++;proposed.details.diagnostic=null;proposed.state='complete';
- withTransaction(w.storage,tx=>{assertCurrentCaptureJob(tx,w,ctx,job.id);assertPending(job,ctx);inspectRegistry(tx);assertArtifactEffectsDrained(tx);proposed.details.receipt=terminalReceipt(tx,w,job,true,'OK');progress(proposed);if(canonicalBytes(proposed.details).length>262144)throw Error('RECOVERY_JOB_DETAILS_LIMIT');});
+ withTransaction(w.storage,tx=>{assertCurrentCaptureJob(tx,w,ctx,job.id);assertPending(job,ctx);inspectRegistry(tx,recoverySchema(tx,ctx) as 15|16);assertArtifactEffectsDrained(tx);proposed.details.receipt=terminalReceipt(tx,w,job,true,'OK');progress(proposed);if(canonicalBytes(proposed.details).length>262144)throw Error('RECOVERY_JOB_DETAILS_LIMIT');});
  const signed=await signRecord(draft,w.integrity,stepGuard);stepGuard();const manifestDigest=await digestBytes(canonicalBytes(signed));stepGuard();
- return withTransaction(w.storage,tx=>{const current=assertCurrentCaptureJob(tx,w,ctx,job.id);const prior=priorOperation(tx,ctx);if(prior){if(!validateRecoveryJobProgress(prior))throw Error('RECOVERY_OPERATION_CONFLICT');return prior;}assertPending(current,ctx);inspectRegistry(tx);assertArtifactEffectsDrained(tx);
+ return withTransaction(w.storage,tx=>{const current=assertCurrentCaptureJob(tx,w,ctx,job.id);const prior=priorOperation(tx,ctx);if(prior){if(!validateRecoveryJobProgress(prior))throw Error('RECOVERY_OPERATION_CONFLICT');return prior;}assertPending(current,ctx);inspectRegistry(tx,recoverySchema(tx,ctx) as 15|16);assertArtifactEffectsDrained(tx);
   current.details.draft=null;current.details.manifest=signed;current.manifest_digest=manifestDigest;current.details.receipt=terminalReceipt(tx,w,current,true,'OK');current.state='complete';current.details.phase='complete';transitionMaintenance(tx,{state:'captured',epoch:ctx.expectedEpoch,barrierId:current.details.barrierId,captureId:current.capture_id,nowMs:w.clock.nowMs(),advance:false});return completeStep(tx,w,ctx,current);});
 }

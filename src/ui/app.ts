@@ -2,7 +2,11 @@ import {HubClient} from '../../packages/client/src/client';
 import type {ApiResult,Workspace,AuthSession,AuthStartData,Configuration,ProfileData,PreferencesData,Operations,Event,Message,Operation,OperationInputs,RequestOptions} from '../../packages/client/src/types';
 import {ReadModel,summarizeReadStates,type ReadState} from './read-state';
 import {SettingsPanel} from './settings';
-import {el,button} from './dom';
+import {el,button,replacePreservingFocus} from './dom';
+import {TaskReads} from './task-reads';
+import {KanbanView} from './kanban';
+import {TaskDetail} from './task-detail';
+import type {BrowserReadRequest} from '../../packages/client/src/types';
 
 const byId=(id:string)=>document.getElementById(id)!;
 const workspace=document.body.dataset.workspace??'';
@@ -14,7 +18,13 @@ const models={
  operations:new ReadModel<Operations>({isEmpty:()=>false}),thread:new ReadModel<Message[]>({isEmpty:items=>items.length===0})
 };
 let client:HubClient,authority=0,session:AuthSession|null=null,denied=false,currentView=location.pathname.slice(1)||'overview',threadId:string|null=null,eventCursor:string|null=null,threadCursor:string|null=null;
-let eventsAvailable=false,operationsAvailable=false,profileAvailable=false,preferencesAvailable=false;
+let eventsAvailable=false,operationsAvailable=false,profileAvailable=false,preferencesAvailable=false,tasksAvailable=false;
+const taskReads=new TaskReads({workspaceId:workspace,request:(async(operation,input,options)=>{
+ const started=authority,result=await client.read(operation,input,options);
+ if(!result.ok&&(result.status===401||result.status===403)){invalidateAll(result.status,result.requestId);return result;}
+ if(started!==authority)return {ok:false,status:403,requestId:result.requestId,error:{code:'FORBIDDEN',message:'Access denied',retryable:false}};
+ return result;
+}) as BrowserReadRequest,changed:()=>render()});
 const source='/v2/workspaces/'+workspace;
 const accents=['blue','teal','indigo','violet','amber','slate'];
 const navigationLinks=new Map<string,HTMLAnchorElement>();
@@ -30,6 +40,7 @@ const settings=new SettingsPanel({
 function invalidateAll(status:401|403,id:string|null):void{
  ++authority;denied=true;session=null;client?.setCsrfToken(null);eventCursor=null;threadCursor=null;threadId=null;
  for(const model of Object.values(models))model.invalidate(status===401?'UNAUTHENTICATED':'FORBIDDEN',id);
+ taskReads.invalidate(status===401?'UNAUTHENTICATED':'FORBIDDEN',id);tasksAvailable=false;
  settings.invalidate();eventsAvailable=false;operationsAvailable=false;profileAvailable=false;preferencesAvailable=false;
  document.documentElement.dataset.theme='system';document.documentElement.dataset.density='comfortable';delete document.documentElement.dataset.accent;
  byId('workspace-name').textContent='';notice.textContent='Cached sensitive records, settings drafts and pending write data have been cleared.';
@@ -49,7 +60,7 @@ function renderSession():void{
   },{class:'secondary'}));
  }else{
   sessionElement.append(el('span',denied?'Access denied. Sign in to refresh current authority.':'Sign in to read this workspace.'),button('Sign in',async()=>{
-   const result=await request<AuthStartData>('startAuth',{return_path:currentView==='settings'?'/settings':currentView==='activity'?'/activity':'/overview'});
+   const result=await request<AuthStartData>('startAuth',{return_path:currentView==='tasks'?'/tasks':currentView==='settings'?'/settings':currentView==='activity'?'/activity':'/overview'});
    if(result.ok)location.assign(result.data.authorization_url);else notice.textContent=result.error.message;
   }));
  }
@@ -69,15 +80,22 @@ function selectThread(id:string|null):void{
 function navigate(name:string,selectedThread:string|null=null):void{
  currentView=name;selectThread(selectedThread);
  const query=new URLSearchParams({workspace});if(selectedThread)query.set('thread',selectedThread);
- history.pushState(null,'','/'+name+'?'+query.toString());render();byId('main').focus();
+ history.pushState(null,'','/'+name+'?'+query.toString());
+ if(name==='tasks'){void taskReads.select(null);void taskReads.refreshBoard();}
+ render();byId('main').focus();
  if(selectedThread)void refreshThread(selectedThread,false);
+}
+function navigateTask(id:string|null):void{
+ currentView='tasks';selectThread(null);const query=new URLSearchParams({workspace});if(id)query.set('task',id);
+ history.pushState(null,'','/tasks?'+query.toString());void taskReads.select(id);render();byId('main').focus();
 }
 function renderNavigation():void{
  const visibleViews=models.profile.state.data?.profile.navigation.visible_views;
- const entries=([['overview','Overview'],['activity','Activity'],['inbox','Inbox'],['settings','Settings']] as const).filter(([name])=>{
+ const entries=([['overview','Overview'],['activity','Activity'],['tasks','Tasks'],['inbox','Inbox'],['settings','Settings']] as const).filter(([name])=>{
   // Overview is a permanent safe fallback; Settings is deliberately outside profile navigation.
   if(name==='overview')return true;
   if(name==='settings')return profileAvailable||preferencesAvailable||denied;
+  if(name==='tasks')return tasksAvailable&&Boolean(visibleViews?.includes('tasks')||visibleViews?.includes('kanban'));
   if(visibleViews&&!visibleViews.includes(name))return false;
   if(name==='activity')return eventsAvailable||denied;
   return true;
@@ -103,7 +121,7 @@ function renderNavigation():void{
 const statuses:Record<ReadState<unknown>['status'],string>={
  loading:'Loading — waiting for an authenticated response',ready:'Current response',empty:'Successful empty response',
  stale:'Stale — showing the last successful observation',forbidden:'Access denied — current authority is required',
- error:'Read failed — no successful result is available',disconnected:'Disconnected — no cached observation is available'
+ error:'Read failed — no successful result is available',disconnected:'Disconnected — no cached observation is available',unavailable:'Unavailable — no authorized resource or supported capability'
 };
 function section<T>(name:string,title:string,state:Readonly<ReadState<T>>,endpoint:string,content:(data:T,card:HTMLElement)=>void,emptyText?:string):HTMLElement{
  const card=el('section',undefined,{class:'card','data-testid':name+'-section','data-status':state.status,'aria-label':title});
@@ -165,9 +183,13 @@ function threadSection():HTMLElement{
 function render():void{
  renderNavigation();
  const heading=document.querySelector('h1')!;
- heading.textContent=threadId?'Thread history':currentView==='activity'?'Workspace activity':currentView==='settings'?'Workspace settings':currentView==='inbox'?'Agent inbox':'Workspace overview';
- const active=currentView==='inbox'?[]:threadId?[models.thread.state]:currentView==='settings'?[models.workspace.state,models.profile.state,models.preferences.state]:[models.configuration.state,...(eventsAvailable||denied?[models.events.state]:[]),...(operationsAvailable?[models.operations.state]:[])];
+ heading.textContent=currentView==='tasks'?(taskReads.selectedId?'Task detail':'Workspace tasks'):threadId?'Thread history':currentView==='activity'?'Workspace activity':currentView==='settings'?'Workspace settings':currentView==='inbox'?'Agent inbox':'Workspace overview';
+ const active=currentView==='tasks'?(taskReads.selectedId?[taskReads.task.state,taskReads.run.state,taskReads.results.read.state,taskReads.events.read.state,taskReads.artifacts.state]:Object.values(taskReads.columns).map(page=>page.read.state)):currentView==='inbox'?[]:threadId?[models.thread.state]:currentView==='settings'?[models.workspace.state,models.profile.state,models.preferences.state]:[models.configuration.state,...(eventsAvailable||denied?[models.events.state]:[]),...(operationsAvailable?[models.operations.state]:[])];
  byId('page-status').textContent=denied?'forbidden — current authority required':currentView==='inbox'?'Unavailable for human sessions':'Read status: '+summarizeReadStates(active);
+ if(currentView==='tasks'){
+  const content=taskReads.selectedId?TaskDetail({state:taskReads,workspaceId:workspace,onBack:()=>navigateTask(null),onResultsNext:()=>void taskReads.nextResults(),onEventsNext:()=>void taskReads.nextEvents()}):KanbanView({state:taskReads,workspaceId:workspace,profile:models.profile.state.data?.profile??null,onSelect:navigateTask,onNext:state=>void taskReads.nextColumn(state)});
+  replacePreservingFocus(view,content,byId('main'));return;
+ }
  if(currentView==='settings'){
   if(!denied)settings.setData(models.profile.state,models.preferences.state,source,models.workspace.state.status==='ready'&&Boolean(models.workspace.state.data?.effective_scopes.includes('profile:edit')));if(view.firstChild!==settings.element)view.replaceChildren(settings.element);return;
  }
@@ -217,6 +239,14 @@ async function refreshReads():Promise<void>{
   eventsAvailable?refreshEvents():Promise.resolve(),
   operationsAvailable?refreshModel(models.operations,()=>request<Operations>('getOperations',{})):Promise.resolve()
  ]);
+ if(!denied&&generation===authority){
+  const observed=models.workspace.state;
+  if(observed.status==='ready'&&observed.data){
+   const scopes=observed.data.effective_scopes;tasksAvailable=scopes.includes('tasks:read');
+   taskReads.setCapabilities({tasks:tasksAvailable,events:eventsAvailable&&scopes.includes('events:read'),artifacts:scopes.includes('artifacts:read')});
+   if(currentView==='tasks'&&tasksAvailable)await Promise.all([taskReads.refreshBoard(),taskReads.selectedId?taskReads.refreshTask():Promise.resolve()]);
+  }else taskReads.disconnect();
+ }
  if(threadId&&!denied)await refreshThread(threadId);
 }
 async function boot():Promise<void>{
@@ -229,12 +259,14 @@ async function boot():Promise<void>{
  render();
  const result=await request<AuthSession>('getAuthSession',{});if(!result.ok){renderSession();return;}
  session=result.data;denied=false;client.setCsrfToken(session.csrf_token);renderSession();notice.textContent='';await refreshReads();
+ const initialTask=new URL(location.href).searchParams.get('task');if(currentView==='tasks'&&initialTask&&!denied)await taskReads.select(initialTask);
  const initialThread=new URL(location.href).searchParams.get('thread');if(initialThread&&!denied){selectThread(initialThread);currentView='activity';await refreshThread(initialThread);}
  if(location.pathname==='/'&&models.preferences.state.data&&!denied){
-  const preferred=models.preferences.state.data.effective.default_view;if(preferred==='activity'&&eventsAvailable)navigate('activity');
+  const preferred=models.preferences.state.data.effective.default_view;if(preferred==='activity'&&eventsAvailable)navigate('activity');else if(preferred==='tasks'&&tasksAvailable)navigate('tasks');
  }
 }
-addEventListener('popstate',()=>{currentView=location.pathname.slice(1)||'overview';selectThread(new URL(location.href).searchParams.get('thread'));render();if(threadId)void refreshThread(threadId);});
-addEventListener('offline',()=>{for(const model of Object.values(models))model.disconnect();render();});
-setInterval(()=>{for(const model of Object.values(models))model.markStale(Date.now(),60_000);render();},15_000);
+addEventListener('popstate',()=>{currentView=location.pathname.slice(1)||'overview';selectThread(new URL(location.href).searchParams.get('thread'));render();if(threadId)void refreshThread(threadId);if(currentView==='tasks'){void taskReads.select(new URL(location.href).searchParams.get('task'));void taskReads.refreshBoard();}});
+addEventListener('offline',()=>{for(const model of Object.values(models))model.disconnect();taskReads.disconnect();render();});
+addEventListener('online',()=>{void refreshReads();});
+setInterval(()=>{taskReads.markStale(Date.now(),60_000);for(const model of Object.values(models))model.markStale(Date.now(),60_000);render();},15_000);
 void boot();

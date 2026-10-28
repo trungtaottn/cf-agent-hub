@@ -1,6 +1,6 @@
 import type {ApiResult} from '../../packages/client/src/types';
 
-export type ReadStatus='loading'|'ready'|'empty'|'stale'|'forbidden'|'error'|'disconnected';
+export type ReadStatus='loading'|'ready'|'empty'|'stale'|'forbidden'|'error'|'disconnected'|'unavailable';
 export interface ReadState<T> {
   status:ReadStatus;
   data:T|null;
@@ -52,6 +52,8 @@ export class ReadModel<T> {
     } else if(result.status===401||result.status===403) {
       // HTTP authority wins even when an intermediary returned an invalid error body.
       this.invalidate(result.status===401?'UNAUTHENTICATED':'FORBIDDEN',result.requestId);
+    } else if(result.status===404||result.error.code==='OPERATION_UNAVAILABLE') {
+      this.unavailable(result.error.code,result.requestId);
     } else {
       this.#state={
         status:cached?'stale':result.error.code==='NETWORK_ERROR'?'disconnected':'error',
@@ -62,6 +64,19 @@ export class ReadModel<T> {
       };
     }
     return this.#state;
+  }
+
+  /** A resource/capability absence is not a successful empty read. */
+  unavailable(code:string,requestId:string|null=null):void {
+    ++this.#generation;
+    this.#state={status:'unavailable',data:null,observedAt:null,requestId,errorCode:code};
+  }
+
+  /** Redaction can only reduce cached presentation; it is not a new server observation. */
+  redact(project:(data:T)=>T):void {
+    ++this.#generation;
+    if(this.#state.data!==null)this.#state={...this.#state,data:project(this.#state.data),status:'stale'};
+    else if(this.#state.status==='loading')this.unavailable('OBSERVATION_INVALIDATED');
   }
 
   /** A different resource cannot inherit this resource's cache or pending read. */

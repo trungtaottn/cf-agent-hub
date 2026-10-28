@@ -28,6 +28,10 @@
     "src/ui/settings.ts",
     "src/ui/dom.ts",
     "test/recovery/operator-transport.test.ts",
-    "test/recovery/r2-operator.test.ts"
+    "test/recovery/r2-operator.test.ts",
+    "src/ui/kanban.ts",
+    "src/ui/task-detail.ts",
+    "test/client/task-rendering.test.ts",
+    "test/client/focus-restoration.test.ts"
   ]
 }

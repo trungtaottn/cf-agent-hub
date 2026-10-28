@@ -1,8 +1,20 @@
 # Kanban workspace
 
-Status: Design baseline · Contract revision 0.1 · Implementation pending.
+Status: Design baseline with local issue42 read-only source. Command UI and live acceptance remain pending.
 
 The Kanban is a view of durable tasks, their execution ownership and their review state. It is not a second task database. All UI actions issue the same authorized domain commands as the native API, then reconcile the returned task version.
+
+## Local issue42 read-only subset
+
+The `/tasks` shell uses the existing authenticated browser transport and canonical task, run, result, artifact-metadata and event reads. It has no task mutation, approval, drag command, artifact-byte fetch or local authority store. The command descriptions below remain the broader design target, not controls enabled by this subset. See [issue42 execution evidence](r2-task-plans/issue-042-execution.md).
+
+Each of the six canonical columns and the separate cancelled archive has an independently authorized page of at most 20 tasks. Next replaces the page rather than accumulating records; refresh resets cursors. A page count is never a workspace total, and an unavailable page boundary is not a terminal result. Loading, stale, empty, error and unavailable observations remain separate.
+
+Detail reads the selected task first, then independently reads its latest observed run, retained result page and optional authorized event page. Current result and historical result are distinguished using the canonical current result run, not the latest run alone. Acceptance actor/time appears only from matching current-result event evidence; absence on a bounded event page is not proof that acceptance never occurred. Artifact metadata is limited to the current result's five possible references and requires `artifacts:read`. No public human runtime-presence read exists, so presence is explicitly unavailable; an observed lease deadline does not prove an online runtime or current execution authority.
+
+A denied session/read clears sensitive projections. A missing selected task, including a task-results 404, purges its detail children and cached board card and invalidates pending reads. Unrelated cached observations can remain stale until explicit refresh. Hidden navigation does not disable backend task processing. The `tasks` and `kanban` preference aliases resolve to the same view only when profile visibility and current task-read scope permit it.
+
+Semantic sections, headings, lists and links expose the board without a misleading interactive ARIA grid. Focus restoration, literal dynamic text and narrow-screen wrapping are implemented and covered by source/structural tests. Real browser geometry, keyboard behavior and accessibility acceptance are not established when the pinned browser cannot launch. Waiting approval/reject controls are unavailable R3 placeholders, never active decisions.
 
 ## Board model
 

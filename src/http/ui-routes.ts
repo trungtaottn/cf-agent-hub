@@ -1,6 +1,6 @@
 import {parseDeployment} from '../config/deployment';
 import {HttpError,toHttpError,securityHeaders} from './envelopes';
-const documents=new Set(['/','/overview','/activity','/inbox','/settings']);
+const documents=new Set(['/','/overview','/activity','/inbox','/settings','/tasks']);
 const assets=new Set(['/ui/app.js','/ui/styles.css']);
 export function isUiRequest(request:Request):boolean{
  const path=new URL(request.url).pathname;return (request.method==='GET'||request.method==='HEAD')&&(documents.has(path)||assets.has(path));

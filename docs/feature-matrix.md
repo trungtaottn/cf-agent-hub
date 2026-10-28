@@ -114,3 +114,5 @@ Issue38 adds a typed native facade, explicit protected-capture enrollment seam a
 
 
 Issue41 adds local durable intent/protected-provider foundations, not an installed CLI or capability promotion. [Execution evidence](r2-task-plans/issue-041-execution.md) and [ADR0009](adr/0009-r2-cli-local-durability.md) retain platform, replay-continuity, plaintext threat-model and acceptance limits. Formal Verified/Released rows remain unchanged.
+
+Issue42 adds a local read-only task board/detail and exact `/tasks` authentication return integration, not task-command UI or capability promotion. [Execution evidence](r2-task-plans/issue-042-execution.md) distinguishes source/structural tests from unavailable browser and later live acceptance. Formal Verified/Released status remains unchanged.

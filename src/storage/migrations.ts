@@ -13,11 +13,12 @@ import artifactAdmission from './migrations/0012-artifact-admission.sql';
 import artifactCleanup from './migrations/0013-artifact-cleanup.sql';
 import messageCredentialSeek from './migrations/0014-message-credential-seek.sql';
 import searchOrder from './migrations/0015-search-order.sql';
+import taskAuthReturn from './migrations/0016-task-auth-return.sql';
 import { withTransaction } from './transaction';
 export const FOUNDATION_SQL=foundation;
 export {CURRENT_SCHEMA_VERSION} from './schema-version';
 export interface Migration {version:number;sql:string;}
-const defaults:readonly Migration[]=[{version:1,sql:foundation},{version:2,sql:sessionEpoch},{version:3,sql:preferenceOwner},{version:4,sql:messageAdmission},{version:5,sql:cursorRetention},{version:6,sql:schedulerDiagnostics},{version:7,sql:maintenanceGeneration},{version:8,sql:durableWork},{version:9,sql:catalogReferenceIndexes},{version:10,sql:outboxDueIndexes},{version:11,sql:taskHistoryReason},{version:12,sql:artifactAdmission},{version:13,sql:artifactCleanup},{version:14,sql:messageCredentialSeek},{version:15,sql:searchOrder}];
+const defaults:readonly Migration[]=[{version:1,sql:foundation},{version:2,sql:sessionEpoch},{version:3,sql:preferenceOwner},{version:4,sql:messageAdmission},{version:5,sql:cursorRetention},{version:6,sql:schedulerDiagnostics},{version:7,sql:maintenanceGeneration},{version:8,sql:durableWork},{version:9,sql:catalogReferenceIndexes},{version:10,sql:outboxDueIndexes},{version:11,sql:taskHistoryReason},{version:12,sql:artifactAdmission},{version:13,sql:artifactCleanup},{version:14,sql:messageCredentialSeek},{version:15,sql:searchOrder},{version:16,sql:taskAuthReturn}];
 export function migrate(storage:DurableObjectStorage,migrations:readonly Migration[]=defaults):void {
  // Migration-time entropy is prepared before entering SQL. Existing rows keep these IDs forever.
  const hasPreferences=storage.sql.exec<{name:string}>("SELECT name FROM sqlite_master WHERE type='table' AND name='preferences'").toArray().length>0;

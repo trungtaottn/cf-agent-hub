@@ -1,0 +1,1265 @@
+{
+  "source": "277ba2ae04b9127b30fa0ce865318eb81d78b8e7 exact archived source, no schema16 changes",
+  "name": "frozen15_artifact_upgrade_fixture",
+  "captureId": "capture_frozen15_artifact",
+  "release": {
+    "revision": "synthetic_schema15_artifact_source",
+    "worker_version": "synthetic_schema15_artifact_worker",
+    "binding_ids": [
+      "recovery_fixture",
+      "artifact_fixture"
+    ],
+    "catalog_mapping": {
+      "workspace_id": "ws_example",
+      "object_name": "frozen15_artifact_upgrade_fixture"
+    }
+  },
+  "environment": "capture_fixture",
+  "budget": {
+    "max_rows": 1000000,
+    "max_artifacts": 1000,
+    "max_total_bytes": 268435456
+  },
+  "entry": {
+    "artifact_id": "artifact_frozen15",
+    "artifact_version": 3,
+    "byte_size": 55,
+    "generation_id": "generation_173c7ec5848e6429da1f3fd73266a72c8deccf8c93a21593",
+    "object_key": "artifacts/ws_example/artifact_frozen15/generation_173c7ec5848e6429da1f3fd73266a72c8deccf8c93a21593/3c20cdfb3b836f9562e2f6324609db051904cfcf820e020016693b5a6a267993",
+    "recovery_object_key": "r2/ws_example/capture_frozen15_artifact/artifacts/artifact_frozen15/generation_173c7ec5848e6429da1f3fd73266a72c8deccf8c93a21593/3c20cdfb3b836f9562e2f6324609db051904cfcf820e020016693b5a6a267993",
+    "sha256": "3c20cdfb3b836f9562e2f6324609db051904cfcf820e020016693b5a6a267993"
+  },
+  "snapshot": {
+    "tables": {
+      "schema_migrations": [
+        {
+          "version": 1,
+          "applied_at": 1793125488384
+        },
+        {
+          "version": 2,
+          "applied_at": 1793125488385
+        },
+        {
+          "version": 3,
+          "applied_at": 1793125488386
+        },
+        {
+          "version": 4,
+          "applied_at": 1793125488388
+        },
+        {
+          "version": 5,
+          "applied_at": 1793125488388
+        },
+        {
+          "version": 6,
+          "applied_at": 1793125488389
+        },
+        {
+          "version": 7,
+          "applied_at": 1793125488389
+        },
+        {
+          "version": 8,
+          "applied_at": 1793125488395
+        },
+        {
+          "version": 9,
+          "applied_at": 1793125488395
+        },
+        {
+          "version": 10,
+          "applied_at": 1793125488395
+        },
+        {
+          "version": 11,
+          "applied_at": 1793125488395
+        },
+        {
+          "version": 12,
+          "applied_at": 1793125488397
+        },
+        {
+          "version": 13,
+          "applied_at": 1793125488400
+        },
+        {
+          "version": 14,
+          "applied_at": 1793125488400
+        },
+        {
+          "version": 15,
+          "applied_at": 1793125488400
+        }
+      ],
+      "workspace_metadata": [
+        {
+          "id": 1,
+          "workspace_id": "ws_example",
+          "object_name": "frozen15_artifact_upgrade_fixture",
+          "config_epoch": 1,
+          "config_digest": "40336b1223a949b15535f2a7cc10160e2ecece3bedd6d6d30e9ef265505b3d85",
+          "installation_digest": "42ee81696ce54498da5544519a8c858ee1785a59b85e15afad06e056757c5a25",
+          "config_json": "{\"authentication\":{\"allowed_origins\":[\"https://hub.example.invalid\"],\"audience\":\"cfhub-client\",\"client_id\":\"cfhub-client\",\"client_secret_ref\":\"OIDC_CLIENT_SECRET\",\"id_token_algorithms\":[\"RS256\"],\"issuer\":\"https://identity.example.invalid\",\"mode\":\"verified-oidc\",\"redirect_uris\":[{\"redirect_uri\":\"https://hub.example.invalid/v2/workspaces/ws_example/auth/callback\",\"workspace_id\":\"ws_example\"}],\"reviewed_oidc_endpoints\":{\"authorization_endpoint\":\"https://identity.example.invalid/authorize\",\"jwks_uri\":\"https://identity.example.invalid/jwks\",\"token_endpoint\":\"https://identity.example.invalid/token\"},\"session_ttl_seconds\":3600},\"config_epoch\":1,\"contract_revision\":\"0.2\",\"human_grants\":[{\"enabled\":true,\"issuer\":\"https://identity.example.invalid\",\"principal_id\":\"human_operator\",\"project_ids\":null,\"scopes\":[\"workspace:read\",\"messages:send\",\"messages:read\",\"messages:review\",\"events:read\",\"profile:edit\",\"operations:read\",\"tasks:read\",\"tasks:create\",\"tasks:edit\",\"tasks:schedule\",\"tasks:cancel\",\"artifacts:read\",\"artifacts:write\"],\"subject\":\"synthetic-subject\",\"workspace_id\":\"ws_example\"}],\"static_credential_refs\":[{\"agent_id\":\"agent_research\",\"credential_id\":\"credential_research_1\",\"enabled\":true,\"expires_at\":\"2026-11-26T18:24:48.368Z\",\"project_ids\":null,\"scopes\":[\"workspace:read\",\"events:read\",\"tasks:read\",\"tasks:claim\",\"tasks:execute\",\"runtimes:manage\",\"artifacts:read\",\"artifacts:write\"],\"workspace_id\":\"ws_example\"},{\"agent_id\":\"agent_research\",\"credential_id\":\"credential_research_2\",\"enabled\":true,\"expires_at\":\"2026-11-26T18:24:48.368Z\",\"project_ids\":null,\"scopes\":[\"workspace:read\",\"events:read\",\"tasks:read\",\"tasks:claim\",\"tasks:execute\",\"runtimes:manage\",\"artifacts:read\",\"artifacts:write\"],\"workspace_id\":\"ws_example\"},{\"agent_id\":\"agent_other\",\"credential_id\":\"credential_other\",\"enabled\":true,\"expires_at\":\"2026-11-26T18:24:48.368Z\",\"project_ids\":null,\"scopes\":[\"workspace:read\",\"events:read\",\"tasks:read\",\"tasks:claim\",\"tasks:execute\",\"runtimes:manage\",\"artifacts:read\",\"artifacts:write\"],\"workspace_id\":\"ws_example\"}],\"static_participants\":[{\"agent_id\":\"agent_research\",\"display_name\":\"Research participant\",\"workspace_id\":\"ws_example\"},{\"agent_id\":\"agent_other\",\"display_name\":\"Other synthetic agent\",\"workspace_id\":\"ws_example\"}],\"workspace_catalog\":[{\"object_name\":\"frozen15_artifact_upgrade_fixture\",\"workspace_id\":\"ws_example\"}],\"workspace_policies\":[{\"allowed_user_overrides\":[\"theme\",\"density\",\"default_view\"],\"execution_policy\":{\"agent_wip_limit\":2,\"artifact_upload_ttl_seconds\":900,\"eligibility_rules\":[{\"eligible_agent_ids\":[\"agent_research\",\"agent_other\"],\"project_id\":null,\"work_role_id\":null},{\"eligible_agent_ids\":[\"agent_research\",\"agent_other\"],\"project_id\":\"project_a\",\"work_role_id\":\"role_a\"}],\"policy_version\":1,\"replay_safety_rules\":[],\"task_retry_limit\":2},\"notification_destinations\":[{\"agent_id\":\"agent_research\",\"destination_id\":\"research\",\"enabled\":true,\"signing_key_ref\":\"NOTIFICATION_SIGNING_KEY\",\"url\":\"https://receiver.example.invalid/cfhub\"}],\"retry_after_max_seconds\":3600,\"workspace_id\":\"ws_example\"}]}",
+          "bundle_json": "{\"auth\":{\"algorithm\":\"HMAC-SHA256\",\"key_id\":\"synthetic_key\",\"tag\":\"0000000000000000000000000000000000000000000000000000000000000000\"},\"config_digest\":\"40336b1223a949b15535f2a7cc10160e2ecece3bedd6d6d30e9ef265505b3d85\",\"config_epoch\":1,\"contract_revision\":\"0.1\",\"credentials\":[{\"credential_id\":\"credential_research_1\",\"token_sha256\":\"1111111111111111111111111111111111111111111111111111111111111111\",\"workspace_id\":\"ws_example\"},{\"credential_id\":\"credential_research_2\",\"token_sha256\":\"2222222222222222222222222222222222222222222222222222222222222222\",\"workspace_id\":\"ws_example\"},{\"credential_id\":\"credential_other\",\"token_sha256\":\"3333333333333333333333333333333333333333333333333333333333333333\",\"workspace_id\":\"ws_example\"}],\"retired_credentials\":[]}",
+          "installed_at": 1793125488404,
+          "admission_state": "maintenance",
+          "message_retained_after_created_at": null,
+          "message_retained_after_id": null,
+          "event_retained_after_sequence": null
+        }
+      ],
+      "human_grants": [
+        {
+          "principal_id": "human_operator",
+          "workspace_id": "ws_example",
+          "issuer": "https://identity.example.invalid",
+          "subject": "synthetic-subject",
+          "scopes_json": "[\"workspace:read\",\"messages:send\",\"messages:read\",\"messages:review\",\"events:read\",\"profile:edit\",\"operations:read\",\"tasks:read\",\"tasks:create\",\"tasks:edit\",\"tasks:schedule\",\"tasks:cancel\",\"artifacts:read\",\"artifacts:write\"]",
+          "project_ids_json": "null",
+          "enabled": 1,
+          "config_epoch": 1
+        }
+      ],
+      "static_agents": [
+        {
+          "agent_id": "agent_research",
+          "workspace_id": "ws_example",
+          "display_name": "Research participant",
+          "config_epoch": 1,
+          "origin": "operator_static",
+          "agent_version": 1,
+          "description": "",
+          "work_role_ids_json": "[]",
+          "framework": null,
+          "model": null,
+          "status": "active",
+          "created_at": 1793125488404,
+          "updated_at": 1793125488404
+        },
+        {
+          "agent_id": "agent_other",
+          "workspace_id": "ws_example",
+          "display_name": "Other synthetic agent",
+          "config_epoch": 1,
+          "origin": "operator_static",
+          "agent_version": 1,
+          "description": "",
+          "work_role_ids_json": "[]",
+          "framework": null,
+          "model": null,
+          "status": "active",
+          "created_at": 1793125488404,
+          "updated_at": 1793125488404
+        }
+      ],
+      "native_credentials": [
+        {
+          "credential_id": "credential_research_1",
+          "workspace_id": "ws_example",
+          "agent_id": "agent_research",
+          "token_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+          "scopes_json": "[\"workspace:read\",\"events:read\",\"tasks:read\",\"tasks:claim\",\"tasks:execute\",\"runtimes:manage\",\"artifacts:read\",\"artifacts:write\"]",
+          "project_ids_json": "null",
+          "expires_at": 1795717488368,
+          "enabled": 1,
+          "config_epoch": 1,
+          "retired_at_epoch": null,
+          "origin": "operator_static",
+          "credential_version": 1,
+          "label": "",
+          "created_at": 1793125488404,
+          "revoked_at": null,
+          "issued_by_principal_id": null
+        },
+        {
+          "credential_id": "credential_research_2",
+          "workspace_id": "ws_example",
+          "agent_id": "agent_research",
+          "token_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+          "scopes_json": "[\"workspace:read\",\"events:read\",\"tasks:read\",\"tasks:claim\",\"tasks:execute\",\"runtimes:manage\",\"artifacts:read\",\"artifacts:write\"]",
+          "project_ids_json": "null",
+          "expires_at": 1795717488368,
+          "enabled": 1,
+          "config_epoch": 1,
+          "retired_at_epoch": null,
+          "origin": "operator_static",
+          "credential_version": 1,
+          "label": "",
+          "created_at": 1793125488404,
+          "revoked_at": null,
+          "issued_by_principal_id": null
+        },
+        {
+          "credential_id": "credential_other",
+          "workspace_id": "ws_example",
+          "agent_id": "agent_other",
+          "token_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+          "scopes_json": "[\"workspace:read\",\"events:read\",\"tasks:read\",\"tasks:claim\",\"tasks:execute\",\"runtimes:manage\",\"artifacts:read\",\"artifacts:write\"]",
+          "project_ids_json": "null",
+          "expires_at": 1795717488368,
+          "enabled": 1,
+          "config_epoch": 1,
+          "retired_at_epoch": null,
+          "origin": "operator_static",
+          "credential_version": 1,
+          "label": "",
+          "created_at": 1793125488404,
+          "revoked_at": null,
+          "issued_by_principal_id": null
+        }
+      ],
+      "login_attempts": [],
+      "sessions": [
+        {
+          "id": "session_settings",
+          "workspace_id": "ws_example",
+          "principal_id": "human_operator",
+          "token_digest": "digest_session_settings",
+          "csrf_digest": "csrf_session_settings",
+          "issuer": "https://identity.example.invalid",
+          "subject": "synthetic-subject",
+          "created_at": 1793125488410,
+          "expires_at": 1793126488410,
+          "revoked_at": null,
+          "auth_epoch": 1
+        }
+      ],
+      "profiles": [],
+      "preferences": [],
+      "threads": [],
+      "thread_participants": [],
+      "messages": [],
+      "inbox": [],
+      "events": [
+        {
+          "sequence": 1,
+          "id": "configuration_1",
+          "workspace_id": "ws_example",
+          "type": "configuration.installed",
+          "actor_json": "{\"agent_id\":null,\"kind\":\"system\",\"principal_id\":\"synthetic_operator\"}",
+          "resource_type": "configuration",
+          "resource_id": "ws_example",
+          "resource_version": 1,
+          "thread_id": null,
+          "request_id": "req_fixture",
+          "occurred_at": 1793125488404,
+          "summary": "Workspace configuration installed.",
+          "task_version": null,
+          "run_id": null,
+          "fence": null
+        },
+        {
+          "sequence": 2,
+          "id": "event_fa62442de799898a99d72af6145c9dcee845b53810ac68c3",
+          "workspace_id": "ws_example",
+          "type": "artifact.staged",
+          "actor_json": "{\"agent_id\":\"agent_research\",\"kind\":\"agent\",\"principal_id\":\"agent_research\"}",
+          "resource_type": "artifact",
+          "resource_id": "artifact_frozen15",
+          "resource_version": null,
+          "thread_id": null,
+          "request_id": "artifact_upload_artifact_frozen15",
+          "occurred_at": 1793125488417,
+          "summary": "Artifact staged.",
+          "task_version": null,
+          "run_id": null,
+          "fence": null
+        },
+        {
+          "sequence": 3,
+          "id": "event_8b24c414b0edf1f87bdf10612bee37acd76abe7bd3e415b3",
+          "workspace_id": "ws_example",
+          "type": "artifact.uploaded",
+          "actor_json": "{\"agent_id\":\"agent_research\",\"kind\":\"agent\",\"principal_id\":\"agent_research\"}",
+          "resource_type": "artifact",
+          "resource_id": "artifact_frozen15",
+          "resource_version": null,
+          "thread_id": null,
+          "request_id": "artifact_upload_artifact_frozen15",
+          "occurred_at": 1793125488417,
+          "summary": "Artifact uploaded.",
+          "task_version": null,
+          "run_id": null,
+          "fence": null
+        },
+        {
+          "sequence": 4,
+          "id": "event_9f627ac053ed187f5fc6f7f2410774ced4acac20a42dbd8f",
+          "workspace_id": "ws_example",
+          "type": "artifact.committed",
+          "actor_json": "{\"agent_id\":\"agent_research\",\"kind\":\"agent\",\"principal_id\":\"agent_research\"}",
+          "resource_type": "artifact",
+          "resource_id": "artifact_frozen15",
+          "resource_version": null,
+          "thread_id": null,
+          "request_id": "artifact_upload_artifact_frozen15",
+          "occurred_at": 1793125488417,
+          "summary": "Artifact committed.",
+          "task_version": null,
+          "run_id": null,
+          "fence": null
+        }
+      ],
+      "idempotency_outcomes": [
+        {
+          "principal_id": "agent_research",
+          "operation": "domain.artifacts:write",
+          "target": "artifacts:stage",
+          "key": "stage_artifact_frozen15",
+          "workspace_id": "ws_example",
+          "fingerprint": "a5c808a62a0ae87a86c20542523692076cd5347e1b441f8f2e3be1edbf9a339c",
+          "status": 201,
+          "outcome_json": "{\"artifact_version\":1,\"byte_size\":55,\"committed_at\":null,\"created_at\":\"2026-10-27T18:24:48.417Z\",\"expires_at\":\"2026-10-27T18:39:48.417Z\",\"filename\":\"evidence.txt\",\"id\":\"artifact_frozen15\",\"media_type\":\"text/plain\",\"owner\":{\"agent_id\":\"agent_research\",\"kind\":\"agent\",\"principal_id\":\"agent_research\"},\"run_id\":null,\"sha256\":\"3c20cdfb3b836f9562e2f6324609db051904cfcf820e020016693b5a6a267993\",\"status\":\"staged\",\"task_id\":null,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "artifact_upload_artifact_frozen15",
+          "event_id": "event_fa62442de799898a99d72af6145c9dcee845b53810ac68c3",
+          "created_at": 1793125488417,
+          "expires_at": 1793211888417
+        },
+        {
+          "principal_id": "agent_research",
+          "operation": "domain.artifacts:write",
+          "target": "artifacts:artifact_frozen15:upload",
+          "key": "upload_artifact_frozen15",
+          "workspace_id": "ws_example",
+          "fingerprint": "1183804ed3541c3bd9cd124daee8ced77922d55ddc4901fcfa92499db5dbb150",
+          "status": 200,
+          "outcome_json": "{\"artifact_version\":2,\"byte_size\":55,\"committed_at\":null,\"created_at\":\"2026-10-27T18:24:48.417Z\",\"expires_at\":\"2026-10-27T18:39:48.417Z\",\"filename\":\"evidence.txt\",\"id\":\"artifact_frozen15\",\"media_type\":\"text/plain\",\"owner\":{\"agent_id\":\"agent_research\",\"kind\":\"agent\",\"principal_id\":\"agent_research\"},\"run_id\":null,\"sha256\":\"3c20cdfb3b836f9562e2f6324609db051904cfcf820e020016693b5a6a267993\",\"status\":\"uploaded\",\"task_id\":null,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "artifact_upload_artifact_frozen15",
+          "event_id": "event_8b24c414b0edf1f87bdf10612bee37acd76abe7bd3e415b3",
+          "created_at": 1793125488417,
+          "expires_at": 1793211888417
+        },
+        {
+          "principal_id": "agent_research",
+          "operation": "domain.artifacts:write",
+          "target": "artifacts:artifact_frozen15:commit",
+          "key": "commit_artifact_frozen15",
+          "workspace_id": "ws_example",
+          "fingerprint": "408fe8fc3b52768a553915dc687abb9ba755f42f138d7f469c2d4d92011681f4",
+          "status": 200,
+          "outcome_json": "{\"artifact_version\":3,\"byte_size\":55,\"committed_at\":\"2026-10-27T18:24:48.417Z\",\"created_at\":\"2026-10-27T18:24:48.417Z\",\"expires_at\":null,\"filename\":\"evidence.txt\",\"id\":\"artifact_frozen15\",\"media_type\":\"text/plain\",\"owner\":{\"agent_id\":\"agent_research\",\"kind\":\"agent\",\"principal_id\":\"agent_research\"},\"run_id\":null,\"sha256\":\"3c20cdfb3b836f9562e2f6324609db051904cfcf820e020016693b5a6a267993\",\"status\":\"committed\",\"task_id\":null,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "artifact_upload_artifact_frozen15",
+          "event_id": "event_9f627ac053ed187f5fc6f7f2410774ced4acac20a42dbd8f",
+          "created_at": 1793125488417,
+          "expires_at": 1793211888417
+        },
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15_artifact",
+          "key": "prepare_0",
+          "workspace_id": "ws_example",
+          "fingerprint": "d731be7a1ceff02a83207a7f9b70f55dbb9d31684ac5fbdda87d8da19c590e53",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15_artifact\",\"counts\":{\"bytes\":0,\"chunks\":0,\"rows\":0},\"job_id\":\"job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"capture_drain\",\"receipt\":null,\"state\":\"running\",\"step\":0,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_557bfb2b-428a-48d1-871b-54d7c6ce2fe9",
+          "event_id": null,
+          "created_at": 1793125488457,
+          "expires_at": 9007199254740991
+        },
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15_artifact",
+          "key": "prepare_1",
+          "workspace_id": "ws_example",
+          "fingerprint": "adc8ec2633afad30c5a7beafb780029d0c0ec69b5e7d685776333eafd56a25df",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15_artifact\",\"counts\":{\"bytes\":0,\"chunks\":0,\"rows\":0},\"job_id\":\"job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"capture_pages\",\"receipt\":null,\"state\":\"running\",\"step\":1,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_c579e0ae-97a8-4f00-a820-afbf8f3de38a",
+          "event_id": null,
+          "created_at": 1793125488469,
+          "expires_at": 9007199254740991
+        },
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15_artifact",
+          "key": "prepare_2",
+          "workspace_id": "ws_example",
+          "fingerprint": "d96c6e798cc204f1ac21aa5fe4606a45c1c636eb9a65ef52ec619c32fbf0d7b3",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15_artifact\",\"counts\":{\"bytes\":439,\"chunks\":1,\"rows\":15},\"job_id\":\"job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"capture_pages\",\"receipt\":null,\"state\":\"running\",\"step\":2,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_9ad699f4-868e-4853-8996-ffac7c3ce292",
+          "event_id": null,
+          "created_at": 1793125488485,
+          "expires_at": 9007199254740991
+        },
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15_artifact",
+          "key": "prepare_3",
+          "workspace_id": "ws_example",
+          "fingerprint": "62a07782805cb0f8bfa9d381dc6514a8d84110caf6614ef2976b3bc3ffee3f5f",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15_artifact\",\"counts\":{\"bytes\":439,\"chunks\":1,\"rows\":15},\"job_id\":\"job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"capture_pages\",\"receipt\":null,\"state\":\"running\",\"step\":3,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_23edcfcd-2f1f-4f46-ba5a-6d56455f2739",
+          "event_id": null,
+          "created_at": 1793125488489,
+          "expires_at": 9007199254740991
+        },
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15_artifact",
+          "key": "prepare_4",
+          "workspace_id": "ws_example",
+          "fingerprint": "0fa69902408686d0ae196a0be0b1e5df8e3d6b47523cd4d757849f27f5a7a85a",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15_artifact\",\"counts\":{\"bytes\":5275,\"chunks\":2,\"rows\":16},\"job_id\":\"job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"capture_pages\",\"receipt\":null,\"state\":\"running\",\"step\":4,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_2db16d1f-cd61-4da3-af2e-085b5ab81ed6",
+          "event_id": null,
+          "created_at": 1793125488501,
+          "expires_at": 9007199254740991
+        },
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15_artifact",
+          "key": "prepare_5",
+          "workspace_id": "ws_example",
+          "fingerprint": "0b4c350599dcfc0feb1c6bf0f22604c75baa3c43a933d78b546598abdb6002e4",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15_artifact\",\"counts\":{\"bytes\":5275,\"chunks\":2,\"rows\":16},\"job_id\":\"job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"capture_pages\",\"receipt\":null,\"state\":\"running\",\"step\":5,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_0404970b-ca19-49d7-9331-8ec5db318cca",
+          "event_id": null,
+          "created_at": 1793125488504,
+          "expires_at": 9007199254740991
+        },
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15_artifact",
+          "key": "prepare_6",
+          "workspace_id": "ws_example",
+          "fingerprint": "20d81efc98593342adcdb52eb6518c4c4fc95729079bdaa341d7ec9c08e9b267",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15_artifact\",\"counts\":{\"bytes\":5869,\"chunks\":3,\"rows\":17},\"job_id\":\"job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"capture_pages\",\"receipt\":null,\"state\":\"running\",\"step\":6,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_5e4cc92b-0c0b-40f0-8d29-dc832dd605d8",
+          "event_id": null,
+          "created_at": 1793125488514,
+          "expires_at": 9007199254740991
+        },
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15_artifact",
+          "key": "prepare_7",
+          "workspace_id": "ws_example",
+          "fingerprint": "2657d4910988a5b7c9feacb13d1f82cc61d135c37f9f6bfacfb5f15d29fe3861",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15_artifact\",\"counts\":{\"bytes\":5869,\"chunks\":3,\"rows\":17},\"job_id\":\"job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"capture_pages\",\"receipt\":null,\"state\":\"running\",\"step\":7,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_e63ef90a-ec77-4e8d-9076-4bc2f06e4b53",
+          "event_id": null,
+          "created_at": 1793125488517,
+          "expires_at": 9007199254740991
+        },
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15_artifact",
+          "key": "prepare_8",
+          "workspace_id": "ws_example",
+          "fingerprint": "26e2e78caf5d4ac8fedfbf6bc646de6a5646199b9785b5464da3d2f5529d0df5",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15_artifact\",\"counts\":{\"bytes\":6438,\"chunks\":4,\"rows\":19},\"job_id\":\"job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"capture_pages\",\"receipt\":null,\"state\":\"running\",\"step\":8,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_9a028f54-4f4c-466d-9403-ae31e9fdd77e",
+          "event_id": null,
+          "created_at": 1793125488527,
+          "expires_at": 9007199254740991
+        },
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15_artifact",
+          "key": "prepare_9",
+          "workspace_id": "ws_example",
+          "fingerprint": "d1c25c43761dc9b84af456242f54801bbe7f364f39951f9d5a5bdace1a0ed2bf",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15_artifact\",\"counts\":{\"bytes\":6438,\"chunks\":4,\"rows\":19},\"job_id\":\"job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"capture_pages\",\"receipt\":null,\"state\":\"running\",\"step\":9,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_4d4285d0-4f99-4603-acaa-11d46da47858",
+          "event_id": null,
+          "created_at": 1793125488531,
+          "expires_at": 9007199254740991
+        },
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15_artifact",
+          "key": "prepare_10",
+          "workspace_id": "ws_example",
+          "fingerprint": "32435439fa6ddccfd182577cfa4ae5caaa5932f865b6b0753a872029b18c3194",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15_artifact\",\"counts\":{\"bytes\":7848,\"chunks\":5,\"rows\":22},\"job_id\":\"job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"capture_pages\",\"receipt\":null,\"state\":\"running\",\"step\":10,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_89fcd5d9-cf5a-42be-a520-81d6ca15d5f6",
+          "event_id": null,
+          "created_at": 1793125488542,
+          "expires_at": 9007199254740991
+        },
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15_artifact",
+          "key": "prepare_11",
+          "workspace_id": "ws_example",
+          "fingerprint": "f58323ebc9aafe9490de9227b8b600d1e80cc2324778e914e8e01bce5f55049d",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15_artifact\",\"counts\":{\"bytes\":7848,\"chunks\":5,\"rows\":22},\"job_id\":\"job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"capture_pages\",\"receipt\":null,\"state\":\"running\",\"step\":11,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_c559033e-ba92-4c47-aa20-42d10d41edb5",
+          "event_id": null,
+          "created_at": 1793125488547,
+          "expires_at": 9007199254740991
+        },
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15_artifact",
+          "key": "prepare_12",
+          "workspace_id": "ws_example",
+          "fingerprint": "cb1b7ccd8a7e6a336134aae9d840483365364f2a331d6227421bd286470118a4",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15_artifact\",\"counts\":{\"bytes\":8305,\"chunks\":6,\"rows\":23},\"job_id\":\"job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"capture_pages\",\"receipt\":null,\"state\":\"running\",\"step\":12,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_ac3b4291-b64b-4f94-b3cb-397782bfde21",
+          "event_id": null,
+          "created_at": 1793125488558,
+          "expires_at": 9007199254740991
+        },
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15_artifact",
+          "key": "prepare_13",
+          "workspace_id": "ws_example",
+          "fingerprint": "b0302fdc0c86b5e49d15bec6e806508c40f434a911ac9b6dddc241319bb55a0c",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15_artifact\",\"counts\":{\"bytes\":8305,\"chunks\":6,\"rows\":23},\"job_id\":\"job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"capture_pages\",\"receipt\":null,\"state\":\"running\",\"step\":13,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_60eff75d-4a95-45d4-a918-1321c2af9dab",
+          "event_id": null,
+          "created_at": 1793125488562,
+          "expires_at": 9007199254740991
+        },
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15_artifact",
+          "key": "prepare_14",
+          "workspace_id": "ws_example",
+          "fingerprint": "b630a09420b675895aa1fe4ac4937ba536fd965d2dbb832c03637b51a753f536",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15_artifact\",\"counts\":{\"bytes\":9808,\"chunks\":7,\"rows\":27},\"job_id\":\"job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"capture_pages\",\"receipt\":null,\"state\":\"running\",\"step\":14,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_affb30a9-6cf1-4420-8b56-ad787f520ca9",
+          "event_id": null,
+          "created_at": 1793125488572,
+          "expires_at": 9007199254740991
+        },
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15_artifact",
+          "key": "prepare_15",
+          "workspace_id": "ws_example",
+          "fingerprint": "70960ccebb37bbd72cb6388be1a09f3c662f418bd73374fe3b1dd61caf6e3127",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15_artifact\",\"counts\":{\"bytes\":9808,\"chunks\":7,\"rows\":27},\"job_id\":\"job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"capture_pages\",\"receipt\":null,\"state\":\"running\",\"step\":15,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_5fd95de0-a8af-4dee-89d2-e76bed51ff64",
+          "event_id": null,
+          "created_at": 1793125488575,
+          "expires_at": 9007199254740991
+        },
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15_artifact",
+          "key": "prepare_16",
+          "workspace_id": "ws_example",
+          "fingerprint": "df6f49629380e7d4fc9b030f9fb79f1ee97a2f1f74798cbce0472453758718b0",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15_artifact\",\"counts\":{\"bytes\":12556,\"chunks\":8,\"rows\":30},\"job_id\":\"job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"capture_pages\",\"receipt\":null,\"state\":\"running\",\"step\":16,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_b52edd47-4413-4cf3-b65c-a8a4d329241f",
+          "event_id": null,
+          "created_at": 1793125488585,
+          "expires_at": 9007199254740991
+        },
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15_artifact",
+          "key": "prepare_17",
+          "workspace_id": "ws_example",
+          "fingerprint": "5d90497e1f992382b3233328d4aa8559fcd87e8c4c1d58e8b232f8102e3659fa",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15_artifact\",\"counts\":{\"bytes\":12556,\"chunks\":8,\"rows\":30},\"job_id\":\"job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"capture_pages\",\"receipt\":null,\"state\":\"running\",\"step\":17,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_59eb467d-83b1-48c7-9714-b1e5157d7bb4",
+          "event_id": null,
+          "created_at": 1793125488589,
+          "expires_at": 9007199254740991
+        },
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15_artifact",
+          "key": "prepare_18",
+          "workspace_id": "ws_example",
+          "fingerprint": "a90f7f441b89d208b368b442a6dff5cb58426b06470df2d09cfc1261b0a5129e",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15_artifact\",\"counts\":{\"bytes\":12805,\"chunks\":9,\"rows\":31},\"job_id\":\"job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"capture_pages\",\"receipt\":null,\"state\":\"running\",\"step\":18,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_e038373a-2c57-4fa0-84df-804e50ef3421",
+          "event_id": null,
+          "created_at": 1793125488599,
+          "expires_at": 9007199254740991
+        },
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15_artifact",
+          "key": "prepare_19",
+          "workspace_id": "ws_example",
+          "fingerprint": "c2149e48a08d64de654d942d2a3b4ccbbdaf65e2ba229e8790608e07cfac3c63",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15_artifact\",\"counts\":{\"bytes\":12805,\"chunks\":9,\"rows\":31},\"job_id\":\"job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"capture_pages\",\"receipt\":null,\"state\":\"running\",\"step\":19,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_fae15df0-4e9d-4234-bee6-b712fa097e2a",
+          "event_id": null,
+          "created_at": 1793125488603,
+          "expires_at": 9007199254740991
+        },
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15_artifact",
+          "key": "prepare_20",
+          "workspace_id": "ws_example",
+          "fingerprint": "d78a5a7782c1f32d16f299a85cd1b594d0a00f787a24d3c111ddbf569e03afa8",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15_artifact\",\"counts\":{\"bytes\":13133,\"chunks\":10,\"rows\":32},\"job_id\":\"job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"capture_pages\",\"receipt\":null,\"state\":\"running\",\"step\":20,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_1eecd732-3e84-4eb0-9f4a-fb0d3e9aaa64",
+          "event_id": null,
+          "created_at": 1793125488618,
+          "expires_at": 9007199254740991
+        },
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15_artifact",
+          "key": "prepare_21",
+          "workspace_id": "ws_example",
+          "fingerprint": "6efe3201ffcd927e009c3dbb9fdd46a4815e3bb65ed34ebdc384c00964dd9fe4",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15_artifact\",\"counts\":{\"bytes\":13133,\"chunks\":10,\"rows\":32},\"job_id\":\"job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"capture_pages\",\"receipt\":null,\"state\":\"running\",\"step\":21,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_51f2dcb4-f7a3-4b2d-9834-2b0bf58def52",
+          "event_id": null,
+          "created_at": 1793125488622,
+          "expires_at": 9007199254740991
+        },
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15_artifact",
+          "key": "prepare_22",
+          "workspace_id": "ws_example",
+          "fingerprint": "486b2dc56ba9e0aca70d5f654dd43479a38f290a54e43924e5350908cd6c8060",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15_artifact\",\"counts\":{\"bytes\":14305,\"chunks\":11,\"rows\":36},\"job_id\":\"job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"capture_pages\",\"receipt\":null,\"state\":\"running\",\"step\":22,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_bacbe667-4619-4455-8e72-4a14377b6e90",
+          "event_id": null,
+          "created_at": 1793125488631,
+          "expires_at": 9007199254740991
+        },
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15_artifact",
+          "key": "prepare_23",
+          "workspace_id": "ws_example",
+          "fingerprint": "d0317dbf105d1f0a06089b4ab6943edd2c71edd0071a2dad3ea5bae739b45130",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15_artifact\",\"counts\":{\"bytes\":14305,\"chunks\":11,\"rows\":36},\"job_id\":\"job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"capture_pages\",\"receipt\":null,\"state\":\"running\",\"step\":23,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_3c640c82-6704-4a4f-b95a-ff27fcc77a39",
+          "event_id": null,
+          "created_at": 1793125488635,
+          "expires_at": 9007199254740991
+        },
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15_artifact",
+          "key": "prepare_24",
+          "workspace_id": "ws_example",
+          "fingerprint": "dbbd366138e5ba262beaf022f9c81cfa7f00e6a541e6b91147e213322aeca887",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15_artifact\",\"counts\":{\"bytes\":15011,\"chunks\":12,\"rows\":38},\"job_id\":\"job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"capture_pages\",\"receipt\":null,\"state\":\"running\",\"step\":24,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_1d406c52-f094-4470-9376-a960fcf590ef",
+          "event_id": null,
+          "created_at": 1793125488645,
+          "expires_at": 9007199254740991
+        },
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15_artifact",
+          "key": "prepare_25",
+          "workspace_id": "ws_example",
+          "fingerprint": "c0f18f171697c764c3efe707a7e408fe0cbffeebf0a2f146af22edba7df4cb4b",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15_artifact\",\"counts\":{\"bytes\":15011,\"chunks\":12,\"rows\":38},\"job_id\":\"job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"capture_pages\",\"receipt\":null,\"state\":\"running\",\"step\":25,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_ac39b44e-1923-486d-95c5-1165de3fa740",
+          "event_id": null,
+          "created_at": 1793125488649,
+          "expires_at": 9007199254740991
+        },
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15_artifact",
+          "key": "prepare_26",
+          "workspace_id": "ws_example",
+          "fingerprint": "a8be3beac92d6e276ebe54526acd87dbdda8092803bc1a249356cbacfc925ace",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15_artifact\",\"counts\":{\"bytes\":15902,\"chunks\":13,\"rows\":39},\"job_id\":\"job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"capture_pages\",\"receipt\":null,\"state\":\"running\",\"step\":26,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_cd7497d3-4764-4b82-9bd1-f7627caf35d8",
+          "event_id": null,
+          "created_at": 1793125488659,
+          "expires_at": 9007199254740991
+        },
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15_artifact",
+          "key": "prepare_27",
+          "workspace_id": "ws_example",
+          "fingerprint": "c581ff8b6023e22b2fa18498e18a2b41dcf44a94af794e6b4637e7f0e60372ee",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15_artifact\",\"counts\":{\"bytes\":15902,\"chunks\":13,\"rows\":39},\"job_id\":\"job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"capture_pages\",\"receipt\":null,\"state\":\"running\",\"step\":27,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_0cd86665-068e-4c65-8da5-8a8e078224d3",
+          "event_id": null,
+          "created_at": 1793125488662,
+          "expires_at": 9007199254740991
+        },
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15_artifact",
+          "key": "prepare_28",
+          "workspace_id": "ws_example",
+          "fingerprint": "c0b3fce255a973d332fe1f4cb2199e7a9fac2a2ea01058662bd3fe41f59236ba",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15_artifact\",\"counts\":{\"bytes\":17151,\"chunks\":14,\"rows\":40},\"job_id\":\"job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"capture_pages\",\"receipt\":null,\"state\":\"running\",\"step\":28,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_2fe4679a-bb20-4d36-8bbc-4a4d727fd2b1",
+          "event_id": null,
+          "created_at": 1793125488672,
+          "expires_at": 9007199254740991
+        },
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15_artifact",
+          "key": "prepare_29",
+          "workspace_id": "ws_example",
+          "fingerprint": "bc3f7b058c999eeb669ffdeb16561e2192718fac5a31a7c5b51f8433c05b9faa",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15_artifact\",\"counts\":{\"bytes\":17151,\"chunks\":14,\"rows\":40},\"job_id\":\"job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"capture_pages\",\"receipt\":null,\"state\":\"running\",\"step\":29,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_1f22348d-82fa-41e6-a5bd-0b1481b1b5e2",
+          "event_id": null,
+          "created_at": 1793125488676,
+          "expires_at": 9007199254740991
+        },
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15_artifact",
+          "key": "prepare_30",
+          "workspace_id": "ws_example",
+          "fingerprint": "62715df384bc8b2d94fffe4387b37598554684c8779c981b00a1a006bcebc189",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15_artifact\",\"counts\":{\"bytes\":17481,\"chunks\":15,\"rows\":41},\"job_id\":\"job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"capture_pages\",\"receipt\":null,\"state\":\"running\",\"step\":30,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_f1db60f4-88a1-4491-bb12-0d1ecd6e3448",
+          "event_id": null,
+          "created_at": 1793125488686,
+          "expires_at": 9007199254740991
+        },
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15_artifact",
+          "key": "prepare_31",
+          "workspace_id": "ws_example",
+          "fingerprint": "4466afb4cde43b84713f915743ed7eee8b6c0ab4bdfb3f44293a6b4fe1538e7b",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15_artifact\",\"counts\":{\"bytes\":17481,\"chunks\":15,\"rows\":41},\"job_id\":\"job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"capture_pages\",\"receipt\":null,\"state\":\"running\",\"step\":31,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_d4347877-8212-4bdb-a6fa-7aca3ae20450",
+          "event_id": null,
+          "created_at": 1793125488690,
+          "expires_at": 9007199254740991
+        },
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15_artifact",
+          "key": "prepare_32",
+          "workspace_id": "ws_example",
+          "fingerprint": "bf48c5301cce46e3ac84dae6133b53388d07f6309940c5a428e2b91fec16950a",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15_artifact\",\"counts\":{\"bytes\":17481,\"chunks\":15,\"rows\":41},\"job_id\":\"job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"hash_chunks\",\"receipt\":null,\"state\":\"running\",\"step\":32,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_1959ddf6-c779-4c2b-88dd-1f31b783809b",
+          "event_id": null,
+          "created_at": 1793125488693,
+          "expires_at": 9007199254740991
+        },
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15_artifact",
+          "key": "prepare_33",
+          "workspace_id": "ws_example",
+          "fingerprint": "823bf794d224b40fcb9ed8fa24265c6e7fd07f2bcfba1519601640478cb43fd6",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15_artifact\",\"counts\":{\"bytes\":17481,\"chunks\":15,\"rows\":41},\"job_id\":\"job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"capture_artifacts\",\"receipt\":null,\"state\":\"running\",\"step\":33,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_fc3d63ea-4f73-4867-b75a-6857f018afdf",
+          "event_id": null,
+          "created_at": 1793125488734,
+          "expires_at": 9007199254740991
+        }
+      ],
+      "outbox": [],
+      "scheduler_state": [
+        {
+          "id": 1,
+          "next_due_at": null,
+          "armed_at": null,
+          "last_run_at": null,
+          "dirty": 1,
+          "generation": 1,
+          "last_error_code": null
+        }
+      ],
+      "maintenance_state": [
+        {
+          "id": 1,
+          "state": "capturing",
+          "barrier_id": "barrier_c8e90f20b4aa4e114621a1eda0a272b8",
+          "authority_epoch": 1,
+          "capture_id": "capture_frozen15_artifact",
+          "updated_at": 1793125488451,
+          "generation": 1
+        }
+      ],
+      "recovery_jobs": [
+        {
+          "id": "job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b",
+          "workspace_id": "ws_example",
+          "operation": "capture",
+          "state": "running",
+          "authority_epoch": 1,
+          "capture_id": "capture_frozen15_artifact",
+          "manifest_digest": null,
+          "created_at": 1793125488451,
+          "updated_at": 1793125488734,
+          "details_json": "{\"artifactBytes\":0,\"artifactIndex\":0,\"barrierId\":\"barrier_c8e90f20b4aa4e114621a1eda0a272b8\",\"budget\":{\"max_artifacts\":1000,\"max_rows\":1000000,\"max_total_bytes\":268435456},\"checkpoint\":{\"authority_epoch\":1,\"barrier_id\":\"barrier_c8e90f20b4aa4e114621a1eda0a272b8\",\"contract_revision\":\"0.2\",\"event_sequence\":4,\"schema_version\":15},\"counts\":{\"bytes\":17481,\"chunks\":15,\"rows\":41},\"cursor\":null,\"diagnostic\":null,\"draft\":{\"artifacts\":[{\"artifact_id\":\"artifact_frozen15\",\"artifact_version\":3,\"byte_size\":55,\"generation_id\":\"generation_173c7ec5848e6429da1f3fd73266a72c8deccf8c93a21593\",\"object_key\":\"artifacts/ws_example/artifact_frozen15/generation_173c7ec5848e6429da1f3fd73266a72c8deccf8c93a21593/3c20cdfb3b836f9562e2f6324609db051904cfcf820e020016693b5a6a267993\",\"recovery_object_key\":\"r2/ws_example/capture_frozen15_artifact/artifacts/artifact_frozen15/generation_173c7ec5848e6429da1f3fd73266a72c8deccf8c93a21593/3c20cdfb3b836f9562e2f6324609db051904cfcf820e020016693b5a6a267993\",\"sha256\":\"3c20cdfb3b836f9562e2f6324609db051904cfcf820e020016693b5a6a267993\"}],\"auth\":{\"algorithm\":\"HMAC-SHA256\",\"key_id\":\"recovery_fixture\",\"tag\":\"0000000000000000000000000000000000000000000000000000000000000000\"},\"capture_id\":\"capture_frozen15_artifact\",\"checkpoint\":{\"authority_epoch\":1,\"barrier_id\":\"barrier_c8e90f20b4aa4e114621a1eda0a272b8\",\"contract_revision\":\"0.2\",\"event_sequence\":4,\"schema_version\":15},\"database\":{\"byte_size\":17481,\"chunks\":[{\"byte_size\":439,\"index\":0,\"row_count\":15,\"sha256\":\"db2fb816447760fc886e21a1149cf5461c00c490676866e20e922ed5fb5e4e74\",\"table\":\"schema_migrations\"},{\"byte_size\":4836,\"index\":1,\"row_count\":1,\"sha256\":\"66929a01377b6011829978571c9cfaabf60dc9f06944072ed771f4ade8f51ba9\",\"table\":\"workspace_metadata\"},{\"byte_size\":594,\"index\":2,\"row_count\":1,\"sha256\":\"1788bae3b3caebcc9b321c239a809dee7a38a23f87695b6235167b383a949e6c\",\"table\":\"human_grants\"},{\"byte_size\":569,\"index\":3,\"row_count\":2,\"sha256\":\"af6b910394dc672ab39b19bdb61f37ac987b0de601d21aab1ceaf56796a1a565\",\"table\":\"static_agents\"},{\"byte_size\":1410,\"index\":4,\"row_count\":3,\"sha256\":\"23fbf717d70a64c87a820b53d7016b07a43e2e0cf74cd217f646058877ea7482\",\"table\":\"native_credentials\"},{\"byte_size\":457,\"index\":5,\"row_count\":1,\"sha256\":\"e9a1287eaebc4d91e2f841a5e85acea6d4b5251f9b97a9f7fe0c10d5627fbc09\",\"table\":\"sessions\"},{\"byte_size\":1503,\"index\":6,\"row_count\":4,\"sha256\":\"57e298395ab1ba1ae17886af1f2717abef9764108554668da16bb6d5f68ca5e3\",\"table\":\"events\"},{\"byte_size\":2748,\"index\":7,\"row_count\":3,\"sha256\":\"74396882073a24875102e9c679d4358ee0e5cfd928354e6402bda4fa717e9941\",\"table\":\"idempotency_outcomes\"},{\"byte_size\":249,\"index\":8,\"row_count\":1,\"sha256\":\"a0078b7aa18259944031c76d02aa07585adf60a78664c89a5a278ad2028b15d2\",\"table\":\"scheduler_state\"},{\"byte_size\":328,\"index\":9,\"row_count\":1,\"sha256\":\"5c0057b44ee652f6eff2a09a828f98f713b714a6145eb800b4f4782ff0f1ccce\",\"table\":\"maintenance_state\"},{\"byte_size\":1172,\"index\":10,\"row_count\":4,\"sha256\":\"ff41466630ee741c1d67f18ad8386b8aa962f0e69d4423c47ab5297056eb41c8\",\"table\":\"runtimes\"},{\"byte_size\":706,\"index\":11,\"row_count\":2,\"sha256\":\"c1ec851ca3758fdb739828f94bd1cb7113470e3118689609007a192e9935e6b7\",\"table\":\"tasks\"},{\"byte_size\":891,\"index\":12,\"row_count\":1,\"sha256\":\"c91acd5a69825fddfad3df3572f62464d3236525fa1b9ec9dc82bfb7e0bced49\",\"table\":\"artifacts\"},{\"byte_size\":1249,\"index\":13,\"row_count\":1,\"sha256\":\"fa6bc31f9c6f09d45c529052408be85a296146e723f24899d5326e0b65538a38\",\"table\":\"artifact_generations\"},{\"byte_size\":330,\"index\":14,\"row_count\":1,\"sha256\":\"4ef653d3b444cd23b38cc1f724432c3f5144075e222ae4015d421427b30d8035\",\"table\":\"artifact_inventory_state\"}],\"sha256\":\"1306eb0e89ebee8484acb74548f782b1aff563f878148d645f6fd55f2a204320\",\"table_counts\":{\"artifact_associations\":0,\"artifact_generations\":1,\"artifact_inventory_state\":1,\"artifacts\":1,\"catalog_plans\":0,\"events\":4,\"human_grants\":1,\"idempotency_outcomes\":3,\"import_mappings\":0,\"import_plans\":0,\"inbox\":0,\"login_attempts\":0,\"maintenance_state\":1,\"message_artifacts\":0,\"messages\":0,\"native_credentials\":3,\"outbox\":0,\"preferences\":0,\"probe_receipts\":0,\"profiles\":0,\"recovery_chunks\":0,\"recovery_jobs\":0,\"result_artifacts\":0,\"runs\":0,\"runtimes\":4,\"scheduler_state\":1,\"schema_migrations\":15,\"sessions\":1,\"static_agents\":2,\"task_acceptances\":0,\"task_history\":0,\"task_results\":0,\"tasks\":2,\"thread_participants\":0,\"threads\":0,\"workspace_metadata\":1}},\"ended_at\":\"2026-10-27T18:24:48.463Z\",\"environment_id\":\"capture_fixture\",\"format_version\":2,\"release\":{\"binding_ids\":[\"recovery_fixture\",\"artifact_fixture\"],\"catalog_mapping\":{\"object_name\":\"frozen15_artifact_upgrade_fixture\",\"workspace_id\":\"ws_example\"},\"revision\":\"synthetic_schema15_artifact_source\",\"worker_version\":\"synthetic_schema15_artifact_worker\"},\"started_at\":\"2026-10-27T18:24:48.451Z\",\"unfinished_artifact_ids\":[],\"workspace_id\":\"ws_example\"},\"fence\":{\"authorityEpoch\":1,\"maintenanceGeneration\":1},\"integrityKeyId\":\"recovery_fixture\",\"manifest\":null,\"pending\":null,\"pendingArtifact\":null,\"phase\":\"capture_artifacts\",\"receipt\":null,\"sourceMaintenance\":[1,\"capturing\",\"barrier_c8e90f20b4aa4e114621a1eda0a272b8\",1,\"capture_frozen15_artifact\",1793125488451,1],\"sqlBytes\":17481,\"step\":33,\"tableIndex\":36,\"version\":2}"
+        }
+      ],
+      "recovery_chunks": [
+        {
+          "job_id": "job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b",
+          "chunk_index": 0,
+          "table_name": "schema_migrations",
+          "sha256": "db2fb816447760fc886e21a1149cf5461c00c490676866e20e922ed5fb5e4e74",
+          "byte_size": 439,
+          "row_count": 15,
+          "object_key": "r2/ws_example/job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b/0/db2fb816447760fc886e21a1149cf5461c00c490676866e20e922ed5fb5e4e74.json"
+        },
+        {
+          "job_id": "job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b",
+          "chunk_index": 1,
+          "table_name": "workspace_metadata",
+          "sha256": "66929a01377b6011829978571c9cfaabf60dc9f06944072ed771f4ade8f51ba9",
+          "byte_size": 4836,
+          "row_count": 1,
+          "object_key": "r2/ws_example/job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b/1/66929a01377b6011829978571c9cfaabf60dc9f06944072ed771f4ade8f51ba9.json"
+        },
+        {
+          "job_id": "job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b",
+          "chunk_index": 2,
+          "table_name": "human_grants",
+          "sha256": "1788bae3b3caebcc9b321c239a809dee7a38a23f87695b6235167b383a949e6c",
+          "byte_size": 594,
+          "row_count": 1,
+          "object_key": "r2/ws_example/job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b/2/1788bae3b3caebcc9b321c239a809dee7a38a23f87695b6235167b383a949e6c.json"
+        },
+        {
+          "job_id": "job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b",
+          "chunk_index": 3,
+          "table_name": "static_agents",
+          "sha256": "af6b910394dc672ab39b19bdb61f37ac987b0de601d21aab1ceaf56796a1a565",
+          "byte_size": 569,
+          "row_count": 2,
+          "object_key": "r2/ws_example/job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b/3/af6b910394dc672ab39b19bdb61f37ac987b0de601d21aab1ceaf56796a1a565.json"
+        },
+        {
+          "job_id": "job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b",
+          "chunk_index": 4,
+          "table_name": "native_credentials",
+          "sha256": "23fbf717d70a64c87a820b53d7016b07a43e2e0cf74cd217f646058877ea7482",
+          "byte_size": 1410,
+          "row_count": 3,
+          "object_key": "r2/ws_example/job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b/4/23fbf717d70a64c87a820b53d7016b07a43e2e0cf74cd217f646058877ea7482.json"
+        },
+        {
+          "job_id": "job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b",
+          "chunk_index": 5,
+          "table_name": "sessions",
+          "sha256": "e9a1287eaebc4d91e2f841a5e85acea6d4b5251f9b97a9f7fe0c10d5627fbc09",
+          "byte_size": 457,
+          "row_count": 1,
+          "object_key": "r2/ws_example/job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b/5/e9a1287eaebc4d91e2f841a5e85acea6d4b5251f9b97a9f7fe0c10d5627fbc09.json"
+        },
+        {
+          "job_id": "job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b",
+          "chunk_index": 6,
+          "table_name": "events",
+          "sha256": "57e298395ab1ba1ae17886af1f2717abef9764108554668da16bb6d5f68ca5e3",
+          "byte_size": 1503,
+          "row_count": 4,
+          "object_key": "r2/ws_example/job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b/6/57e298395ab1ba1ae17886af1f2717abef9764108554668da16bb6d5f68ca5e3.json"
+        },
+        {
+          "job_id": "job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b",
+          "chunk_index": 7,
+          "table_name": "idempotency_outcomes",
+          "sha256": "74396882073a24875102e9c679d4358ee0e5cfd928354e6402bda4fa717e9941",
+          "byte_size": 2748,
+          "row_count": 3,
+          "object_key": "r2/ws_example/job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b/7/74396882073a24875102e9c679d4358ee0e5cfd928354e6402bda4fa717e9941.json"
+        },
+        {
+          "job_id": "job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b",
+          "chunk_index": 8,
+          "table_name": "scheduler_state",
+          "sha256": "a0078b7aa18259944031c76d02aa07585adf60a78664c89a5a278ad2028b15d2",
+          "byte_size": 249,
+          "row_count": 1,
+          "object_key": "r2/ws_example/job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b/8/a0078b7aa18259944031c76d02aa07585adf60a78664c89a5a278ad2028b15d2.json"
+        },
+        {
+          "job_id": "job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b",
+          "chunk_index": 9,
+          "table_name": "maintenance_state",
+          "sha256": "5c0057b44ee652f6eff2a09a828f98f713b714a6145eb800b4f4782ff0f1ccce",
+          "byte_size": 328,
+          "row_count": 1,
+          "object_key": "r2/ws_example/job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b/9/5c0057b44ee652f6eff2a09a828f98f713b714a6145eb800b4f4782ff0f1ccce.json"
+        },
+        {
+          "job_id": "job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b",
+          "chunk_index": 10,
+          "table_name": "runtimes",
+          "sha256": "ff41466630ee741c1d67f18ad8386b8aa962f0e69d4423c47ab5297056eb41c8",
+          "byte_size": 1172,
+          "row_count": 4,
+          "object_key": "r2/ws_example/job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b/10/ff41466630ee741c1d67f18ad8386b8aa962f0e69d4423c47ab5297056eb41c8.json"
+        },
+        {
+          "job_id": "job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b",
+          "chunk_index": 11,
+          "table_name": "tasks",
+          "sha256": "c1ec851ca3758fdb739828f94bd1cb7113470e3118689609007a192e9935e6b7",
+          "byte_size": 706,
+          "row_count": 2,
+          "object_key": "r2/ws_example/job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b/11/c1ec851ca3758fdb739828f94bd1cb7113470e3118689609007a192e9935e6b7.json"
+        },
+        {
+          "job_id": "job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b",
+          "chunk_index": 12,
+          "table_name": "artifacts",
+          "sha256": "c91acd5a69825fddfad3df3572f62464d3236525fa1b9ec9dc82bfb7e0bced49",
+          "byte_size": 891,
+          "row_count": 1,
+          "object_key": "r2/ws_example/job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b/12/c91acd5a69825fddfad3df3572f62464d3236525fa1b9ec9dc82bfb7e0bced49.json"
+        },
+        {
+          "job_id": "job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b",
+          "chunk_index": 13,
+          "table_name": "artifact_generations",
+          "sha256": "fa6bc31f9c6f09d45c529052408be85a296146e723f24899d5326e0b65538a38",
+          "byte_size": 1249,
+          "row_count": 1,
+          "object_key": "r2/ws_example/job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b/13/fa6bc31f9c6f09d45c529052408be85a296146e723f24899d5326e0b65538a38.json"
+        },
+        {
+          "job_id": "job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b",
+          "chunk_index": 14,
+          "table_name": "artifact_inventory_state",
+          "sha256": "4ef653d3b444cd23b38cc1f724432c3f5144075e222ae4015d421427b30d8035",
+          "byte_size": 330,
+          "row_count": 1,
+          "object_key": "r2/ws_example/job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b/14/4ef653d3b444cd23b38cc1f724432c3f5144075e222ae4015d421427b30d8035.json"
+        }
+      ],
+      "probe_receipts": [],
+      "runtimes": [
+        {
+          "id": "runtime_a",
+          "workspace_id": "ws_example",
+          "agent_id": "agent_research",
+          "credential_id": "credential_research_1",
+          "authority_epoch": 1,
+          "proof_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "runtime_version": 1,
+          "label": "Synthetic runtime",
+          "status": "online",
+          "created_at": 1793125488409,
+          "last_seen_at": 1793125488409,
+          "presence_expires_at": 1793125578409,
+          "revoked_at": null
+        },
+        {
+          "id": "runtime_b",
+          "workspace_id": "ws_example",
+          "agent_id": "agent_research",
+          "credential_id": "credential_research_1",
+          "authority_epoch": 1,
+          "proof_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "runtime_version": 1,
+          "label": "Synthetic runtime",
+          "status": "online",
+          "created_at": 1793125488409,
+          "last_seen_at": 1793125488409,
+          "presence_expires_at": 1793125578409,
+          "revoked_at": null
+        },
+        {
+          "id": "runtime_rotated",
+          "workspace_id": "ws_example",
+          "agent_id": "agent_research",
+          "credential_id": "credential_research_2",
+          "authority_epoch": 1,
+          "proof_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "runtime_version": 1,
+          "label": "Synthetic runtime",
+          "status": "online",
+          "created_at": 1793125488409,
+          "last_seen_at": 1793125488409,
+          "presence_expires_at": 1793125578409,
+          "revoked_at": null
+        },
+        {
+          "id": "runtime_other",
+          "workspace_id": "ws_example",
+          "agent_id": "agent_other",
+          "credential_id": "credential_other",
+          "authority_epoch": 1,
+          "proof_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "runtime_version": 1,
+          "label": "Synthetic runtime",
+          "status": "online",
+          "created_at": 1793125488409,
+          "last_seen_at": 1793125488409,
+          "presence_expires_at": 1793125578409,
+          "revoked_at": null
+        }
+      ],
+      "tasks": [
+        {
+          "id": "task_a",
+          "workspace_id": "ws_example",
+          "title": "Synthetic claim task",
+          "description": "",
+          "state": "ready",
+          "task_version": 2,
+          "proposal_version": 0,
+          "project_id": null,
+          "work_role_id": null,
+          "assigned_agent_id": null,
+          "active_run_id": null,
+          "latest_run_id": null,
+          "approval_id": null,
+          "current_result_id": null,
+          "retry_count": 0,
+          "retry_limit": 2,
+          "flags_json": "[]",
+          "next_fence": 1,
+          "next_result_sequence": 1,
+          "created_at": 1793125488409,
+          "updated_at": 1793125488409
+        },
+        {
+          "id": "task_b",
+          "workspace_id": "ws_example",
+          "title": "Synthetic claim task",
+          "description": "",
+          "state": "ready",
+          "task_version": 2,
+          "proposal_version": 0,
+          "project_id": null,
+          "work_role_id": null,
+          "assigned_agent_id": null,
+          "active_run_id": null,
+          "latest_run_id": null,
+          "approval_id": null,
+          "current_result_id": null,
+          "retry_count": 0,
+          "retry_limit": 2,
+          "flags_json": "[]",
+          "next_fence": 1,
+          "next_result_sequence": 1,
+          "created_at": 1793125488409,
+          "updated_at": 1793125488409
+        }
+      ],
+      "runs": [],
+      "task_results": [],
+      "task_acceptances": [],
+      "task_history": [],
+      "artifacts": [
+        {
+          "id": "artifact_frozen15",
+          "workspace_id": "ws_example",
+          "task_id": null,
+          "run_id": null,
+          "owner_kind": "agent",
+          "owner_principal_id": "agent_research",
+          "owner_agent_id": "agent_research",
+          "creator_credential_id": "credential_research_1",
+          "creator_runtime_id": "runtime_a",
+          "authority_epoch": 1,
+          "artifact_version": 3,
+          "filename": "evidence.txt",
+          "media_type": "text/plain",
+          "byte_size": 55,
+          "sha256": "3c20cdfb3b836f9562e2f6324609db051904cfcf820e020016693b5a6a267993",
+          "status": "committed",
+          "active_generation_id": "generation_173c7ec5848e6429da1f3fd73266a72c8deccf8c93a21593",
+          "committed_generation_id": "generation_173c7ec5848e6429da1f3fd73266a72c8deccf8c93a21593",
+          "created_at": 1793125488417,
+          "committed_at": 1793125488417,
+          "expires_at": null,
+          "admission_generation": 0,
+          "expiry_check_at": null
+        }
+      ],
+      "artifact_generations": [
+        {
+          "id": "generation_173c7ec5848e6429da1f3fd73266a72c8deccf8c93a21593",
+          "workspace_id": "ws_example",
+          "artifact_id": "artifact_frozen15",
+          "object_key": "artifacts/ws_example/artifact_frozen15/generation_173c7ec5848e6429da1f3fd73266a72c8deccf8c93a21593/3c20cdfb3b836f9562e2f6324609db051904cfcf820e020016693b5a6a267993",
+          "expected_sha256": "3c20cdfb3b836f9562e2f6324609db051904cfcf820e020016693b5a6a267993",
+          "expected_byte_size": 55,
+          "observed_sha256": "3c20cdfb3b836f9562e2f6324609db051904cfcf820e020016693b5a6a267993",
+          "observed_byte_size": 55,
+          "state": "committed",
+          "admission_epoch": 1,
+          "admission_generation": 0,
+          "expires_at": 1793126388417,
+          "created_at": 1793125488417,
+          "updated_at": 1793125488417,
+          "effect_operation_id": "put_generation_173c7ec5848e6429da1f3fd73266a72c8deccf8c93a21593",
+          "effect_kind": "put",
+          "effect_state": "drained",
+          "effect_started_at": 1793125488417,
+          "effect_drained_at": 1793125488417,
+          "artifact_version": 1,
+          "upload_idempotency_sha256": "6fad870ab98e72f5b8fa22b908095f5561786205ac5f03805660c837208a0869",
+          "cleanup_next_at": null,
+          "cleanup_error_code": null,
+          "delete_admission_epoch": null,
+          "delete_admission_generation": null
+        }
+      ],
+      "result_artifacts": [],
+      "artifact_associations": [],
+      "message_artifacts": [],
+      "catalog_plans": [],
+      "import_plans": [],
+      "import_mappings": [],
+      "artifact_inventory_state": [
+        {
+          "id": 1,
+          "workspace_id": "ws_example",
+          "cursor": null,
+          "generation": 0,
+          "next_due_at": 1793125788417,
+          "last_scan_at": null,
+          "observed_objects": 0,
+          "orphan_observations": 0,
+          "last_error_code": null
+        }
+      ]
+    },
+    "sequence": [
+      {
+        "name": "events",
+        "seq": 4
+      }
+    ],
+    "objects": [
+      {
+        "key": "r2/ws_example/job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b/0/db2fb816447760fc886e21a1149cf5461c00c490676866e20e922ed5fb5e4e74.json",
+        "body": "{\"capture_id\":\"capture_frozen15_artifact\",\"columns\":[\"version\",\"applied_at\"],\"format_version\":2,\"index\":0,\"rows\":[[1,1793125488384],[2,1793125488385],[3,1793125488386],[4,1793125488388],[5,1793125488388],[6,1793125488389],[7,1793125488389],[8,1793125488395],[9,1793125488395],[10,1793125488395],[11,1793125488395],[12,1793125488397],[13,1793125488400],[14,1793125488400],[15,1793125488400]],\"schema_version\":15,\"table\":\"schema_migrations\"}"
+      },
+      {
+        "key": "r2/ws_example/job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b/1/66929a01377b6011829978571c9cfaabf60dc9f06944072ed771f4ade8f51ba9.json",
+        "body": "{\"capture_id\":\"capture_frozen15_artifact\",\"columns\":[\"id\",\"workspace_id\",\"object_name\",\"config_epoch\",\"config_digest\",\"installation_digest\",\"config_json\",\"bundle_json\",\"installed_at\",\"admission_state\",\"message_retained_after_created_at\",\"message_retained_after_id\",\"event_retained_after_sequence\"],\"format_version\":2,\"index\":1,\"rows\":[[1,\"ws_example\",\"frozen15_artifact_upgrade_fixture\",1,\"40336b1223a949b15535f2a7cc10160e2ecece3bedd6d6d30e9ef265505b3d85\",\"42ee81696ce54498da5544519a8c858ee1785a59b85e15afad06e056757c5a25\",\"{\\\"authentication\\\":{\\\"allowed_origins\\\":[\\\"https://hub.example.invalid\\\"],\\\"audience\\\":\\\"cfhub-client\\\",\\\"client_id\\\":\\\"cfhub-client\\\",\\\"client_secret_ref\\\":\\\"OIDC_CLIENT_SECRET\\\",\\\"id_token_algorithms\\\":[\\\"RS256\\\"],\\\"issuer\\\":\\\"https://identity.example.invalid\\\",\\\"mode\\\":\\\"verified-oidc\\\",\\\"redirect_uris\\\":[{\\\"redirect_uri\\\":\\\"https://hub.example.invalid/v2/workspaces/ws_example/auth/callback\\\",\\\"workspace_id\\\":\\\"ws_example\\\"}],\\\"reviewed_oidc_endpoints\\\":{\\\"authorization_endpoint\\\":\\\"https://identity.example.invalid/authorize\\\",\\\"jwks_uri\\\":\\\"https://identity.example.invalid/jwks\\\",\\\"token_endpoint\\\":\\\"https://identity.example.invalid/token\\\"},\\\"session_ttl_seconds\\\":3600},\\\"config_epoch\\\":1,\\\"contract_revision\\\":\\\"0.2\\\",\\\"human_grants\\\":[{\\\"enabled\\\":true,\\\"issuer\\\":\\\"https://identity.example.invalid\\\",\\\"principal_id\\\":\\\"human_operator\\\",\\\"project_ids\\\":null,\\\"scopes\\\":[\\\"workspace:read\\\",\\\"messages:send\\\",\\\"messages:read\\\",\\\"messages:review\\\",\\\"events:read\\\",\\\"profile:edit\\\",\\\"operations:read\\\",\\\"tasks:read\\\",\\\"tasks:create\\\",\\\"tasks:edit\\\",\\\"tasks:schedule\\\",\\\"tasks:cancel\\\",\\\"artifacts:read\\\",\\\"artifacts:write\\\"],\\\"subject\\\":\\\"synthetic-subject\\\",\\\"workspace_id\\\":\\\"ws_example\\\"}],\\\"static_credential_refs\\\":[{\\\"agent_id\\\":\\\"agent_research\\\",\\\"credential_id\\\":\\\"credential_research_1\\\",\\\"enabled\\\":true,\\\"expires_at\\\":\\\"2026-11-26T18:24:48.368Z\\\",\\\"project_ids\\\":null,\\\"scopes\\\":[\\\"workspace:read\\\",\\\"events:read\\\",\\\"tasks:read\\\",\\\"tasks:claim\\\",\\\"tasks:execute\\\",\\\"runtimes:manage\\\",\\\"artifacts:read\\\",\\\"artifacts:write\\\"],\\\"workspace_id\\\":\\\"ws_example\\\"},{\\\"agent_id\\\":\\\"agent_research\\\",\\\"credential_id\\\":\\\"credential_research_2\\\",\\\"enabled\\\":true,\\\"expires_at\\\":\\\"2026-11-26T18:24:48.368Z\\\",\\\"project_ids\\\":null,\\\"scopes\\\":[\\\"workspace:read\\\",\\\"events:read\\\",\\\"tasks:read\\\",\\\"tasks:claim\\\",\\\"tasks:execute\\\",\\\"runtimes:manage\\\",\\\"artifacts:read\\\",\\\"artifacts:write\\\"],\\\"workspace_id\\\":\\\"ws_example\\\"},{\\\"agent_id\\\":\\\"agent_other\\\",\\\"credential_id\\\":\\\"credential_other\\\",\\\"enabled\\\":true,\\\"expires_at\\\":\\\"2026-11-26T18:24:48.368Z\\\",\\\"project_ids\\\":null,\\\"scopes\\\":[\\\"workspace:read\\\",\\\"events:read\\\",\\\"tasks:read\\\",\\\"tasks:claim\\\",\\\"tasks:execute\\\",\\\"runtimes:manage\\\",\\\"artifacts:read\\\",\\\"artifacts:write\\\"],\\\"workspace_id\\\":\\\"ws_example\\\"}],\\\"static_participants\\\":[{\\\"agent_id\\\":\\\"agent_research\\\",\\\"display_name\\\":\\\"Research participant\\\",\\\"workspace_id\\\":\\\"ws_example\\\"},{\\\"agent_id\\\":\\\"agent_other\\\",\\\"display_name\\\":\\\"Other synthetic agent\\\",\\\"workspace_id\\\":\\\"ws_example\\\"}],\\\"workspace_catalog\\\":[{\\\"object_name\\\":\\\"frozen15_artifact_upgrade_fixture\\\",\\\"workspace_id\\\":\\\"ws_example\\\"}],\\\"workspace_policies\\\":[{\\\"allowed_user_overrides\\\":[\\\"theme\\\",\\\"density\\\",\\\"default_view\\\"],\\\"execution_policy\\\":{\\\"agent_wip_limit\\\":2,\\\"artifact_upload_ttl_seconds\\\":900,\\\"eligibility_rules\\\":[{\\\"eligible_agent_ids\\\":[\\\"agent_research\\\",\\\"agent_other\\\"],\\\"project_id\\\":null,\\\"work_role_id\\\":null},{\\\"eligible_agent_ids\\\":[\\\"agent_research\\\",\\\"agent_other\\\"],\\\"project_id\\\":\\\"project_a\\\",\\\"work_role_id\\\":\\\"role_a\\\"}],\\\"policy_version\\\":1,\\\"replay_safety_rules\\\":[],\\\"task_retry_limit\\\":2},\\\"notification_destinations\\\":[{\\\"agent_id\\\":\\\"agent_research\\\",\\\"destination_id\\\":\\\"research\\\",\\\"enabled\\\":true,\\\"signing_key_ref\\\":\\\"NOTIFICATION_SIGNING_KEY\\\",\\\"url\\\":\\\"https://receiver.example.invalid/cfhub\\\"}],\\\"retry_after_max_seconds\\\":3600,\\\"workspace_id\\\":\\\"ws_example\\\"}]}\",\"{\\\"auth\\\":{\\\"algorithm\\\":\\\"HMAC-SHA256\\\",\\\"key_id\\\":\\\"synthetic_key\\\",\\\"tag\\\":\\\"0000000000000000000000000000000000000000000000000000000000000000\\\"},\\\"config_digest\\\":\\\"40336b1223a949b15535f2a7cc10160e2ecece3bedd6d6d30e9ef265505b3d85\\\",\\\"config_epoch\\\":1,\\\"contract_revision\\\":\\\"0.1\\\",\\\"credentials\\\":[{\\\"credential_id\\\":\\\"credential_research_1\\\",\\\"token_sha256\\\":\\\"1111111111111111111111111111111111111111111111111111111111111111\\\",\\\"workspace_id\\\":\\\"ws_example\\\"},{\\\"credential_id\\\":\\\"credential_research_2\\\",\\\"token_sha256\\\":\\\"2222222222222222222222222222222222222222222222222222222222222222\\\",\\\"workspace_id\\\":\\\"ws_example\\\"},{\\\"credential_id\\\":\\\"credential_other\\\",\\\"token_sha256\\\":\\\"3333333333333333333333333333333333333333333333333333333333333333\\\",\\\"workspace_id\\\":\\\"ws_example\\\"}],\\\"retired_credentials\\\":[]}\",1793125488404,\"maintenance\",null,null,null]],\"schema_version\":15,\"table\":\"workspace_metadata\"}"
+      },
+      {
+        "key": "r2/ws_example/job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b/2/1788bae3b3caebcc9b321c239a809dee7a38a23f87695b6235167b383a949e6c.json",
+        "body": "{\"capture_id\":\"capture_frozen15_artifact\",\"columns\":[\"principal_id\",\"workspace_id\",\"issuer\",\"subject\",\"scopes_json\",\"project_ids_json\",\"enabled\",\"config_epoch\"],\"format_version\":2,\"index\":2,\"rows\":[[\"human_operator\",\"ws_example\",\"https://identity.example.invalid\",\"synthetic-subject\",\"[\\\"workspace:read\\\",\\\"messages:send\\\",\\\"messages:read\\\",\\\"messages:review\\\",\\\"events:read\\\",\\\"profile:edit\\\",\\\"operations:read\\\",\\\"tasks:read\\\",\\\"tasks:create\\\",\\\"tasks:edit\\\",\\\"tasks:schedule\\\",\\\"tasks:cancel\\\",\\\"artifacts:read\\\",\\\"artifacts:write\\\"]\",\"null\",1,1]],\"schema_version\":15,\"table\":\"human_grants\"}"
+      },
+      {
+        "key": "r2/ws_example/job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b/3/af6b910394dc672ab39b19bdb61f37ac987b0de601d21aab1ceaf56796a1a565.json",
+        "body": "{\"capture_id\":\"capture_frozen15_artifact\",\"columns\":[\"agent_id\",\"workspace_id\",\"display_name\",\"config_epoch\",\"origin\",\"agent_version\",\"description\",\"work_role_ids_json\",\"framework\",\"model\",\"status\",\"created_at\",\"updated_at\"],\"format_version\":2,\"index\":3,\"rows\":[[\"agent_other\",\"ws_example\",\"Other synthetic agent\",1,\"operator_static\",1,\"\",\"[]\",null,null,\"active\",1793125488404,1793125488404],[\"agent_research\",\"ws_example\",\"Research participant\",1,\"operator_static\",1,\"\",\"[]\",null,null,\"active\",1793125488404,1793125488404]],\"schema_version\":15,\"table\":\"static_agents\"}"
+      },
+      {
+        "key": "r2/ws_example/job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b/4/23fbf717d70a64c87a820b53d7016b07a43e2e0cf74cd217f646058877ea7482.json",
+        "body": "{\"capture_id\":\"capture_frozen15_artifact\",\"columns\":[\"credential_id\",\"workspace_id\",\"agent_id\",\"token_sha256\",\"scopes_json\",\"project_ids_json\",\"expires_at\",\"enabled\",\"config_epoch\",\"retired_at_epoch\",\"origin\",\"credential_version\",\"label\",\"created_at\",\"revoked_at\",\"issued_by_principal_id\"],\"format_version\":2,\"index\":4,\"rows\":[[\"credential_other\",\"ws_example\",\"agent_other\",\"3333333333333333333333333333333333333333333333333333333333333333\",\"[\\\"workspace:read\\\",\\\"events:read\\\",\\\"tasks:read\\\",\\\"tasks:claim\\\",\\\"tasks:execute\\\",\\\"runtimes:manage\\\",\\\"artifacts:read\\\",\\\"artifacts:write\\\"]\",\"null\",1795717488368,1,1,null,\"operator_static\",1,\"\",1793125488404,null,null],[\"credential_research_1\",\"ws_example\",\"agent_research\",\"1111111111111111111111111111111111111111111111111111111111111111\",\"[\\\"workspace:read\\\",\\\"events:read\\\",\\\"tasks:read\\\",\\\"tasks:claim\\\",\\\"tasks:execute\\\",\\\"runtimes:manage\\\",\\\"artifacts:read\\\",\\\"artifacts:write\\\"]\",\"null\",1795717488368,1,1,null,\"operator_static\",1,\"\",1793125488404,null,null],[\"credential_research_2\",\"ws_example\",\"agent_research\",\"2222222222222222222222222222222222222222222222222222222222222222\",\"[\\\"workspace:read\\\",\\\"events:read\\\",\\\"tasks:read\\\",\\\"tasks:claim\\\",\\\"tasks:execute\\\",\\\"runtimes:manage\\\",\\\"artifacts:read\\\",\\\"artifacts:write\\\"]\",\"null\",1795717488368,1,1,null,\"operator_static\",1,\"\",1793125488404,null,null]],\"schema_version\":15,\"table\":\"native_credentials\"}"
+      },
+      {
+        "key": "r2/ws_example/job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b/5/e9a1287eaebc4d91e2f841a5e85acea6d4b5251f9b97a9f7fe0c10d5627fbc09.json",
+        "body": "{\"capture_id\":\"capture_frozen15_artifact\",\"columns\":[\"id\",\"workspace_id\",\"principal_id\",\"token_digest\",\"csrf_digest\",\"issuer\",\"subject\",\"created_at\",\"expires_at\",\"revoked_at\",\"auth_epoch\"],\"format_version\":2,\"index\":5,\"rows\":[[\"session_settings\",\"ws_example\",\"human_operator\",\"digest_session_settings\",\"csrf_session_settings\",\"https://identity.example.invalid\",\"synthetic-subject\",1793125488410,1793126488410,null,1]],\"schema_version\":15,\"table\":\"sessions\"}"
+      },
+      {
+        "key": "r2/ws_example/job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b/6/57e298395ab1ba1ae17886af1f2717abef9764108554668da16bb6d5f68ca5e3.json",
+        "body": "{\"capture_id\":\"capture_frozen15_artifact\",\"columns\":[\"sequence\",\"id\",\"workspace_id\",\"type\",\"actor_json\",\"resource_type\",\"resource_id\",\"resource_version\",\"thread_id\",\"request_id\",\"occurred_at\",\"summary\",\"task_version\",\"run_id\",\"fence\"],\"format_version\":2,\"index\":6,\"rows\":[[1,\"configuration_1\",\"ws_example\",\"configuration.installed\",\"{\\\"agent_id\\\":null,\\\"kind\\\":\\\"system\\\",\\\"principal_id\\\":\\\"synthetic_operator\\\"}\",\"configuration\",\"ws_example\",1,null,\"req_fixture\",1793125488404,\"Workspace configuration installed.\",null,null,null],[2,\"event_fa62442de799898a99d72af6145c9dcee845b53810ac68c3\",\"ws_example\",\"artifact.staged\",\"{\\\"agent_id\\\":\\\"agent_research\\\",\\\"kind\\\":\\\"agent\\\",\\\"principal_id\\\":\\\"agent_research\\\"}\",\"artifact\",\"artifact_frozen15\",null,null,\"artifact_upload_artifact_frozen15\",1793125488417,\"Artifact staged.\",null,null,null],[3,\"event_8b24c414b0edf1f87bdf10612bee37acd76abe7bd3e415b3\",\"ws_example\",\"artifact.uploaded\",\"{\\\"agent_id\\\":\\\"agent_research\\\",\\\"kind\\\":\\\"agent\\\",\\\"principal_id\\\":\\\"agent_research\\\"}\",\"artifact\",\"artifact_frozen15\",null,null,\"artifact_upload_artifact_frozen15\",1793125488417,\"Artifact uploaded.\",null,null,null],[4,\"event_9f627ac053ed187f5fc6f7f2410774ced4acac20a42dbd8f\",\"ws_example\",\"artifact.committed\",\"{\\\"agent_id\\\":\\\"agent_research\\\",\\\"kind\\\":\\\"agent\\\",\\\"principal_id\\\":\\\"agent_research\\\"}\",\"artifact\",\"artifact_frozen15\",null,null,\"artifact_upload_artifact_frozen15\",1793125488417,\"Artifact committed.\",null,null,null]],\"schema_version\":15,\"table\":\"events\"}"
+      },
+      {
+        "key": "r2/ws_example/job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b/7/74396882073a24875102e9c679d4358ee0e5cfd928354e6402bda4fa717e9941.json",
+        "body": "{\"capture_id\":\"capture_frozen15_artifact\",\"columns\":[\"principal_id\",\"operation\",\"target\",\"key\",\"workspace_id\",\"fingerprint\",\"status\",\"outcome_json\",\"original_request_id\",\"event_id\",\"created_at\",\"expires_at\"],\"format_version\":2,\"index\":7,\"rows\":[[\"agent_research\",\"domain.artifacts:write\",\"artifacts:artifact_frozen15:commit\",\"commit_artifact_frozen15\",\"ws_example\",\"408fe8fc3b52768a553915dc687abb9ba755f42f138d7f469c2d4d92011681f4\",200,\"{\\\"artifact_version\\\":3,\\\"byte_size\\\":55,\\\"committed_at\\\":\\\"2026-10-27T18:24:48.417Z\\\",\\\"created_at\\\":\\\"2026-10-27T18:24:48.417Z\\\",\\\"expires_at\\\":null,\\\"filename\\\":\\\"evidence.txt\\\",\\\"id\\\":\\\"artifact_frozen15\\\",\\\"media_type\\\":\\\"text/plain\\\",\\\"owner\\\":{\\\"agent_id\\\":\\\"agent_research\\\",\\\"kind\\\":\\\"agent\\\",\\\"principal_id\\\":\\\"agent_research\\\"},\\\"run_id\\\":null,\\\"sha256\\\":\\\"3c20cdfb3b836f9562e2f6324609db051904cfcf820e020016693b5a6a267993\\\",\\\"status\\\":\\\"committed\\\",\\\"task_id\\\":null,\\\"workspace_id\\\":\\\"ws_example\\\"}\",\"artifact_upload_artifact_frozen15\",\"event_9f627ac053ed187f5fc6f7f2410774ced4acac20a42dbd8f\",1793125488417,1793211888417],[\"agent_research\",\"domain.artifacts:write\",\"artifacts:artifact_frozen15:upload\",\"upload_artifact_frozen15\",\"ws_example\",\"1183804ed3541c3bd9cd124daee8ced77922d55ddc4901fcfa92499db5dbb150\",200,\"{\\\"artifact_version\\\":2,\\\"byte_size\\\":55,\\\"committed_at\\\":null,\\\"created_at\\\":\\\"2026-10-27T18:24:48.417Z\\\",\\\"expires_at\\\":\\\"2026-10-27T18:39:48.417Z\\\",\\\"filename\\\":\\\"evidence.txt\\\",\\\"id\\\":\\\"artifact_frozen15\\\",\\\"media_type\\\":\\\"text/plain\\\",\\\"owner\\\":{\\\"agent_id\\\":\\\"agent_research\\\",\\\"kind\\\":\\\"agent\\\",\\\"principal_id\\\":\\\"agent_research\\\"},\\\"run_id\\\":null,\\\"sha256\\\":\\\"3c20cdfb3b836f9562e2f6324609db051904cfcf820e020016693b5a6a267993\\\",\\\"status\\\":\\\"uploaded\\\",\\\"task_id\\\":null,\\\"workspace_id\\\":\\\"ws_example\\\"}\",\"artifact_upload_artifact_frozen15\",\"event_8b24c414b0edf1f87bdf10612bee37acd76abe7bd3e415b3\",1793125488417,1793211888417],[\"agent_research\",\"domain.artifacts:write\",\"artifacts:stage\",\"stage_artifact_frozen15\",\"ws_example\",\"a5c808a62a0ae87a86c20542523692076cd5347e1b441f8f2e3be1edbf9a339c\",201,\"{\\\"artifact_version\\\":1,\\\"byte_size\\\":55,\\\"committed_at\\\":null,\\\"created_at\\\":\\\"2026-10-27T18:24:48.417Z\\\",\\\"expires_at\\\":\\\"2026-10-27T18:39:48.417Z\\\",\\\"filename\\\":\\\"evidence.txt\\\",\\\"id\\\":\\\"artifact_frozen15\\\",\\\"media_type\\\":\\\"text/plain\\\",\\\"owner\\\":{\\\"agent_id\\\":\\\"agent_research\\\",\\\"kind\\\":\\\"agent\\\",\\\"principal_id\\\":\\\"agent_research\\\"},\\\"run_id\\\":null,\\\"sha256\\\":\\\"3c20cdfb3b836f9562e2f6324609db051904cfcf820e020016693b5a6a267993\\\",\\\"status\\\":\\\"staged\\\",\\\"task_id\\\":null,\\\"workspace_id\\\":\\\"ws_example\\\"}\",\"artifact_upload_artifact_frozen15\",\"event_fa62442de799898a99d72af6145c9dcee845b53810ac68c3\",1793125488417,1793211888417]],\"schema_version\":15,\"table\":\"idempotency_outcomes\"}"
+      },
+      {
+        "key": "r2/ws_example/job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b/8/a0078b7aa18259944031c76d02aa07585adf60a78664c89a5a278ad2028b15d2.json",
+        "body": "{\"capture_id\":\"capture_frozen15_artifact\",\"columns\":[\"id\",\"next_due_at\",\"armed_at\",\"last_run_at\",\"dirty\",\"generation\",\"last_error_code\"],\"format_version\":2,\"index\":8,\"rows\":[[1,null,null,null,1,1,null]],\"schema_version\":15,\"table\":\"scheduler_state\"}"
+      },
+      {
+        "key": "r2/ws_example/job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b/9/5c0057b44ee652f6eff2a09a828f98f713b714a6145eb800b4f4782ff0f1ccce.json",
+        "body": "{\"capture_id\":\"capture_frozen15_artifact\",\"columns\":[\"id\",\"state\",\"barrier_id\",\"authority_epoch\",\"capture_id\",\"updated_at\",\"generation\"],\"format_version\":2,\"index\":9,\"rows\":[[1,\"capturing\",\"barrier_c8e90f20b4aa4e114621a1eda0a272b8\",1,\"capture_frozen15_artifact\",1793125488451,1]],\"schema_version\":15,\"table\":\"maintenance_state\"}"
+      },
+      {
+        "key": "r2/ws_example/job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b/10/ff41466630ee741c1d67f18ad8386b8aa962f0e69d4423c47ab5297056eb41c8.json",
+        "body": "{\"capture_id\":\"capture_frozen15_artifact\",\"columns\":[\"id\",\"workspace_id\",\"agent_id\",\"credential_id\",\"authority_epoch\",\"proof_sha256\",\"runtime_version\",\"label\",\"status\",\"created_at\",\"last_seen_at\",\"presence_expires_at\",\"revoked_at\"],\"format_version\":2,\"index\":10,\"rows\":[[\"runtime_a\",\"ws_example\",\"agent_research\",\"credential_research_1\",1,\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",1,\"Synthetic runtime\",\"online\",1793125488409,1793125488409,1793125578409,null],[\"runtime_b\",\"ws_example\",\"agent_research\",\"credential_research_1\",1,\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",1,\"Synthetic runtime\",\"online\",1793125488409,1793125488409,1793125578409,null],[\"runtime_other\",\"ws_example\",\"agent_other\",\"credential_other\",1,\"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",1,\"Synthetic runtime\",\"online\",1793125488409,1793125488409,1793125578409,null],[\"runtime_rotated\",\"ws_example\",\"agent_research\",\"credential_research_2\",1,\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\",1,\"Synthetic runtime\",\"online\",1793125488409,1793125488409,1793125578409,null]],\"schema_version\":15,\"table\":\"runtimes\"}"
+      },
+      {
+        "key": "r2/ws_example/job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b/11/c1ec851ca3758fdb739828f94bd1cb7113470e3118689609007a192e9935e6b7.json",
+        "body": "{\"capture_id\":\"capture_frozen15_artifact\",\"columns\":[\"id\",\"workspace_id\",\"title\",\"description\",\"state\",\"task_version\",\"proposal_version\",\"project_id\",\"work_role_id\",\"assigned_agent_id\",\"active_run_id\",\"latest_run_id\",\"approval_id\",\"current_result_id\",\"retry_count\",\"retry_limit\",\"flags_json\",\"next_fence\",\"next_result_sequence\",\"created_at\",\"updated_at\"],\"format_version\":2,\"index\":11,\"rows\":[[\"task_a\",\"ws_example\",\"Synthetic claim task\",\"\",\"ready\",2,0,null,null,null,null,null,null,null,0,2,\"[]\",1,1,1793125488409,1793125488409],[\"task_b\",\"ws_example\",\"Synthetic claim task\",\"\",\"ready\",2,0,null,null,null,null,null,null,null,0,2,\"[]\",1,1,1793125488409,1793125488409]],\"schema_version\":15,\"table\":\"tasks\"}"
+      },
+      {
+        "key": "r2/ws_example/job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b/12/c91acd5a69825fddfad3df3572f62464d3236525fa1b9ec9dc82bfb7e0bced49.json",
+        "body": "{\"capture_id\":\"capture_frozen15_artifact\",\"columns\":[\"id\",\"workspace_id\",\"task_id\",\"run_id\",\"owner_kind\",\"owner_principal_id\",\"owner_agent_id\",\"creator_credential_id\",\"creator_runtime_id\",\"authority_epoch\",\"artifact_version\",\"filename\",\"media_type\",\"byte_size\",\"sha256\",\"status\",\"active_generation_id\",\"committed_generation_id\",\"created_at\",\"committed_at\",\"expires_at\",\"admission_generation\",\"expiry_check_at\"],\"format_version\":2,\"index\":12,\"rows\":[[\"artifact_frozen15\",\"ws_example\",null,null,\"agent\",\"agent_research\",\"agent_research\",\"credential_research_1\",\"runtime_a\",1,3,\"evidence.txt\",\"text/plain\",55,\"3c20cdfb3b836f9562e2f6324609db051904cfcf820e020016693b5a6a267993\",\"committed\",\"generation_173c7ec5848e6429da1f3fd73266a72c8deccf8c93a21593\",\"generation_173c7ec5848e6429da1f3fd73266a72c8deccf8c93a21593\",1793125488417,1793125488417,null,0,null]],\"schema_version\":15,\"table\":\"artifacts\"}"
+      },
+      {
+        "key": "r2/ws_example/job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b/13/fa6bc31f9c6f09d45c529052408be85a296146e723f24899d5326e0b65538a38.json",
+        "body": "{\"capture_id\":\"capture_frozen15_artifact\",\"columns\":[\"id\",\"workspace_id\",\"artifact_id\",\"object_key\",\"expected_sha256\",\"expected_byte_size\",\"observed_sha256\",\"observed_byte_size\",\"state\",\"admission_epoch\",\"admission_generation\",\"expires_at\",\"created_at\",\"updated_at\",\"effect_operation_id\",\"effect_kind\",\"effect_state\",\"effect_started_at\",\"effect_drained_at\",\"artifact_version\",\"upload_idempotency_sha256\",\"cleanup_next_at\",\"cleanup_error_code\",\"delete_admission_epoch\",\"delete_admission_generation\"],\"format_version\":2,\"index\":13,\"rows\":[[\"generation_173c7ec5848e6429da1f3fd73266a72c8deccf8c93a21593\",\"ws_example\",\"artifact_frozen15\",\"artifacts/ws_example/artifact_frozen15/generation_173c7ec5848e6429da1f3fd73266a72c8deccf8c93a21593/3c20cdfb3b836f9562e2f6324609db051904cfcf820e020016693b5a6a267993\",\"3c20cdfb3b836f9562e2f6324609db051904cfcf820e020016693b5a6a267993\",55,\"3c20cdfb3b836f9562e2f6324609db051904cfcf820e020016693b5a6a267993\",55,\"committed\",1,0,1793126388417,1793125488417,1793125488417,\"put_generation_173c7ec5848e6429da1f3fd73266a72c8deccf8c93a21593\",\"put\",\"drained\",1793125488417,1793125488417,1,\"6fad870ab98e72f5b8fa22b908095f5561786205ac5f03805660c837208a0869\",null,null,null,null]],\"schema_version\":15,\"table\":\"artifact_generations\"}"
+      },
+      {
+        "key": "r2/ws_example/job_3096b4a558354131acc41a86dd15616c3d045c628ce1590b/14/4ef653d3b444cd23b38cc1f724432c3f5144075e222ae4015d421427b30d8035.json",
+        "body": "{\"capture_id\":\"capture_frozen15_artifact\",\"columns\":[\"id\",\"workspace_id\",\"cursor\",\"generation\",\"next_due_at\",\"last_scan_at\",\"observed_objects\",\"orphan_observations\",\"last_error_code\"],\"format_version\":2,\"index\":14,\"rows\":[[1,\"ws_example\",null,0,1793125788417,null,0,0,null]],\"schema_version\":15,\"table\":\"artifact_inventory_state\"}"
+      }
+    ],
+    "productObjects": [
+      {
+        "key": "artifacts/ws_example/artifact_frozen15/generation_173c7ec5848e6429da1f3fd73266a72c8deccf8c93a21593/3c20cdfb3b836f9562e2f6324609db051904cfcf820e020016693b5a6a267993",
+        "body": "Genuine schema15 artifact bytes — synthetic 日本語"
+      }
+    ]
+  }
+}

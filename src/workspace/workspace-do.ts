@@ -24,6 +24,7 @@ import {settingsPath,settingsRoutes} from '../http/settings-routes';
 import { authRoutes,authFailure,securityHeaders } from '../http/auth-routes';
 import { AuthError,cookieHeader } from '../auth/context';
 import { DurableObject } from 'cloudflare:workers';
+import {retainFrozenSchema15} from '../recovery/frozen-schema15';
 import { migrate } from '../storage/migrations';
 import { withTransaction } from '../storage/transaction';
 import { installConfiguration, prepareBootstrap, canonicalJson, type ValidatedBootstrap } from '../config/bootstrap';
@@ -36,7 +37,7 @@ function closed(value:unknown,keys:readonly string[]):value is Record<string,unk
 /** Only the authenticated operator Worker receives a production binding to this method.
  * Neither a structural context nor a TypeScript type is authentication on public HTTP. */
 export class WorkspaceDO extends DurableObject<WorkspaceEnvironment> {
- constructor(ctx:DurableObjectState,env:WorkspaceEnvironment) {super(ctx,env);migrate(ctx.storage);}
+ constructor(ctx:DurableObjectState,env:WorkspaceEnvironment) {super(ctx,env);if(!retainFrozenSchema15(ctx.storage))migrate(ctx.storage);}
  async reconcileConfiguration(operator:RecoveryOperatorContext,input:ValidatedBootstrap):Promise<InstallReceipt> {
   if(!closed(operator,['principalId','workspaceId','requestId','operation','expectedEpoch','expectedInstallationDigest'])||
    !identifier(operator.principalId)||!identifier(operator.workspaceId)||!identifier(operator.requestId)||operator.operation!=='install'||

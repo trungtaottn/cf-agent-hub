@@ -16,6 +16,9 @@
   },
   "include": [
     "src/ui/**/*.ts",
-    "packages/client/**/*.ts"
+    "packages/client/**/*.ts",
+    "test/client/task-rendering.test.ts",
+    "test/helpers/dom-fixture.ts",
+    "test/client/focus-restoration.test.ts"
   ]
 }
