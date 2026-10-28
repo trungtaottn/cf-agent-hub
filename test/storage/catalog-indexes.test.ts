@@ -86,15 +86,18 @@ it.each(['maintenance','retired'])('catalog_schema9_upgrade_preserves_%s_admissi
   expect(()=>migrate(state.storage,v9)).toThrow('FROZEN_SCHEMA_MIGRATION');expect({schema:schema(state.storage),rows:rows(state.storage)}).toEqual(before);
  });
 });
-it('current_schema_remains_unavailable_to_v1_recovery_before_effects',async()=>{
+it.each([9,15] as const)('schema%s keeps historical recovery closed or requires current capture authority before effects',async version=>{
  const {assertRecoveryContext}=await import('../../src/recovery/protocol');
  const {systemClock,systemEntropy}=await import('../../src/workspace/context');
- await runInDurableObject(target('recovery_unavailable'),(_o,state)=>{
+ const selected=version===9?await old8('recovery_historical'):target('recovery_current');
+ await runInDurableObject(selected,(_o,state)=>{
+  if(version===9)migrate(state.storage,v9);expect(()=>withTransaction(state.storage,tx=>assertSchemaVersion(tx,version))).not.toThrow();
   let effects=0;
   const workspace:import('../../src/recovery/protocol').RecoveryWorkspace={storage:state.storage,bucket:new Proxy({}, {get(){effects++;throw Error('unexpected object effect');}}) as R2Bucket,workspaceId:'ws_example',objectName:'synthetic',environmentId:'synthetic',clock:systemClock,entropy:systemEntropy,integrity:{keyId:'synthetic',key:btoa('a'.repeat(32))},release:{revision:'synthetic',worker_version:'synthetic',binding_ids:[],catalog_mapping:{workspace_id:'ws_example',object_name:'synthetic'}},repairSchedule:async()=>{effects++;throw Error('unexpected schedule effect');}};
   const context:import('../../src/recovery/protocol').RecoveryContext={principalId:'synthetic_operator',workspaceId:'ws_example',objectName:'synthetic',environmentId:'synthetic',requestId:'synthetic_request',operationId:'synthetic_operation',operation:'capture',captureId:'synthetic_capture',expectedEpoch:1,expectedInstallationDigest:null,proofExpiresAt:Date.now()+120000,requestFingerprint:'a'.repeat(64),ledgerAnchor:null};
   const before=rows(state.storage);
-  expect(()=>withTransaction(state.storage,tx=>assertRecoveryContext(tx,workspace,context))).toThrow('RECOVERY_FORMAT_UNAVAILABLE');
+  expect(()=>withTransaction(state.storage,tx=>assertRecoveryContext(tx,workspace,context))).toThrow(version===9?'RECOVERY_FORMAT_UNAVAILABLE':'RECOVERY_EPOCH_CONFLICT');
+  expect(()=>withTransaction(state.storage,tx=>assertRecoveryContext(tx,workspace,{...context,operation:'restore'}))).toThrow('RECOVERY_FORMAT_UNAVAILABLE');
   expect(rows(state.storage)).toEqual(before);expect(effects).toBe(0);
  });
 });

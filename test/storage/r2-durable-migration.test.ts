@@ -178,7 +178,7 @@ describe('R2 scoped constraints and transaction behavior',()=>{
  });
 });
 
-describe('current schema8 recovery fails closed before effects',()=>{
+describe('current schema15 requires product capture binding and keeps restore closed before effects',()=>{
  it('capture_and_restore_do_not_write_replay_maintenance_alarm_or_objects',async()=>{
   const {advanceCapture}=await import('../../src/recovery/capture');
   const {beginRestore}=await import('../../src/recovery/restore');
@@ -190,7 +190,8 @@ describe('current schema8 recovery fails closed before effects',()=>{
    const workspace:import('../../src/recovery/protocol').RecoveryWorkspace={storage:state.storage,bucket,workspaceId:'ws_example',objectName:'r2_migration_unavailable',environmentId:'synthetic_r2',clock:systemClock,entropy:systemEntropy,integrity:{keyId:'synthetic',key:btoa('a'.repeat(32))},release:{revision:'synthetic',worker_version:'synthetic',binding_ids:[],catalog_mapping:{workspace_id:'ws_example',object_name:'r2_migration_unavailable'}},repairSchedule:async()=>{throw Error('Unexpected scheduler effect');}};
    const context:import('../../src/recovery/protocol').RecoveryContext={principalId:'synthetic_operator',workspaceId:workspace.workspaceId,objectName:workspace.objectName,environmentId:workspace.environmentId,requestId:'request_unavailable',operationId:'operation_unavailable',operation:'capture',captureId:'capture_unavailable',expectedEpoch:1,expectedInstallationDigest:input.installationDigest,proofExpiresAt:Date.now()+120000,requestFingerprint:'a'.repeat(64),ledgerAnchor:null};
    const snapshot=()=>Object.fromEntries(TABLE_REGISTRY.map(t=>[t.name,rows(state.storage,t.name)])),before=snapshot(),alarm=await state.storage.getAlarm();
-   await expect(advanceCapture(workspace,context,{max_rows:100,max_artifacts:0,max_total_bytes:100000})).rejects.toThrow('RECOVERY_FORMAT_UNAVAILABLE');
+   expect(withTransaction(state.storage,inspectRegistry).schemaVersion).toBe(15);
+   await expect(advanceCapture(workspace,context,{max_rows:100,max_artifacts:0,max_total_bytes:100000})).rejects.toThrow('RECOVERY_ARTIFACT_BINDING_UNAVAILABLE');
    await expect(beginRestore(workspace,{...context,operation:'restore'},{} as never,{} as never)).rejects.toThrow('RECOVERY_FORMAT_UNAVAILABLE');
    await expect(recordProbe(workspace,{...context,operation:'probe',captureId:null})).rejects.toThrow('RECOVERY_FORMAT_UNAVAILABLE');
    expect(snapshot()).toEqual(before);expect(await state.storage.getAlarm()).toBe(alarm);expect(objectEffects).toBe(0);

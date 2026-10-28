@@ -3,7 +3,8 @@ import type {Clock,Entropy} from '../workspace/context';
 import type {RecoveryCommand,RecoveryManifest,RecoveryReceipt,RecoveryJobProgress,CurrentLedger,ProbeReceipt,ResumeReceipt,RetirementReceipt,CutoverRecord,ChunkMetadata} from './generated/recovery-validators.js';
 import {validateRecoveryJobProgress,validateRecoveryReceipt,validateProbeReceipt,validateResumeReceipt,validateRetirementReceipt} from './generated/recovery-validators.js';
 import {canonicalBytes,closed,isSlug,CONTROL_LIMIT} from './encoding';
-import {readAdmissionFence,assertFence,type AdmissionFence} from './maintenance-v1';
+import {readAdmissionFence,assertFence,type AdmissionFence} from './maintenance';
+import {assertSchemaVersion,CURRENT_SCHEMA_VERSION} from '../storage/schema-version';
 export type {RecoveryCommand,RecoveryManifest,RecoveryReceipt,RecoveryJobProgress,CurrentLedger,ProbeReceipt,ResumeReceipt,RetirementReceipt,CutoverRecord,ChunkMetadata};
 export type RecoveryOperation=Exclude<RecoveryCommand['operation'],'install'>;
 export type RecoveryRequest=Exclude<RecoveryCommand,{operation:'install'}>;
@@ -15,7 +16,7 @@ export interface RecoveryContext {
 }
 export interface RecoveryIntegrity {keyId:string;key:string;}
 export interface RecoveryWorkspace {
- storage:DurableObjectStorage;bucket:R2Bucket;workspaceId:string;objectName:string;environmentId:string;
+ storage:DurableObjectStorage;bucket:R2Bucket;artifactBucket?:R2Bucket;workspaceId:string;objectName:string;environmentId:string;
  clock:Clock;entropy:Entropy;integrity:RecoveryIntegrity;release:RecoveryManifest['release'];
  repairSchedule:()=>Promise<{armed:boolean;nextDueAt:number|null;generation:number;dirty:boolean}>;
 }
@@ -29,15 +30,13 @@ export function validateRecoveryContext(ctx:unknown):asserts ctx is RecoveryCont
 /** The expected installed epoch check always precedes replay for non-install requests. */
 export function assertRecoveryContext(tx:WorkspaceTransaction,w:RecoveryWorkspace,ctx:RecoveryContext,expected?:AdmissionFence):AdmissionFence {
  validateRecoveryContext(ctx);
- // V1 recovery cannot serialize or restore the schema8 authority/artifact boundary.
- const versions=tx.all<{version:number}>('SELECT version FROM schema_migrations ORDER BY version');
- if(versions.length!==7||versions.some((row,i)=>row.version!==i+1))throw Error('RECOVERY_FORMAT_UNAVAILABLE');
+ const schema=recoverySchema(tx,ctx);
  if(ctx.proofExpiresAt<=w.clock.nowMs())throw Error('OPERATOR_PROOF_EXPIRED');
  if(ctx.workspaceId!==w.workspaceId||ctx.objectName!==w.objectName||ctx.environmentId!==w.environmentId)throw Error('WORKSPACE_IDENTITY_MISMATCH');
  const metadata=tx.one<{workspace_id:string;object_name:string;config_epoch:number;installation_digest:string}>('SELECT workspace_id,object_name,config_epoch,installation_digest FROM workspace_metadata WHERE id=1');
  if(metadata&&(metadata.workspace_id!==w.workspaceId||metadata.object_name!==w.objectName))throw Error('WORKSPACE_IDENTITY_MISMATCH');
  if((metadata?.config_epoch??0)!==ctx.expectedEpoch||(metadata?.installation_digest??null)!==ctx.expectedInstallationDigest)throw Error('RECOVERY_EPOCH_CONFLICT');
- return expected?assertFence(tx,expected):readAdmissionFence(tx);
+ return expected?assertFence(tx,expected,schema):readAdmissionFence(tx,schema);
 }
 export function boundedData<T extends RecoveryData>(data:T):T {
  if(!(validateRecoveryJobProgress(data)||validateRecoveryReceipt(data)||validateProbeReceipt(data)||validateResumeReceipt(data)||validateRetirementReceipt(data))||canonicalBytes(data).length>CONTROL_LIMIT-256)throw Error('RECOVERY_RESULT_LIMIT');return data;
@@ -60,3 +59,12 @@ export interface RecoveryWorkspaceV2 extends RecoveryWorkspace {artifactBucket:R
 export type RecoveryManifestV1=Extract<RecoveryManifest,{format_version:1}>;
 export type RecoveryManifestV2=Extract<RecoveryManifest,{format_version:2}>;
 export type RecoveryArtifactEntry=RecoveryManifestV2['artifacts'][number];
+
+/** Current capability is capture-only. Exact tuple checks precede replay and effects. */
+export function recoverySchema(tx:WorkspaceTransaction,ctx:Pick<RecoveryContext,'operation'>):7|15{
+ const n=tx.one<{version:number}>('SELECT MAX(version) AS version FROM schema_migrations')?.version;
+ if(n!==7&&(n!==CURRENT_SCHEMA_VERSION||!['capture','read-chunk','status'].includes(ctx.operation)))throw Error('RECOVERY_FORMAT_UNAVAILABLE');
+ try{assertSchemaVersion(tx,n);}catch{throw Error('RECOVERY_FORMAT_UNAVAILABLE');}return n;
+}
+export type CurrentRecoveryManifest=Extract<RecoveryManifest,{checkpoint:{schema_version:15}}>;
+export type CurrentRecoveryArtifactEntry=CurrentRecoveryManifest['artifacts'][number];

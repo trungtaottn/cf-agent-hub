@@ -1,3 +1,6 @@
+import {advanceCurrentCapture} from './capture-current';
+import {recoverySchema} from './protocol';
+import {assertCurrentCaptureJob} from './jobs';
 import {withTransaction,type WorkspaceTransaction,type SqlValue} from '../storage/transaction';
 import {canonicalJson} from '../config/bootstrap';
 import {TABLE_REGISTRY,inspectRegistry,type RecoveryTableName} from './table-registry-v1';
@@ -28,6 +31,8 @@ function page(tx:WorkspaceTransaction,job:RecoveryJob):{job:RecoveryJob;chunk:Re
  return {job,chunk:{format_version:1,capture_id:job.capture_id,index:d.counts.chunks,table:table.name,columns:table.columns.map(c=>c.name),rows}};
 }
 export async function advanceCapture(w:RecoveryWorkspace,ctx:RecoveryContext,budget:RecoveryBudget):Promise<RecoveryJobProgress>{
+ if(!w.storage)throw Error('RECOVERY_FORMAT_UNAVAILABLE');
+ if(withTransaction(w.storage,tx=>recoverySchema(tx,ctx))===15){if(!ctx.captureId||ctx.operation!=='capture')throw Error('INVALID_RECOVERY_CONTEXT');return advanceCurrentCapture(w,ctx,budget);}
  if(budget.max_artifacts!==0)throw Error('RECOVERY_FORMAT_UNAVAILABLE');
  if(!ctx.captureId||ctx.operation!=='capture')throw Error('INVALID_RECOVERY_CONTEXT');
  withTransaction(w.storage,tx=>assertRecoveryContext(tx,w,ctx));const id=await jobIdFor(w.workspaceId,ctx.captureId,'capture');
@@ -57,7 +62,7 @@ async function finishCapture(w:RecoveryWorkspace,ctx:RecoveryContext,job:Recover
   transitionMaintenance(tx,{state:'captured',epoch:ctx.expectedEpoch,barrierId:current.details.checkpoint.barrier_id,captureId:current.capture_id,nowMs:w.clock.nowMs(),advance:false});saveJob(tx,current);const result=progress(current);storeOperation(tx,ctx,result,w.clock.nowMs());return result;});
 }
 export async function readRecoveryChunk(w:RecoveryWorkspace,ctx:RecoveryContext,index:number):Promise<{metadata:ChunkMetadata;bytes:ArrayBuffer}>{
- const {job,chunk}=withTransaction(w.storage,tx=>{assertRecoveryContext(tx,w,ctx);const found=tx.one<{id:string}>("SELECT id FROM recovery_jobs WHERE capture_id=? AND operation='capture'",[ctx.captureId]);if(!found)throw Error('RECOVERY_JOB_CONFLICT');const job=assertJob(tx,w,ctx,found.id),chunk=chunkRecords(tx,job.id).find(c=>c.chunk_index===index);if(!chunk)throw Error('RECOVERY_CHUNK_MISMATCH');return {job,chunk};});
+ const {job,chunk}=withTransaction(w.storage,tx=>{assertRecoveryContext(tx,w,ctx);const found=tx.one<{id:string}>("SELECT id FROM recovery_jobs WHERE capture_id=? AND operation='capture'",[ctx.captureId]);if(!found)throw Error('RECOVERY_JOB_CONFLICT');const job=recoverySchema(tx,ctx)===15?assertCurrentCaptureJob(tx,w,ctx,found.id):assertJob(tx,w,ctx,found.id),chunk=chunkRecords(tx,job.id).find(c=>c.chunk_index===index);if(!chunk)throw Error('RECOVERY_CHUNK_MISMATCH');return {job,chunk};});
  const bytes=await readStoredChunk(w,ctx,job,chunk);return {metadata:{capture_id:job.capture_id,index,sha256:chunk.sha256,byte_size:chunk.byte_size},bytes:bytes.buffer};
 }
-export function readRecoveryStatus(w:RecoveryWorkspace,ctx:RecoveryContext,jobId:string):RecoveryJobProgress{return withTransaction(w.storage,tx=>{const job=assertJob(tx,w,ctx,jobId);return progress(job);});}
+export function readRecoveryStatus(w:RecoveryWorkspace,ctx:RecoveryContext,jobId:string):RecoveryJobProgress{return withTransaction(w.storage,tx=>{assertRecoveryContext(tx,w,ctx);const job=recoverySchema(tx,ctx)===15?assertCurrentCaptureJob(tx,w,ctx,jobId):assertJob(tx,w,ctx,jobId);return progress(job);});}
