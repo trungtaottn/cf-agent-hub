@@ -107,3 +107,7 @@ Local issue34 integrates current task/committed-artifact references into existin
 Issue35 local result review source and its explicit non-release limits are recorded in [the execution ledger](r2-task-plans/issue-035-execution.md). The formal capability rows are unchanged.
 
 Issue36 local authorized literal search and the explicit ambiguous-native-secret prerequisite are recorded in [the execution ledger](r2-task-plans/issue-036-execution.md). Formal capability rows and acceptance status remain unchanged.
+
+## Local issue38 native-client source note
+
+Issue38 adds a typed native facade, explicit protected-capture enrollment seam and bounded artifact stream hooks on the existing browser transport. The single reviewed/generated operation mapping covers current source support, not deployment availability. Private provenance receipts are process-local; durable store/journal/platform support remains issue41. See [exact local evidence](r2-task-plans/issue-038-execution.md). Formal capability rows remain unchanged; no source pass, synthetic Workers measurement or draft publication establishes Verified/Released status or integrated acceptance.

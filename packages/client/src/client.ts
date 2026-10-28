@@ -1,4 +1,5 @@
-import type {ApiResult,HubClientOptions,Operation,OperationInputs,Page,RequestOptions,ServerErrorCode} from './types';
+import {HttpTransport,failure,faultResult} from './transport';
+import type {ApiResult,HubClientOptions,Operation,OperationInputs,RequestOptions} from './types';
 import {
  validateAuthStartRequest,validateAuthLogoutRequest,validateAuthStartData,validateAuthSession,validateAuthLogoutData,validateProfileWriteRequest,validatePreferencesWriteRequest,
  validateWorkspace,validateConfiguration,validateProfileData,validateProfilePreview,validateProfileExport,validatePreferencesData,
@@ -9,7 +10,6 @@ import {httpFieldNames} from '../../../src/http/generated/http-schemas';
 type Route = {path:string;method:'GET'|'POST'|'PUT';csrf?:boolean;key?:boolean;page?:boolean;validate?:(data:unknown)=>boolean};
 const record=(value:unknown):value is Record<string,unknown>=>typeof value==='object'&&value!==null&&!Array.isArray(value);
 const nonempty=(value:unknown):value is string=>typeof value==='string'&&value.length>0;
-const requestId=(value:unknown,maxLength?:number):string|null=>nonempty(value)&&(maxLength===undefined||Array.from(value).length<=maxLength)?value:null;
 const routes:Record<Operation,Route>={
  getWorkspace:{path:'',method:'GET',validate:validateWorkspace},
  startAuth:{path:'auth/start',method:'POST',validate:validateAuthStartData},
@@ -26,30 +26,6 @@ const routes:Record<Operation,Route>={
  listEvents:{path:'events',method:'GET',page:true,validate:data=>Array.isArray(data)&&data.every(validateEvent)},
  getThread:{path:'threads',method:'GET',page:true,validate:data=>Array.isArray(data)&&data.every(validateMessage)}
 };
-const messages:Record<ServerErrorCode,string>={
- INVALID_REQUEST:'Invalid request',UNAUTHENTICATED:'Authentication required',FORBIDDEN:'Access denied',NOT_FOUND:'Resource unavailable',
- VERSION_CONFLICT:'Resource version changed',IDEMPOTENCY_CONFLICT:'Idempotency key conflicts with original intent',INVALID_STATE:'Invalid resource state',
- STALE_RUN:'Run is stale',APPROVAL_EXPIRED:'Approval expired',CURSOR_EXPIRED:'Cursor expired',LIMIT_EXCEEDED:'Request limit exceeded',
- RATE_LIMITED:'Request rate exceeded',DEPENDENCY_UNAVAILABLE:'Dependency unavailable',INTERNAL_ERROR:'Internal request failure'
-};
-const failure=(code:string,message:string,status:number|null=null,retryable=false,id:string|null=null,details?:Record<string,unknown>):ApiResult<never>=>({
- ok:false,status,error:{code,message,retryable,...(details&&Object.keys(details).length?{details}:{})},requestId:id
-});
-function parsePage(value:unknown):Page|null{
- if(!record(value)||Object.keys(value).some(key=>key!=='next_cursor'&&key!=='has_more')||typeof value.has_more!=='boolean')return null;
- if(value.next_cursor!==null&&!nonempty(value.next_cursor))return null;
- if(value.has_more!==(value.next_cursor!==null))return null;
- return {next_cursor:value.next_cursor as string|null,has_more:value.has_more};
-}
-function safeDetails(value:unknown):Record<string,unknown>{
- const details:Record<string,unknown>={};if(!record(value))return details;
- const field=value.field;
- if(typeof field==='string'&&field.length<=256&&field.startsWith('/')&&field.slice(1).split('/').every(segment=>(httpFieldNames as readonly string[]).includes(segment)||/^[0-9]{1,5}$/.test(segment)))details.field=field;
- for(const key of ['current_version','current_proposal_version','current_revision','retry_after_seconds'] as const)
-  if(typeof value[key]==='number'&&Number.isSafeInteger(value[key])&&value[key]>=0)details[key]=value[key];
- if(value.feature==='tasks'||value.feature==='artifacts')details.feature=value.feature;
- return details;
-}
 type ValidationIssue={instancePath?:string;keyword?:string;params?:Record<string,unknown>};
 type ValidatorWithErrors=((input:unknown)=>boolean)&{errors?:readonly ValidationIssue[]|null};
 const knownFieldSegment=(segment:string):boolean=>
@@ -94,11 +70,11 @@ function validInput(operation:Operation,input:Record<string,unknown>):boolean{
 /** Browser-only R1 cookie transport. One fetch per call; replay belongs to the caller. */
 export class HubClient {
  readonly #workspaceId:string;
- readonly #fetch:typeof globalThis.fetch;
+ readonly #transport:HttpTransport;
  #csrfToken:string|null=null;
  constructor(workspaceId:string,options:HubClientOptions={}){
   if(!/^[a-zA-Z0-9_-]{1,128}$/.test(workspaceId))throw new Error('Invalid workspace ID');
-  this.#workspaceId=workspaceId;this.#fetch=options.fetch??globalThis.fetch.bind(globalThis);
+  this.#workspaceId=workspaceId;this.#transport=new HttpTransport(options.fetch??globalThis.fetch.bind(globalThis));
  }
  /** Session-bound token stays in this object only; callers supply the /auth/session token. */
  setCsrfToken(token:string|null):void{
@@ -128,26 +104,11 @@ export class HubClient {
    if(route.csrf)headers.set('x-csrf-token',this.#csrfToken!);
   }catch{return failure('INVALID_REQUEST','Invalid request');}
   let response:Response;
-  try{
-   response=await this.#fetch(url,{method:route.method,headers,body,credentials:'same-origin',mode:'same-origin',redirect:'error',cache:'no-store',signal:options.signal});
-  }catch(error){
-   const aborted=options.signal?.aborted||(error instanceof Error&&error.name==='AbortError');
-   return failure(aborted?'REQUEST_ABORTED':'NETWORK_ERROR',aborted?'Request aborted':'Network request failed',null,!aborted);
-  }
+  try{response=await this.#transport.open(url,{method:route.method,headers,body,credentials:'same-origin',mode:'same-origin',redirect:'error',cache:'no-store',signal:options.signal});}
+  catch(error){const result=faultResult(error);if(!result.ok&&result.error.code==='NETWORK_ERROR')result.error.retryable=true;return result;}
   if(response.status===401||response.status===403)this.#csrfToken=null;
-  let envelope:unknown;
-  try{envelope=await response.json();}catch{return failure('INVALID_RESPONSE','Invalid server response',response.status);}
-  if(!record(envelope))return failure('INVALID_RESPONSE','Invalid server response',response.status);
-  if(!response.ok){
-   const error=envelope.error;
-   if(!record(error)||typeof error.code!=='string'||!Object.hasOwn(messages,error.code)||typeof error.retryable!=='boolean'||typeof error.message!=='string'||!requestId(error.request_id))
-    return failure('INVALID_RESPONSE','Invalid server response',response.status);
-   return failure(error.code,messages[error.code as ServerErrorCode],response.status,error.retryable,requestId(error.request_id),safeDetails(error.details));
-  }
-  const id=requestId(envelope.request_id,route.page?undefined:128),page=route.page?parsePage(envelope.page):undefined;
-  if(!id||!Object.hasOwn(envelope,'data')||!route.validate?.(envelope.data)||(route.page&&!page))
-   return failure('INVALID_RESPONSE','Invalid server response',response.status);
-  if(operation==='logoutAuth')this.#csrfToken=null;
-  return {ok:true,status:response.status,data:envelope.data as T,requestId:id,...(page?{page}:{})};
+  const result=await this.#transport.json<T>(response,route);
+  if(result.ok&&operation==='logoutAuth')this.#csrfToken=null;
+  return result;
  }
 }

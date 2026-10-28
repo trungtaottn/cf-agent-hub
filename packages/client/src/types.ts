@@ -45,3 +45,67 @@ export type Operation = keyof OperationInputs;
 export type RequestOptions = {idempotencyKey?:string;signal?:AbortSignal};
 export type HubClientOptions = {fetch?:typeof globalThis.fetch};
 export type ServerErrorCode = DTO.Error['error']['code'];
+
+export type {EnabledOperationId} from '../../../src/http/generated/client-operations';
+import type {EnabledOperationId} from '../../../src/http/generated/client-operations';
+export type RequestFor<K extends EnabledOperationId> = DTO.HttpOperationRequests[K];
+export type ResponseFor<K extends EnabledOperationId> = K extends 'downloadArtifactContent' ? ArtifactDownloadResult : ApiResult<DTO.HttpOperationData[K]>;
+
+/** A caller comparison constraint, never authentication evidence. */
+export interface VerifiedPrincipalBinding {
+ readonly origin:string;readonly workspaceId:string;readonly principalId:string;
+ readonly slotId:string;readonly slotGeneration:number;readonly provenanceId:string;
+}
+declare const provenanceBrand:unique symbol;
+/** Runtime identity is checked by the transport, not by the TypeScript brand. Not serializable authority. */
+export interface CredentialProvenance {
+ readonly binding:Readonly<VerifiedPrincipalBinding>;
+ readonly [provenanceBrand]:true;
+}
+/** Trusted protected-store adapter. use/release/currentness are synchronous and nonblocking.
+ * use pins this exact slot and invokes its callback exactly once before returning its result.
+ * An arbitrary imported token has provenance:null until explicit enrollment captures proof.
+ * Durable receipt restore/import is deliberately not implemented by this process-local facade. */
+export interface CredentialDispatchLease {
+ readonly slotId:string;readonly slotGeneration:number;readonly provenance:CredentialProvenance|null;
+ isCurrent():boolean;
+ use<T>(dispatch:(credential:string)=>T):T;
+ release():void;
+}
+export interface CredentialProvider {
+ acquire(expected:Readonly<VerifiedPrincipalBinding>|null,signal?:AbortSignal):Promise<CredentialDispatchLease>;
+}
+export interface NativeClientOptions {
+ origin:string;workspaceId:string;credentialProvider:CredentialProvider;fetch:typeof globalThis.fetch;
+ /** Total per-call deadline, including acquisition, response bytes and capture. Default 30s; max 120s. */
+ timeoutMs?:number;
+}
+export interface NativeRequestOptions extends RequestOptions {
+ runtimeProof?:string;expectedBinding?:Readonly<VerifiedPrincipalBinding>;
+ /** Explicit stream hooks only; no hidden metadata lookup or all-pages buffering. */
+ artifact?:DTO.Artifact;upload?:ReadableStream<Uint8Array>;
+}
+export interface RuntimeCapture {
+ readonly runtime:Readonly<DTO.Runtime>;readonly runtimeProof:string;
+ readonly provenance:CredentialProvenance;readonly signal:AbortSignal;
+}
+export interface EnrollmentOptions extends RequestOptions {
+ idempotencyKey:string;expectedBinding?:Readonly<VerifiedPrincipalBinding>;
+ captureRuntime:(capture:RuntimeCapture)=>void|Promise<void>;
+}
+export type StreamCompletion = {ok:true;byteSize:number}|{ok:false;error:{code:string;message:string}};
+export interface ArtifactDownload {
+ body:ReadableStream<Uint8Array>;
+ /** Byte count and clean EOF, not an incremental digest or file-write acknowledgment. */
+ completion:Promise<StreamCompletion>;
+ artifact:Readonly<DTO.Artifact>;
+}
+/** Binary contract has no server request-ID header. Never fabricate correlation. */
+export type ArtifactDownloadResult =
+ | {ok:true;status:number;data:ArtifactDownload;requestId:null}
+ | Extract<ApiResult<never>,{ok:false}>;
+export interface NativeClient {
+ call<K extends EnabledOperationId>(operation:K,request:RequestFor<K>,options?:NativeRequestOptions):Promise<ResponseFor<K>>;
+ /** createRuntime is supported only through this explicit one-time-secret mode. */
+ enrollRuntime(request:RequestFor<'createRuntime'>,options:EnrollmentOptions):Promise<ApiResult<DTO.Runtime>>;
+}
