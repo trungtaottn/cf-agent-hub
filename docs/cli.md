@@ -1,6 +1,6 @@
 # CLI command contract
 
-Status: Design baseline · Contract revision 0.1 · Implementation pending.
+Status: CLI command surface planned · Contract revision 0.1 · Local persistence/provider groundwork implemented; distribution and operational acceptance pending.
 
 The planned `cf-agent-hub` CLI is a thin native HTTP client for external runtimes and operators inspecting their workspace. The name and commands below are proposed interfaces; no package installation command, released binary or working login flow is supplied. Contract fixtures can be reviewed now. Execution examples become onboarding instructions only after the CLI is implemented and verified.
 
@@ -76,10 +76,25 @@ The [issue #22 recovery decision](adr/r2-recovery-contract.md) defines the close
 
 ## Local shared-client prerequisite (issue38)
 
-The typed native facade and bounded stream hooks now exist in source; a distributed CLI, protected credential store, durable journal and cross-platform support do not. The [client contract](http-api.md#local-typed-native-client-facade) reuses the browser's transport without using browser cookies or human-only administration. Generated operation support is not proof that a deployment enables that route.
+The typed native facade and bounded stream hooks exist in source. Issue41 now adds the local protected provider and durable journal described below; a distributed CLI and cross-platform support do not. The [client contract](http-api.md#local-typed-native-client-facade) reuses the browser's transport without using browser cookies or human-only administration. Generated operation support is not proof that a deployment enables that route.
 
 Enrollment deliberately uses `enrollRuntime` with mandatory protected capture and returns safe `Runtime` metadata only. Its process-local receipt rejects forged/copied/cross-provider provenance but is not a durable store format. Issue41 must validate protected-store integrity/writer ownership and restore/import associations before trusting persisted bindings. Arbitrary token imports remain unbound for ordinary mutations until a supported explicit binding flow succeeds. No parsed bearer identifier or caller principal label is evidence. Credential rotation cannot silently rebind unresolved journal entries.
 
 The earlier proposed CLI JSON projection remains a CLI presentation rule: after confirmed secure capture, issue41 may construct its documented redacted enrollment envelope. The shared transport does not falsify wire `RuntimeIssue.revealed` or return a secret-bearing response to ordinary callers. `CREDENTIAL_CHANGED`, `REQUEST_TIMEOUT`, `REQUEST_ABORTED`, network failure and capture failure can occur after dispatch; the error code alone never authorizes clearing or replaying a journal entry. Journaled calls must preserve and pass `expectedBinding` with the exact target/body/key, then apply the reviewed finite replay horizon and no-send reconciliation rules.
 
 There is no implemented all-pages helper. Artifact consumers must await stream completion and their own destination write, and must not treat receipt of binary response headers as a completed download. Source tests and synthetic Workers transfers do not establish installed CLI, package distribution or deployed-native conformance.
+
+
+## Local durable CLI groundwork (issue41)
+
+`packages/cli/src` implements the Linux protected SQLite backend, mutation journal, credential/proof provider, conservative clock and `DurableMutations` coordinator. These are source APIs, not installed commands or permission to import a real token. [ADR0009](adr/0009-r2-cli-local-durability.md) owns the accepted threat model, filesystem policy, limits and unsupported operations; [execution evidence](r2-task-plans/issue-041-execution.md) separates local tests from release gates.
+
+Use explicit private directories outside the checkout. `journal.sqlite` stores exact sensitive user task/message bodies; `secrets.sqlite` stores credential/proof material and initial enrollment attempts. Both are access-controlled plaintext, **not encrypted files or OS keychains**. Never copy either to logs, audit reports, issue evidence or ordinary diagnostics. Existing insecure paths fail rather than being repaired. Storage failure never authorizes unjournaled network dispatch. No automatic expiry/eviction removes unresolved operations; new admission stops at the documented cap. Seven-day settled pruning is explicit eligibility, not guaranteed erasure or a maximum age.
+
+For ordinary JSON mutations, `prepare` records the immutable operation/target/query/body/context and verified slot/principal binding. Noninteractive callers supply a key; interactive generation occurs only after a keyless record commits. `dispatch(id)` reconstructs the stored canonical request, uses the same key and `expectedBinding`, durably records the first-dispatch stamp and sends at most once. It does not retry, enroll, rotate, rebase or invent a new key after failure. Raw artifact upload replay is closed in this coordinator until issue44 provides retained file/digest binding; the existing bounded native stream API is unchanged.
+
+Initial `prepareEnrollment` uses a distinct protected unbound attempt (`principalId:null`), not invented authenticated metadata. `dispatchEnrollment` commits one-time consumption before fetch, captures the one-time proof under the actual lease and commits protected activation before returning safe Runtime metadata. A consumed attempt cannot replay; lost/failed capture requires explicit fresh enrollment. No CLI JSON formatter is supplied yet; the earlier redacted-envelope presentation rule may only be applied after confirmed capture, never as proof of replay success.
+
+A keyed intent that never reached its first-dispatch stamp can be recovered with its original key/body. Once dispatched, this Linux clock adapter supports replay only within the proven **same-process** epoch and strictly before24hours; after restart, missing continuity means retained no-send reconciliation, not automatic retry. Read/manual reconciliation must establish the original result before a new action. Never edit journal fields or replace its database to bypass a conflict. Offline same-UID backup rollback is unsupported and not automatically detectable; fresh setup/enrollment and explicit reconciliation are operator responsibilities.
+
+No real account authentication, secret import/setup, credential issuance, OS-vault configuration or ongoing access was performed for this development task. Those remain separate action-time-authorized operations. Actual filesystem evidence is overlayfs subprocess crash/reopen; ext-family/XFS support is source-policy/unit-branch evidence, not hardware reboot/power-loss certification.

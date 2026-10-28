@@ -62,10 +62,13 @@ export interface CredentialProvenance {
  readonly binding:Readonly<VerifiedPrincipalBinding>;
  readonly [provenanceBrand]:true;
 }
-/** Trusted protected-store adapter. use/release/currentness are synchronous and nonblocking.
+/** Trusted protected-store adapter. use/release/currentness are synchronous, never async refresh.
+ * Protected local currentness checks may perform bounded blocking storage I/O;
+ * the transport checks its deadline and trusted replay clock afterward, before fetch.
  * use pins this exact slot and invokes its callback exactly once before returning its result.
  * An arbitrary imported token has provenance:null until explicit enrollment captures proof.
- * Durable receipt restore/import is deliberately not implemented by this process-local facade. */
+ * Generic providers retain process-local receipts. Only the internal concrete
+ * protected-provider bridge can restore durable associations; no public JSON import. */
 export interface CredentialDispatchLease {
  readonly slotId:string;readonly slotGeneration:number;readonly provenance:CredentialProvenance|null;
  isCurrent():boolean;
@@ -80,7 +83,16 @@ export interface NativeClientOptions {
  /** Total per-call deadline, including acquisition, response bytes and capture. Default 30s; max 120s. */
  timeoutMs?:number;
 }
+export interface SemanticRequest {
+ readonly operation:EnabledOperationId;readonly method:string;readonly path:string;readonly queryCanonical:string;readonly canonicalBody:string;readonly origin:string;readonly workspaceId:string;
+}
+export interface NativeDispatchContext {readonly request:Readonly<SemanticRequest>;readonly binding:Readonly<VerifiedPrincipalBinding>|null;readonly lease:CredentialDispatchLease;readonly key:string|undefined;}
+/** Durability hook, not authentication. Final check runs synchronously in the actual pinned dispatch. */
+export type NativeDispatchGuard=(context:NativeDispatchContext)=>(()=>void)|Promise<()=>void>;
+export type NativeProofDispatch=<T>(context:{binding:Readonly<VerifiedPrincipalBinding>;runtimeId:string;lease:CredentialDispatchLease},dispatch:(proof:string)=>T)=>T;
 export interface NativeRequestOptions extends RequestOptions {
+ runtimeProofDispatch?:NativeProofDispatch;
+ dispatchGuard?:NativeDispatchGuard;
  runtimeProof?:string;expectedBinding?:Readonly<VerifiedPrincipalBinding>;
  /** Explicit stream hooks only; no hidden metadata lookup or all-pages buffering. */
  artifact?:DTO.Artifact;upload?:ReadableStream<Uint8Array>;
@@ -88,10 +100,13 @@ export interface NativeRequestOptions extends RequestOptions {
 export interface RuntimeCapture {
  readonly runtime:Readonly<DTO.Runtime>;readonly runtimeProof:string;
  readonly provenance:CredentialProvenance;readonly signal:AbortSignal;
+ readonly lease:CredentialDispatchLease;
 }
+export interface RuntimeCaptureFinalizer {commit():void;abort():void;}
 export interface EnrollmentOptions extends RequestOptions {
+ dispatchGuard?:NativeDispatchGuard;
  idempotencyKey:string;expectedBinding?:Readonly<VerifiedPrincipalBinding>;
- captureRuntime:(capture:RuntimeCapture)=>void|Promise<void>;
+ captureRuntime:(capture:RuntimeCapture)=>void|RuntimeCaptureFinalizer|Promise<void|RuntimeCaptureFinalizer>;
 }
 export type StreamCompletion = {ok:true;byteSize:number}|{ok:false;error:{code:string;message:string}};
 export interface ArtifactDownload {

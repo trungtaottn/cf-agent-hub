@@ -1,0 +1,10 @@
+import {afterAll,beforeAll,it,expect} from 'vitest';
+import {build} from 'esbuild';
+import {mkdtempSync,rmSync} from 'node:fs';
+import {dirname,join} from 'node:path';
+import {spawnSync} from 'node:child_process';
+let root:string,bundle:string;
+beforeAll(async()=>{root=mkdtempSync(join(dirname(process.cwd()),'cfhub-native-hooks-'));bundle=join(root,'hooks.mjs');await build({entryPoints:['test/client/fixtures/native-hook-faults.ts'],outfile:bundle,bundle:true,platform:'node',format:'esm',target:'node24',logLevel:'silent'});});
+afterAll(()=>rmSync(root,{recursive:true,force:true}));
+it.each(['proof','guard','commit','abort'])('observes and rejects invalid asynchronous %s without unhandled rejection',mode=>{const child=spawnSync(process.execPath,[bundle,mode],{encoding:'utf8',timeout:5000});expect(child.status).toBe(0);expect(child.stderr).toBe('');expect(JSON.parse(child.stdout)).toMatchObject({unhandled:0,ok:false});});
+it('aborts a finalizer resolving after capture cancellation without committing',()=>{const child=spawnSync(process.execPath,[bundle,'late'],{encoding:'utf8',timeout:5000});expect(child.status).toBe(0);expect(JSON.parse(child.stdout)).toMatchObject({unhandled:0,abort:1,fetches:1,ok:false});});

@@ -111,3 +111,6 @@ Issue36 local authorized literal search and the explicit ambiguous-native-secret
 ## Local issue38 native-client source note
 
 Issue38 adds a typed native facade, explicit protected-capture enrollment seam and bounded artifact stream hooks on the existing browser transport. The single reviewed/generated operation mapping covers current source support, not deployment availability. Private provenance receipts are process-local; durable store/journal/platform support remains issue41. See [exact local evidence](r2-task-plans/issue-038-execution.md). Formal capability rows remain unchanged; no source pass, synthetic Workers measurement or draft publication establishes Verified/Released status or integrated acceptance.
+
+
+Issue41 adds local durable intent/protected-provider foundations, not an installed CLI or capability promotion. [Execution evidence](r2-task-plans/issue-041-execution.md) and [ADR0009](adr/0009-r2-cli-local-durability.md) retain platform, replay-continuity, plaintext threat-model and acceptance limits. Formal Verified/Released rows remain unchanged.

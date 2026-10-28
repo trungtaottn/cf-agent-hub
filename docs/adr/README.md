@@ -16,3 +16,5 @@ These records explain the chosen design direction and alternatives. Acceptance h
 Record dates are 2026-10-23. The canonical operational contracts remain in their linked reference pages; these records explain why those contracts exist.
 
 Issue-specific additive decisions: [R2 recovery contract](r2-recovery-contract.md) (development contract only).
+
+Local development decision: [ADR0009 — CLI local durability](0009-r2-cli-local-durability.md), including D3/D-JOURNAL, protected-provider trust and platform evidence limits.
