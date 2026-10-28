@@ -105,3 +105,5 @@ Issue33 implements local bounded expiry/orphan observation and conditional artif
 Local issue34 integrates current task/committed-artifact references into existing messages without changing formal capability states. [Scoped implementation/evidence](r2-task-plans/issue-034-execution.md) covers coherent grants, atomic associations, current projections/dispatch and ACK neutrality; live acceptance and R2 evidence-register promotion remain pending.
 
 Issue35 local result review source and its explicit non-release limits are recorded in [the execution ledger](r2-task-plans/issue-035-execution.md). The formal capability rows are unchanged.
+
+Issue36 local authorized literal search and the explicit ambiguous-native-secret prerequisite are recorded in [the execution ledger](r2-task-plans/issue-036-execution.md). Formal capability rows and acceptance status remain unchanged.

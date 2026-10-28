@@ -3,13 +3,13 @@ import {HttpError} from './envelopes';
 import type {Entropy} from '../workspace/context';
 /** Only routes with implemented query/retention semantics may mint cursors.
  * Future task/search/history owners extend this closed map with their own bindings. */
-const cursorOperations={inbox:'message',thread:'message',events:'sequence',agents:'message',credentials:'message',tasks:'message',artifacts:'message','task-results':'sequence'} as const;
+const cursorOperations={inbox:'message',thread:'message',events:'sequence',agents:'message',credentials:'message',tasks:'message',artifacts:'message','task-results':'sequence',search:'message'} as const;
 export interface CursorBinding {workspaceId:string;principalId:string;lane:'human'|'agent';credentialId:string|null;sessionId:string|null;operation:keyof typeof cursorOperations;queryHash:string;}
 export interface MessagePosition {createdAt:number;id:string;}
 export type CursorPosition=MessagePosition|number;
 export interface CursorPayload {version:1;binding:CursorBinding;highWater:CursorPosition;lastScanned:CursorPosition;expiresAt:number;}
 const utf8=new TextEncoder();
-const padded=(operation:CursorBinding['operation'])=>operation==='tasks'||operation==='task-results'||operation==='artifacts';
+const padded=(operation:CursorBinding['operation'])=>operation==='tasks'||operation==='task-results'||operation==='artifacts'||operation==='search';
 const PADDED_CLEAR_BYTES=1508; // 12 nonce + 16 GCM tag + 1508 clear => exactly 2048 base64url bytes.
 const invalid=():never=>{throw new HttpError('INVALID_REQUEST',400);};
 const position=(v:unknown):v is CursorPosition=>typeof v==='number'?Number.isSafeInteger(v)&&v>=0:!!v&&typeof v==='object'&&Object.keys(v).sort().join(',')==='createdAt,id'&&Number.isSafeInteger((v as MessagePosition).createdAt)&&(v as MessagePosition).createdAt>=0&&typeof (v as MessagePosition).id==='string'&&(v as MessagePosition).id.length>0;

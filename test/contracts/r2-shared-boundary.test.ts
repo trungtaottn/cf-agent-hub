@@ -23,6 +23,13 @@ it('existing_canonical_utf8_byte_limits_survive_generator_expansion',async()=>{
 });
 it.each(['unknown','search','task-results','__proto__','constructor'])('unknown_unimplemented_or_wrong_shape_cursor_operation_denied_%s',async operation=>{
  const codec=createCursorCodec('a'.repeat(64),{bytes:n=>crypto.getRandomValues(new Uint8Array(n))});
- const payload={version:1,binding:{workspaceId:'ws_a',principalId:'p_a',lane:'agent',credentialId:'c_a',sessionId:null,operation,queryHash:'a'.repeat(64)},highWater:{createdAt:2,id:'a'},lastScanned:{createdAt:1,id:'a'},expiresAt:1000} as CursorPayload;
+ const payload={version:1,binding:{workspaceId:'ws_a',principalId:'p_a',lane:'agent',credentialId:'c_a',sessionId:null,operation,queryHash:'a'.repeat(64)},highWater:operation==='search'?2:{createdAt:2,id:'a'},lastScanned:operation==='search'?1:{createdAt:1,id:'a'},expiresAt:1000} as CursorPayload;
  await expect(codec.encodeCursor(payload)).rejects.toMatchObject({code:'INVALID_REQUEST'});
+});
+
+it('implemented_search_cursor_requires_position_shape_and_retains_fixed_padding',async()=>{
+ const codec=createCursorCodec('a'.repeat(64),{bytes:n=>crypto.getRandomValues(new Uint8Array(n))});
+ const payload:CursorPayload={version:1,binding:{workspaceId:'ws_a',principalId:'p_a',lane:'agent',credentialId:'c_a',sessionId:null,operation:'search',queryHash:'a'.repeat(64)},highWater:{createdAt:2,id:'a'},lastScanned:{createdAt:1,id:'a'},expiresAt:1000};
+ const token=await codec.encodeCursor(payload);expect(token).toHaveLength(2048);expect(await codec.decodeCursor(token,payload.binding,1)).toEqual(payload);
+ await expect(codec.decodeCursor(token,{...payload.binding,operation:'tasks'},1)).rejects.toMatchObject({code:'INVALID_REQUEST'});
 });
