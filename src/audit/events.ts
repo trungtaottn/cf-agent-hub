@@ -1,3 +1,4 @@
+import {readImport,importHuman,assertImportVisible} from '../imports/repository';
 import {projectTaskResult} from '../tasks/results';
 import {getArtifact} from '../artifacts/repository';
 import {assertAdmissionOpen} from '../recovery/maintenance';
@@ -14,6 +15,8 @@ import {HttpError} from '../http/envelopes';
 import {assertMessageVisible} from '../messages/references';
 export interface RedactedEventInput extends EventDraft{id:string;workspaceId:string;actor:ActorContext;requestId:string;nowMs:number;}
 const definitions={
+ 'import.previewed':{resource:'import',summary:'Import preview created.'},
+ 'import.applied':{resource:'import',summary:'Import applied.'},
  'catalog.previewed':{resource:'profile',summary:'Catalog change previewed.'},
  'catalog.applied':{resource:'profile',summary:'Catalog change applied.'},
  'message.accepted':{resource:'message',summary:'Message accepted.'},
@@ -52,6 +55,10 @@ export function appendEvent(tx:WorkspaceTransaction,event:RedactedEventInput):{i
  if(!definition||(event.type as string)==='task.expired'||!['human','agent'].includes(event.actor.kind)||event.resourceType!==definition.resource||event.workspaceId!==event.actor.workspaceId||
   (event.resourceType==='profile'||event.resourceType==='preferences'||event.resourceType==='agent'||event.resourceType==='credential')&&event.actor.kind!=='human'||
   event.resourceType==='profile'&&event.resourceId!==event.workspaceId)throw new HttpError('INTERNAL_ERROR',500);
+ if(event.type==='import.previewed'||event.type==='import.applied'){
+  const actor=importHuman(tx,{actor:event.actor,nowMs:event.nowMs},event.type==='import.applied'),stored=readImport(tx,actor,event.resourceId);assertImportVisible(tx,{actor,nowMs:event.nowMs},stored);
+  if(event.resourceVersion!==(event.type==='import.previewed'?1:2)||event.type==='import.previewed'&&stored.row.status!=='previewed'||event.type==='import.applied'&&(stored.row.status!=='applied'||stored.report?.applied_at!==new Date(event.nowMs).toISOString())||event.nowMs<stored.row.created_at||event.nowMs>=stored.row.expires_at)throw new HttpError('INTERNAL_ERROR',500);
+ }
  const row:EventRow={id:event.id,workspace_id:event.workspaceId,sequence:1,type:event.type,actor_json:canonicalJson({kind:event.actor.kind,principal_id:event.actor.principalId,agent_id:event.actor.agentId}),resource_type:event.resourceType,resource_id:event.resourceId,resource_version:event.resourceVersion,thread_id:event.threadId,request_id:event.requestId,occurred_at:event.nowMs,summary:definition.summary};
  if(event.resourceType==='task'){const task=taskRecord(tx,event.workspaceId,event.resourceId);if(event.resourceVersion!==null)throw new HttpError('INTERNAL_ERROR',500);row.task_version=task.task_version;}
  let historyTaskId=event.resourceType==='task'?event.resourceId:null;
@@ -152,6 +159,13 @@ export function projectEvent(tx:WorkspaceTransaction,actor:ActorContext,id:strin
 export const resourceEventVisibility:EventVisibility=(tx,actor,resource,event,nowMs)=>{
  if(!validateEvent(event)||event.workspace_id!==actor.workspaceId||resource.id!==event.resource_id||resource.kind!==event.resource_type)return false;
  try{
+  if(event.type==='import.previewed'||event.type==='import.applied'){
+   authorize(tx,actor,'events:read',undefined,nowMs);
+   const live=importHuman(tx,{actor,nowMs}),stored=readImport(tx,live,event.resource_id);assertImportVisible(tx,{actor:live,nowMs},stored);
+   if(event.actor.kind!=='human'||event.actor.principal_id!==live.principalId||event.resource_version!==(event.type==='import.previewed'?1:2))return false;
+   if(event.type==='import.applied')return stored.report!==null&&stored.report.applied_at===event.occurred_at;
+   const occurred=Date.parse(event.occurred_at);return occurred>=stored.row.created_at&&occurred<stored.row.expires_at;
+  }
   authorize(tx,actor,'events:read',resource.kind==='credential'||resource.kind==='task'||resource.kind==='run'||resource.kind==='artifact'?undefined:resource,nowMs);
   if(resource.kind==='artifact'){getArtifact(tx,{actor,nowMs},event.resource_id);return true;}
   if(event.type==='message.accepted'||event.type==='message.acknowledged'){

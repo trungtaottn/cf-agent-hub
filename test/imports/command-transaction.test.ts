@@ -1,0 +1,11 @@
+import {it,expect} from 'vitest';
+import {env} from 'cloudflare:workers';
+import {runInDurableObject} from 'cloudflare:test';
+import {importFixture,importBatch} from './helpers';
+import {currentConfiguration} from '../../src/auth/context';
+import {withTransaction} from '../../src/storage/transaction';
+import {prepareImportPreview} from '../../src/imports/commands';
+import {executeCommand} from '../../src/workspace/commands';
+import {fingerprintRequest} from '../../src/workspace/idempotency';
+import {human,owned} from '../helpers/settings';
+it('direct command wrapper atomically retains only preview event and outcome',async()=>{const f=await importFixture('imports-direct-diagnostic');await runInDurableObject(f.a.stub,async(_o,{storage:s})=>{const workspace={...owned(s,f.a.name),secrets:env as unknown as Record<string,unknown>},identity=human(s),installed=withTransaction(s,tx=>currentConfiguration(tx,workspace)),body=importBatch(),fingerprint=await fingerprintRequest('POST','/imports',{},body),command=await prepareImportPreview(workspace,{identity,fence:installed.fence,idempotencyKey:'diagnostic',fingerprint},body,'import_diagnostic');const outcome=executeCommand({workspace,requestId:'diagnostic',idempotencyKey:'diagnostic',fingerprint:await fingerprintRequest('POST','/imports',{},body),admissionEpoch:installed.epoch,admissionGeneration:installed.fence.maintenanceGeneration},identity,command,body);expect(outcome.status).toBe(200);expect(s.sql.exec('SELECT COUNT(*) AS n FROM import_plans').one().n).toBe(1);expect(s.sql.exec('SELECT COUNT(*) AS n FROM tasks').one().n).toBe(0);expect(s.sql.exec('SELECT COUNT(*) AS n FROM import_mappings').one().n).toBe(0);expect(s.sql.exec("SELECT COUNT(*) AS n FROM events WHERE type='import.previewed'").one().n).toBe(1);expect(s.sql.exec("SELECT COUNT(*) AS n FROM idempotency_outcomes WHERE target='imports:preview'").one().n).toBe(1);});});

@@ -6,6 +6,7 @@ import {resolveActor,type SessionRecord} from '../auth/authorize';
 import {withTransaction} from '../storage/transaction';
 import {executeCommandDetailed,type CommandDescriptor} from '../workspace/commands';
 import {fingerprintRequest} from '../workspace/idempotency';
+import type {AdmissionFence} from '../recovery/maintenance';
 import type {VerifiedIdentity} from '../workspace/context';
 import type {HttpSchemaName} from './generated/http-schemas';
 import {parseBoundedJson} from './bounds';
@@ -13,8 +14,10 @@ import {HttpError,securityHeaders,toHttpError,toHttpResponse} from './envelopes'
 import {securityLog} from '../audit/redact';
 /** Private preparation result; raw secrets remain only in initialResponse closure. */
 export interface PreparedCommand<B,T>{command:CommandDescriptor<B,T>;initialResponse?:(data:T)=>T;}
+/** Original proof/fence only; preparation never receives cached authorization. */
+export interface CommandPreparationContext{identity:VerifiedIdentity;fence:AdmissionFence;idempotencyKey:string;fingerprint:string;}
 /** Constructed by the domain owner in the DO, never a public command descriptor. */
-export interface CommandRoute<B,T>{method:string;path:string;schema:HttpSchemaName;query(params:URLSearchParams):unknown;command:CommandDescriptor<B,T>|((body:B)=>Promise<PreparedCommand<B,T>>);}
+export interface CommandRoute<B,T>{method:string;path:string;schema:HttpSchemaName;schemaValidationValue?:(value:unknown)=>unknown;query(params:URLSearchParams):unknown;command:CommandDescriptor<B,T>|((body:B,context:CommandPreparationContext)=>Promise<PreparedCommand<B,T>>);}
 /** Authenticated framework hook for domain owners. Does not register any public route. */
 export async function dispatchCommand<B,T>(request:Request,workspace:AuthWorkspace,route:CommandRoute<B,T>):Promise<Response>{
  const requestId=crypto.randomUUID(),headers=new Headers(securityHeaders);let executing=false;
@@ -25,7 +28,7 @@ export async function dispatchCommand<B,T>(request:Request,workspace:AuthWorkspa
   if(bearer&&cookie?.split(';').some(x=>x.trim().startsWith('cfhub_session=')))throw new HttpError('INVALID_REQUEST',400);
   const key=request.headers.get('idempotency-key');if(!key)throw new HttpError('INVALID_REQUEST',400);
   const installed=withTransaction(workspace.storage,tx=>currentConfiguration(tx,workspace));
-  const body=await parseBoundedJson(request,route.schema) as B,query=route.query(url.searchParams);
+  const body=await parseBoundedJson(request,route.schema,route.schemaValidationValue) as B,query=route.query(url.searchParams);
   const auth=installed.config.authentication,redirect=auth.redirect_uris.find(x=>x.workspace_id===workspace.workspaceId)!.redirect_uri,origin=new URL(redirect).origin;
   if(url.origin!==origin||request.headers.has('origin')&&request.headers.get('origin')!==origin)throw new HttpError('FORBIDDEN',403);
   if(request.headers.has('origin')){
@@ -44,7 +47,7 @@ export async function dispatchCommand<B,T>(request:Request,workspace:AuthWorkspa
    assertCsrf(request,{csrfToken:await csrfToken(workspace,session),origin});
   }
   const fingerprint=await fingerprintRequest(route.method,route.path,query,body);
-  const prepared=typeof route.command==='function'?await route.command(body):{command:route.command};
+  const prepared=typeof route.command==='function'?await route.command(body,{identity,fence:installed.fence,idempotencyKey:key,fingerprint}):{command:route.command};
   executing=true;
   const result=executeCommandDetailed({workspace,requestId,idempotencyKey:key,fingerprint,admissionEpoch:installed.epoch,admissionGeneration:installed.fence.maintenanceGeneration},identity,prepared.command,body);
   // No await follows commit. Projection is not passed to descriptors, persistence or logs.
