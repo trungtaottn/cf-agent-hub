@@ -178,7 +178,7 @@ export class WorkspaceDO extends DurableObject<WorkspaceEnvironment> {
   // Ownership commands commit a durable generation. Schedule its shared repair
   // within the DO lifetime without awaiting after the final authorized projection.
   // Failure remains dirty for the existing scheduled catalog sweep/restart repair.
-  if(task&&request.method==='POST'&&/:(claim|fail|cancel|heartbeat)$/.test(path)&&response.ok)this.ctx.waitUntil(this.#repairDirty());
+  if(task&&request.method==='POST'&&/:(claim|fail|cancel|submit-result|heartbeat)$/.test(path)&&response.ok)this.ctx.waitUntil(this.#repairDirty());
   if(message&&request.method==='POST'&&response.ok)this.ctx.waitUntil(this.#repairDirty());
   if(artifact&&request.method!=='GET'&&request.method!=='OPTIONS'&&response.ok)this.ctx.waitUntil(this.#repairDirty());
   // Message/event startup repair stays before authentication; never await it after projection.

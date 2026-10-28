@@ -11,10 +11,11 @@ import type {CommandContext,VerifiedIdentity} from '../../src/workspace/context'
 import type {DeploymentConfig} from '../../src/config/deployment';
 import type {TaskCreateRequest} from '../../src/http/dto';
 export const PROOF_A='a'.repeat(64),PROOF_B='b'.repeat(64),PROOF_ROTATED='c'.repeat(64),PROOF_OTHER='d'.repeat(64);
-export async function claimFixture(name:string,options:{humanCancel?:boolean;wip?:number;replaySafe?:boolean;policy?:boolean;scopes?:DeploymentConfig['static_credential_refs'][number]['scopes'];projects?:string[]|null}={}){
+export async function claimFixture(name:string,options:{humanReview?:boolean;humanCancel?:boolean;wip?:number;replaySafe?:boolean;policy?:boolean;scopes?:DeploymentConfig['static_credential_refs'][number]['scopes'];projects?:string[]|null}={}){
  const raw=await fixture(name);
  const humanScopes:DeploymentConfig['human_grants'][number]['scopes']=[...raw.config.human_grants[0].scopes,'tasks:read','tasks:create','tasks:edit','tasks:schedule','artifacts:read','agents:manage','credentials:manage'];
  if(options.humanCancel)humanScopes.push('tasks:cancel');
+ if(options.humanReview)humanScopes.push('tasks:review');
  raw.config.human_grants[0].scopes=[...new Set(humanScopes)];
  const scopes:DeploymentConfig['static_credential_refs'][number]['scopes']=options.scopes??['workspace:read','events:read','tasks:read','tasks:claim','tasks:execute','runtimes:manage'];
  const credential={...raw.config.static_credential_refs[0],scopes,project_ids:options.projects===undefined?null:options.projects};

@@ -4,12 +4,13 @@ import {dispatchCommand} from './router';
 import {dispatchTaskRead} from './task-read-routes';
 import {createTaskCommand,patchTaskCommand,readyTaskCommand,cancelTaskCommand,requeueTaskCommand} from '../tasks/commands';
 import {claimTaskCommand} from '../tasks/claim';
+import {submitTaskResultCommand,acceptTaskResultCommand} from '../tasks/results';
 import {failTaskCommand} from '../tasks/failure';
 import {heartbeatRunCommand} from '../tasks/lease';
 import {hashRuntimeProof} from '../auth/runtime-proof';
 import {HttpError,toHttpError,securityHeaders} from './envelopes';
-/** Only reviewed issue29–31 execution/cancellation is admitted; successor APIs remain closed. */
-export const taskPath=/^\/v2\/workspaces\/([a-zA-Z0-9_-]{1,128})\/(tasks(?:\/[^/:]+(?::ready|:claim|:fail|:cancel|:requeue|\/results)?)?|runs\/[^/:]+(?::heartbeat)?)$/;
+/** Reviewed execution/cancellation and issue35 result review are admitted; successor APIs remain closed. */
+export const taskPath=/^\/v2\/workspaces\/([a-zA-Z0-9_-]{1,128})\/(tasks(?:\/[^/:]+(?::ready|:claim|:fail|:cancel|:requeue|:submit-result|:accept-result|\/results)?)?|runs\/[^/:]+(?::heartbeat)?)$/;
 function opaqueId(workspace:AuthWorkspace,prefix:string):string{const bytes=workspace.entropy.bytes(24);if(bytes.length!==24)throw new HttpError('INTERNAL_ERROR',500);return prefix+Array.from(bytes,x=>x.toString(16).padStart(2,'0')).join('');}
 function noQuery(params:URLSearchParams):Record<string,never>{if(params.size)throw new HttpError('INVALID_REQUEST',400);return {};}
 export async function taskRoutes(request:Request,workspace?:AuthWorkspace):Promise<Response>{
@@ -18,7 +19,7 @@ export async function taskRoutes(request:Request,workspace?:AuthWorkspace):Promi
   if(!workspace||!match||match[1]!==workspace.workspaceId)throw new HttpError('NOT_FOUND',404);
   const path=match[2],collection=path==='tasks',action=path.includes(':')?path.slice(path.lastIndexOf(':')+1):null,run=path.startsWith('runs/'),results=/^tasks\/[^/]+\/results$/.test(path);
   let id:string|null=null;
-  if(!collection){try{id=decodeURIComponent(path.slice(run?'runs/'.length:'tasks/'.length).replace(/(:ready|:claim|:fail|:cancel|:requeue|:heartbeat|\/results)$/, ''));}catch{throw new HttpError('INVALID_REQUEST',400);}if(!id)throw new HttpError('INVALID_REQUEST',400);}
+  if(!collection){try{id=decodeURIComponent(path.slice(run?'runs/'.length:'tasks/'.length).replace(/(:ready|:claim|:fail|:cancel|:requeue|:submit-result|:accept-result|:heartbeat|\/results)$/, ''));}catch{throw new HttpError('INVALID_REQUEST',400);}if(!id)throw new HttpError('INVALID_REQUEST',400);}
   const methods=collection?['GET','POST']:action?['POST']:results||run?['GET']:['GET','PATCH'];
   if(request.method==='OPTIONS'){
    noQuery(url.searchParams);const {config}=withTransaction(workspace.storage,tx=>currentConfiguration(tx,workspace)),auth=config.authentication;
@@ -34,6 +35,8 @@ export async function taskRoutes(request:Request,workspace?:AuthWorkspace):Promi
   if(action==='ready')return dispatchCommand(request,workspace,{...common,schema:'TaskVersionRequest',command:readyTaskCommand(id!)});
   if(action==='cancel'||action==='requeue')return dispatchCommand(request,workspace,{...common,schema:'TaskReasonRequest',command:action==='cancel'?cancelTaskCommand(id!):requeueTaskCommand(id!)});
   if(action==='claim')return dispatchCommand(request,workspace,{...common,schema:'TaskClaimRequest',command:async()=>({command:claimTaskCommand(id!,opaqueId(workspace,'run_'),await hashRuntimeProof(request.headers.get('x-runtime-token')))})});
+  if(action==='accept-result')return dispatchCommand(request,workspace,{...common,schema:'TaskReasonRequest',command:acceptTaskResultCommand(id!)});
+  if(action==='submit-result')return dispatchCommand(request,workspace,{...common,schema:'TaskSubmitResultRequest',command:async()=>({command:submitTaskResultCommand(id!,await hashRuntimeProof(request.headers.get('x-runtime-token')))})});
   if(action==='fail')return dispatchCommand(request,workspace,{...common,schema:'TaskFailRequest',command:async()=>({command:failTaskCommand(id!,await hashRuntimeProof(request.headers.get('x-runtime-token')))})});
   if(run&&action==='heartbeat')return dispatchCommand(request,workspace,{...common,schema:'RunHeartbeatRequest',command:async()=>({command:heartbeatRunCommand(id!,await hashRuntimeProof(request.headers.get('x-runtime-token')))})});
   return dispatchCommand(request,workspace,{...common,schema:'TaskPatchRequest',command:patchTaskCommand(id!)});

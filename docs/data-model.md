@@ -1,8 +1,8 @@
 # Data model
 
-Status: R2 schema 10 and identity/credential source implemented locally · Contract revision 0.1 · Other domain commands and live acceptance pending.
+Status: R2 schema14 and local source through independent result review · Contract revision0.1 · Later-round commands and live acceptance pending.
 
-This page defines conceptual ownership and invariants. The issue24 storage implementation is described below; issue25 adds the identity/credential commands only. Other conceptual behavior is not automatically an enabled command. JSON field spelling and request schemas are defined in [HTTP API](http-api.md) and [OpenAPI](../spec/openapi.json). Database table/index design must preserve these invariants while being verified against the chosen runtime.
+This page defines conceptual ownership and invariants. The local storage and successive identity/task/artifact/result producers are described in the issue-scoped sections below. Other conceptual behavior is not automatically an enabled command. JSON field spelling and request schemas are defined in [HTTP API](http-api.md) and [OpenAPI](../spec/openapi.json). Database table/index design must preserve these invariants while being verified against the chosen runtime.
 
 ## Entity ownership
 
@@ -153,3 +153,11 @@ Due candidates are selected through partial workspace/due/id indexes before insp
 ## Local R2 message association integration
 
 Issue34 uses existing message_artifacts(workspace_id,message_id,artifact_id,ordinal) and matching artifact_associations message edges. No new table is added. Forward migration14 adds only `credentials_live_read`, a partial workspace/agent/config_epoch/expires_at/credential_id index over enabled, nonrevoked, nonretired native credentials. The query seeks current epoch and future expiry before bounding candidates, so retained history does not consume message eligibility. Original migrations1–13 and frozen schema8/V1 remain unchanged. Binary13 rollback onto14 is unsupported, and current recovery remains closed. Explicit IDs retain exact order; refs_json retains typed refs. Both sides of the relationship and all existing message transaction families commit together. Post-insert visibility checks run before commit so a newly added cyclic edge cannot strand accepted messages beyond the bounded graph budget. Reads/replay/events/dispatch, artifact downloads and retained Task.result/history projections use the same iterative all-edge relationship checks, not a cached ACL or recursive authentication. A visited set deduplicates work only after local scope/membership validation. [Execution and compatibility](r2-task-plans/issue-034-execution.md) describe bounds, unknown/hidden failures and current recovery gates.
+
+## Issue35 immutable result and acceptance producers
+
+Issue35 consumes the existing schema14 tables without a migration. A submitted run has one task_results row with stable actor kind/principal/agent, task/run binding, monotonically increasing task-local submission sequence, summary and timestamp. result_artifacts preserves exact attachment order and artifact_associations retains reverse result links. The result, ended submitted run, Review task pointer/version, scheduler marker, event/history and sanitized outcome commit atomically; requeue/cancel never delete this evidence.
+
+Independent acceptance inserts task_acceptances with reviewer principal/agent, exact result/run, resulting task version, private reason and time before Done. It does not overwrite submitted_by or add undocumented public Task fields. Public existing events expose reviewer actor and task/run/version/time with fixed summaries; private reasons remain internal. The two new event producers are task.result_submitted and task.result_accepted. Historical event reads validate their own immutable result/acceptance, not merely the task's current pointer. Full current artifact/message association visibility remains mandatory.
+
+The producer validates standalone history result, embedded Task and complete command data before committing; safe counter overflow fails closed. Current schema14 recovery remains unavailable pending39/43, so retained source fixtures are not operational restoration evidence. See [execution](r2-task-plans/issue-035-execution.md).
