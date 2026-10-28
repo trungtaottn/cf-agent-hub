@@ -185,8 +185,9 @@ export class WorkspaceDO extends DurableObject<WorkspaceEnvironment> {
   if(task&&request.method==='POST'&&/:(claim|fail|cancel|submit-result|heartbeat)$/.test(path)&&response.ok)this.ctx.waitUntil(this.#repairDirty());
   if(message&&request.method==='POST'&&response.ok)this.ctx.waitUntil(this.#repairDirty());
   if(artifact&&request.method!=='GET'&&request.method!=='OPTIONS'&&response.ok)this.ctx.waitUntil(this.#repairDirty());
-  // Message/event startup repair stays before authentication; never await it after projection.
-  if(!diagnostic&&!message)await this.#repairDirty();return response;
+  // Startup repair stays before authentication. No route may await unrelated
+  // alarm I/O after its final current-authority projection.
+  return response;
  }
  async command(request:InternalRequest):Promise<InternalResponse> {
   if(!closed(request,['workspaceId','objectName','requestId','operation'])||!identifier(request.workspaceId)||!identifier(request.objectName)||!identifier(request.requestId)||typeof request.operation!=='string'||request.operation.length>128)throw Error('INVALID_INTERNAL_REQUEST');
