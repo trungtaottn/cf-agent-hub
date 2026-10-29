@@ -17,6 +17,10 @@ export function configureR2UiFixture(config:DeploymentConfig):void{
 }
 interface FixtureStorage {exec(query:string,...bindings:(string|number|null)[]):Promise<Record<string,unknown>[]>;}
 interface FixtureWorker {fetch(url:string,init?:RequestInit):Promise<Response>;}
+/** Normalize only our trusted Miniflare fixture response, without buffering or exporting session state. */
+export function normalizeFixturePreviewResponse(response:Response):Response {
+ return new globalThis.Response(response.body,{status:response.status,statusText:response.statusText,headers:response.headers});
+}
 export async function seedR2UiFixture(options:{worker:FixtureWorker;storage:FixtureStorage;origin:string;issuer:string;csrfSecret:string;nativeToken:string}){
  const {worker,storage,origin,issuer,csrfSecret,nativeToken}=options,base=origin+'/v2/workspaces/ws_example';
  const now=Date.now(),sessionId='session_r2_fixture_seed',sessionToken=randomBytes(32).toString('base64url'),expires=now+3600000;
@@ -70,5 +74,8 @@ export async function seedR2UiFixture(options:{worker:FixtureWorker;storage:Fixt
   assert.equal((await call<Task>('/tasks/'+cancelled.id)).data.state,'cancelled');
  }
  await assertPersisted();
- return {facts,assertPersisted,advanceBacklog:async()=>ready(backlog[0]!),revokeHumans:async()=>{await storage.exec("UPDATE sessions SET revoked_at=? WHERE workspace_id='ws_example' AND revoked_at IS NULL",Date.now());}};
+ return {facts,assertPersisted,readForPreview:async(path:string,options:{signal:AbortSignal})=>{
+  if(!path.startsWith('/')||path.startsWith('//')||path.includes('\\')||path.length>4096||new URL(path,origin).origin!==origin)throw Error('PREVIEW_PATH_REJECTED');
+  return normalizeFixturePreviewResponse(await worker.fetch(origin+path,{method:'GET',redirect:'manual',headers:{cookie:'cfhub_session='+sessionToken},signal:options.signal}));
+ },advanceBacklog:async()=>ready(backlog[0]!),revokeHumans:async()=>{await storage.exec("UPDATE sessions SET revoked_at=? WHERE workspace_id='ws_example' AND revoked_at IS NULL",Date.now());}};
 }

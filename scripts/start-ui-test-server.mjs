@@ -5,19 +5,21 @@ import { randomBytes, createHmac } from 'node:crypto';
 import assert from 'node:assert/strict';
 import { build } from 'esbuild';
 import { createTestHarness } from 'wrangler';
+import {startReadOnlyPreview} from './lib/local-readonly-preview.mjs';
 
 const originalFetch=globalThis.fetch;
-let harness,fixture,buildDirectory,stopping=false;
+let harness,fixture,preview,buildDirectory,stopping=false;
 async function dispose() {
  if(stopping)return;stopping=true;
  globalThis.fetch=originalFetch;
  const failures=[];
- for(const close of [()=>fixture?.close(),()=>harness?.close()])try{await close();}catch(error){failures.push(error);}
+ for(const close of [()=>preview?.close(),()=>fixture?.close(),()=>harness?.close()])try{await close();}catch(error){failures.push(error);}
  if(buildDirectory)await rm(buildDirectory,{recursive:true,force:true});
  if(failures.length)throw Error('FIXTURE_TEARDOWN_FAILED');
 }
 for(const signal of ['SIGINT','SIGTERM'])process.once(signal,()=>{void dispose().then(()=>process.exit(0),()=>process.exit(1));});
 try {
+ if(process.argv.includes('--preview-readonly')&&process.argv.some(arg=>arg==='--self-check'||arg==='--self-check-r2'))throw Error('FIXTURE_MODE_CONFLICT');
  await mkdir('.superpowers/tmp',{recursive:true});
  buildDirectory=await mkdtemp(resolve('.superpowers/tmp/ui-build-'));
  const modulePath=join(buildDirectory,'fixture.mjs');
@@ -114,6 +116,13 @@ try {
   }
   throw Error('UNKNOWN_FIXTURE_CONTROL');
  };
+ if(process.argv.includes('--preview-readonly')){
+  await control('r2-board');
+  const previewProbe=await r2Fixture.readForPreview('/tasks',{signal:AbortSignal.timeout(5000)});
+  console.log('CFHUB_LOCAL_PREVIEW_PROBE '+JSON.stringify({status:previewProbe.status,html:previewProbe.headers.get('content-type')?.startsWith('text/html')??false,nodeResponse:previewProbe instanceof Response,bodyMarker:/<body(?:\s[^>]*)?>/.test(await previewProbe.text())}));
+  preview=await startReadOnlyPreview({read:(path,options)=>r2Fixture.readForPreview(path,options)});
+  console.log('CFHUB_LOCAL_PREVIEW_READY '+preview.origin+' synthetic_read_only');
+ }
  if(process.argv.includes('--self-check')||process.argv.includes('--self-check-r2')) {
   await control('fresh');
   const authProbe=await worker.fetch(APP_ORIGIN+'/v2/workspaces/ws_example/auth/start',{method:'POST',headers:{origin:APP_ORIGIN,'content-type':'application/json'},body:JSON.stringify({return_path:'/overview'})});
