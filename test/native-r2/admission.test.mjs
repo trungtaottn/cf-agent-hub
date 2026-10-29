@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readNativeConfig,admitNativeRun} from '../../scripts/lib/native-r2-admission.mjs';
+import {mkdtempSync,writeFileSync,rmSync,chmodSync,symlinkSync} from 'node:fs';
+import {join,resolve} from 'node:path';
+test('missing config is sanitized',()=>assert.throws(()=>readNativeConfig('/missing/native-config.json'),/^Error: NATIVE_CONFIG_REJECTED$/));
+test('protected mode alone cannot admit config inside Git ancestry',()=>{const dir=mkdtempSync(resolve('.native-config-test-'));try{chmodSync(dir,0o700);const path=join(dir,'config.json');writeFileSync(path,'{}',{mode:0o600});assert.throws(()=>readNativeConfig(path),/NATIVE_CONFIG_REJECTED/);}finally{rmSync(dir,{recursive:true});}});
+test('symlink config rejected',()=>{const dir=mkdtempSync(resolve('.native-config-test-'));try{writeFileSync(join(dir,'real.json'),'{}',{mode:0o600});symlinkSync(join(dir,'real.json'),join(dir,'link.json'));assert.throws(()=>readNativeConfig(join(dir,'link.json')),/NATIVE_CONFIG_REJECTED/);}finally{rmSync(dir,{recursive:true});}});
+test('missing trusted integration fails before disk/network/child effects',async()=>{await assert.rejects(admitNativeRun({},undefined),/^Error: NATIVE_AUTHORITY_UNAVAILABLE$/);});
+test('plain config authority booleans cannot become integration',async()=>{await assert.rejects(admitNativeRun({isolated:true},{authorized:true}),/^Error: NATIVE_AUTHORITY_UNAVAILABLE$/);});
+test('Node requires executable mode before any effects; module data does not',async()=>{const {nativeExecutableModeAllowed}=await import('../../scripts/lib/native-r2-admission.mjs');assert.equal(nativeExecutableModeAllowed(0o644,true),false);assert.equal(nativeExecutableModeAllowed(0o755,true),true);assert.equal(nativeExecutableModeAllowed(0o775,true),false);assert.equal(nativeExecutableModeAllowed(0o644,false),true);});

@@ -72,3 +72,7 @@ MCP connection alone must not be reported as runtime activation, task completion
 - [ ] Reviewers inspect sanitized runtime evidence and record go/no-go for the named gate.
 
 If any required check fails, keep the candidate gated, preserve evidence and follow [operations](operations.md) and [backup and restore](backup-restore.md). A code version rollback cannot undo external actions. Resuming a release requires renewed readiness and reconciliation, not a replacement success label. Update [feature matrix](feature-matrix.md), changelog and relevant contracts only to the level supported by that evidence.
+
+## Native R2 source runner
+
+See [native conformance](native-conformance.md) for the dedicated protected-config command, source-only tests, process custody and unresolved live authority. Source checks do not verify F24 or authorize acceptance, deployment, merge or release.
