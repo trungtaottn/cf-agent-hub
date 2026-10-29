@@ -4,7 +4,8 @@ import {it,expect} from 'vitest';
 import {artifactFixture,artifactContext,artifactBucket,stage,chunkStream,claimSetup} from '../helpers/artifacts';
 import {uploadArtifactContent,commitArtifact} from '../../src/artifacts/content';
 import {advanceCapture} from '../../src/recovery/capture';
-import {fixtureIntegrity,recoveryContext} from '../helpers/recovery-fixture';
+import {fixtureIntegrity} from '../helpers/recovery-fixture';
+import {withSyntheticCaptureAnchor,syntheticCaptureContext as recoveryContext} from '../helpers/synthetic-capture-anchor';
 import {hex,canonicalBytes} from '../../src/recovery/encoding';
 import {systemClock,systemEntropy} from '../../src/workspace/context';
 import type {RecoveryWorkspace,RecoveryJobProgress} from '../../src/recovery/protocol';
@@ -23,7 +24,7 @@ it('captures 31 immutable 8MiB objects within combined bounds without whole-obje
    state.storage.transactionSync(()=>{for(const [table,row] of [['artifacts',{...artifact,status:'staged',committed_at:null,expires_at:g.expires_at,active_generation_id:null,committed_generation_id:null}],['artifact_generations',generationRow]] as const)state.storage.sql.exec('INSERT INTO '+table+'('+Object.keys(row).join(',')+') VALUES('+Object.keys(row).map(()=>'?').join(',')+')',...Object.values(row));state.storage.sql.exec("UPDATE artifacts SET status='committed',committed_at=?,expires_at=NULL,active_generation_id=?,committed_generation_id=? WHERE id=?",a.committed_at,generation,generation,id);});
    const fixed=new FixedLengthStream(size);await Promise.all([chunkStream(size).pipeTo(fixed.writable),artifactBucket().put(key,fixed.readable)]);
   }
-  const w:RecoveryWorkspace={storage:state.storage,bucket:env.RECOVERY_BUCKET,artifactBucket:artifactBucket(),workspaceId:'ws_example',objectName:f.name,environmentId:'capture_runtime',clock:systemClock,entropy:systemEntropy,integrity:fixtureIntegrity,release:{revision:'synthetic_runtime',worker_version:'synthetic_runtime',binding_ids:['recovery_fixture','artifact_fixture'],catalog_mapping:{workspace_id:'ws_example',object_name:f.name}},repairSchedule:async()=>({armed:false,nextDueAt:null,generation:0,dirty:false})},budget={max_rows:1000000,max_artifacts:1000,max_total_bytes:268435456};
+  const w:RecoveryWorkspace=withSyntheticCaptureAnchor({storage:state.storage,bucket:env.RECOVERY_BUCKET,artifactBucket:artifactBucket(),workspaceId:'ws_example',objectName:f.name,environmentId:'capture_runtime',clock:systemClock,entropy:systemEntropy,integrity:fixtureIntegrity,release:{revision:'synthetic_runtime',worker_version:'synthetic_runtime',binding_ids:['recovery_fixture','artifact_fixture'],catalog_mapping:{workspace_id:'ws_example',object_name:f.name}},repairSchedule:async()=>({armed:false,nextDueAt:null,generation:0,dirty:false})}),budget={max_rows:1000000,max_artifacts:1000,max_total_bytes:268435456};
   let r:RecoveryJobProgress|undefined,finalMs=0,copyMs=0,maxDetails=0,steps=0;const start=performance.now();
   for(;steps<300;steps++){const before=performance.now(),phase=r?.phase;r=await advanceCapture(w,await recoveryContext(w,'capture',{budget},'capture_runtime',{operationId:'step_'+steps}),budget);const elapsed=performance.now()-before;if(phase==='capture_finalize')finalMs+=elapsed;if(phase==='capture_artifacts')copyMs+=elapsed;maxDetails=Math.max(maxDetails,state.storage.sql.exec<{n:number}>('SELECT length(CAST(details_json AS BLOB)) AS n FROM recovery_jobs').one().n);if(r.state!=='running')break;}
   expect(r?.state).toBe('complete');expect(r!.manifest!.artifacts).toHaveLength(31);expect(r!.counts.bytes).toBeLessThanOrEqual(budget.max_total_bytes);expect(maxDetails).toBeLessThanOrEqual(262144);

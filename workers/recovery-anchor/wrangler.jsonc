@@ -1,0 +1,13 @@
+{
+ "name":"cf-agent-hub-recovery-anchor",
+ "main":"src/index.ts",
+ "compatibility_date":"2026-10-19",
+ "workers_dev":false,"preview_urls":false,"routes":[],
+ "durable_objects":{"bindings":[{"name":"ANCHORS","class_name":"RecoveryAnchorDO"}]},
+ "migrations":[{"tag":"anchor-v1","new_sqlite_classes":["RecoveryAnchorDO"]}],
+ "vars":{"ANCHOR_POLICY":"{\"environment_id\":\"unconfigured\",\"identities\":[],\"writers\":{\"rotation\":[],\"bootstrap\":[]}}"},
+ "env":{
+  "test":{"name":"cf-agent-hub-recovery-anchor-test","workers_dev":false,"preview_urls":false,"routes":[],"durable_objects":{"bindings":[{"name":"ANCHORS","class_name":"RecoveryAnchorDO"}]},"vars":{"ANCHOR_POLICY":"{\"environment_id\":\"test\",\"identities\":[],\"writers\":{\"rotation\":[],\"bootstrap\":[]}}"}},
+  "dev":{"name":"cf-agent-hub-recovery-anchor-dev","workers_dev":false,"preview_urls":false,"routes":[],"durable_objects":{"bindings":[{"name":"ANCHORS","class_name":"RecoveryAnchorDO"}]},"vars":{"ANCHOR_POLICY":"{\"environment_id\":\"dev\",\"identities\":[],\"writers\":{\"rotation\":[],\"bootstrap\":[]}}"}}
+ }
+}

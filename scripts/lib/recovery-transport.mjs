@@ -1,4 +1,5 @@
 import https from 'node:https';
+import {assertRecoveryEnvelope} from '../../src/recovery/operator-envelope.ts';
 import crypto from 'node:crypto';
 import {approvedHttpsUrl} from '../../src/config/deployment.ts';
 import {canonicalBytes,encodeHeader,decodeHeader,closed,CONTROL_LIMIT,CHUNK_LIMIT,CONTROL_HEADER_LIMIT} from '../../src/recovery/encoding.ts';
@@ -9,7 +10,8 @@ export class RecoveryTransportError extends Error{
  constructor(code,status=null,requestId=null,serverCode=null,canonicalError=false){super(code);this.code=code;this.status=status;this.requestId=requestId;this.serverCode=serverCode;this.canonicalError=canonicalError;}
 }
 const bad=(code,status=null,id=null,server=null,canonical=false)=>new RecoveryTransportError(code,status,id,server,canonical);
-const opaque=value=>typeof value==='string'&&value.length>0;
+export const validRecoveryRequestId=value=>typeof value==='string'&&/^[A-Za-z0-9][A-Za-z0-9:._-]{0,127}$/.test(value);
+const opaque=validRecoveryRequestId;
 function serviceValid(service){return service&&typeof service.client_id==='string'&&service.client_id.length>0&&service.client_id.length<=2048&&typeof service.client_secret==='string'&&service.client_secret.length>0&&service.client_secret.length<=4096&&!/[\r\n]/.test(service.client_id+service.client_secret);}
 function validatedData(value){return [validateRecoveryJobProgress,validateRecoveryReceipt,validateProbeReceipt,validateResumeReceipt,validateRetirementReceipt].some(validate=>validate(value));}
 /** Production callers use the verified system HTTPS transport; requestImpl is dependency injection for local TLS tests only. */
@@ -20,7 +22,7 @@ export function createRecoveryTransport(config,{requestImpl=https.request,timeou
  return async function send(command,binary){
   if(!validateRecoveryCommand(command)||command.operation==='install')throw bad('RECOVERY_INPUT_REJECTED');
   const writing=command.operation==='write-chunk',reading=command.operation==='read-chunk',control=Buffer.from(canonicalBytes(command));
-  if(control.length>CONTROL_LIMIT)throw bad('RECOVERY_INPUT_REJECTED');
+  try{assertRecoveryEnvelope(command,{provisional:true});}catch{throw bad('RECOVERY_INPUT_REJECTED');}
   let body=control;
   const headers={host:origin.host,accept:reading?'application/octet-stream, application/json':'application/json','content-type':'application/json','CF-Access-Client-Id':config.service.client_id,'CF-Access-Client-Secret':config.service.client_secret};
   if(writing){
@@ -42,7 +44,8 @@ export function createRecoveryTransport(config,{requestImpl=https.request,timeou
     response.on('end',()=>{
      const raw=Buffer.concat(chunks),contentType=String(response.headers['content-type']??'').split(';')[0].trim().toLowerCase();
      if(status!==200){
-      let id=null,server=null,canonical=false;try{const value=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(raw));if(opaque(value?.error?.request_id))id=value.error.request_id;canonical=contentType==='application/json'&&closed(value,['error'])&&closed(value.error,['code','message','retryable','request_id'])&&errors.has(value.error.code)&&typeof value.error.message==='string'&&value.error.message.length>0&&value.error.retryable===false&&opaque(value.error.request_id);if(canonical)server=value.error.code;}catch{}
+      let id=null,server=null,canonical=false;try{const value=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(raw));// Remote error IDs may reflect credentials; never expose them.
+       canonical=contentType==='application/json'&&closed(value,['error'])&&closed(value.error,['code','message','retryable','request_id'])&&errors.has(value.error.code)&&typeof value.error.message==='string'&&value.error.message.length>0&&value.error.retryable===false&&opaque(value.error.request_id);if(canonical)server=value.error.code;}catch{}
       done(bad('RECOVERY_HTTP_DENIED',status,id,server,canonical));return;
      }
      if(reading){
@@ -57,7 +60,7 @@ export function createRecoveryTransport(config,{requestImpl=https.request,timeou
      }
      try{
       const value=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(raw));
-      if(contentType!=='application/json'||!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).length!==2||!Object.hasOwn(value,'request_id')||!Object.hasOwn(value,'data')||!opaque(value.request_id)||!validatedData(value.data))throw Error();
+      if(contentType!=='application/json'||!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).length!==2||!Object.hasOwn(value,'request_id')||!Object.hasOwn(value,'data')||!opaque(value.request_id)||[config.service.client_id,config.service.client_secret].some(secret=>value.request_id.includes(secret))||!validatedData(value.data))throw Error();
       done(null,{requestId:value.request_id,data:value.data,raw,sha256:hash(raw),status});
      }catch{done(bad('RECOVERY_INVALID_RESPONSE',status));}
     });

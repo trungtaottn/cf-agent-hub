@@ -58,10 +58,10 @@ export async function currentRestoreFixture(name:string,options:{seed?:boolean;a
 }
 export type CurrentRestoreFixture=Awaited<ReturnType<typeof currentRestoreFixture>>;
 export function targetArtifactBucket():R2Bucket{return (env as unknown as {TEST_RESTORE_ARTIFACT_BUCKET:R2Bucket}).TEST_RESTORE_ARTIFACT_BUCKET;}
-export async function withCurrentRecoveryWorkspace<T>(f:CurrentRestoreFixture,lane:'source'|'target',body:(w:RecoveryWorkspace)=>Promise<T>|T):Promise<T>{
+export async function withCurrentRecoveryWorkspace<T>(f:CurrentRestoreFixture,lane:'source'|'target',body:(w:RecoveryWorkspace)=>Promise<T>|T,resolver:CurrentRestoreFixture['resolver']=f.resolver):Promise<T>{
  const stub=lane==='source'?f.source:f.target,name=lane==='source'?f.sourceName:f.targetName;
  return runInDurableObject(stub,(_instance,state)=>{
-  const workspace={storage:state.storage,bucket:env.RECOVERY_BUCKET,artifactBucket:lane==='source'?artifactBucket():targetArtifactBucket(),workspaceId:'ws_example',objectName:name,environmentId:'current_'+lane,clock:systemClock,entropy:systemEntropy,integrity:fixtureIntegrity,release:{revision:'synthetic_current_restore',worker_version:'synthetic_current_restore',binding_ids:['recovery_fixture',lane==='source'?'source_artifact_fixture':'target_artifact_fixture','anchor_fixture'],catalog_mapping:{workspace_id:'ws_example',object_name:name}},repairSchedule:async()=>({armed:false,nextDueAt:null,generation:0,dirty:false}),trustedAnchor:{bindingId:'anchor_fixture',binding:{fetch:async(_request:Request)=>{f.resolver.calls++;return Response.json({workspace_id:'ws_example',environment_id:'current_'+lane,object_name:name,authority_epoch:f.resolver.anchor.authorityEpoch,ledger_sha256:f.resolver.anchor.sha256,generation:f.resolver.generation});}}}} satisfies RecoveryWorkspace & {trustedAnchor:unknown};
+  const workspace={storage:state.storage,bucket:env.RECOVERY_BUCKET,artifactBucket:lane==='source'?artifactBucket():targetArtifactBucket(),workspaceId:'ws_example',objectName:name,environmentId:'current_'+lane,clock:systemClock,entropy:systemEntropy,integrity:fixtureIntegrity,release:{revision:'synthetic_current_restore',worker_version:'synthetic_current_restore',binding_ids:['recovery_fixture',lane==='source'?'source_artifact_fixture':'target_artifact_fixture','anchor_fixture'],catalog_mapping:{workspace_id:'ws_example',object_name:name}},repairSchedule:async()=>({armed:false,nextDueAt:null,generation:0,dirty:false}),trustedAnchor:{bindingId:'anchor_fixture',binding:{fetch:async(_request:Request)=>{resolver.calls++;return Response.json({workspace_id:'ws_example',environment_id:'current_'+lane,object_name:name,authority_epoch:resolver.anchor.authorityEpoch,ledger_sha256:resolver.anchor.sha256,generation:resolver.generation});}}}} satisfies RecoveryWorkspace & {trustedAnchor:unknown};
   return body(workspace);
  });
 }
@@ -81,14 +81,20 @@ async function seedCurrentRestoreHistory(f:CurrentRestoreFixture,artifacts:boole
  });
 }
 export async function captureCurrentFixture(f:CurrentRestoreFixture,options:{evict?:boolean}={}){
+ // Synthetic source deployment authority is separate from the target resolver.
+ // Reconstruct from the source input (including later restore generations), not
+ // from a request's expected anchor, and never mutate the target fault controls.
+ const sourceLedger=await signRecord<CurrentLedger>({workspace_id:'ws_example',environment_id:'current_source',authority_epoch:f.sourceInput.config.config_epoch,config:f.sourceInput.config,verification_bundle:f.sourceInput.bundle,installation_digest:f.sourceInput.installationDigest,retired_authorities:[],auth:{key_id:fixtureIntegrity.keyId,algorithm:'HMAC-SHA256',tag:'0'.repeat(64)}},fixtureIntegrity);
+ const sourceAnchor:LedgerAnchor={authorityEpoch:sourceLedger.authority_epoch,sha256:await digestBytes(canonicalBytes(sourceLedger))};
+ const sourceResolver={generation:1,anchor:{...sourceAnchor},calls:0};
  const budget={max_rows:1000000,max_artifacts:1000,max_total_bytes:268435456};let progress:RecoveryJobProgress|undefined;
  for(let step=0;step<300;step++){
-  progress=await withCurrentRecoveryWorkspace(f,'source',async w=>advanceCapture(w,await recoveryContext(w,'capture',{budget},f.captureId,{operationId:'capture_'+step}),budget));
+  progress=await withCurrentRecoveryWorkspace(f,'source',async w=>advanceCapture(w,await recoveryContext(w,'capture',{budget},f.captureId,{anchor:sourceAnchor,operationId:'capture_'+step}),budget),sourceResolver);
   if(progress.state!=='running')break;if(options.evict)await evictDurableObject(f.source);
  }
  if(progress?.state!=='complete'||!progress.manifest||progress.manifest.format_version!==2||progress.manifest.checkpoint.schema_version!==16)throw Error('Genuine current capture failed');
  const manifest=progress.manifest as CurrentRecoveryManifest,chunks=[];
- for(const entry of manifest.database.chunks)chunks.push(await withCurrentRecoveryWorkspace(f,'source',async w=>readRecoveryChunk(w,await recoveryContext(w,'read-chunk',{index:entry.index},f.captureId),entry.index)));
+ for(const entry of manifest.database.chunks)chunks.push(await withCurrentRecoveryWorkspace(f,'source',async w=>readRecoveryChunk(w,await recoveryContext(w,'read-chunk',{index:entry.index},f.captureId,{anchor:sourceAnchor}),entry.index),sourceResolver));
  return {progress,manifest,chunks};
 }
 export async function restoreCurrentFixture(f:CurrentRestoreFixture,capture:Awaited<ReturnType<typeof captureCurrentFixture>>,options:{evict?:boolean}={}){

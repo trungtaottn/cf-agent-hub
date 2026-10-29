@@ -47,7 +47,16 @@
           "binding": "ARTIFACT_BUCKET",
           "bucket_name": "cf-agent-hub-test-artifacts"
         }
-      ]
+      ],
+      "services": [
+        {
+          "binding": "RECOVERY_ANCHOR",
+          "service": "cf-agent-hub-recovery-anchor-test"
+        }
+      ],
+      "vars": {
+        "RECOVERY_ANCHOR_BINDING_ID": "recovery_anchor_test_v1"
+      }
     },
     "dev": {
       "name": "cf-agent-hub-dev",
@@ -64,7 +73,16 @@
           "binding": "RECOVERY_BUCKET",
           "bucket_name": "cf-agent-hub-dev-recovery"
         }
-      ]
+      ],
+      "services": [
+        {
+          "binding": "RECOVERY_ANCHOR",
+          "service": "cf-agent-hub-recovery-anchor-dev"
+        }
+      ],
+      "vars": {
+        "RECOVERY_ANCHOR_BINDING_ID": "recovery_anchor_dev_v1"
+      }
     }
   },
   "rules": [
@@ -85,5 +103,14 @@
   },
   "build": {
     "command": "npm run build:ui"
+  },
+  "services": [
+    {
+      "binding": "RECOVERY_ANCHOR",
+      "service": "cf-agent-hub-recovery-anchor"
+    }
+  ],
+  "vars": {
+    "RECOVERY_ANCHOR_BINDING_ID": "recovery_anchor_default_v1"
   }
 }

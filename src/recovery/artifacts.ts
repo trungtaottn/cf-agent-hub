@@ -1,3 +1,4 @@
+import {captureByobReader} from './capture-stream';
 import {withTransaction,type WorkspaceTransaction} from '../storage/transaction';
 import {canonicalJson} from '../config/bootstrap';
 import {assertCurrentCaptureJob,assertPending,currentCaptureGuard,type CurrentCaptureJob} from './jobs';
@@ -49,40 +50,45 @@ function guardFor(w:RecoveryWorkspace,ctx:RecoveryContext,job:CurrentCaptureJob,
  return currentCaptureGuard(w,ctx,job);
 }
 /** Single producer chunk retained; output/digest writes <=64KiB with serial backpressure. */
-async function verifiedStream(body:ReadableStream<Uint8Array>,entry:CurrentRecoveryArtifactEntry,guard:()=>void,sink?:WritableStreamDefaultWriter<Uint8Array>,signal?:AbortSignal):Promise<void>{
- const reader=body.getReader(),digest=new (crypto as Crypto&{DigestStream:typeof DigestStream}).DigestStream('SHA-256'),hashWriter=digest.getWriter();
+async function verifiedStream(body:ReadableStream<Uint8Array>,entry:CurrentRecoveryArtifactEntry,guard:()=>void,sink?:WritableStreamDefaultWriter<Uint8Array>,signal?:AbortSignal,fresh?:()=>Promise<void>):Promise<void>{
+ let reader:ReturnType<typeof captureByobReader>|ReadableStreamDefaultReader<Uint8Array>;
+ try{reader=fresh?captureByobReader(body):body.getReader();}
+ catch(error){await Promise.allSettled([body.cancel(),...(sink?[sink.abort()]:[])]);sink?.releaseLock();throw error;}
+ const digest=new (crypto as Crypto&{DigestStream:typeof DigestStream}).DigestStream('SHA-256'),hashWriter=digest.getWriter();
  const hash=digest.digest.then(value=>({value}),()=>({error:true as const}));let count=0;
  const cancel=()=>{void reader.cancel().catch(()=>{});};signal?.addEventListener('abort',cancel,{once:true});
  const check=()=>{if(signal?.aborted)throw Error('RECOVERY_ARTIFACT_COPY_UNAVAILABLE');guard();};
  try{
-  for(;;){check();const part=await reader.read();check();if(part.done)break;if(!(part.value instanceof Uint8Array)||part.value.byteLength===0)throw Error('RECOVERY_ARTIFACT_BYTES_MISMATCH');count+=part.value.byteLength;if(count>entry.byte_size||count>ARTIFACT_BYTES)throw Error('RECOVERY_ARTIFACT_BYTES_MISMATCH');
-   for(let offset=0;offset<part.value.byteLength;offset+=65536){const bytes=part.value.subarray(offset,offset+65536);check();await hashWriter.write(bytes);check();if(sink){await sink.write(bytes);check();}}
+  for(;;){if(fresh)await fresh();check();const part=await reader.read(fresh?65536:undefined!);if(fresh)await fresh();check();if(part.done&&!part.value?.byteLength)break;if(!(part.value instanceof Uint8Array)||part.value.byteLength===0)throw Error('RECOVERY_ARTIFACT_BYTES_MISMATCH');count+=part.value.byteLength;if(count>entry.byte_size||count>ARTIFACT_BYTES)throw Error('RECOVERY_ARTIFACT_BYTES_MISMATCH');
+   for(let offset=0;offset<part.value.byteLength;offset+=65536){const bytes=part.value.subarray(offset,offset+65536);if(fresh)await fresh();check();await hashWriter.write(bytes);if(fresh)await fresh();check();if(sink){await sink.write(bytes);if(fresh)await fresh();check();}}
+   if(part.done)break;
   }
-  if(count!==entry.byte_size)throw Error('RECOVERY_ARTIFACT_BYTES_MISMATCH');check();await hashWriter.close();check();const result=await hash;check();if('error'in result||hex(result.value)!==entry.sha256)throw Error('RECOVERY_ARTIFACT_BYTES_MISMATCH');
-  if(sink){await sink.close();check();}
+  if(count!==entry.byte_size)throw Error('RECOVERY_ARTIFACT_BYTES_MISMATCH');if(fresh)await fresh();check();await hashWriter.close();if(fresh)await fresh();check();const result=await hash;if(fresh)await fresh();check();if('error'in result||hex(result.value)!==entry.sha256)throw Error('RECOVERY_ARTIFACT_BYTES_MISMATCH');
+  if(sink){await sink.close();if(fresh)await fresh();check();}
  }catch(error){await Promise.allSettled([reader.cancel(),hashWriter.abort(),...(sink?[sink.abort()]:[])]);throw error;}
  finally{signal?.removeEventListener('abort',cancel);reader.releaseLock();hashWriter.releaseLock();sink?.releaseLock();}
 }
-async function verifyObject(bucket:R2Bucket,key:string,entry:CurrentRecoveryArtifactEntry,guard:()=>void):Promise<boolean>{
- guard();const object=await bucket.get(key);try{guard();}catch(error){void object?.body.cancel().catch(()=>{});throw error;}
+async function verifyObject(bucket:R2Bucket,key:string,entry:CurrentRecoveryArtifactEntry,guard:()=>void,fresh?:()=>Promise<void>):Promise<boolean>{
+ if(fresh)await fresh();guard();const object=await bucket.get(key);try{if(fresh)await fresh();guard();}catch(error){void object?.body.cancel().catch(()=>{});throw error;}
  if(!object)return false;if(object.size!==entry.byte_size){void object.body.cancel().catch(()=>{});throw Error('RECOVERY_ARTIFACT_BYTES_MISMATCH');}
- await verifiedStream(object.body,entry,guard);guard();return true;
+ await verifiedStream(object.body,entry,guard,undefined,undefined,fresh);if(fresh)await fresh();guard();return true;
 }
-export async function copyArtifactToRecovery(w:RecoveryWorkspace,ctx:RecoveryContext,job:CurrentCaptureJob,entry:CurrentRecoveryArtifactEntry):Promise<void>{
- const guard=guardFor(w,ctx,job,entry);guard();if(await verifyObject(w.bucket,entry.recovery_object_key,entry,guard))return;guard();
- const source=await requireArtifactBucket(w).get(entry.object_key);try{guard();}catch(error){void source?.body.cancel().catch(()=>{});throw error;}
+export async function copyArtifactToRecovery(w:RecoveryWorkspace,ctx:RecoveryContext,job:CurrentCaptureJob,entry:CurrentRecoveryArtifactEntry,fresh?:()=>Promise<void>):Promise<void>{
+ const guard=guardFor(w,ctx,job,entry);if(fresh)await fresh();guard();if(await verifyObject(w.bucket,entry.recovery_object_key,entry,guard,fresh))return;if(fresh)await fresh();guard();
+ const source=await requireArtifactBucket(w).get(entry.object_key);try{if(fresh)await fresh();guard();}catch(error){void source?.body.cancel().catch(()=>{});throw error;}
  if(!source)throw Error('RECOVERY_ARTIFACT_MISSING');if(source.size!==entry.byte_size){void source.body.cancel().catch(()=>{});throw Error('RECOVERY_ARTIFACT_BYTES_MISMATCH');}
  const fixed=new FixedLengthStream(entry.byte_size),writer=fixed.writable.getWriter(),abort=new AbortController();
  // Observe immediately; null/throw also unblocks a producer waiting on backpressure.
+ try{if(fresh)await fresh();guard();}catch(error){await Promise.allSettled([source.body.cancel(),writer.abort()]);throw error;}
  const put=w.bucket.put(entry.recovery_object_key,fixed.readable,{onlyIf:new Headers({'If-None-Match':'*'}),sha256:entry.sha256}).then(value=>{if(value===null){abort.abort();void writer.abort().catch(()=>{});}return {value};},()=>{abort.abort();void writer.abort().catch(()=>{});return {error:true as const};});
- let failure:unknown=null;try{await verifiedStream(source.body,entry,guard,writer,abort.signal);guard();}catch(error){failure=error;}
- const result=await put;guard();if('error'in result)throw Error('RECOVERY_ARTIFACT_COPY_UNAVAILABLE');
+ let failure:unknown=null;try{await verifiedStream(source.body,entry,guard,writer,abort.signal,fresh);if(fresh)await fresh();guard();}catch(error){failure=error;}
+ const result=await put;if(fresh)await fresh();guard();if('error'in result)throw Error('RECOVERY_ARTIFACT_COPY_UNAVAILABLE');
  if(failure&&result.value!==null)throw failure;
- if(!await verifyObject(w.bucket,entry.recovery_object_key,entry,guard))throw Error('RECOVERY_ARTIFACT_MISSING');guard();
+ if(!await verifyObject(w.bucket,entry.recovery_object_key,entry,guard,fresh))throw Error('RECOVERY_ARTIFACT_MISSING');if(fresh)await fresh();guard();
 }
 /** Final readback uses the same fixed inventory; never a bucket listing/HEAD proof. */
-export async function verifyCapturedArtifact(w:RecoveryWorkspace,ctx:RecoveryContext,job:CurrentCaptureJob,entry:CurrentRecoveryArtifactEntry):Promise<void>{
+export async function verifyCapturedArtifact(w:RecoveryWorkspace,ctx:RecoveryContext,job:CurrentCaptureJob,entry:CurrentRecoveryArtifactEntry,fresh?:()=>Promise<void>):Promise<void>{
  requireArtifactBucket(w);withTransaction(w.storage,tx=>{const current=assertCurrentCaptureJob(tx,w,ctx,job.id);assertPending(current,ctx);if(current.details.phase!=='capture_finalize'||!current.details.draft||!current.details.draft.artifacts.some(x=>canonicalJson(x)===canonicalJson(entry)))throw Error('RECOVERY_OPERATION_CONFLICT');});
  const guard=currentCaptureGuard(w,ctx,job);
- if(!await verifyObject(w.bucket,entry.recovery_object_key,entry,guard))throw Error('RECOVERY_ARTIFACT_MISSING');guard();
+ if(!await verifyObject(w.bucket,entry.recovery_object_key,entry,guard,fresh))throw Error('RECOVERY_ARTIFACT_MISSING');if(fresh)await fresh();guard();
 }

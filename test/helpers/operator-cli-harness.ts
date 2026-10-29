@@ -16,7 +16,8 @@ export async function operatorCliHarness(directory:string){
  globalThis.fetch=async(input,init)=>fixture.handler(new Request(input,init));
  const harness=createTestHarness({workers:[
   {configPath:'./workers/operator/wrangler.jsonc',secrets:fixture.bindings},
-  {configPath:'./wrangler.jsonc'}
+  {configPath:'./wrangler.jsonc'},
+  {configPath:'./workers/recovery-anchor/wrangler.jsonc'}
  ]});
  let server:ReturnType<typeof createServer>|undefined;
  const sockets=new Set<import('node:stream').Duplex>();
