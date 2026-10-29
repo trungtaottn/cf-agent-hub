@@ -1,3 +1,4 @@
+import {snapshotNativeSessionAdapter,createNativeRunContext,validateNativeSessionPlan,reserveNativeCombinedBudget,createNativeSessionOwner} from './native-r2-session.mjs';
 import {createNativeInputWriter} from './native-r2-input-writer.mjs';
 import {createNativeInputAdmission} from './native-r2-input.mjs';
 import {createHash,randomUUID} from 'node:crypto';
@@ -77,12 +78,25 @@ export function snapshotNativeRefs(stepId,value){
 }
 const within=(parent,path)=>{const rel=relative(parent,path);return rel!==''&&!isAbsolute(rel)&&rel!=='..'&&!rel.startsWith('../');};
 /** Explicit trusted-host composition API. No adapter is bundled or config-loaded.
- * Adapter methods authorize/describe/prepare are pure; control/observe are the
- * only adapter effect boundaries and must enforce all declared upper bounds.
+ * Adapter methods authorize/describe/prepare are pure. Explicit hostVersion2
+ * adds pure full-roster planning and owned open/close boundaries after combined
+ * reservation and existing custody admission. Control/observe retain their bounds.
  * Full live acceptance and complete 380-case root assembly remain downstream. */
 export async function executeNativeScenario(input,adapter,evidenceContext=null){
+ const lifetime={owner:null};let result,failure,didThrow=false;
+ try{result=await executeNativeScenarioOwned(input,adapter,evidenceContext,lifetime);}catch(error){didThrow=true;failure=error;}
+ if(lifetime.owner){
+  const cleanup=await lifetime.owner.close();
+  if(didThrow){try{if(failure&&(typeof failure==='object'||typeof failure==='function')&&Object.isExtensible(failure))Object.defineProperty(failure,'readSessionCleanup',{value:()=>({...cleanup}),enumerable:false});}catch{/* Preserve the original rejection even when its object cannot carry diagnostics. */}}
+  else{result.executionStatus=result.status;result.cleanup=cleanup.status;if(cleanup.status!=='closed'&&cleanup.status!=='not-opened')result.status='incomplete';Object.defineProperty(result,'readSessionCleanup',{value:()=>({...cleanup}),enumerable:false});}
+ }
+ if(didThrow)throw failure;return result;
+}
+async function executeNativeScenarioOwned(input,adapter,evidenceContext,lifetime){
  const methods=['authorize','describe','prepare','control','observe'];
- if(!adapter||methods.some(name=>typeof adapter[name]!=='function'))throw Error('NATIVE_AUTHORITY_UNAVAILABLE');
+ if(!adapter||(typeof adapter!=='object'&&typeof adapter!=='function'))throw Error('NATIVE_AUTHORITY_UNAVAILABLE');
+ const sessionAdapter=snapshotNativeSessionAdapter(adapter);
+ if(methods.some(name=>typeof adapter[name]!=='function'))throw Error('NATIVE_AUTHORITY_UNAVAILABLE');
  const initial=validateNativeConfig(input),budget=createNativeBudget(initial.budgets);
  const runId='run_'+randomUUID().replaceAll('-','');let recorder=null;
  if(evidenceContext!==null){
@@ -99,10 +113,25 @@ export async function executeNativeScenario(input,adapter,evidenceContext=null){
  if(!['submitter','reviewer'].every(role=>initial.actors.some(actor=>actor.id===role)))throw Error('NATIVE_SUBJECT_REJECTED');
  const bounded=work=>withNativeDeadline(work,budget.remainingMs());
  let admitted,description,evidenceDescription;const scenario=getNativeScenario();
+ const runContext=sessionAdapter?createNativeRunContext(initial,runId,scenario):null;
+ const hostOptions=signal=>({signal,...(runContext?{runContext}: {})});
  if(scenario.steps.some(step=>step.requires?.includes('separate-explicit-fixture-store-authorization')&&!initial.fixture_stores.some(item=>item.fixture===step.fixture&&item.actor_slot===step.actor)))throw Error('NATIVE_FIXTURE_BINDINGS_UNAVAILABLE');
- try{admitted=await bounded(signal=>admitNativeRun(initial,{authorize:value=>adapter.authorize(value,{signal})}));description=await bounded(signal=>adapter.describe(structuredClone({config:initial,scenario}),{signal}));if(recorder)evidenceDescription=await bounded(signal=>adapter.describeEvidence(structuredClone({config:initial,scenario}),{signal}));}
- catch{throw Error('NATIVE_ADMISSION_REJECTED');}
- const {config,configSha256}=admitted;const plan=prepareNativeExecution(scenario,config.budgets,description),evidencePlan=recorder?prepareNativeEvidenceExecution(config.budgets,evidenceDescription):null;budget.reserve(plan.totals);if(evidencePlan)budget.reserve(evidencePlan.totals);if(recorder)budget.reserve(nativeOutputVerificationPlan().cost);const evidenceCosts=new Map(evidencePlan?.costs.map(row=>[row.id,Object.fromEntries(costKeys.map(k=>[k,row[k]]))])??[]);
+ let plan,evidencePlan;
+ if(sessionAdapter){
+  const proposed=await bounded(signal=>sessionAdapter.planSession(runContext,{scenario:structuredClone(scenario),signal}));
+  const sessionCost=validateNativeSessionPlan(proposed,runContext,scenario);
+  description=await bounded(signal=>adapter.describe(structuredClone({config:initial,scenario}),hostOptions(signal)));
+  if(recorder)evidenceDescription=await bounded(signal=>adapter.describeEvidence(structuredClone({config:initial,scenario}),hostOptions(signal)));
+  plan=prepareNativeExecution(scenario,initial.budgets,description);evidencePlan=recorder?prepareNativeEvidenceExecution(initial.budgets,evidenceDescription):null;
+  reserveNativeCombinedBudget(budget,[plan.totals,...(evidencePlan?[evidencePlan.totals]:[]),...(recorder?[nativeOutputVerificationPlan().cost]:[]),sessionCost]);
+  try{admitted=await bounded(signal=>admitNativeRun(initial,{authorize:value=>adapter.authorize(value,hostOptions(signal))}));}catch{throw Error('NATIVE_ADMISSION_REJECTED');}
+  lifetime.owner=createNativeSessionOwner(runContext,sessionAdapter);
+ }else{
+  try{admitted=await bounded(signal=>admitNativeRun(initial,{authorize:value=>adapter.authorize(value,{signal})}));description=await bounded(signal=>adapter.describe(structuredClone({config:initial,scenario}),{signal}));if(recorder)evidenceDescription=await bounded(signal=>adapter.describeEvidence(structuredClone({config:initial,scenario}),{signal}));}
+  catch{throw Error('NATIVE_ADMISSION_REJECTED');}
+  plan=prepareNativeExecution(scenario,admitted.config.budgets,description);evidencePlan=recorder?prepareNativeEvidenceExecution(admitted.config.budgets,evidenceDescription):null;budget.reserve(plan.totals);if(evidencePlan)budget.reserve(evidencePlan.totals);if(recorder)budget.reserve(nativeOutputVerificationPlan().cost);
+ }
+ const {config,configSha256}=admitted;const evidenceCosts=new Map(evidencePlan?.costs.map(row=>[row.id,Object.fromEntries(costKeys.map(k=>[k,row[k]]))])??[]);
  const subjects={config_sha256:configSha256,candidate_sha:config.candidate_sha,candidate_tree_sha:config.candidate_tree_sha,composition_sha256:config.composition_sha256,node_sha256:config.node.sha256,build_sha256:config.build.sha256,authority_record_sha256:config.authority_record_sha256,scenario_sha256:plan.scenarioSha256,actors_sha256:sha({actors:config.actors,fixture_stores:config.fixture_stores}),workspaces_sha256:sha(config.workspaces)};
  const bindingActor=role=>{const actor=config.actors.find(item=>item.id===role);return {principalId:actor.principal_id,agentId:actor.agent_id};};
  const bindings=createNativeBindingRegistry({workspaceId:config.workspaces.primary,submitter:bindingActor('submitter'),reviewer:bindingActor('reviewer')});
@@ -110,11 +139,12 @@ export async function executeNativeScenario(input,adapter,evidenceContext=null){
  const completed=[],protectedResults=[];let retainedArtifactBytes=null,assembled=null;
  const attachEvidence=result=>{Object.defineProperty(result,'readProtectedInputPublications',{enumerable:false,value:()=>writer.readProtectedSummary()});Object.defineProperty(result,'readProtectedInputAdmissions',{enumerable:false,value:()=>inputs.readProtectedSummary()});Object.defineProperty(result,'readProtectedBindings',{enumerable:false,value:()=>bindings.readSummary()});if(recorder)Object.defineProperty(result,'readProtectedEvidence',{enumerable:false,value:()=>({durability:'memory-only',status:assembled?.result.status??'partial-originals-pending',context:recorder.readProtectedContext(),records:recorder.readProtectedRecords(),assembly:assembled?structuredClone(assembled):null})});return result;};
  const currentAuthority=async()=>{
-  budget.remainingMs();const auth=await bounded(signal=>adapter.authorize(structuredClone({configSha256,config}),{signal}));
+  budget.remainingMs();const auth=await bounded(signal=>adapter.authorize(structuredClone({configSha256,config}),hostOptions(signal)));
   if(!auth||Object.keys(auth).sort().join(',')!=='authorityRecordSha256,configSha256,expiresAt'||auth.configSha256!==configSha256||auth.authorityRecordSha256!==config.authority_record_sha256||!Number.isSafeInteger(auth.expiresAt)||auth.expiresAt<=Date.now()||auth.expiresAt>Date.now()+300000)throw Error('NATIVE_AUTHORITY_REJECTED');
   budget.remainingMs();return auth;
  };
  try{
+  if(lifetime.owner)await lifetime.owner.open(budget.remainingMs());
   for(let i=0;i<scenario.steps.length;i++){
    const step=scenario.steps[i],cost=plan.costs[i];await currentAuthority();
    if(step.kind==='control'){
@@ -132,7 +162,7 @@ export async function executeNativeScenario(input,adapter,evidenceContext=null){
     protectedResults.push({stepId:step.id,control:structuredClone(result)});completed.push(step.id);continue;
    }
    const requestInput=bindings.planRequestInput(step.id);
-   const prepared=await bounded(signal=>adapter.prepare(structuredClone(step),{completed:[...completed],requestInput:structuredClone(requestInput),signal,readPriorOutput(id){const prior=protectedResults.find(item=>item.stepId===id);if(!prior?.process||!completed.includes(id))throw Error('NATIVE_SUBJECT_REJECTED');const output=prior.process.readCapturedOutput();return {stdout:Buffer.from(output.stdout),stderr:Buffer.from(output.stderr)};}}));
+   const prepared=await bounded(signal=>adapter.prepare(structuredClone(step),{...(runContext?{runContext}:{}),completed:[...completed],requestInput:structuredClone(requestInput),signal,readPriorOutput(id){const prior=protectedResults.find(item=>item.stepId===id);if(!prior?.process||!completed.includes(id))throw Error('NATIVE_SUBJECT_REJECTED');const output=prior.process.readCapturedOutput();return {stdout:Buffer.from(output.stdout),stderr:Buffer.from(output.stderr)};}}));
    if(!prepared||Object.keys(prepared).sort().join(',')!=='artifactBytes,refs'||!Number.isSafeInteger(prepared.artifactBytes)||prepared.artifactBytes<0||prepared.artifactBytes>cost.artifact_bytes)throw Error('NATIVE_SUBJECT_REJECTED');
    const refs=snapshotNativeRefs(step.id,prepared.refs);
    const actor=config.fixture_stores.find(item=>item.fixture===step.fixture&&item.actor_slot===step.actor)??config.actors.find(item=>item.id===step.actor);

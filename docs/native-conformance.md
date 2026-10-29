@@ -422,3 +422,40 @@ state/causal profiles, real native front-door originals and fixed factory/contro
 integration remain source work. The unchanged full scenario still rejects missing
 capabilities and the three unsupported tuple-only controls. Formal acceptance
 remains after R4; green local or CI results are not that acceptance.
+
+### Explicit controller session ownership
+
+Trusted source adapters may opt into the version 2 controller session contract
+with an own enumerable `hostVersion: 2` data property. Unmarked legacy adapters
+retain their existing path; malformed, inherited or accessor version markers
+reject rather than silently downgrade. The controller owns the immutable run ID
+and config/scenario/build/authority commitments. These commitments describe a run;
+they do not authenticate an installation.
+
+The pure session plan must cover every unchanged scenario step **and** every
+external requirement, with exact ordered requirement lists. Any unavailable row,
+missing row or unknown requirement blocks before authorization, session opening
+or process execution. Execution, evidence, output verification and session
+reservations share one atomic cumulative admission. Session planners must account
+for their bind, authentication refresh, registration, original retrieval and
+cleanup traffic explicitly; a reservation is not a sandbox for arbitrary trusted
+adapter code. Existing protected executable/directory and authority checks still
+run after planning and before the session opens.
+
+The owned session tracks the actual open and close promises. Open is attempted
+once; cleanup is attempted once on every post-open exit, including rejected or
+late opening. A fixed one-second cleanup grace is separate from the run deadline.
+Abort or timeout alone does not prove cancellation. Pending work, failed cleanup
+or a mismatched cleanup receipt yields `cleanup-unknown`, prevents an overall
+observed result, and preserves the execution outcome and private partial records.
+The adapter must latch closing and own resources acquired by a late open; it may
+not release responsibility by returning an early closed acknowledgment.
+
+This is controller preflight/lifetime source integration, **not a complete fixed
+native factory**. Tests exercise source-fake ownership and actual blocked
+controller paths without bypassing native custody. The local seven-reader service
+retains its distinct source-policy context; no native build/runtime commitments
+are invented to reuse this interface. Dynamic per-invocation registration, the
+remaining state/front-door producers, full factory bundle and installed entry
+integration remain required. All three unsupported tuple controls remain blocked;
+no smaller scenario or local service run substitutes for native acceptance.
