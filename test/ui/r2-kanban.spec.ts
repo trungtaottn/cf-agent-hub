@@ -105,9 +105,11 @@ test('internal Ready and Accept drags prepare the same canonical command dialogs
   await step('real Backlog to Ready drag',async()=>{await page.locator('.task-card').filter({has:page.getByRole('link',{name:'Backlog item 01',exact:true})}).dragTo(page.getByTestId('tasks-ready'));});
   await step('Ready dialog prepared and confirmed',async()=>{await expect(page.getByRole('dialog')).toContainText(id);await page.getByRole('button',{name:'Confirm command',exact:true}).click();await expect(page.getByTestId('tasks-ready')).toContainText('Backlog item 01');});
   expect(calls[0]!.body).toEqual({expected_version:1});expect(calls[0]!.url).toContain('/tasks/'+id+':ready');
+  await step('completed Ready dialog closed',async()=>{await expect(page.getByRole('dialog')).not.toBeVisible();});
   await step('all refreshed columns settled',settled);
   await step('real Review to Done drag',async()=>{await page.locator('.task-card').filter({has:page.getByRole('link',{name:review,exact:true})}).dragTo(page.getByTestId('tasks-done'));});
   await step('Accept dialog prepared and confirmed',async()=>{await page.getByRole('dialog').getByLabel('Reason',{exact:true}).fill('Independent drag review');await page.getByRole('button',{name:'Confirm command',exact:true}).click();await expect(page.getByTestId('tasks-done')).toContainText(review);});
+  await step('completed Accept dialog closed',async()=>{await expect(page.getByRole('dialog')).not.toBeVisible();});
   expect(Object.keys(calls[1]!.body).sort()).toEqual(['expected_version','reason']);
  }finally{
   const diagnostic=await page.evaluate(()=>({events:(window as any).fixtureDragTrace??[],omitted:(window as any).fixtureDragOmitted??0,columns:Array.from(document.querySelectorAll('[data-testid^="tasks-"]')).slice(0,7).map(node=>({column:node.getAttribute('data-testid'),status:node.getAttribute('data-status')}))})).catch(()=>({unavailable:true}));
