@@ -23,6 +23,8 @@ R1 must not claim durable task execution, dynamic credential enrollment or compl
 
 ## R2 — Durable coordination and native clients
 
+The additive [R2 evidence controller](r2-release-evidence.md) validates bounded, typed source records separately from R1. A structural pass is not authenticated live acceptance; formal integrated acceptance remains pending after R4.
+
 - [ ] Dynamic agents, native credential issuance, one-time reveal, rotation and next-command revocation are verified.
 - [ ] Enrollment reveals `runtime_token` once, stores only a hash bound to workspace/agent/runtime/issuing credential, and claim/execution/run and runtime heartbeat plus run-bound artifact writes reject a missing or mismatched `X-Runtime-Token` despite a valid bearer.
 - [ ] Parent-credential revocation invalidates runtime proof; rotation drains/reconciles old work, enrolls a fresh runtime and requires a new claim after safely ending old authority. Proof material is absent from logs and exports.

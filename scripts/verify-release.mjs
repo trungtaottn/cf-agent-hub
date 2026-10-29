@@ -1,3 +1,5 @@
+import {verifyR2Checkout} from './lib/r2-release-cli.mjs';
+import {verifyR2Release} from './lib/r2-release-verifier.mjs';
 import {createHash} from 'node:crypto';
 import {readFileSync,lstatSync,realpathSync} from 'node:fs';
 import {resolve,relative,isAbsolute,sep} from 'node:path';
@@ -11,7 +13,8 @@ export const canonical=value=>value===null||typeof value!=='object'?JSON.stringi
 export function fileManifest(files){return [...files].map(([path,value])=>({path,sha256:sha256(value),byte_size:Buffer.byteLength(value),mode:'100644'})).sort((a,b)=>a.path<b.path?-1:a.path>b.path?1:0);}
 const ajv=new Ajv2020({allErrors:true,strict:false});addFormats(ajv);
 const evidenceSchema=JSON.parse(readFileSync(new URL('../validation/runtime-evidence.schema.json',import.meta.url),'utf8'));
-const validate=ajv.compile(evidenceSchema);
+// R2 has its own explicit registry; never compile/execute it as an R1 receipt.
+const validate=ajv.compile({...evidenceSchema,oneOf:[{$ref:'#/$defs/r1_root'}]});
 const receiptValidators=Object.fromEntries(['review_receipt','audit_receipt','recovery_receipt','recovery_step','deployment_receipt'].map(name=>[name,ajv.compile({$ref:evidenceSchema.$id+'#/$defs/'+name})]));
 const safePath=path=>typeof path==='string'&&path.length>0&&path.length<=512&&!path.includes('\\')&&!/[\u0000-\u001f\u007f]/.test(path)&&!path.startsWith('/')&&path.split('/').every(part=>part!==''&&part!=='.'&&part!=='..')&&!/^[a-z]:/i.test(path);
 const sameSet=(a,b)=>a.length===b.length&&new Set(a).size===a.length&&b.every(x=>a.includes(x));
@@ -19,6 +22,7 @@ const hasSecret=text=>/\bBearer\s+[A-Za-z0-9_-]{20,}|cfhub_(?:session|login)=[A-
 const hasPrivateOrigin=text=>[...text.matchAll(/https?:\/\/[^\s"<>]+/g)].some(([url])=>{try{const host=new URL(url).hostname;return !host.endsWith('.invalid')&&!['nodejs.org','github.com','registry.npmjs.org','developers.cloudflare.com','playwright.dev'].includes(host);}catch{return true;}});
 /** Structural/byte verification only. The controller must inspect the actual runs and independent review. */
 export function verifyRelease(input,files){
+ if(input?.format_version===2&&input?.round==='R2')return verifyR2Release(input,{files});
  const findings=[];const fail=(code,path,message)=>findings.push({code,path,message});
  let serialized;try{serialized=JSON.stringify(input);}catch{fail('INVALID_EVIDENCE','/','Evidence must be finite JSON.');return {passed:false,findings};}
  if(typeof serialized!=='string'||Buffer.byteLength(serialized)>4*1024*1024){fail('EVIDENCE_LIMIT','/','Evidence exceeds its bounded representation.');return {passed:false,findings};}
@@ -130,6 +134,9 @@ function loadFile(root,path){
 }
 export function runCli(argv=process.argv.slice(2),root=process.cwd()){
  try{
+  if(argv.length===4&&argv[0]==='--round'&&argv[1]==='R2'&&argv[2]==='--evidence'){
+   const result=verifyR2Checkout(root,argv[3]);process.stdout.write(JSON.stringify(result)+'\n');return result.passed?0:1;
+  }
   if(argv.length!==4||argv[0]!=='--round'||argv[1]!=='R1'||argv[2]!=='--evidence')throw Error('USAGE');
   const path=relative(root,resolve(root,argv[3])).split(sep).join('/'),input=JSON.parse(loadFile(root,path).toString('utf8'));
   const head=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8',stdio:['ignore','pipe','ignore']}).trim();
@@ -151,6 +158,6 @@ export function runCli(argv=process.argv.slice(2),root=process.cwd()){
   const dirty=execFileSync('git',['status','--porcelain','--untracked-files=all'],{cwd:root,encoding:'utf8'}).split('\n').filter(Boolean).filter(line=>!line.slice(3).startsWith(prefix));
   if(dirty.length)result.findings.push({code:'UNCOMMITTED_CANDIDATE',path:'/',message:'A release candidate must be a committed, independently reviewed revision.'});
   result.passed=result.findings.length===0;process.stdout.write(JSON.stringify(result)+'\n');return result.passed?0:1;
- }catch{process.stdout.write(JSON.stringify({passed:false,findings:[{code:'EVIDENCE_UNAVAILABLE',path:'/',message:'Supply --round R1 --evidence with bounded, valid candidate/evidence paths in the intended Git checkout.'}]})+'\n');return 1;}
+ }catch{if(argv[1]==='R2'){process.stdout.write(JSON.stringify({passed:false,scope:'structural-only',acceptance:'pending-external-inspection',findings:[{code:'R2_EVIDENCE_UNAVAILABLE',path:'/',message:'R2 evidence must use bounded valid paths in the intended Git checkout.'}]})+'\n');return 1;}process.stdout.write(JSON.stringify({passed:false,findings:[{code:'EVIDENCE_UNAVAILABLE',path:'/',message:'Supply --round R1 --evidence with bounded, valid candidate/evidence paths in the intended Git checkout.'}]})+'\n');return 1;}
 }
 if(process.argv[1]&&pathToFileURL(resolve(process.argv[1])).href===import.meta.url)process.exitCode=runCli();

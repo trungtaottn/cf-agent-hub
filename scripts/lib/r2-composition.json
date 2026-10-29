@@ -1,0 +1,105 @@
+{
+  "operator_source_closure": [
+    "scripts/lib/recovery-capacity.mjs",
+    "scripts/lib/recovery-client.mjs",
+    "scripts/lib/recovery-config.mjs",
+    "scripts/lib/recovery-io.mjs",
+    "scripts/lib/recovery-transport.mjs",
+    "scripts/recover-workspace.mjs",
+    "src/config/bootstrap.ts",
+    "src/config/deployment.ts",
+    "src/config/execution-policy-validation.ts",
+    "src/config/generated/validators.js",
+    "src/recovery/encoding.ts",
+    "src/recovery/engine-metadata.ts",
+    "src/recovery/generated/recovery-validators.js",
+    "src/recovery/maintenance.ts",
+    "src/recovery/manifest.ts",
+    "src/recovery/operator-envelope.ts",
+    "src/recovery/table-registry-v1.ts",
+    "src/recovery/table-registry.ts",
+    "src/storage/schema-version.ts"
+  ],
+  "application_sql": [
+    {
+      "source": "src/storage/migrations/0001-foundation.sql",
+      "name": "4c8871b9d4e91111ee6afe4687ac05034f67c7c5-0001-foundation.sql",
+      "sha256": "ad81e086e616ece52acaec391bffbe3cf696bc96b55839fbd9a4e95f68951d7e"
+    },
+    {
+      "source": "src/storage/migrations/0002-session-auth-epoch.sql",
+      "name": "29ddb9ef7bb85c701021d08c7ca4af04d985788c-0002-session-auth-epoch.sql",
+      "sha256": "515172f5f34cad03b6bd04960eb4ac5f5d3c670afaa2abf36094df82a60d19bf"
+    },
+    {
+      "source": "src/storage/migrations/0003-preference-owner.sql",
+      "name": "2fbf6a539aa6d1ac93798038b99047d154e26b8c-0003-preference-owner.sql",
+      "sha256": "cf9be167f65a1d13950169907212474605924b5b4a1832334beeb6ad60609ed9"
+    },
+    {
+      "source": "src/storage/migrations/0004-message-admission.sql",
+      "name": "54cb364b2ba5f74f531e32e65798c8f4efb01ca2-0004-message-admission.sql",
+      "sha256": "cec720cb187e42584b4f57adeea1cc0baba2be1371d33bdca55c396e21915013"
+    },
+    {
+      "source": "src/storage/migrations/0005-cursor-retention.sql",
+      "name": "e61f907d5aaaed8693a02e63e61352e49df5569f-0005-cursor-retention.sql",
+      "sha256": "d8373d208c7d4bf1a9708c9973e060dbd1fb18f9151289cfc6f6992648d5e689"
+    },
+    {
+      "source": "src/storage/migrations/0006-outbox-scheduler-diagnostics.sql",
+      "name": "05b5b03d75abf5791d317d959960297b31959746-0006-outbox-scheduler-diagnostics.sql",
+      "sha256": "5286e7180a9ee9ff655d73c781014615c35a6b2787456825885c54bc68cbb5d0"
+    },
+    {
+      "source": "src/storage/migrations/0007-maintenance-generation.sql",
+      "name": "a5ea5d4a5e341c75e28d3476cce174d0f669b470-0007-maintenance-generation.sql",
+      "sha256": "93d8c1ff24f20d0530ae5fabec3010afdf9934bf7dea9b0e2ad13b74b51f8f05"
+    },
+    {
+      "source": "src/storage/migrations/0008-durable-work.sql",
+      "name": "6737e9635a671f2bef45b373a121f2ec04bf4cc9-0008-durable-work.sql",
+      "sha256": "dd8c050997774cf3259f2ef453812b99bbe94818d32b366d18e54b5ebefeb0f8"
+    },
+    {
+      "source": "src/storage/migrations/0009-catalog-reference-indexes.sql",
+      "name": "83825749e4f66eca3292e7c231d1c5c582457d1e-0009-catalog-reference-indexes.sql",
+      "sha256": "1844dfdcdc5726f4915c21bdb31c53b57a585d07bdd7f09c14945d99964afe09"
+    },
+    {
+      "source": "src/storage/migrations/0010-outbox-due-indexes.sql",
+      "name": "66716b1afcd22e1787b01f9dcf9dad09c0d8a412-0010-outbox-due-indexes.sql",
+      "sha256": "8a16a905ada5a5980c917cdb9895fb8bda93b31fff07718e23fb641d8622dcb3"
+    },
+    {
+      "source": "src/storage/migrations/0011-task-history-reason.sql",
+      "name": "57814a812dd45014528e0050b89fe42ce14756b3-0011-task-history-reason.sql",
+      "sha256": "1ba2e590828ff6b65d6e80250387b7fce367c3d6994e5fc50a7988c96db766b3"
+    },
+    {
+      "source": "src/storage/migrations/0012-artifact-admission.sql",
+      "name": "63e96c2feba2861ed7d14fd40ba078433e661de0-0012-artifact-admission.sql",
+      "sha256": "25e92f2a5d04d305f1b2f80f53574f67415b09759cf884d849c9d087fead0f6d"
+    },
+    {
+      "source": "src/storage/migrations/0013-artifact-cleanup.sql",
+      "name": "c960e01bed01670dcd3cd628fe87d76ec25caa37-0013-artifact-cleanup.sql",
+      "sha256": "fbca9d6605688fc2c99fd650c57d57b08333352a26aa3163a7d168b35a05154d"
+    },
+    {
+      "source": "src/storage/migrations/0014-message-credential-seek.sql",
+      "name": "0bca39b37b5c60fc6f46d89a26a0c52beec4bb92-0014-message-credential-seek.sql",
+      "sha256": "05d1c8600af74faafe6330d2cf4767d54313471e683f05cac1971d73f04e17a4"
+    },
+    {
+      "source": "src/storage/migrations/0015-search-order.sql",
+      "name": "cc6f7473332db67208d003644c0e93cbd80daf9e-0015-search-order.sql",
+      "sha256": "d18028ab2f161825fc5a2ec412b3bc25124acee516fd568bb82aa8c53f9a2efd"
+    },
+    {
+      "source": "src/storage/migrations/0016-task-auth-return.sql",
+      "name": "d46d1d423cb35289a90964cbd856d100694286fc-0016-task-auth-return.sql",
+      "sha256": "58eac65de2e8337289d13f144a56bf5e28ef2ee5e890d226a97208e680775aaf"
+    }
+  ]
+}

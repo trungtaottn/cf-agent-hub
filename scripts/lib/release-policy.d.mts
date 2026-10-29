@@ -10,3 +10,4 @@ export const REQUIRED_RECOVERY_CHECKS:Readonly<Record<string,readonly string[]>>
 export const ROUTE_STATUS:Readonly<Record<string,readonly number[]>>;
 export const MUTATION_COUNTS:readonly string[];
 export function routeExpectation(operation:string,lane:string):{status:number;error_code:string|null;mutations:Record<string,number>}|null;
+export function releasePolicy(version:number,round:string):{features:readonly string[];kinds:readonly string[]};
