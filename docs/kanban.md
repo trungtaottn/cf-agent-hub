@@ -1,12 +1,12 @@
 # Kanban workspace
 
-Status: Design baseline with local issue42 read-only source. Command UI and live acceptance remain pending.
+Status: Design baseline with local issue42 reads and issue45 four-command source. Browser and live acceptance remain pending.
 
 The Kanban is a view of durable tasks, their execution ownership and their review state. It is not a second task database. All UI actions issue the same authorized domain commands as the native API, then reconcile the returned task version.
 
-## Local issue42 read-only subset
+## Local read and command subset
 
-The `/tasks` shell uses the existing authenticated browser transport and canonical task, run, result, artifact-metadata and event reads. It has no task mutation, approval, drag command, artifact-byte fetch or local authority store. The command descriptions below remain the broader design target, not controls enabled by this subset. See [issue42 execution evidence](r2-task-plans/issue-042-execution.md).
+The `/tasks` shell uses the existing authenticated browser transport and canonical task, run, result, artifact-metadata and event reads. Issue45 adds Ready, Cancel, Requeue and Accept-result through the existing canonical cookie-authenticated HTTP commands. It has no approval, human claim, artifact-byte fetch or local authority store. Broader R3 descriptions below remain design targets, not enabled controls. See [issue42 execution evidence](r2-task-plans/issue-042-execution.md).
 
 Each of the six canonical columns and the separate cancelled archive has an independently authorized page of at most 20 tasks. Next replaces the page rather than accumulating records; refresh resets cursors. A page count is never a workspace total, and an unavailable page boundary is not a terminal result. Loading, stale, empty, error and unavailable observations remain separate.
 
@@ -15,6 +15,16 @@ Detail reads the selected task first, then independently reads its latest observ
 A denied session/read clears sensitive projections. A missing selected task, including a task-results 404, purges its detail children and cached board card and invalidates pending reads. Unrelated cached observations can remain stale until explicit refresh. Hidden navigation does not disable backend task processing. The `tasks` and `kanban` preference aliases resolve to the same view only when profile visibility and current task-read scope permit it.
 
 Semantic sections, headings, lists and links expose the board without a misleading interactive ARIA grid. Focus restoration, literal dynamic text and narrow-screen wrapping are implemented and covered by source/structural tests. Real browser geometry, keyboard behavior and accessibility acceptance are not established when the pinned browser cannot launch. Waiting approval/reject controls are unavailable R3 placeholders, never active decisions.
+
+## Version-bound task commands
+
+The Actions disclosure offers ordinary keyboard buttons, not a partial ARIA menu. Every new action first reads current workspace access and the exact task; Accept also corroborates the latest submitted run and excludes the stable submitter principal or agent. Displayed grants are coarse guidance, never per-resource authorization. The backend repeats the current grant, project, version and domain checks. Backlog → Ready and eligible Review → Done are optional internal drags that open the same confirmation. No drag manufactures Doing, Waiting, a run or approval.
+
+The persistent native dialog names workspace, task and version; Accept includes the exact reviewed result/run. Cancel, Requeue and Accept require an unmodified reason. Cancellation cannot undo external effects already performed. Navigation, offline state and renewed reads invalidate preparation, not a dispatched intent. A known version conflict keeps the draft, observes the current task and requires explicit review before a different version/key can be submitted.
+
+One in-memory task intent owns its exact operation, path, expected version, body, principal and idempotency key. Pending or uncertain outcomes block new task intents. A network loss, invalid receipt or any 5xx remains uncertain; only deliberate same-key/same-body replay under current access can reconcile it. Replay does not rebase against a newer task version. Even a local replay preflight failure leaves the earlier uncertainty intact. Success receipts must match the original task/workspace, exact next version and command state; Accept additionally preserves the original result/run/submitter/artifacts. Real authentication revocation clears sensitive state and says the prior outcome remains unresolved. No intent enters local storage, URLs or telemetry.
+
+After confirmed success, bounded reads refresh independently. Failed refresh never erases the known command outcome or makes stale cards current. Focus restoration is bound to the originating interaction and a successfully refreshed destination card; otherwise the stable main heading is the fallback. Background updates preserve the reason node/caret and do not reclaim focus after navigation or a newer dialog. These source behaviors do not substitute for pending real-browser verification. See [issue45 execution evidence](r2-task-plans/issue-045-execution.md).
 
 ## Board model
 

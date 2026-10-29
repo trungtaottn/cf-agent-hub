@@ -6,6 +6,8 @@ import {el,button,replacePreservingFocus} from './dom';
 import {TaskReads} from './task-reads';
 import {KanbanView} from './kanban';
 import {TaskDetail} from './task-detail';
+import {TaskActions,taskActionEligibility} from './task-actions';
+import {TaskActionPanel,type TaskActionAffordances} from './task-action-view';
 import type {BrowserReadRequest} from '../../packages/client/src/types';
 
 const byId=(id:string)=>document.getElementById(id)!;
@@ -17,14 +19,63 @@ const models={
  preferences:new ReadModel<PreferencesData>({isEmpty:()=>false}),events:new ReadModel<Event[]>({isEmpty:items=>items.length===0}),
  operations:new ReadModel<Operations>({isEmpty:()=>false}),thread:new ReadModel<Message[]>({isEmpty:items=>items.length===0})
 };
+let connectionGeneration=0;
 let client:HubClient,authority=0,session:AuthSession|null=null,denied=false,currentView=location.pathname.slice(1)||'overview',threadId:string|null=null,eventCursor:string|null=null,threadCursor:string|null=null;
 let eventsAvailable=false,operationsAvailable=false,profileAvailable=false,preferencesAvailable=false,tasksAvailable=false;
 const taskReads=new TaskReads({workspaceId:workspace,request:(async(operation,input,options)=>{
  const started=authority,result=await client.read(operation,input,options);
  if(!result.ok&&(result.status===401||result.status===403)){invalidateAll(result.status,result.requestId);return result;}
- if(started!==authority)return {ok:false,status:403,requestId:result.requestId,error:{code:'FORBIDDEN',message:'Access denied',retryable:false}};
+ if(started!==authority)return {ok:false,status:null,requestId:result.requestId,error:{code:'OBSERVATION_INVALIDATED',message:'Observation no longer current',retryable:false}};
  return result;
 }) as BrowserReadRequest,changed:()=>render()});
+const taskActions=new TaskActions({
+ workspaceId:workspace,
+ currentBinding:()=>session&&!denied?{principalId:session.actor.principal_id,agentId:session.actor.agent_id,generation:connectionGeneration,online:navigator.onLine}:null,
+ readAccess:async()=>{
+  const result=await request<Workspace>('getWorkspace',{});
+  if(result.ok){await models.workspace.refresh(async()=>result);render();}
+  return result;
+ },
+ readTask:async id=>{const result=await readCommandPreparation('getTask',{path:{task_id:id}});if(!result.ok&&result.status===404)taskReads.forgetTask(id,result.requestId);return result;},
+ readRun:id=>readCommandPreparation('getRun',{path:{run_id:id}}),
+ command:async(operation,input,options)=>{
+  const result=await client.command(operation,input,options);
+  if(!result.ok&&(result.status===401||result.status===403))invalidateAll(result.status,result.requestId);
+  return result;
+ },
+ changed:()=>{taskActionPanel?.update();render();},
+ settled:state=>{
+  if(state.status==='succeeded'&&state.result?.ok){
+   const token=taskActionPanel.focusToken,id=state.taskId,targetState=state.result.data.task.state;
+   void refreshReads().then(()=>{
+    const current=taskReads.selectedId===id?taskReads.task.state:taskReads.columns[targetState].read.state;
+    const visible=current.status==='ready'&&(Array.isArray(current.data)?current.data.some(task=>task.id===id):current.data?.id===id);
+    const container=taskReads.selectedId===id?view:view.querySelector('[data-testid=tasks-'+targetState+']');
+    const target=visible?[...(container?.querySelectorAll<HTMLElement>('[data-focus-key]')??[])].find(node=>node.getAttribute('data-focus-key')==='task:'+id)??null:null;
+    taskActionPanel.restoreFocus(token,target);
+   });
+  }
+  else if(state.status==='conflict')void refreshReads().then(()=>taskActions.refreshConflict());
+ }
+});
+let taskActionPanel:TaskActionPanel;
+taskActionPanel=new TaskActionPanel(taskActions,{workspaceId:workspace,viewKey:()=>currentView+':'+(taskReads.selectedId??''),fallback:()=>byId('main')});
+byId('main').append(taskActionPanel.element);
+const commandAffordances:TaskActionAffordances={
+ disabledReason(task,operation,current){
+  if(!session||denied)return 'Current authenticated authority required';
+  if(!navigator.onLine||!current||models.workspace.state.status!=='ready')return 'Refresh current access and task observations';
+  if(taskActions.state.status==='pending'||taskActions.state.status==='uncertain')return 'Reconcile the existing task command before starting another';
+  return taskActionEligibility(operation,task,models.workspace.state.data?.effective_scopes??[],session.actor.principal_id,session.actor.agent_id);
+ },
+ open:(id,operation,invoker)=>taskActionPanel.open(id,operation,invoker)
+};
+const readCommandPreparation:BrowserReadRequest=async(operation,input,options)=>{
+ const started=authority,result=await client.read(operation,input,options);
+ if(!result.ok&&(result.status===401||result.status===403)){invalidateAll(result.status,result.requestId);return result;}
+ if(started!==authority)return {ok:false,status:null,requestId:result.requestId,error:{code:'OBSERVATION_INVALIDATED',message:'Observation no longer current',retryable:false}};
+ return result;
+};
 const source='/v2/workspaces/'+workspace;
 const accents=['blue','teal','indigo','violet','amber','slate'];
 const navigationLinks=new Map<string,HTMLAnchorElement>();
@@ -38,9 +89,10 @@ const settings=new SettingsPanel({
  preferencesSaved(result){void models.preferences.refresh(async()=>result).then(()=>{applyPresentation();render();});}
 });
 function invalidateAll(status:401|403,id:string|null):void{
- ++authority;denied=true;session=null;client?.setCsrfToken(null);eventCursor=null;threadCursor=null;threadId=null;
+ ++authority;++connectionGeneration;denied=true;session=null;client?.setCsrfToken(null);eventCursor=null;threadCursor=null;threadId=null;
  for(const model of Object.values(models))model.invalidate(status===401?'UNAUTHENTICATED':'FORBIDDEN',id);
  taskReads.invalidate(status===401?'UNAUTHENTICATED':'FORBIDDEN',id);tasksAvailable=false;
+ taskActions.invalidateAuthority();taskActionPanel.navigation();
  settings.invalidate();eventsAvailable=false;operationsAvailable=false;profileAvailable=false;preferencesAvailable=false;
  document.documentElement.dataset.theme='system';document.documentElement.dataset.density='comfortable';delete document.documentElement.dataset.accent;
  byId('workspace-name').textContent='';notice.textContent='Cached sensitive records, settings drafts and pending write data have been cleared.';
@@ -78,6 +130,7 @@ function selectThread(id:string|null):void{
  models.thread.reset();threadCursor=null;threadId=id;
 }
 function navigate(name:string,selectedThread:string|null=null):void{
+ taskActions.invalidatePreparation();taskActionPanel.navigation();
  currentView=name;selectThread(selectedThread);
  const query=new URLSearchParams({workspace});if(selectedThread)query.set('thread',selectedThread);
  history.pushState(null,'','/'+name+'?'+query.toString());
@@ -86,6 +139,7 @@ function navigate(name:string,selectedThread:string|null=null):void{
  if(selectedThread)void refreshThread(selectedThread,false);
 }
 function navigateTask(id:string|null):void{
+ taskActions.invalidatePreparation();taskActionPanel.navigation();
  currentView='tasks';selectThread(null);const query=new URLSearchParams({workspace});if(id)query.set('task',id);
  history.pushState(null,'','/tasks?'+query.toString());void taskReads.select(id);render();byId('main').focus();
 }
@@ -187,7 +241,7 @@ function render():void{
  const active=currentView==='tasks'?(taskReads.selectedId?[taskReads.task.state,taskReads.run.state,taskReads.results.read.state,taskReads.events.read.state,taskReads.artifacts.state]:Object.values(taskReads.columns).map(page=>page.read.state)):currentView==='inbox'?[]:threadId?[models.thread.state]:currentView==='settings'?[models.workspace.state,models.profile.state,models.preferences.state]:[models.configuration.state,...(eventsAvailable||denied?[models.events.state]:[]),...(operationsAvailable?[models.operations.state]:[])];
  byId('page-status').textContent=denied?'forbidden — current authority required':currentView==='inbox'?'Unavailable for human sessions':'Read status: '+summarizeReadStates(active);
  if(currentView==='tasks'){
-  const content=taskReads.selectedId?TaskDetail({state:taskReads,workspaceId:workspace,onBack:()=>navigateTask(null),onResultsNext:()=>void taskReads.nextResults(),onEventsNext:()=>void taskReads.nextEvents()}):KanbanView({state:taskReads,workspaceId:workspace,profile:models.profile.state.data?.profile??null,onSelect:navigateTask,onNext:state=>void taskReads.nextColumn(state)});
+  const content=taskReads.selectedId?TaskDetail({state:taskReads,workspaceId:workspace,onBack:()=>navigateTask(null),onResultsNext:()=>void taskReads.nextResults(),onEventsNext:()=>void taskReads.nextEvents(),actions:commandAffordances}):KanbanView({state:taskReads,workspaceId:workspace,profile:models.profile.state.data?.profile??null,onSelect:navigateTask,onNext:state=>void taskReads.nextColumn(state),actions:commandAffordances});
   replacePreservingFocus(view,content,byId('main'));return;
  }
  if(currentView==='settings'){
@@ -227,6 +281,7 @@ async function refreshThread(id:string,more=false):Promise<void>{
 }
 async function refreshReads():Promise<void>{
  if(!session||denied)return;
+ taskActions.invalidatePreparation();
  const generation=authority;
  await refreshModel(models.configuration,()=>request<Configuration>('getConfiguration',{}));
  if(denied||generation!==authority)return;
@@ -265,8 +320,8 @@ async function boot():Promise<void>{
   const preferred=models.preferences.state.data.effective.default_view;if(preferred==='activity'&&eventsAvailable)navigate('activity');else if(preferred==='tasks'&&tasksAvailable)navigate('tasks');
  }
 }
-addEventListener('popstate',()=>{currentView=location.pathname.slice(1)||'overview';selectThread(new URL(location.href).searchParams.get('thread'));render();if(threadId)void refreshThread(threadId);if(currentView==='tasks'){void taskReads.select(new URL(location.href).searchParams.get('task'));void taskReads.refreshBoard();}});
-addEventListener('offline',()=>{for(const model of Object.values(models))model.disconnect();taskReads.disconnect();render();});
-addEventListener('online',()=>{void refreshReads();});
-setInterval(()=>{taskReads.markStale(Date.now(),60_000);for(const model of Object.values(models))model.markStale(Date.now(),60_000);render();},15_000);
+addEventListener('popstate',()=>{taskActions.invalidatePreparation();taskActionPanel.navigation();currentView=location.pathname.slice(1)||'overview';selectThread(new URL(location.href).searchParams.get('thread'));render();if(threadId)void refreshThread(threadId);if(currentView==='tasks'){void taskReads.select(new URL(location.href).searchParams.get('task'));void taskReads.refreshBoard();}});
+addEventListener('offline',()=>{++connectionGeneration;taskActions.invalidatePreparation();for(const model of Object.values(models))model.disconnect();taskReads.disconnect();render();});
+addEventListener('online',()=>{++connectionGeneration;taskActions.invalidatePreparation();void refreshReads();});
+setInterval(()=>{taskReads.markStale(Date.now(),60_000);for(const model of Object.values(models))model.markStale(Date.now(),60_000);if(models.workspace.state.status!=='ready'&&taskActions.state.status==='ready')taskActions.invalidatePreparation();render();},15_000);
 void boot();

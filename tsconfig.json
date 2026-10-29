@@ -32,6 +32,8 @@
     "src/ui/kanban.ts",
     "src/ui/task-detail.ts",
     "test/client/task-rendering.test.ts",
-    "test/client/focus-restoration.test.ts"
+    "test/client/focus-restoration.test.ts",
+    "src/ui/task-action-view.ts",
+    "test/client/task-action-view.test.ts"
   ]
 }

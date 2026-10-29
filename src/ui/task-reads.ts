@@ -91,12 +91,14 @@ export class TaskReads implements TaskReadView{
   ]);
  }
  #purgeTask(id:string,requestId:string|null):void{
-  if(id!==this.#selectedId)return;
-  ++this.#detailGeneration;this.task.unavailable('NOT_FOUND',requestId);
-  // Invalidate every older page generation, retaining unrelated observations
-  // only as stale. No automatic request may resurrect the confirmed absence.
+  if(id===this.#selectedId)this.forgetTask(id,requestId);
+ }
+ /** Confirmed absence from an independently authorized command preparation read. */
+ forgetTask(id:string,requestId:string|null):void{
+  if(id===this.#selectedId){++this.#detailGeneration;this.task.unavailable('NOT_FOUND',requestId);this.#clearChildren('NOT_FOUND');}
+  // Invalidate every older page generation; unrelated observations remain stale.
   for(const page of Object.values(this.columns)){page.read.redact(tasks=>tasks.filter(task=>task.id!==id));page.page=null;page.cursor=null;}
-  this.#clearChildren('NOT_FOUND');this.#changed();
+  this.#changed();
  }
  async #loadRun(task:Task,generation:number):Promise<void>{
   if(task.latest_run_id===null){this.run.unavailable('NO_LATEST_RUN');this.#changed();return;}

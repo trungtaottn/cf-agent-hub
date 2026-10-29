@@ -3,8 +3,9 @@ import type {TaskReadView} from './task-reads';
 import {taskPageLimit} from './task-reads';
 import {taskReadSection,unavailableTaskRead,taskStateLabels} from './kanban';
 import {el,button} from './dom';
+import {taskActionDisclosure,type TaskActionAffordances} from './task-action-view';
 
-export interface TaskDetailOptions {state:TaskReadView;workspaceId:string;onResultsNext:()=>void;onEventsNext:()=>void;onBack:()=>void;nowMs?:number;}
+export interface TaskDetailOptions {state:TaskReadView;workspaceId:string;onResultsNext:()=>void;onEventsNext:()=>void;onBack:()=>void;nowMs?:number;actions?:TaskActionAffordances;}
 function relevantEvent(event:Event,task:Task,workspaceId:string):boolean{
   if(event.workspace_id!==workspaceId||event.task_version===null||event.task_version>task.task_version)return false;
   const runs=new Set([task.active_run_id,task.latest_run_id,task.result?.run_id].filter((id):id is string=>Boolean(id)));
@@ -18,7 +19,7 @@ function resultEvidence(result:TaskResult,current:boolean):HTMLElement{
 function nextButton(label:string,key:string,action:()=>void,enabled:boolean):HTMLElement{
   const control=button(label,action,{class:'secondary','data-focus-key':key});if(!enabled)control.setAttribute('disabled','');return control;
 }
-export function TaskDetail({state,workspaceId,onResultsNext,onEventsNext,onBack,nowMs=Date.now()}:TaskDetailOptions):HTMLElement{
+export function TaskDetail({state,workspaceId,onResultsNext,onEventsNext,onBack,nowMs=Date.now(),actions}:TaskDetailOptions):HTMLElement{
   const root=el('div',undefined,{class:'task-detail'}),source='/v2/workspaces/'+encodeURIComponent(workspaceId);
   root.append(button('Back to task board',onBack,{class:'secondary','data-focus-key':'task-back'}));
   const candidate=state.capabilities.tasks?state.task.state.data:null;
@@ -28,6 +29,7 @@ export function TaskDetail({state,workspaceId,onResultsNext,onEventsNext,onBack,
   const info=taskReadSection('task-detail','Task detail',taskRead,taskPath);
   const events=task&&state.capabilities.events?(state.events.read.state.data??[]).slice(0,taskPageLimit).filter(event=>relevantEvent(event,task,workspaceId)):[];
   if(task){
+    if(actions)info.append(taskActionDisclosure(task,taskRead.status==='ready',actions));
     info.append(el('h3',task.title),el('p',task.description),el('p','State: '+taskStateLabels[task.state]+' · Task version '+task.task_version),el('p','Assigned agent: '+(task.assigned_agent_id??'Unassigned')));
     if(task.result){
       const list=el('ul',undefined,{class:'records'});list.append(resultEvidence(task.result,true));info.append(list);
