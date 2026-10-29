@@ -14,9 +14,10 @@ export async function outboundProvider() {
  const notificationReceiver=new NotificationReceiver(':memory:',{workspaceId:'ws_example',recipientAgentId:'agent_research',key:notificationKey,nowSeconds:()=>Math.floor(Date.now()/1000)});
  const notificationRequests:{body:string;headers:Record<string,string>}[]=[];
  const codes=new Map<string,{url:URL;mode:string;now:number}>();let behavior='normal',jwksMode='normal',jwksRequests=0,requests:string[]=[];
- let release:(()=>void)|undefined;let waiting=false;
+ let release:(()=>void)|undefined;let waiting=false,disposed=false;
  const json=(value:unknown,status=200)=>Response.json(value,{status});
  const handler=async(request:Request):Promise<Response>=>{
+  if(disposed)return new Response(null,{status:503});
   const url=new URL(request.url);
   if(url.origin==='https://receiver.example.invalid'&&url.pathname==='/cfhub'){
    const body=await request.text();notificationRequests.push({body,headers:Object.fromEntries(request.headers)});
@@ -64,5 +65,5 @@ export async function outboundProvider() {
   }
   return json({error:'denied'},599);
  };
- return {bindings:{NOTIFICATION_SIGNING_KEY:notificationKey,DEPLOYMENT_CONFIG:JSON.stringify(example),OIDC_CLIENT_SECRET:secret,CSRF_SECRET:csrf,CURSOR_ENCRYPTION_KEY:randomBytes(32).toString('hex')},handler};
+ return {bindings:{NOTIFICATION_SIGNING_KEY:notificationKey,DEPLOYMENT_CONFIG:JSON.stringify(example),OIDC_CLIENT_SECRET:secret,CSRF_SECRET:csrf,CURSOR_ENCRYPTION_KEY:randomBytes(32).toString('hex')},handler,dispose(){if(disposed)return;disposed=true;release?.();release=undefined;waiting=false;codes.clear();requests=[];notificationRequests.length=0;notificationReceiver.close();}};
 }

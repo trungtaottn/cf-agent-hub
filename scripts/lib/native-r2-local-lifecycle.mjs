@@ -48,3 +48,11 @@ export async function closeLocalFixtureResources({sessions,close}){
  const results=await Promise.allSettled([Promise.resolve().then(close),...sessions.map(session=>Promise.resolve().then(()=>session.close()))]);
  if(results.some(result=>result.status==='rejected'))throw Error('LOCAL_SANDBOX_CLEANUP_UNKNOWN');
 }
+/** Register an asynchronously acquired synthetic issuer inside the actual operation,
+ * not after the caller's abort race. Its owner disposes it after pending work drains. */
+export async function acquireLocalIssuerProvider({create,providers}){
+ if(typeof create!=='function'||!Array.isArray(providers))throw Error('LOCAL_SANDBOX_ISSUER_REJECTED');
+ const provider=await create();providers.push(provider);
+ if(typeof provider?.dispose!=='function')throw Error('LOCAL_SANDBOX_ISSUER_REJECTED');
+ return provider;
+}

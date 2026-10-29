@@ -123,3 +123,44 @@ wire/bridge metadata. These bounds are distinct from
 the accepted canonical 16 KiB per observation and 32 KiB retained SQL total.
 No overbound observation is truncated into valid evidence. The real two-round
 fixture currently performs 17 handler requests and 43 SQL statements per round.
+
+## Synthetic human revocation producer (local report version 3)
+
+A dedicated third synthetic credential is separate from the submitter/reviewer
+journey. It has only workspace-read and runtime-management scopes. Its real
+runtime enrollment and admitted workspace read precede a human-authenticated
+credential revoke; a fresh read with the exact same token must then return the
+validated unauthenticated envelope. Independent fixed SQL observations require
+unchanged installed epoch/digests and human grant/delegation, exact credential
+version/revocation changes, and the complete bounded runtime transition set.
+This is not the older configuration-disable control: that separate submitter
+check remains in place after the revocation observation.
+
+The local runner reuses the existing synthetic OIDC provider. The owned outbound
+bridge allows only its discovery/JWKS/token routes; private code issuance is not
+reachable through Worker egress. Actual login state, code, cookie, session and
+CSRF checks run through the product handlers. No auth session is inserted into
+SQL and no human actor is fabricated. All fixture authentication material stays
+private and ephemeral; no real OAuth service, listener or installed host trust
+is created. Teardown drains owned activity, closes the Worker and fixture-owned
+SQLite resource, then restores the previous fetch function only if cleanup is
+known complete. Failed cancellation leaves cleanup unknown, not a green result.
+
+The fixed host reserves 20 bearer calls and four human application calls, plus
+at most eight issuer calls and one private issuance call. Native/human responses
+are bounded to 64 KiB; issuer/private responses to 32 KiB, totaling at most
+1,867,776 bytes. The report's response-byte count includes issuer/private bytes;
+its HTTP-request count refers only to application calls. Eight additional fixed
+SQL reads are capped to 16 KiB accepted canonical data each. No request-selected
+SQL, route, authentication header or budget is exposed. Versions 1 and 2 remain
+unchanged; version 3 cannot be downgraded into either schema or native evidence.
+
+Actual execution receipts, not this implementation description, determine which
+checks passed. Genuine native process/installed-authority integration and the
+three tuple-only swap limitations remain separate unfinished requirements.
+
+Late issuer acquisition is registered inside the actual owned initialization
+promise, even when an outward abort has already won. Cleanup drains that actual
+promise before disposing its resource. Credential expiry is checked again around
+the final denial, so a token that expires during the flow cannot be reported as
+a revocation-caused denial merely because it returned 401.
