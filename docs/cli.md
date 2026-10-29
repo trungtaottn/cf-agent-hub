@@ -112,3 +112,9 @@ Local pure validation tests and a private-provider Workers runner are distinct f
 ## Native R2 source runner
 
 See [native conformance](native-conformance.md) for the dedicated protected-config command, source-only tests, process custody and unresolved live authority. Source checks do not verify F24 or authorize acceptance, deployment, merge or release.
+
+
+The dedicated test runner also offers `npm run test:native:r2 -- --local-sandbox`
+for [synthetic local backend checks](local-native-sandbox.md). This is not a
+`cf-agent-hub` product command or native conformance pass. It accepts no target,
+credentials or protected-config option and does not change CLI transport trust.

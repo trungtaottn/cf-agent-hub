@@ -82,7 +82,7 @@ Pick exactly one existing issue after its gates clear; read this section, that i
 
 ## Current source boundary and next operator interface
 
-The source runner is not an installed live runner. `scripts/test-native-r2.mjs` deliberately stops after protected configuration validation; the composition API `executeNativeScenario` requires a concrete trusted host adapter that is not bundled. Do not tell an operator that entering credentials alone completes this interface.
+The source runner is not an installed live runner. Its exclusive `--local-sandbox` mode provides separately reported synthetic local Worker/SQLite checks, not built-native execution or an authentic host authority adapter. `scripts/test-native-r2.mjs --config PATH` deliberately stops after protected configuration validation; the composition API `executeNativeScenario` requires a concrete trusted host adapter that is not bundled. Do not tell an operator that entering credentials alone completes this interface.
 
 Remaining **source/integration** work, distinct from deferred acceptance:
 

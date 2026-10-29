@@ -1,0 +1,201 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cf-agent-hub.invalid/local-r2-sandbox-result.schema.json",
+  "title": "Local synthetic source checks only; never native conformance evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "const": "local-r2-sandbox-result"
+    },
+    "version": {
+      "const": 1
+    },
+    "status": {
+      "const": "local-source-checks-passed"
+    },
+    "transport": {
+      "const": "local-worker-dispatch"
+    },
+    "nativeConformance": {
+      "const": false
+    },
+    "issue48Complete": {
+      "const": false
+    },
+    "acceptance": {
+      "const": "not-evaluated"
+    },
+    "cleanup": {
+      "const": "closed"
+    },
+    "rounds": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "prefixItems": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "round": {
+              "const": 1
+            },
+            "freshState": {
+              "const": true
+            },
+            "journeyDone": {
+              "const": true
+            },
+            "selfReviewDenied": {
+              "const": true
+            },
+            "wrongRuntimeProofDenied": {
+              "const": true
+            },
+            "configurationDisabled": {
+              "const": true
+            },
+            "selectedStateUnchanged": {
+              "const": true
+            },
+            "httpRequests": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 32
+            },
+            "sqlStatements": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 128
+            },
+            "responseBytes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2097152
+            },
+            "sqlBytes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2097152
+            }
+          },
+          "required": [
+            "round",
+            "freshState",
+            "journeyDone",
+            "selfReviewDenied",
+            "wrongRuntimeProofDenied",
+            "configurationDisabled",
+            "selectedStateUnchanged",
+            "httpRequests",
+            "sqlStatements",
+            "responseBytes",
+            "sqlBytes"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "round": {
+              "const": 2
+            },
+            "freshState": {
+              "const": true
+            },
+            "journeyDone": {
+              "const": true
+            },
+            "selfReviewDenied": {
+              "const": true
+            },
+            "wrongRuntimeProofDenied": {
+              "const": true
+            },
+            "configurationDisabled": {
+              "const": true
+            },
+            "selectedStateUnchanged": {
+              "const": true
+            },
+            "httpRequests": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 32
+            },
+            "sqlStatements": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 128
+            },
+            "responseBytes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2097152
+            },
+            "sqlBytes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2097152
+            }
+          },
+          "required": [
+            "round",
+            "freshState",
+            "journeyDone",
+            "selfReviewDenied",
+            "wrongRuntimeProofDenied",
+            "configurationDisabled",
+            "selectedStateUnchanged",
+            "httpRequests",
+            "sqlStatements",
+            "responseBytes",
+            "sqlBytes"
+          ]
+        }
+      ],
+      "items": false
+    },
+    "budgets": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "httpRequestsPerRound": {
+          "const": 32
+        },
+        "sqlStatementsPerRound": {
+          "const": 128
+        },
+        "rowsPerQuery": {
+          "const": 128
+        },
+        "responseBytesPerRound": {
+          "const": 2097152
+        },
+        "sqlBytesPerRound": {
+          "const": 2097152
+        }
+      },
+      "required": [
+        "httpRequestsPerRound",
+        "sqlStatementsPerRound",
+        "rowsPerQuery",
+        "responseBytesPerRound",
+        "sqlBytesPerRound"
+      ]
+    }
+  },
+  "required": [
+    "type",
+    "version",
+    "status",
+    "transport",
+    "nativeConformance",
+    "issue48Complete",
+    "acceptance",
+    "cleanup",
+    "rounds",
+    "budgets"
+  ]
+}

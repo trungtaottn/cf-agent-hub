@@ -46,3 +46,21 @@ eligible runtime the original positive execution assertions remain unchanged.
 No runner permission, executable copy, temporary root or product guard is changed.
 A successful source job with this skip still does not prove positive process
 custody or native conformance.
+
+## Local sandbox execution
+
+A separate five-minute `local-sandbox` job executes
+`node scripts/test-native-r2.mjs --local-sandbox` on the same pinned runtime and
+locked dependencies. The reviewed local run completed in 12.55 seconds; the job
+budget includes dependency installation without changing the command's existing
+two-minute deadline. This runs two fresh workerd/SQLite/emulated-R2 rounds, with
+real task, artifact and Done state, authorization negatives and closed cleanup.
+The general source job includes the fixture helper tests; `native-source` includes
+the local entry, lifecycle and report tests. The conditional release verifier
+waits for all three source jobs and dependencies. No deployment is introduced.
+
+This is local sandbox integration, not the protected native adapter, a built CLI
+subprocess, network TLS or full native conformance. Positive process custody
+remains separately unproven on an ineligible hosted runtime. Remote results for
+each newly published head remain pending until observed; historical local passes
+do not imply that the new CI job has passed.

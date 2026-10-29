@@ -161,3 +161,14 @@ reader disk tests explicitly skip rather than weaken that guard. Their FD,
 parent/name swap and positive raw-byte coverage remain unverified locally and
 must run on an eligible ordinary test host. Existing protected runtime custody
 coverage remains separately skipped. Green source tests do not complete #48.
+
+
+### Executable local backend integration (separate from native conformance)
+
+The exclusive `--local-sandbox` mode now composes a source-owned real local
+Worker/SQLite/emulated-R2 fixture, two synthetic native identities, independent
+selected SQL observations and configuration-disable control. It exercises
+actual server handlers directly, not a built CLI child or network TLS. Its
+closed local report and exit status never satisfy this native evidence contract.
+See [local sandbox scope, commands and limits](local-native-sandbox.md). Default
+protected `--config` conformance remains blocked without its real host adapter.
