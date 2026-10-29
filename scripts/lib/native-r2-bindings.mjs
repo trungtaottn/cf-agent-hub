@@ -45,7 +45,7 @@ export function createNativeBindingRegistry(input){
   for(const [key,value] of Object.entries(bindings))if(Object.hasOwn(r,key)){if(!value)fail();same(r[key],value);}
   if(step.id==='probe/wrong-runtime'){if(!state.runtimes.submitter||r.wrong_runtime_id===state.runtimes.submitter.id)fail();}
  }
- const bodyNames={createTask:'TaskCreateRequest',patchTask:'TaskPatchRequest',readyTask:'TaskVersionRequest',claimTask:'TaskClaimRequest',submitTaskResult:'TaskSubmitResultRequest',acceptTaskResult:'TaskVersionRequest',failTask:'TaskFailRequest',cancelTask:'TaskVersionRequest',requeueTask:'TaskVersionRequest',createRuntime:'RuntimeCreateRequest',heartbeatRuntime:'RuntimeHeartbeatRequest',heartbeatRun:'RunHeartbeatRequest',stageArtifact:'ArtifactStageRequest',commitArtifact:'ArtifactCommitRequest',createMessage:'MessageCreateRequest',ackMessages:'MessageAckRequest'};
+ const bodyNames={createTask:'TaskCreateRequest',patchTask:'TaskPatchRequest',readyTask:'TaskVersionRequest',claimTask:'TaskClaimRequest',submitTaskResult:'TaskSubmitResultRequest',acceptTaskResult:'TaskReasonRequest',failTask:'TaskFailRequest',cancelTask:'TaskReasonRequest',requeueTask:'TaskReasonRequest',createRuntime:'RuntimeCreateRequest',heartbeatRuntime:'RuntimeHeartbeatRequest',heartbeatRun:'RunHeartbeatRequest',stageArtifact:'ArtifactStageRequest',commitArtifact:'ArtifactCommitRequest',createMessage:'MessageCreateRequest',ackMessages:'MessageAckRequest'};
  // Pure structural API: only the controller's reader can establish byte origin.
  function checkInput(step,value){
   if(!step.refKeys.includes('input_file')){if(value!==null)fail();return null;}
@@ -66,6 +66,33 @@ export function createNativeBindingRegistry(input){
   if(op==='ackMessages'&&(!state.message||!eq(b.message_ids,[state.message.id])))fail();
   return Object.freeze({stepId:step.id,sha256:v.sha256,byteSize:v.byteSize,status:'structurally-admitted'});
  }
+ function planRequestInput(stepId){return guarded(()=>{
+  if(active||index>=scenario.steps.length)fail();const step=scenario.steps[index];
+  if(stepId!==step.id||step.kind==='control'||step.dependsOn.some(id=>!completed.includes(id)))fail();
+  if(!step.refKeys.includes('input_file'))return null;
+  const task=state.tasks[step.fixture],run=state.runs[step.fixture];let body;
+  switch(step.operation){
+   case 'createRuntime':body={label:'Native scenario '+step.actor};break;
+   case 'createTask':body={title:'Native scenario '+step.fixture,description:'Synthetic isolated conformance fixture'};break;
+   case 'patchTask':body={expected_version:task?.task_version,title:'Native scenario patched'};break;
+   case 'readyTask':body={expected_version:task?.task_version};break;
+   case 'acceptTaskResult':case 'cancelTask':case 'requeueTask':body={expected_version:task?.task_version,reason:'Native scenario '+step.operation};break;
+   case 'claimTask':body={expected_version:task?.task_version,runtime_instance_id:state.runtimes[step.actor]?.id};break;
+   case 'submitTaskResult':body={expected_version:task?.task_version,run_id:run?.id,fence:run?.fence,result:{summary:'Native scenario completed work',artifact_ids:[state.artifact?.id]}};break;
+   case 'failTask':body={expected_version:task?.task_version,run_id:run?.id,fence:run?.fence,reason:'Native scenario uncertain external outcome',outcome_unknown:true};break;
+   case 'heartbeatRun':body={expected_run_version:state.runs.main?.run_version,fence:state.runs.main?.fence};break;
+   case 'heartbeatRuntime':body={expected_runtime_version:step.id==='probe/wrong-runtime'?1:state.runtimes[step.actor]?.runtime_version};break;
+   case 'stageArtifact':body={task_id:state.tasks.main?.id,run_id:state.runs.main?.id,filename:'native-scenario.txt',media_type:'text/plain',byte_size:state.content?.byteSize,sha256:state.content?.sha256};break;
+   case 'commitArtifact':body={expected_artifact_version:state.artifact?.artifact_version};break;
+   case 'createMessage':body={recipient_agent_ids:[actors.reviewer.agentId],body:'Review the linked native scenario task',refs:[{kind:'task',id:state.tasks.main?.id}],artifact_ids:[]};break;
+   case 'ackMessages':body={message_ids:[state.message?.id]};break;
+   default:fail();
+  }
+  body=detachedBody(body);const json=canonicalCaseSubject(body),sha256=hash(json),byteSize=Buffer.byteLength(json);
+  checkInput(step,{body,sha256,byteSize});
+  const freeze=v=>{if(v&&typeof v==='object'){for(const child of Object.values(v))freeze(child);Object.freeze(v);}return v;};
+  return freeze({body,json,sha256,byteSize});
+ });}
  function parseOutput(step,stdout,stderr){
   if(step.id==='prepare/retain-artifact'){
    if(stdout.length)fail();const text=new TextDecoder('utf-8',{fatal:true}).decode(stderr),lines=text.split('\n').filter(Boolean),local=lines.filter(x=>x.startsWith('Local: '));if(local.length!==1||lines.some(x=>!x.startsWith('Local: ')&&x!=='Local action completed.'))fail();
@@ -151,5 +178,5 @@ export function createNativeBindingRegistry(input){
   if(step.kind==='control'){if(refs!==null||strict)fail();}else{checkRefs(step,refsCopy(refs,step));if(strict)admission=checkInput(step,input);}
   if(poisoned)fail();const token=Object.freeze(Object.create(null));tokens.set(token,{step});if(admission)inputAdmissions.push(admission);active=token;return token;
  }catch(e){active=null;throw e;}});}
- return Object.freeze({prepare:(stepId,refs=null)=>prepare(stepId,refs,null,false),prepareWithInput:(stepId,refs,input)=>prepare(stepId,refs,input,true),completeControl:(t,r)=>finish(t,'control',r),completeProcess:(t,r)=>finish(t,'process',r),readSummary(){return structuredClone({status:poisoned?'incomplete':index===scenario.steps.length?'source-consistent-bindings':'pending',completedSteps:index,plannedSteps:scenario.steps.length,requestBodyCustody:'pending',inputAdmissions,authenticatedHost:'pending',messageThreadBindings:state.messageThreadObserved?'source-consistent-output-lineage':'pending',issue48Complete:false,bindings:state,provenance});}});
+ return Object.freeze({planRequestInput,prepare:(stepId,refs=null)=>prepare(stepId,refs,null,false),prepareWithInput:(stepId,refs,input)=>prepare(stepId,refs,input,true),completeControl:(t,r)=>finish(t,'control',r),completeProcess:(t,r)=>finish(t,'process',r),readSummary(){return structuredClone({status:poisoned?'incomplete':index===scenario.steps.length?'source-consistent-bindings':'pending',completedSteps:index,plannedSteps:scenario.steps.length,requestBodyCustody:'pending',inputAdmissions,authenticatedHost:'pending',messageThreadBindings:state.messageThreadObserved?'source-consistent-output-lineage':'pending',issue48Complete:false,bindings:state,provenance});}});
 }

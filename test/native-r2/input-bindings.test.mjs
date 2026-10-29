@@ -10,7 +10,8 @@ function request(step,s){switch(step.operation){
  case 'createRuntime':return {label:'source fixture'};
  case 'createTask':return {title:'Source fixture',description:''};
  case 'patchTask':return {expected_version:s.tasks[step.fixture].task_version,title:'Patched'};
- case 'readyTask':case 'cancelTask':case 'requeueTask':case 'acceptTaskResult':return {expected_version:s.tasks[step.fixture].task_version};
+ case 'readyTask':return {expected_version:s.tasks[step.fixture].task_version};
+ case 'cancelTask':case 'requeueTask':case 'acceptTaskResult':return {expected_version:s.tasks[step.fixture].task_version,reason:'Source fixture reason'};
  case 'claimTask':return {expected_version:s.tasks[step.fixture].task_version,runtime_instance_id:s.runtimes[step.actor].id};
  case 'submitTaskResult':return {expected_version:s.tasks.main.task_version,run_id:s.runs.main.id,fence:s.runs.main.fence,result:{summary:'Done',artifact_ids:[s.artifact.id]}};
  case 'failTask':return {expected_version:s.tasks.fail.task_version,run_id:s.runs.fail.id,fence:s.runs.fail.fence,reason:'Test failure',outcome_unknown:true};

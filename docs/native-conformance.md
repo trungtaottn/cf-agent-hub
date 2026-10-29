@@ -172,3 +172,26 @@ actual server handlers directly, not a built CLI child or network TLS. Its
 closed local report and exit status never satisfy this native evidence contract.
 See [local sandbox scope, commands and limits](local-native-sandbox.md). Default
 protected `--config` conformance remains blocked without its real host adapter.
+
+## Source-owned request preparation
+
+The private binding registry now plans each of the 27 source-known JSON request
+bodies from its exact next step and previously validated outputs. Fixed synthetic
+text and current versions, IDs, fences, artifact digests and message relations
+replace delegated host body construction. Plans are detached immutable canonical
+JSON with exact byte length and SHA256; planning alone is not an admitted or
+consumed-input record.
+
+The controller reserves a separate 27 × 65,536-byte publication budget, obtains
+fresh current authority after host preparation, and exclusively creates the
+input beneath the qualified fixture root. It never overwrites or deletes an
+existing/uncertain input. The existing protected raw reader then checks exact
+planned bytes before strict relationship validation and the CLI same-buffer pin.
+Publication failure stops before process dispatch and retains protected files.
+A same-UID hostile writer is not contained by this mechanism; the pin still
+matters and no authenticated consumption claim is inferred from publication.
+
+The protected entry still lacks its real host adapter. The bounded
+[producer integration design](native-host-producer-design.md) distinguishes code
+we still must implement from the small set of operator trust/capability choices;
+it does not install a service or fabricate authority.

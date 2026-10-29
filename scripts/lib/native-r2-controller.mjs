@@ -1,3 +1,4 @@
+import {createNativeInputWriter} from './native-r2-input-writer.mjs';
 import {createNativeInputAdmission} from './native-r2-input.mjs';
 import {createHash,randomUUID} from 'node:crypto';
 import {mkdirSync,lstatSync} from 'node:fs';
@@ -42,6 +43,12 @@ export function snapshotNativeGenericReceipt(kind,value){
  for(const key of keys)if(key!=='usage'&&row[key]!==null&&!['string','number','boolean'].includes(typeof row[key]))fail();
  for(const key of costKeys)if(!Number.isSafeInteger(usage[key])||usage[key]<0)fail();
  return Object.freeze({...row,usage:Object.freeze(usage)});
+}
+/** Compare an actual controller reader receipt to its private source plan; not host authority. */
+export function validateNativePlannedInput(plan,input){
+ if(plan===null){if(input!==null)throw Error('NATIVE_INPUT_PLAN_REJECTED');return;}
+ const p=dataObject(plan,['body','json','sha256','byteSize']),v=dataObject(input,['body','sha256','byteSize']);
+ if(typeof p.json!=='string'||p.json.length>65536||!Number.isSafeInteger(p.byteSize)||p.byteSize<1||p.byteSize>65536||Buffer.byteLength(p.json)!==p.byteSize||typeof p.sha256!=='string'||!/^[a-f0-9]{64}$/.test(p.sha256)||createHash('sha256').update(p.json).digest('hex')!==p.sha256||v.sha256!==p.sha256||v.byteSize!==p.byteSize)throw Error('NATIVE_INPUT_PLAN_REJECTED');
 }
 /** Explicit evidence-only costs. No fallback zeros or inferred host cost. */
 export function prepareNativeEvidenceExecution(budgets,reservations){
@@ -98,9 +105,9 @@ export async function executeNativeScenario(input,adapter,evidenceContext=null){
  const subjects={config_sha256:configSha256,candidate_sha:config.candidate_sha,candidate_tree_sha:config.candidate_tree_sha,composition_sha256:config.composition_sha256,node_sha256:config.node.sha256,build_sha256:config.build.sha256,authority_record_sha256:config.authority_record_sha256,scenario_sha256:plan.scenarioSha256,actors_sha256:sha({actors:config.actors,fixture_stores:config.fixture_stores}),workspaces_sha256:sha(config.workspaces)};
  const bindingActor=role=>{const actor=config.actors.find(item=>item.id===role);return {principalId:actor.principal_id,agentId:actor.agent_id};};
  const bindings=createNativeBindingRegistry({workspaceId:config.workspaces.primary,submitter:bindingActor('submitter'),reviewer:bindingActor('reviewer')});
- const inputs=createNativeInputAdmission();budget.remainingMs();
+ const inputs=createNativeInputAdmission(),writer=createNativeInputWriter({fixtureDirectory:config.fixture_directory});budget.remainingMs();
  const completed=[],protectedResults=[];let retainedArtifactBytes=null,assembled=null;
- const attachEvidence=result=>{Object.defineProperty(result,'readProtectedInputAdmissions',{enumerable:false,value:()=>inputs.readProtectedSummary()});Object.defineProperty(result,'readProtectedBindings',{enumerable:false,value:()=>bindings.readSummary()});if(recorder)Object.defineProperty(result,'readProtectedEvidence',{enumerable:false,value:()=>({durability:'memory-only',status:assembled?.result.status??'partial-originals-pending',context:recorder.readProtectedContext(),records:recorder.readProtectedRecords(),assembly:assembled?structuredClone(assembled):null})});return result;};
+ const attachEvidence=result=>{Object.defineProperty(result,'readProtectedInputPublications',{enumerable:false,value:()=>writer.readProtectedSummary()});Object.defineProperty(result,'readProtectedInputAdmissions',{enumerable:false,value:()=>inputs.readProtectedSummary()});Object.defineProperty(result,'readProtectedBindings',{enumerable:false,value:()=>bindings.readSummary()});if(recorder)Object.defineProperty(result,'readProtectedEvidence',{enumerable:false,value:()=>({durability:'memory-only',status:assembled?.result.status??'partial-originals-pending',context:recorder.readProtectedContext(),records:recorder.readProtectedRecords(),assembly:assembled?structuredClone(assembled):null})});return result;};
  const currentAuthority=async()=>{
   budget.remainingMs();const auth=await bounded(signal=>adapter.authorize(structuredClone({configSha256,config}),{signal}));
   if(!auth||Object.keys(auth).sort().join(',')!=='authorityRecordSha256,configSha256,expiresAt'||auth.configSha256!==configSha256||auth.authorityRecordSha256!==config.authority_record_sha256||!Number.isSafeInteger(auth.expiresAt)||auth.expiresAt<=Date.now()||auth.expiresAt>Date.now()+300000)throw Error('NATIVE_AUTHORITY_REJECTED');
@@ -123,14 +130,17 @@ export async function executeNativeScenario(input,adapter,evidenceContext=null){
     bindings.completeControl(bindingToken,result);
     protectedResults.push({stepId:step.id,control:structuredClone(result)});completed.push(step.id);continue;
    }
-   const prepared=await bounded(signal=>adapter.prepare(structuredClone(step),{completed:[...completed],signal,readPriorOutput(id){const prior=protectedResults.find(item=>item.stepId===id);if(!prior?.process||!completed.includes(id))throw Error('NATIVE_SUBJECT_REJECTED');const output=prior.process.readCapturedOutput();return {stdout:Buffer.from(output.stdout),stderr:Buffer.from(output.stderr)};}}));
+   const requestInput=bindings.planRequestInput(step.id);
+   const prepared=await bounded(signal=>adapter.prepare(structuredClone(step),{completed:[...completed],requestInput:structuredClone(requestInput),signal,readPriorOutput(id){const prior=protectedResults.find(item=>item.stepId===id);if(!prior?.process||!completed.includes(id))throw Error('NATIVE_SUBJECT_REJECTED');const output=prior.process.readCapturedOutput();return {stdout:Buffer.from(output.stdout),stderr:Buffer.from(output.stderr)};}}));
    if(!prepared||Object.keys(prepared).sort().join(',')!=='artifactBytes,refs'||!Number.isSafeInteger(prepared.artifactBytes)||prepared.artifactBytes<0||prepared.artifactBytes>cost.artifact_bytes)throw Error('NATIVE_SUBJECT_REJECTED');
    const refs=snapshotNativeRefs(step.id,prepared.refs);
    const actor=config.fixture_stores.find(item=>item.fixture===step.fixture&&item.actor_slot===step.actor)??config.actors.find(item=>item.id===step.actor);
    if(!actor||refs?.state_directory!==actor.state_directory||refs.origin!==undefined&&refs.origin!==config.origin||refs.workspace!==undefined&&refs.workspace!==(['probe/wrong-workspace','probe/server-foreign-workspace'].includes(step.id)?config.workspaces.foreign:config.workspaces.primary))throw Error('NATIVE_SUBJECT_REJECTED');
    for(const key of ['input_file','source_file','output_file'])if(refs[key]&&!within(config.fixture_directory,refs[key]))throw Error('NATIVE_SUBJECT_REJECTED');
    budget.remainingMs();
+   if(requestInput){await currentAuthority();writer.write(step.id,refs.input_file,requestInput);}
    let input=step.refKeys.includes('input_file')?inputs.read(step.id,refs.input_file):null;
+   validateNativePlannedInput(requestInput,input);
    budget.remainingMs();
    const pin=input===null?null:Object.freeze({sha256:input.sha256,byteSize:input.byteSize});
    const bindingToken=bindings.prepareWithInput(step.id,refs,input);input=null;
