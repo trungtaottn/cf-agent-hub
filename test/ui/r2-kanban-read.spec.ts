@@ -1,6 +1,6 @@
 import type {Page} from '@playwright/test';
 import type {AuthSessionResponse,ProfileDataResponse} from '../../src/http/dto';
-import {test,expect,appOrigin,issuerOrigin} from '../helpers/browser';
+import {test,expect,appOrigin,issuerOrigin,readFixtureRoute} from '../helpers/browser';
 import {login,fixtureControl} from '../helpers/ui';
 
 const title={review:'Review evidence <img src=x onerror="window.fixtureInjected=1">',history:'Requeued retained result',doing:'Active execution observation',done:'Independently accepted result',cancelled:'Cancelled retained task'};
@@ -113,7 +113,7 @@ test('profile_default_alias_and_hidden_fallback_preserve_settings_draft',async({
 });
 test('revoked_resource_removed_and_late_response_ignored',async({page})=>{
  await openBoard(page);let release!:()=>void;const barrier=new Promise<void>(resolve=>{release=resolve;});let held=0,settled=0;
- await page.route('**/v2/workspaces/ws_example/tasks/*/results*',async route=>{const response=await route.fetch();++held;await barrier;await route.fulfill({response});++settled;});
+ await page.route('**/v2/workspaces/ws_example/tasks/*/results*',async route=>{const response=await readFixtureRoute(route);++held;await barrier;await route.fulfill(response);++settled;});
  try{
   await page.getByRole('link',{name:title.history,exact:true}).click();await expect.poll(()=>held).toBe(1);
   await fixtureControl(page,'r2-revoke-human');await page.getByRole('button',{name:'Refresh reads',exact:true}).click();
@@ -137,9 +137,9 @@ test('narrow_task_detail_wraps_long_canonical_text',async({page})=>{
  const longText='SyntheticLongWord'.repeat(80);
  await page.route('**/v2/workspaces/ws_example/tasks/*',async route=>{
   if(route.request().method()!=='GET'||new URL(route.request().url()).pathname.endsWith('/results')){await route.continue();return;}
-  const response=await route.fetch(),body=await response.json();
+  const response=await readFixtureRoute(route),body=JSON.parse(response.body.toString('utf8'));
   if(body.data?.title)body.data={...body.data,title:longText,description:longText};
-  await route.fulfill({response,json:body});
+  await route.fulfill({...response,body:JSON.stringify(body)});
  });
  await page.getByRole('link',{name:title.review,exact:true}).click();
  await expect(page.getByTestId('task-detail')).toContainText(longText);

@@ -18,7 +18,7 @@ type Listener=(request:IncomingMessage,response:ServerResponse)=>void;
 interface Certificate {key:Buffer;cert:Buffer;pin:string;}
 export interface FixtureWorker {fetch(input:Request|string,init?:RequestInit):Promise<Response>;}
 export interface HttpsFixture {
- proxyPort:number;negativeProxyPort:number;appPort:number;pins:[string,string];
+ proxyPort:number;negativeProxyPort:number;appPort:number;appCertificate:string;pins:[string,string];
  dispatch:typeof fetch; discovery:Record<string,unknown>;
  selfCheck(transport?:typeof fetch):Promise<void>;selfCheckApp(path?:string):Promise<void>;close():Promise<void>;
 }
@@ -141,7 +141,7 @@ export async function startHttpsFixture(worker:FixtureWorker,options:{clientSecr
    if(allowed.get(request.url)!==request.method){deniedUrls.add(request.url);throw Error('FIXTURE_EGRESS_DENIED');}
    return relay(request);
   };
-  return {proxyPort,negativeProxyPort,appPort,pins:[app.pin,issuer.pin],dispatch,discovery,close,
+  return {proxyPort,negativeProxyPort,appPort,appCertificate:app.cert.toString('utf8'),pins:[app.pin,issuer.pin],dispatch,discovery,close,
    async selfCheckApp(path='/v2/workspaces/ws_example/auth/start'){
     const mutation=path.startsWith('/v2/');
     const result=await new Promise<{status:number;code:string|null}>((resolve,reject)=>{
