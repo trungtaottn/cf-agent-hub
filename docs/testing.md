@@ -102,6 +102,10 @@ The existing Node runner collects `test/cli/journal-recovery.test.ts`, `secret-s
 
 New native tests cover protected finalization, runtime-path mismatch, once-only actual-lease proof access, late-capture cleanup and invalid asynchronous-hook rejection without unhandled secret-bearing errors. Process-kill tests do not establish host reboot, container replacement, actual suspend or hardware power-loss durability. Actual-host storage is overlayfs; persistent backing and ext-family/XFS behavior remain separately qualified in [ADR0009](adr/0009-r2-cli-local-durability.md). See [exact results and non-passes](r2-task-plans/issue-041-execution.md).
 
+## CI source-job envelope
+
+The source job retains a bounded 30-minute orchestration budget for the expanded R2 suite; per-test safety deadlines and every required step remain unchanged. See the [measured budget diagnosis](research/r2-ci-job-budget.md). This adjustment does not clear independent security review or release gates.
+
 ## CI fixture corrections (2026-10-29)
 
 The issue42 browser run reached 46 passing cases and two failures: `route.fetch()` uses the Node API-request transport, not Chromium's ephemeral SPKI allowlist. The two task/results interceptors now use a test-only HTTPS reader with the fixture's public leaf certificate, exact readiness SPKI, normal hostname verification and `rejectUnauthorized:true`. It connects only to the captured loopback port for the exact synthetic app origin, forwards only relevant JSON GET headers, rejects redirects/cookie updates/encoded responses and bounds response bytes to 2 MiB. No private key or credential is exported in readiness captures. Global TLS validation and browser `ignoreHTTPSErrors:false` remain unchanged. Its 10-second socket timeout is an inactivity bound; the outer Playwright test timeout remains the overall execution bound. The helper is not a general transport.
