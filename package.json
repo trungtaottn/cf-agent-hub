@@ -29,7 +29,8 @@
     "recover:workspace": "node scripts/recover-workspace.mjs",
     "test:deployment-verifier": "node --test test/deployment/verify-r1-deployment.test.mjs",
     "test:recovery-cli": "node --test test/cli/*.test.mjs",
-    "verify:artifact-bindings": "node scripts/verify-artifact-bindings.mjs"
+    "verify:artifact-bindings": "node scripts/verify-artifact-bindings.mjs",
+    "build:cli": "node scripts/build-cli.mjs"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "1.4.7",
@@ -50,5 +51,8 @@
   "overrides": {
     "undici": "^7.30.1",
     "zod": "^4.6.6"
+  },
+  "bin": {
+    "cf-agent-hub": "dist/cli/agenthub.mjs"
   }
 }

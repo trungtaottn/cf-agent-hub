@@ -85,6 +85,15 @@ function persist(db:DatabaseSync,entry:StoredEntry,row:Row):void{
  db.prepare('UPDATE journal_entries SET payload=?,checksum=? WHERE id=?').run(payload,digest(payload),entry.id);
 }
 
+/** Validate every bounded row, including rows after a match. Never retain bodies. */
+function scan(db:DatabaseSync,visit:(entry:StoredEntry)=>void):void {
+ let count=0,total=0;
+ for(const raw of db.prepare('SELECT id,payload,checksum,reserved_bytes FROM journal_entries LIMIT 1001').iterate()){
+  if(++count>MAX_ENTRIES)deny();
+  const {entry,row}=rowValue(raw);total+=row.reserved_bytes;if(total>MAX_BYTES)deny();visit(entry);
+ }
+}
+
 /** The authority callback is a trusted current pinned-lease gate, not serialized
  * principal metadata. This store performs no fetch and has no implicit retries. */
 export class Journal {
@@ -98,13 +107,13 @@ export class Journal {
     if(db.prepare('PRAGMA application_id').get()?.application_id!==applicationId||db.prepare('PRAGMA user_version').get()?.user_version!==1)deny();
     const definitions=db.prepare("SELECT name,sql FROM sqlite_schema WHERE name NOT GLOB 'sqlite_*' ORDER BY name").all();
     if(definitions.length!==1||definitions[0].name!=='journal_entries'||definitions[0].sql!==schema)deny();
-    const rows=db.prepare('SELECT id,payload,checksum,reserved_bytes FROM journal_entries').all();let total=0;
-    if(rows.length>MAX_ENTRIES)deny();for(const row of rows)total+=rowValue(row).row.reserved_bytes;if(total>MAX_BYTES)deny();
+    scan(db,()=>{});
    });
   }catch{this.#store.close();throw Error('JOURNAL_REJECTED');}
  }
  #authorized(binding:VerifiedPrincipalBinding):boolean{try{return this.#authority(Object.freeze({...binding}))===true;}catch{return false;}}
- async recordIntent(input:{request:SemanticRequest;principal:VerifiedPrincipalBinding;suppliedKey?:string}):Promise<JournalEntry>{
+ async recordIntent(input:{request:SemanticRequest;principal:VerifiedPrincipalBinding;suppliedKey?:string}):Promise<JournalEntry>{return this.recordIntentSync(input);}
+ recordIntentSync(input:{request:SemanticRequest;principal:VerifiedPrincipalBinding;suppliedKey?:string}):JournalEntry{
   try{
    if(!object(input)||Object.keys(input).some(k=>!['request','principal','suppliedKey'].includes(k)))deny();
    const request=requestValue(input.request),principal=principalValue(input.principal),key=input.suppliedKey===undefined?null:keyValue(input.suppliedKey);
@@ -118,10 +127,12 @@ export class Journal {
    });
   }catch{throw Error('JOURNAL_REJECTED');}
  }
- async attachKey(id:string,key:string):Promise<JournalEntry>{
+ async attachKey(id:string,key:string):Promise<JournalEntry>{return this.attachKeySync(id,key);}
+ attachKeySync(id:string,key:string):JournalEntry{
   return this.#store.transaction(db=>{const valid=keyValue(key),{entry,row}=required(db,id);if(!this.#authorized(entry.principal)||entry.key!==null&&entry.key!==valid||entry.replayState!=='unsent')deny();if(entry.key===null){entry.key=valid;persist(db,entry,row);}return publicEntry(entry);});
  }
- async markFirstDispatch(id:string,stamp:DispatchStamp):Promise<JournalEntry>{
+ async markFirstDispatch(id:string,stamp:DispatchStamp):Promise<JournalEntry>{return this.markFirstDispatchSync(id,stamp);}
+ markFirstDispatchSync(id:string,stamp:DispatchStamp):JournalEntry{
   return this.#store.transaction(db=>{const {entry,row}=required(db,id),valid=stampValue(stamp,requestFingerprint(entry.request));if(!this.#authorized(entry.principal)||entry.key===null||entry.replayState==='reconciliation-required'||entry.replayState==='settled')deny();if(entry.firstDispatch===null){entry.firstDispatch=valid;entry.replayState='within-window';persist(db,entry,row);}return publicEntry(entry);});
  }
  async authorizeReplay(id:string,current:VerifiedPrincipalBinding,request:SemanticRequest,clock:ReplayClockEvidence):Promise<'send-once'|'no-send-reconcile'>{return this.authorizeReplaySync(id,current,request,clock);}
@@ -151,7 +162,8 @@ export class Journal {
   this.#store.transaction(db=>{const {entry,row}=required(db,id);if(entry.replayState!=='settled'){entry.replayState='reconciliation-required';persist(db,entry,row);}});
   return 'no-send-reconcile';
  }
- async recordOutcome(id:string,redactedOutcome:unknown):Promise<void>{
+ async recordOutcome(id:string,redactedOutcome:unknown):Promise<void>{return this.recordOutcomeSync(id,redactedOutcome);}
+ recordOutcomeSync(id:string,redactedOutcome:unknown):void{
   this.#store.transaction(db=>{const outcome=outcomeValue(redactedOutcome),{entry,row}=required(db,id);if(entry.replayState==='settled'){if(!equal(entry.outcome,outcome))deny();return;}entry.outcome=outcome;
    // Only an explicit canonical successful result settles. Transport failures and
    // conflicts cannot establish whether the original effect already happened.
@@ -159,10 +171,15 @@ export class Journal {
    persist(db,entry,row);});
  }
  /** Internal exact intent read; consumers must never print this sensitive payload. */
- async get(id:string):Promise<JournalEntry|null>{return this.#store.read(db=>{const found=load(db,id);return found?publicEntry(found.entry):null;});}
+ async get(id:string):Promise<JournalEntry|null>{return this.getSync(id);}
+ getSync(id:string):JournalEntry|null{return this.#store.read(db=>{const found=load(db,id);return found?publicEntry(found.entry):null;});}
+ /** Internal bounded validation. Callers receive only the aggregate result. */
+ someValidatedSync(predicate:(entry:Readonly<JournalEntry>)=>boolean):boolean {
+  return this.#store.read(db=>{let found=false;scan(db,entry=>{if(predicate(entry))found=true;});return found;});
+ }
  /** Explicit local cleanup only; unresolved intent is never evicted. No automatic GC. */
  async pruneSettled():Promise<number>{
-  return this.#store.transaction(db=>{const now=Date.now();if(!integer(now))deny();let count=0;for(const raw of db.prepare('SELECT id,payload,checksum,reserved_bytes FROM journal_entries').all()){const {entry}=rowValue(raw);if(entry.replayState==='settled'&&entry.settledAt!==null&&now-entry.settledAt>=SETTLED_RETENTION_MS){db.prepare('DELETE FROM journal_entries WHERE id=?').run(entry.id);count++;}}return count;});
+  return this.#store.transaction(db=>{const now=Date.now();if(!integer(now))deny();let count=0;const ids:string[]=[];scan(db,entry=>{if(entry.replayState==='settled'&&entry.settledAt!==null&&now-entry.settledAt>=SETTLED_RETENTION_MS)ids.push(entry.id);});for(const id of ids){db.prepare('DELETE FROM journal_entries WHERE id=?').run(id);count++;}return count;});
  }
  close():void{this.#store.close();}
 }
