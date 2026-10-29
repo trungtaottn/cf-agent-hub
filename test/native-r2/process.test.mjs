@@ -3,6 +3,7 @@ import childProcess from 'node:child_process';
 import {syncBuiltinESMExports} from 'node:module';
 import assert from 'node:assert/strict';
 import {runOwnedProcess} from '../../scripts/lib/native-r2-process.mjs';
+import {custodyDiagnostic} from '../helpers/native-custody-diagnostic.mjs';
 test('owned process rejects absent closed input without leaking details',async()=>{
  for(const value of [undefined,null,{}, {nodePath:'private-secret'}])await assert.rejects(()=>runOwnedProcess(value),error=>error.message==='NATIVE_PROCESS_INPUT_REJECTED');
 });
@@ -81,8 +82,8 @@ test('actual managed runtime owner failure stays blocked without copying or rela
  if([0,process.getuid()].includes(owner))return; // This environment's specific negative is inapplicable elsewhere.
  await assert.rejects(()=>runOwnedProcess(spec),error=>error.message==='NATIVE_PROCESS_INPUT_REJECTED');assert.deepEqual(readdirSync(dir),['synthetic.mjs']);
 }));
-test('real owned process positive execution remains blocked pending trusted runtime custody',{skip:![0,process.getuid()].includes(lstatSync(process.execPath).uid)?'Managed Node UID65534 is not currentUID/root; no host attestation or alternate-root bypass':false},()=>withSpec(async(spec)=>{
- const result=await runOwnedProcess(spec);assert.equal(result.status,'terminal');assert.equal(result.exitCode,0);assert.equal(result.readCapturedOutput().stdout.toString(),'synthetic only');assert.equal(Object.keys(result).includes('readCapturedOutput'),false);assert.equal(JSON.stringify(result).includes('synthetic only'),false);
+test('real owned process positive execution remains blocked pending trusted runtime custody',{skip:![0,process.getuid()].includes(lstatSync(process.execPath).uid)?'Managed Node UID65534 is not currentUID/root; no host attestation or alternate-root bypass':false},t=>withSpec(async(spec)=>{
+ let result;try{result=await runOwnedProcess(spec);}catch(error){t.diagnostic('custody-predicates '+JSON.stringify(custodyDiagnostic(spec)));throw error;}assert.equal(result.status,'terminal');assert.equal(result.exitCode,0);assert.equal(result.readCapturedOutput().stdout.toString(),'synthetic only');assert.equal(Object.keys(result).includes('readCapturedOutput'),false);assert.equal(JSON.stringify(result).includes('synthetic only'),false);
 },false));
 
 import {projectProcessTranscripts} from '../../scripts/lib/native-r2-process.mjs';

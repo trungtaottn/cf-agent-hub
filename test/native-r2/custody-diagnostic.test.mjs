@@ -1,0 +1,8 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {metadataPredicates,custodyDiagnostic} from '../helpers/native-custody-diagnostic.mjs';
+const stat=(extra={})=>({uid:1000,mode:0o100600,nlink:1,size:1,isFile:()=>true,isDirectory:()=>false,isSymbolicLink:()=>false,...extra});
+test('diagnostic marks runtime ownership/mode/link/executable constraints independently',()=>{const x=metadataPredicates(stat({uid:1234,mode:0o100666,nlink:2}),1000,{maxBytes:10,executable:true});assert.equal(x.ownerAllowed,false);assert.equal(x.modeAllowed,false);assert.equal(x.singleLink,false);assert.equal(x.executableAllowed,false);assert.equal(x.sizeAllowed,true);});
+test('only directory sticky root permits writable bits',()=>{const s=stat({uid:0,mode:0o41777,isDirectory:()=>true,isFile:()=>false});assert.equal(metadataPredicates(s,1000,{directory:true}).modeAllowed,true);assert.equal(metadataPredicates(s,1000).modeAllowed,false);assert.equal(metadataPredicates(s,1000,{directory:true,privateLeaf:true}).privateLeafAllowed,false);});
+test('diagnostic size and private-leaf checks preserve exact boundaries',()=>{assert.equal(metadataPredicates(stat({size:11}),1000,{maxBytes:10}).sizeAllowed,false);assert.equal(metadataPredicates(stat({size:0}),1000).sizeAllowed,false);assert.equal(metadataPredicates(stat({mode:0o40700,isDirectory:()=>true}),1000,{directory:true,privateLeaf:true}).privateLeafAllowed,true);});
+test('failed inspections disclose no supplied paths',()=>{const secret='/nonexistent-private-diagnostic-value';const x=custodyDiagnostic({receiptDirectory:secret,cwd:secret,nodePath:secret,entryPath:secret});assert.equal(JSON.stringify(x).includes(secret),false);assert.deepEqual(Object.values(x),Array(4).fill({inspectionFailed:true}));});
