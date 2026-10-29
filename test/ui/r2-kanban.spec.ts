@@ -1,6 +1,6 @@
 import type {Page} from '@playwright/test';
 import type {AuthSessionResponse,TaskResponse,TaskCommandResultResponse} from '../../src/http/dto';
-import {test,expect,appOrigin,issuerOrigin} from '../helpers/browser';
+import {test,expect,appOrigin,issuerOrigin,sendFixtureReadyRoute} from '../helpers/browser';
 import {login,fixtureControl} from '../helpers/ui';
 
 // Real fixture commands persist through the public HTTP/domain path. Route interception
@@ -47,8 +47,8 @@ test('conflict retains exact reason and requires explicit current-state review',
 });
 
 test('lost response retains original key/body across navigation and explicit replay',async({page})=>{
- await board(page);const id=await taskId(page,'Backlog item 01');const requests:{key:string|null;body:string|null}[]=[];let lose=true;
- await page.route('**/tasks/'+id+':ready',async route=>{requests.push({key:route.request().headers()['idempotency-key']??null,body:route.request().postData()});if(lose){lose=false;await route.fetch();await route.abort();}else await route.continue();});
+ await board(page);const id=await taskId(page,'Backlog item 01'),before=await getTask(page,id);const requests:{key:string|null;body:string|null}[]=[];let lose=true;
+ await page.route('**/tasks/'+id+':ready',async route=>{requests.push({key:route.request().headers()['idempotency-key']??null,body:route.request().postData()});if(lose){lose=false;const response=await sendFixtureReadyRoute(route);expect(response.status).toBe(200);const result=JSON.parse(response.body.toString('utf8')) as TaskCommandResultResponse;expect(result.data.task).toMatchObject({id,state:'ready',task_version:before.task_version+1});expect(await getTask(page,id)).toMatchObject({id,state:'ready',task_version:before.task_version+1});await route.abort();}else await route.continue();});
  await openAction(page,'Backlog item 01','Ready');await page.getByRole('button',{name:'Confirm command',exact:true}).click();await expect(page.getByRole('dialog')).toContainText(/uncertain|unknown/i);
  await page.keyboard.press('Escape');await page.getByRole('link',{name:'Overview',exact:true}).click();await page.getByRole('link',{name:'Tasks',exact:true}).click();
  await page.getByRole('button',{name:/Reopen/}).click();await page.getByRole('button',{name:'Reconcile original command',exact:true}).click();
@@ -105,7 +105,7 @@ test('double activation and external drops cannot dispatch extra commands or man
 
 test('wrong binding receipt stays uncertain and explicit replay recovers persisted original',async({page})=>{
  await board(page);const id=await taskId(page,'Backlog item 01');let corrupt=true;
- await page.route('**/tasks/'+id+':ready',async route=>{if(!corrupt){await route.continue();return;}corrupt=false;const response=await route.fetch(),body=await response.json();body.data.task.id='task_wrong_binding';await route.fulfill({response,json:body});});
+ await page.route('**/tasks/'+id+':ready',async route=>{if(!corrupt){await route.continue();return;}corrupt=false;const response=await sendFixtureReadyRoute(route),body=JSON.parse(response.body.toString('utf8'));expect(response.status).toBe(200);expect(body.data.task).toMatchObject({id,state:'ready',task_version:2});body.data.task.id='task_wrong_binding';await route.fulfill({...response,body:JSON.stringify(body)});});
  await openAction(page,'Backlog item 01','Ready');await page.getByRole('button',{name:'Confirm command',exact:true}).click();await expect(page.getByRole('dialog')).toContainText('INVALID_RESPONSE');
  await page.getByRole('button',{name:'Reconcile original command',exact:true}).click();await expect(page.getByTestId('tasks-ready')).toContainText('Backlog item 01');expect((await getTask(page,id)).task_version).toBe(2);
 });
