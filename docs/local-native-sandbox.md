@@ -199,3 +199,37 @@ and issue-complete fields; prior versions and native release schemas are unchang
 This closes a local producer path only. Durable native-original composition,
 protected process execution and genuinely installed authority remain distinct.
 The three unchanged tuple-only swap obligations are not satisfied by this flow.
+
+## Private captured bytes and record pairing
+
+The local foreign and revocation producers retain the bounded bytes behind their
+safe digests instead of discarding them after validation. HTTP entries retain
+actual received response-body bytes before JSON parsing. Selected SQL entries
+retain canonical typed rows returned by the owned observer before their safe
+hash projection. The human revoke acknowledgment is explicitly a canonical
+returned-object capture, **not** a claim to retain its original HTTP body.
+
+Each producer has an internally generated capture identity, pinned by the host
+before the run. Fixed rosters admit 74 foreign-state entries, 12 foreign-route
+responses and 12 revocation entries (eight SQL, three native responses and one
+returned acknowledgment). Per-kind admission occurs before copying. Invalid
+append attempts poison the capture; incomplete or failed stores cannot pass
+completion pairing. Exact total retained payload reservation is 1,802,240 bytes,
+excluding metadata and detached verification copies; it is not an RSS bound.
+
+After both actual producer flows succeed, the host consumes each private store
+once and verifies every sequence, selector, digest and byte length against the
+corresponding safe records. It rejects missing originals, wrong instances,
+changed bytes, record substitutions and raw-response/returned-object confusion.
+Returned buffers are detached; mutation cannot rewrite retained capture bytes.
+Malformed bounded bodies may remain privately available for failure diagnosis
+without becoming a successful safe observation.
+
+These accessors are private source APIs, not an independent authentication or
+filesystem custody boundary. Enrollment response originals contain synthetic
+runtime secrets and must never be printed, included in ordinary JSON reports,
+committed to source, or included in recovery backups. Only secret-free source,
+validation results and safe commitments are deliverables. Captures remain
+memory-only, local and source-test-only; pairing does not turn them into native
+process originals, installed observer authority or durable release evidence.
+Local report version 4 and the native release evidence schemas are unchanged.

@@ -7,6 +7,7 @@ import {createFixtureBackend} from './native-fixture-backend.mjs';
 import {createFixtureService} from './native-fixture-service.mjs';
 import {createFixtureClient} from './native-fixture-client.mjs';
 import {createBoundFixtureVerifier} from './native-fixture-verifier.mjs';
+import {createLocalOriginalConsumer} from './native-local-original-consumer.mjs';
 import {createLocalForeignProducer} from './native-local-foreign-producer.mjs';
 import {installLocalIssuer} from './native-local-issuer.mjs';
 import {createLocalRevocation} from './native-local-revocation.mjs';
@@ -107,7 +108,7 @@ export async function runLocalNativeSandbox(){
    const observedStorage={exec:async(query,...bindings)=>{const known=queries.get(query);if(!known||JSON.stringify(bindings)!==JSON.stringify(known.bindings))rejected();return (await client.call('observe-selected-state',{selector:known.selector},{signal:controller.signal})).rows;}};
    const routes=createLocalRouteObserver({origin:'https://hub.example.invalid',workspaceId:'ws_example',instanceId:name,runId:name,credentials:[{ref:'submitter',principalId:'agent_research',agentId:'agent_research',tokenSha256:createHash('sha256').update(tokens.submitter).digest('hex')},{ref:'reviewer',principalId:'agent_reviewer',agentId:'agent_reviewer',tokenSha256:createHash('sha256').update(tokens.reviewer).digest('hex')},{ref:'revoked',principalId:'agent_revoke',agentId:'agent_revoke',tokenSha256:createHash('sha256').update(tokens.revoked).digest('hex')}],worker:{fetch:(...args)=>tracked(()=>worker.fetch(...args))},storage:{exec:(...args)=>tracked(()=>storage.exec(...args))},signal:controller.signal,track:retain});fixtureSessions.push(routes);let nativeDispatches=0;const nativeFetch=(...args)=>{if(nativeDispatches>=20)rejected();nativeDispatches++;return routes.fetch(...args);};
    const revocation=createLocalRevocation({worker:{fetch:nativeFetch},storage:{exec:(...args)=>tracked(()=>storage.exec(...args))},login:issuer.login,token:tokens.revoked,signal:controller.signal,track:retain});let revokedResult;
-   const foreignProducer=createLocalForeignProducer({worker:{fetch:(...args)=>tracked(()=>worker.fetch(...args))},storageA:{exec:(...args)=>tracked(()=>storage.exec(...args))},storageB:{exec:(...args)=>tracked(()=>foreignStorage.exec(...args))},installationA:{objectName:name,installationDigest:prepared.installationDigest,configDigest:input.bundle.config_digest},installationB:{objectName:foreignName,installationDigest:foreignPrepared.installationDigest,configDigest:input.bundle.config_digest},tokens:{a:tokens.submitter,b:tokens.foreign},signal:controller.signal,track:retain});let foreignResult;
+   const foreignProducer=createLocalForeignProducer({worker:{fetch:(...args)=>tracked(()=>worker.fetch(...args))},storageA:{exec:(...args)=>tracked(()=>storage.exec(...args))},storageB:{exec:(...args)=>tracked(()=>foreignStorage.exec(...args))},installationA:{objectName:name,installationDigest:prepared.installationDigest,configDigest:input.bundle.config_digest},installationB:{objectName:foreignName,installationDigest:foreignPrepared.installationDigest,configDigest:input.bundle.config_digest},tokens:{a:tokens.submitter,b:tokens.foreign},signal:controller.signal,track:retain});let foreignResult;const originalIds=foreignProducer.originalIdentities(),originalConsumer=createLocalOriginalConsumer({foreignRoute:originalIds.route,foreignState:originalIds.state,revocation:revocation.originalIdentity()});
    const controlledDisable=async()=>{
     foreignResult=await foreignProducer.run();if(foreignProducer.snapshot().failed||foreignProducer.snapshot().pending!==0)rejected();
     const body=JSON.stringify({title:'Local committed-response fixture',description:'Synthetic source-only fault'}),key='local_fault_'+round;
@@ -115,6 +116,7 @@ export async function runLocalNativeSandbox(){
     let suppressed=false;try{await nativeFetch('https://hub.example.invalid/v2/workspaces/ws_example/tasks',{method:'POST',headers:{authorization:'Bearer '+tokens.submitter,'content-type':'application/json','idempotency-key':key},body,redirect:'manual',signal:controller.signal});}catch(error){if(error?.message==='LOCAL_COMMITTED_RESPONSE_SUPPRESSED')suppressed=true;else throw error;}
     if(!suppressed||routes.disarm().status!=='suppressed')rejected();
     revokedResult=await revocation.run();if(revocation.snapshot().failed||revocation.snapshot().pending!==0)rejected();
+    const captured=foreignProducer.readProtectedOriginals();originalConsumer.consume({foreignRoute:{originals:captured.route,records:foreignProducer.readRecords()},foreignState:{originals:captured.state,records:foreignProducer.readStateRecords()},revocation:{originals:revocation.readProtectedOriginals(),records:revocation.readRecords()}});
     return client.call('configuration-disable-local',{expected_epoch:1,expected_credential_version:1,operation_id:'disable-'+round},{signal:controller.signal});
    };
    stage='round-'+round+'-checks';
