@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trạm nghiệm thu · CF Agent Factory</title>
+<link rel="stylesheet" href="assets/blueprint.css">
+<style>
+  .qc-wrap { overflow-x: auto; }
+  #qc { min-width: 760px; }
+  #qc .sub { font-size: 11px; } #qc .lbl { font-size: 15px; }
+  #qc .tok { font-family: var(--f-mono); font-size: 12px; font-weight: 600; text-anchor: middle; dominant-baseline: central; }
+  #qc .tok-s { font-family: var(--f-mono); font-size: 10px; text-anchor: middle; dominant-baseline: central; }
+  #qc .stamp-t { font-family: var(--f-display); font-size: 22px; font-weight: 700; letter-spacing: 0.18em; text-anchor: middle; dominant-baseline: central; }
+  #qc .stamp-s { font-family: var(--f-mono); font-size: 9.5px; letter-spacing: 0.08em; text-anchor: middle; dominant-baseline: central; }
+  .qc-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; padding: var(--sp-3) var(--sp-4); border-top: 1px solid var(--line-soft); }
+
+  .qc-grid { display: grid; gap: var(--sp-4); grid-template-columns: 340px minmax(0, 1fr); align-items: start; }
+  @media (max-width: 1100px) { .qc-grid { grid-template-columns: minmax(0, 1fr); } }
+
+  .q { list-style: none; margin: 0; padding: 0; }
+  .q li { border-bottom: 1px solid var(--grid-major); }
+  .q button { display: grid; grid-template-columns: 1fr auto; gap: 4px var(--sp-3); width: 100%; min-height: 44px; padding: var(--sp-3) var(--sp-4); background: transparent; border: 0; border-left: 2px solid transparent; text-align: left; cursor: pointer; color: var(--ink); }
+  .q button:hover { background: var(--bp-700); }
+  .q button[aria-current="true"] { background: var(--bp-700); border-left-color: var(--s-review); }
+  .q .id { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); }
+  .q .t { font-size: var(--fs-sm); font-weight: 500; line-height: 1.35; grid-column: 1 / -1; }
+  .q .w { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-2); grid-column: 1 / -1; }
+
+  .fld { display: flex; flex-direction: column; gap: 4px; padding: var(--sp-3) var(--sp-4); }
+  .fld label, .k { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); letter-spacing: 0.1em; text-transform: uppercase; }
+  .fld select { min-height: 40px; padding: 0 var(--sp-3); background: var(--bp-850); color: var(--ink); border: 1px solid var(--line-soft); font: inherit; font-size: var(--fs-sm); border-radius: 0; }
+  .fld select:hover { border-color: var(--line); }
+  .who { width: 100%; border-collapse: collapse; font-size: var(--fs-xs); }
+  .who td { padding: var(--sp-2) var(--sp-4); border-top: 1px solid var(--grid-major); vertical-align: top; }
+  .who td:last-child { color: var(--ink-2); }
+  .ok { color: var(--s-done); font-family: var(--f-mono); } .no { color: var(--red); font-family: var(--f-mono); }
+
+  .dhead { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-bottom: 1px solid var(--line-soft); }
+  .dhead > div { padding: var(--sp-3) var(--sp-4); border-left: 1px solid var(--line-soft); min-width: 0; }
+  .dhead > div:first-child { border-left: 0; }
+  .dhead .k { display: block; margin-bottom: 4px; }
+  .dhead b { font-family: var(--f-mono); font-weight: 500; font-size: var(--fs-sm); }
+  .sec-h { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); border-top: 1px solid var(--line-soft); border-bottom: 1px solid var(--grid-major); }
+  .sec-h h4 { margin: 0; font-family: var(--f-display); font-size: var(--fs-md); font-weight: 600; letter-spacing: 0.03em; }
+  .cmp { display: grid; grid-template-columns: 1fr 1fr; }
+  .cmp > div { padding: var(--sp-3) var(--sp-4); min-width: 0; font-size: var(--fs-sm); }
+  .cmp > div + div { border-left: 1px dashed var(--line-soft); }
+  .cmp p { margin: 6px 0 0; color: var(--ink); line-height: 1.5; }
+  .cmp ul { margin: 6px 0 0; padding-left: 18px; color: var(--ink-2); font-size: var(--fs-xs); }
+  .tbl-wrap { overflow-x: auto; }
+  .tbl-wrap .table { min-width: 560px; }
+
+  .crit { list-style: none; margin: 0; padding: 0; }
+  .crit li { display: grid; grid-template-columns: 28px 30px minmax(0, 1fr); gap: var(--sp-2); align-items: start; padding: var(--sp-2) var(--sp-4); border-bottom: 1px solid var(--grid-major); min-height: 44px; }
+  .crit input { width: 18px; height: 18px; margin: 3px 0 0; accent-color: var(--s-done); cursor: pointer; }
+  .crit input:disabled { cursor: not-allowed; }
+  .crit label { font-size: var(--fs-sm); cursor: pointer; line-height: 1.4; }
+  .crit .cno { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); padding-top: 4px; }
+  .lamp { display: inline-block; width: 10px; height: 10px; border-radius: 50%; border: 1px solid var(--line-soft); background: var(--bp-950); margin-right: 6px; vertical-align: -1px; }
+  .ev { display: block; margin-top: 4px; font-family: var(--f-mono); font-size: var(--fs-2xs); letter-spacing: 0.04em; color: var(--ink-3); }
+  .ev.pass { color: var(--s-done); } .ev.pass .lamp { background: var(--s-done); border-color: var(--s-done); }
+  .ev.fail { color: var(--red); } .ev.fail .lamp { background: var(--red); border-color: var(--red); }
+  .ev.manual { color: var(--s-review); } .ev.manual .lamp { background: var(--s-review); border-color: var(--s-review); }
+  pre.tlog { margin: 0; padding: var(--sp-3) var(--sp-4); background: var(--bp-950); border-top: 1px solid var(--grid-major); font-family: var(--f-mono); font-size: var(--fs-xs); color: var(--ink-2); overflow-x: auto; white-space: pre; }
+  .evid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .evid > div { padding: var(--sp-3) var(--sp-4); border-left: 1px solid var(--grid-major); }
+  .evid > div:first-child { border-left: 0; }
+  .evid b { display: block; font-family: var(--f-display); font-size: var(--fs-xl); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  .decide { padding: var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-3); border-top: 1px solid var(--line-soft); background: var(--bp-850); }
+  .decide textarea { width: 100%; min-height: 72px; resize: vertical; background: var(--bp-950); color: var(--ink); border: 1px solid var(--line-soft); padding: var(--sp-2) var(--sp-3); font: inherit; font-size: var(--fs-sm); border-radius: 0; }
+  .decide textarea:focus-visible { outline: 2px solid var(--amber); outline-offset: 1px; }
+  .decide label { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); letter-spacing: 0.1em; text-transform: uppercase; }
+  .rule { display: flex; gap: var(--sp-3); align-items: flex-start; padding: var(--sp-3); border: 1px dashed var(--red); background: var(--t-failed); font-size: var(--fs-sm); }
+  .rule .state { flex: none; }
+  .rule p { margin: 0; }
+  .block-list { margin: 0; padding-left: 18px; font-size: var(--fs-xs); color: var(--ink-2); }
+  .banner { display: flex; gap: var(--sp-3); align-items: flex-start; justify-content: space-between; flex-wrap: wrap; padding: var(--sp-3) var(--sp-4); border: 1px dashed var(--red); background: var(--t-failed); margin: var(--sp-4) var(--sp-4) 0; }
+  .banner p { margin: 2px 0 0; font-size: var(--fs-sm); }
+  .outcome { margin: var(--sp-4); padding: var(--sp-3) var(--sp-4); font-size: var(--fs-sm); }
+  .outcome.acc { border: 1px solid var(--s-done); background: var(--t-done); }
+  .outcome.rq { border: 1px solid var(--s-ready); background: var(--t-ready); }
+
+  .bars li { display: grid; grid-template-columns: 52px minmax(0, 1fr) 76px; gap: var(--sp-2); align-items: center; padding: 6px var(--sp-4); font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-2); }
+  .bars ul { list-style: none; margin: 0; padding: var(--sp-2) 0; }
+  .bars .meter > i { background: var(--s-review); }
+  .feed { max-height: 330px; overflow: hidden; }
+  @media (max-width: 960px) { .dhead { grid-template-columns: 1fr 1fr; } .dhead > div:nth-child(3) { border-left: 0; } .dhead > div:nth-child(n+3) { border-top: 1px solid var(--line-soft); } }
+  @media (max-width: 640px) { .cmp, .evid { grid-template-columns: minmax(0, 1fr); } .cmp > div + div, .evid > div { border-left: 0; border-top: 1px dashed var(--line-soft); } .evid > div:first-child { border-top: 0; } }
+</style>
+</head>
+<body data-sheet="13" data-title="Trạm nghiệm thu">
+<div class="app paper">
+  <div id="rail"></div>
+  <div class="main">
+    <header id="topbar"></header>
+    <main class="content">
+
+      <section class="page-head reveal">
+        <div>
+          <div class="code" id="eyebrow">STATION 05 · REVIEW · INDEPENDENT ACCEPTANCE</div>
+          <h2>Trạm nghiệm thu</h2>
+          <p class="lede">Kết quả đã nộp đi qua máy quét QC: đối chiếu yêu cầu với tóm tắt kết quả, artifact committed, tiêu chí chấp nhận và bằng chứng test. Chỉ một reviewer độc lập có quyền <span class="mono">tasks:review</span> mới đưa được task sang Done. Người nộp không bao giờ tự nghiệm thu.</p>
+        </div>
+        <div class="actions">
+          <a class="btn" href="04-mission-line.html">Mở dây chuyền</a>
+          <a class="btn" href="18-warehouse.html">Mở kho artifact</a>
+          <button class="btn" type="button" id="btnStale">Mô phỏng: task đổi phiên bản</button>
+        </div>
+      </section>
+
+      <section class="grid g-4 reveal" aria-label="Thống kê ca nghiệm thu, dữ liệu mô phỏng">
+        <div class="panel kpi"><span class="label">Chờ nghiệm thu · Review</span><span class="value c-review" id="kWait">2</span><span class="note">1 giao agent SAGE-12, 1 giao người (Hà)</span></div>
+        <div class="panel kpi"><span class="label">Đã nghiệm thu ca này</span><span class="value c-done" id="kAcc">7</span><span class="note">SIM DATA · tính từ 07:00</span></div>
+        <div class="panel kpi"><span class="label">Tỉ lệ gửi lại</span><span class="value" id="kRate">22<small>%</small></span><span class="note" id="kRateNote">2 gửi lại / 9 quyết định · SIM DATA</span></div>
+        <div class="panel kpi"><span class="label">Thời gian chờ trung vị</span><span class="value">18<small> phút</small></span><span class="note">Từ lúc nộp tới quyết định · SIM DATA. P95: <span class="unknown">Not reported</span></span></div>
+      </section>
+
+      <section class="panel reveal" aria-label="Máy quét QC">
+        <div class="qc-wrap">
+          <svg id="qc" class="dwg" viewBox="0 0 1100 300" role="img" aria-labelledby="qcT">
+            <title id="qcT">Băng chuyền trạm nghiệm thu: thùng hàng của task đi từ khu nhận hồ sơ Review qua máy quét QC, 5 đèn tiêu chí lần lượt bật. Nghiệm thu thì thùng sang khoang Done và được đóng dấu ACCEPTED, gửi lại thì thùng rơi xuống máng trả về trạm Ready.</title>
+            <defs>
+              <pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" style="stroke:var(--line-soft)"/></pattern>
+              <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:var(--s-ready)"/></marker>
+            </defs>
+            <g id="gBase"></g><g id="gBelt"></g><g id="gMove"></g><g id="gTop"></g>
+          </svg>
+        </div>
+        <div class="qc-bar">
+          <span class="code" id="qcStatus" aria-live="polite">MÁY QUÉT SẴN SÀNG</span>
+          <div class="legend" aria-label="Chú giải đèn tiêu chí">
+            <span style="color:var(--s-done)"><i></i>Đạt (tự động)</span>
+            <span style="color:var(--red)"><i></i>Không đạt</span>
+            <span style="color:var(--s-review)"><i></i>Cần người đọc</span>
+          </div>
+          <button class="btn sm" type="button" id="btnReset" hidden>Đặt lại minh hoạ</button>
+        </div>
+      </section>
+
+      <section class="qc-grid">
+        <div class="stack" style="gap:var(--sp-4)">
+          <div class="panel reveal">
+            <div class="panel-head"><h3>Hàng chờ Review</h3><span class="code" id="qCount">2 HỒ SƠ</span></div>
+            <ul class="q" id="queue"></ul>
+            <div class="panel-body" id="qEmpty" hidden><div class="empty">Hàng chờ trống. Không còn kết quả nào chờ nghiệm thu trong ca này.<br><a href="04-mission-line.html">Xem dây chuyền</a></div></div>
+          </div>
+
+          <div class="panel reveal">
+            <div class="panel-head"><h3>Quy tắc độc lập</h3><span class="code">MÔ PHỎNG DANH TÍNH</span></div>
+            <div class="fld">
+              <label for="actor">Đang thao tác với tư cách</label>
+              <select id="actor"></select>
+            </div>
+            <table class="who" aria-label="Ai được nghiệm thu task đang chọn">
+              <tbody id="whoBody"></tbody>
+            </table>
+          </div>
+
+          <div class="panel bars reveal">
+            <div class="panel-head"><h3>Thống kê ca</h3><span class="code">SIM DATA</span></div>
+            <ul aria-label="Số quyết định theo giờ">
+              <li><span>08-10h</span><span class="meter"><i style="width:40%"></i></span><span>2 · 0 lại</span></li>
+              <li><span>10-12h</span><span class="meter"><i style="width:60%"></i></span><span>3 · 1 lại</span></li>
+              <li><span>12-14h</span><span class="meter"><i style="width:80%" id="barNow"></i></span><span id="barNowT">4 · 1 lại</span></li>
+            </ul>
+            <div class="panel-body" style="border-top:1px solid var(--grid-major);font-size:var(--fs-xs);color:var(--ink-2)">
+              Lý do gửi lại hay gặp: <span class="tag">thiếu bằng chứng test · 1</span> <span class="tag">lệch phạm vi · 1</span>
+            </div>
+          </div>
+
+          <div class="panel reveal">
+            <div class="panel-head"><h3>Sổ nghiệm thu</h3><span class="code">APPEND-ONLY</span></div>
+            <div class="feed"><ul class="log" id="feed" aria-live="polite" aria-relevant="additions"></ul></div>
+          </div>
+        </div>
+
+        <div class="panel reveal" id="detail"></div>
+      </section>
+
+    </main>
+    <div id="titleblock"></div>
+  </div>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(() => {
+  const S = (t, a, p) => BP.svg(t, a, p);
+  const txt = (x, y, s, cls, p, extra = {}) => { const t = S("text", { x, y, class: cls, ...extra }, p); t.textContent = s; return t; };
+  /* ---------- simulated clock (base 13:12) ---------- */
+  const t0 = performance.now(); let pausedMs = 0, pAt = 0;
+  document.addEventListener("bp:motion", e => { if (e.detail.paused) pAt = performance.now(); else if (pAt) { pausedMs += performance.now() - pAt; pAt = 0; } });
+  const simNow = () => 13 * 3600 + 12 * 60 + ((pAt || performance.now()) - t0 - pausedMs) / 1000;
+  const hm = s => { s = Math.floor(s); return [s / 3600 | 0, (s % 3600) / 60 | 0].map(n => String(n).padStart(2, "0")).join(":"); };
+
+  /* ---------- review items (ids match data.js) ---------- */
+  const T = [
+    { id: "T-1036", title: "Viết test hồi quy cho luồng claim tranh chấp", agent: "bolt", reviewer: "sage", tv: 9, fence: 9, retry: "0/2", run: "r-b03c-21", runtime: "rt-bolt-03c", at: "13:02", state: "review", ph: "VD: Vòng lặp 50 lần còn 1 timeout, cần ổn định fixture rồi nộp lại",
+      intent: "Viết test hồi quy cho luồng claim tranh chấp: hai runtime claim cùng một task, chỉ một bên thắng; bên thua nhận 409 và không tạo run; submit kèm fence cũ bị từ chối.",
+      need: ["Test cho 2 claim đồng thời", "Kiểm tra mã lỗi 409 CLAIM_CONFLICT", "Kiểm tra STALE_FENCE khi submit", "Chạy lặp 50 lần không flaky"],
+      summary: "Đã thêm 6 test trong claim-race.test.ts và fixture contention.json. 46 test qua. Vòng lặp 50 lần: 49 qua, 1 timeout ở vòng 37 do fixture khởi tạo chậm. Đề xuất tăng timeout fixture lên 8 s ở task sau.",
+      claims: ["Không đổi mã nguồn ngoài thư mục tests/", "Không cần secret hay mạng ngoài"],
+      arts: [["tests/claim-race.test.ts", "6,2 KB", "sha256:5be1…09ac"], ["tests/fixtures/contention.json", "1,1 KB", "sha256:a07d…71e2"], ["reports/junit-T1036.xml", "14,8 KB", "sha256:e93c…4b10"], ["result-summary.md", "2,3 KB", "sha256:1f48…c6d5"]],
+      crit: [["Có test cho 2 claim đồng thời, chỉ một bên thắng", "pass", "TỰ ĐỘNG · claim_race_single_winner qua"], ["Bên thua nhận 409 CLAIM_CONFLICT, không tạo run", "pass", "TỰ ĐỘNG · 2/2 assert qua"], ["Submit kèm fence cũ bị từ chối STALE_FENCE", "pass", "TỰ ĐỘNG · stale_fence_submit qua"], ["Không flaky: 50 vòng lặp liên tiếp đều qua", "fail", "TỰ ĐỘNG · 49/50 · 1 timeout vòng 37"], ["Artifact committed, digest khớp manifest", "pass", "TỰ ĐỘNG · 4/4 digest khớp"]],
+      tests: { pass: 46, fail: 0, skip: 1, dur: "3,8 s" },
+      log: `$ vitest run tests/claim-race.test.ts --reporter=junit\n ✓ claim_race_single_winner            212 ms\n ✓ loser_gets_409_no_run               97 ms\n ✓ stale_fence_submit_rejected         88 ms\n ✓ heartbeat_after_reassign_rejected   104 ms\n ↓ cross_workspace_claim (skipped: cần fixture 2 workspace)\n Tests 46 passed | 1 skipped · 3.80 s\n$ loop x50 claim_race_single_winner\n 49 passed · 1 timeout (run #37, 5000 ms)` },
+    { id: "T-1040", title: "Bản dịch tài liệu HTTP API sang tiếng Việt", agent: "muse", reviewer: "hu-ha", tv: 5, fence: 3, retry: "0/1", run: "r-2b0-07", runtime: "rt-muse-2b0", at: "12:47", state: "review", ph: "VD: Mục Idempotency dùng sai thuật ngữ, sửa theo glossary rồi nộp lại",
+      intent: "Dịch docs/http-api.md sang tiếng Việt. Giữ nguyên tên route, mã lỗi và tên trường JSON. Thuật ngữ theo glossary.md, giữ tiếng Anh cho lease, fence, outbox, ACK.",
+      need: ["Đủ mọi mục của bản gốc", "Không dịch route, mã lỗi, trường JSON", "Thuật ngữ thống nhất theo glossary", "Liên kết nội bộ còn hoạt động"],
+      summary: "Đã dịch 42/42 mục. Giữ nguyên 37 route và 24 mã lỗi. 3 thuật ngữ giữ tiếng Anh theo glossary. Linkcheck 118/118 liên kết hoạt động. Cần người đọc lại phần thuật ngữ ở mục Idempotency.",
+      claims: ["Không sửa bản gốc tiếng Anh", "Bản dịch là tài liệu, không đổi hợp đồng API"],
+      arts: [["docs/vi/http-api.md", "48,6 KB", "sha256:7c20…e1aa"], ["docs/vi/glossary-map.json", "3,4 KB", "sha256:0b9e…5f37"], ["reports/linkcheck.txt", "5,0 KB", "sha256:d415…2c08"]],
+      crit: [["Đủ 100% mục của bản gốc (42/42)", "pass", "TỰ ĐỘNG · so khớp heading 42/42"], ["Giữ nguyên route, mã lỗi, trường JSON", "pass", "TỰ ĐỘNG · 0 khác biệt trong code block"], ["Thuật ngữ đúng glossary.md", "manual", "CẦN NGƯỜI ĐỌC · 3 cảnh báo term-lint"], ["Không sót chuỗi tiếng Anh ngoài code block", "pass", "TỰ ĐỘNG · 0 chuỗi"], ["Liên kết nội bộ hoạt động", "pass", "TỰ ĐỘNG · linkcheck 118/118"]],
+      tests: { pass: 118, fail: 0, skip: 0, dur: "linkcheck" },
+      log: `$ linkcheck docs/vi/http-api.md\n 118/118 OK\n$ term-lint docs/vi/http-api.md --glossary docs/glossary.md\n ! dòng 212  "khoá idempotency"  -> glossary: "idempotency key" (giữ EN)\n ! dòng 388  "hàng đợi gửi đi"  -> glossary: "outbox" (giữ EN)\n ! dòng 401  "xác nhận"         -> glossary: "ACK" (giữ EN)\n 3 cảnh báo · 0 lỗi` }
+  ];
+  T.forEach(t => { t.checks = t.crit.map(() => false); t.scanned = false; });
+
+  const ACTORS = [
+    { id: "hu-qd", name: "Quản đốc", kind: "Người · Owner", grants: ["tasks:review", "tasks:schedule"] },
+    { id: "hu-ha", name: "Hà", kind: "Người · Reviewer", grants: ["tasks:review", "tasks:schedule"] },
+    { id: "sage", name: "SAGE-12", kind: "Agent · QC-06", grants: ["tasks:review"] },
+    { id: "bolt", name: "BOLT-10", kind: "Agent · KT-01", grants: ["tasks:execute"] },
+    { id: "muse", name: "MUSE-04", kind: "Agent · ND-03", grants: ["tasks:execute"] }
+  ];
+  const nameOf = id => (ACTORS.find(a => a.id === id) || {}).name || (BP.agent(id) || {}).name || id;
+  let actor = ACTORS[0], sel = T[0], stale = false;
+  const stats = { acc: 7, rq: 2, nowAcc: 3, nowRq: 1 };
+
+  /* ---------- eligibility (independent review rule) ---------- */
+  function eligibility(t, a) {
+    const acc = [], rq = [];
+    if (a.id === t.agent) acc.push(`${a.name} là người nộp kết quả này. Người nộp không được tự nghiệm thu, kể cả khi dùng runtime hoặc credential khác.`);
+    else if (!a.grants.includes("tasks:review")) acc.push(`${a.name} không có quyền tasks:review.`);
+    if (!a.grants.includes("tasks:schedule")) rq.push(`${a.name} không có quyền tasks:schedule để gửi lại.`);
+    return { acc, rq };
+  }
+
+  /* ---------- actor select + who table ---------- */
+  const actorSel = BP.$("#actor");
+  actorSel.innerHTML = ACTORS.map(a => `<option value="${a.id}">${a.name} · ${a.kind}</option>`).join("");
+  actorSel.addEventListener("change", () => { actor = ACTORS.find(a => a.id === actorSel.value); renderWho(); renderDetail(); });
+  function renderWho() {
+    BP.$("#whoBody").innerHTML = ACTORS.map(a => {
+      const e = eligibility(sel, a);
+      const self = a.id === sel.agent;
+      return `<tr${a === actor ? ' style="background:var(--bp-700)"' : ""}><td>${e.acc.length ? '<span class="no">✕</span>' : '<span class="ok">✓</span>'} ${a.name}</td><td>${self ? "Người nộp · không được tự nghiệm thu" : e.acc.length ? "Thiếu tasks:review" : a.id === sel.reviewer ? "Reviewer được giao" : "Độc lập, có tasks:review"}</td></tr>`;
+    }).join("");
+  }
+
+  /* ---------- queue ---------- */
+  const queue = BP.$("#queue");
+  function renderQueue() {
+    const open = T.filter(t => t.state === "review");
+    queue.innerHTML = T.map(t => {
+      const st = t.state === "done" ? BP.stateChip("done") : t.state === "ready" ? BP.stateChip("ready", "Gửi lại → Ready") : BP.stateChip("review");
+      const rv = t.reviewer.startsWith("hu-") ? `chờ ${nameOf(t.reviewer)} (người)` : `giao ${nameOf(t.reviewer)}`;
+      return `<li><button type="button" data-id="${t.id}" aria-current="${t === sel}">
+        <span class="id">${t.id} · NỘP BỞI ${nameOf(t.agent)} · ${t.at}</span>${st}
+        <span class="t">${t.title}</span>
+        <span class="w">${t.state === "review" ? rv : t.state === "done" ? "Nghiệm thu bởi " + t.by + " · " + t.when : "Gửi lại bởi " + t.by + " · " + t.when}</span>
+      </button></li>`;
+    }).join("");
+    BP.$("#qCount").textContent = open.length + " HỒ SƠ CHỜ";
+    BP.$("#qEmpty").hidden = open.length > 0;
+    BP.$("#kWait").textContent = open.length;
+    BP.$("#eyebrow").textContent = `STATION 05 · REVIEW · ${open.length} CHỜ NGHIỆM THU`;
+  }
+  queue.addEventListener("click", e => {
+    const b = e.target.closest("button[data-id]"); if (!b) return;
+    sel = T.find(t => t.id === b.dataset.id); stale = false;
+    renderQueue(); renderWho(); renderDetail(); startScan();
+  });
+
+  /* ---------- detail ---------- */
+  const detail = BP.$("#detail");
+  function evHTML(t, i) {
+    const c = t.crit[i];
+    if (!t.scanned && !(t.lit > i)) return `<span class="ev"><span class="lamp"></span>◌ ĐANG CHỜ MÁY QUÉT</span>`;
+    return `<span class="ev ${c[1]}"><span class="lamp"></span>${c[1] === "pass" ? "✓" : c[1] === "fail" ? "✕" : "◎"} ${c[2]}</span>`;
+  }
+  function renderDetail() {
+    const t = sel, e = eligibility(t, actor);
+    const open = t.state === "review";
+    const allChecked = t.checks.every(Boolean);
+    const blockers = [];
+    if (e.acc.length) blockers.push(...e.acc);
+    if (stale) blockers.push("Task đã đổi phiên bản, cần đọc lại trước khi quyết định.");
+    if (!t.scanned) blockers.push("Máy quét QC chưa chạy xong.");
+    if (!allChecked) blockers.push(`Còn ${t.checks.filter(c => !c).length} tiêu chí chưa được reviewer xác nhận.`);
+    const canAccept = open && blockers.length === 0;
+    detail.innerHTML = `
+      <div class="panel-head"><h3>${t.id} · ${t.title}</h3><span class="code">KHU SO SÁNH</span></div>
+      <div class="dhead">
+        <div><span class="k">Trạng thái</span>${t.state === "done" ? BP.stateChip("done") : t.state === "ready" ? BP.stateChip("ready") : BP.stateChip("review")}</div>
+        <div><span class="k">Người nộp</span><span class="row" style="gap:6px"><span class="bot" style="--c:var(--s-review);width:26px;height:26px;font-size:9px">${BP.agent(t.agent).code}</span><b>${nameOf(t.agent)}</b></span></div>
+        <div><span class="k">Reviewer được giao</span><b>${nameOf(t.reviewer)}</b></div>
+        <div><span class="k">Phiên bản</span><b>task v${stale ? t.tv + 1 : t.tv} · fence ${t.fence}</b></div>
+      </div>
+      ${stale ? `<div class="banner" role="alert"><div><span class="state stale">Stale version</span><p><b>Task đã đổi phiên bản trong lúc bạn xem.</b> Bạn đang xem v${t.tv}, máy chủ có v${t.tv + 1} (người lên lịch sửa mô tả). Quyết định gửi kèm v${t.tv} sẽ bị từ chối <span class="mono">VERSION_CONFLICT</span>.</p></div><button class="btn sm" type="button" id="btnReload">Đọc lại v${t.tv + 1}</button></div>` : ""}
+
+      <div class="cmp" style="margin-top:var(--sp-2)">
+        <div><span class="k">Yêu cầu · intent (task v${t.tv})</span><p>${t.intent}</p><ul>${t.need.map(n => `<li>${n}</li>`).join("")}</ul></div>
+        <div><span class="k">Tóm tắt kết quả · run ${t.run}</span><p>${t.summary}</p><ul>${t.claims.map(n => `<li>${n}</li>`).join("")}</ul>
+          <div class="muted mono" style="font-size:var(--fs-2xs);margin-top:6px">NỘP ${t.at} · RUNTIME ${t.runtime} · LEASE ĐÃ GIẢI PHÓNG · RETRY ${t.retry}</div></div>
+      </div>
+
+      <div class="sec-h"><h4>Artifact committed</h4><span class="code">${t.arts.length} FILE · DIGEST ĐÃ XÁC MINH</span></div>
+      <div class="tbl-wrap"><table class="table"><thead><tr><th>File</th><th>Kích thước</th><th>Digest</th><th>Trạng thái</th></tr></thead><tbody>
+        ${t.arts.map(a => `<tr><td class="mono">${a[0]}</td><td class="mono">${a[1]}</td><td class="mono muted">${a[2]}</td><td><span class="tag" style="color:var(--s-done);border-color:var(--s-done)">committed</span></td></tr>`).join("")}
+      </tbody></table></div>
+
+      <div class="sec-h"><h4>Tiêu chí chấp nhận</h4><span class="code" id="critCount">${t.checks.filter(Boolean).length}/${t.crit.length} ĐÃ XÁC NHẬN</span></div>
+      <ul class="crit">${t.crit.map((c, i) => `<li><input type="checkbox" id="c${i}" data-i="${i}" ${t.checks[i] ? "checked" : ""} ${open && t.scanned && !stale ? "" : "disabled"}><span class="cno">C${i + 1}</span><label for="c${i}">${c[0]}<span data-ev="${i}">${evHTML(t, i)}</span></label></li>`).join("")}</ul>
+      <div class="panel-body" style="padding-top:var(--sp-2);padding-bottom:var(--sp-2)"><span class="muted" style="font-size:var(--fs-xs)">Đèn tự động chỉ là bằng chứng. Reviewer tự quyết từng tiêu chí; đèn đỏ không tự gửi lại, đèn xanh không tự nghiệm thu.</span></div>
+
+      <div class="sec-h"><h4>Bằng chứng test</h4><span class="code">reports/ · ${t.tests.dur}</span></div>
+      <div class="evid">
+        <div><span class="k">Qua</span><b class="c-done">${t.tests.pass}</b></div>
+        <div><span class="k">Lỗi</span><b class="${t.tests.fail ? "c-red" : ""}">${t.tests.fail}</b></div>
+        <div><span class="k">Bỏ qua</span><b>${t.tests.skip}</b></div>
+      </div>
+      <pre class="tlog" aria-label="Log kiểm thử">${t.log}</pre>
+
+      ${open ? `
+      <div class="decide">
+        ${e.acc.length ? `<div class="rule" role="note"><span class="state failed">Không độc lập</span><p>${e.acc.join(" ")} Hãy để ${nameOf(t.reviewer)} hoặc một người khác có <span class="mono">tasks:review</span> nghiệm thu.</p></div>` : ""}
+        <label for="reason">Lý do sửa (bắt buộc khi gửi lại, tối thiểu 10 ký tự)</label>
+        <textarea id="reason" placeholder="${t.ph}" ${stale ? "disabled" : ""}></textarea>
+        ${blockers.length ? `<ul class="block-list" aria-label="Lý do chưa nghiệm thu được">${blockers.map(b => `<li>${b}</li>`).join("")}</ul>` : `<span class="muted" style="font-size:var(--fs-xs)">Bạn sẽ ký: ${actor.name} · ${t.id} · task v${t.tv} · run ${t.run}. Done là trạng thái cuối.</span>`}
+        <div class="row wrap between">
+          <span class="muted" style="font-size:var(--fs-xs)">Gửi lại đưa task về Ready, giữ kết quả cũ trong lịch sử, không reset retry (${t.retry}).</span>
+          <div class="row wrap">
+            <button class="btn" type="button" id="btnRq" disabled ${e.rq.length ? `title="${e.rq[0]}"` : ""}>Gửi lại kèm lý do sửa</button>
+            <button class="btn primary" type="button" id="btnAcc" ${canAccept ? "" : "disabled"}>Nghiệm thu → Done</button>
+          </div>
+        </div>
+      </div>` : outcomeHTML(t)}`;
+    detail.querySelectorAll(".crit input").forEach(cb => cb.addEventListener("change", () => { t.checks[+cb.dataset.i] = cb.checked; renderDetail(); const n = detail.querySelector(`#c${cb.dataset.i}`); if (n) n.focus(); }));
+    const r = BP.$("#reason"), bq = BP.$("#btnRq"), ba = BP.$("#btnAcc");
+    if (r) r.addEventListener("input", () => { bq.disabled = r.value.trim().length < 10 || e.rq.length > 0 || stale; });
+    if (ba) ba.addEventListener("click", accept);
+    if (bq) bq.addEventListener("click", () => requeue(r.value.trim()));
+    const rl = BP.$("#btnReload"); if (rl) rl.addEventListener("click", () => { stale = false; renderDetail(); BP.toast("ĐÃ ĐỌC LẠI", `${t.id} v${t.tv + 1}: mô tả đổi, tiêu chí giữ nguyên (mô phỏng).`); });
+  }
+  function outcomeHTML(t) {
+    return t.state === "done"
+      ? `<div class="outcome acc"><b>Đã nghiệm thu bởi ${t.by} lúc ${t.when}.</b> ${t.id} sang Done, trạng thái cuối. Kết quả run ${t.run} trở thành kết quả được chấp nhận, artifact committed được giữ làm bằng chứng. Người nộp: ${nameOf(t.agent)}, khác reviewer.</div>`
+      : `<div class="outcome rq"><b>Đã gửi lại bởi ${t.by} lúc ${t.when}.</b> ${t.id} về Ready chờ claim mới với fence mới. Lý do: “${t.reason}”. Kết quả cũ vẫn hiển thị trong lịch sử nhưng không còn là kết quả hiện hành. Retry giữ ${t.retry}.</div>`;
+  }
+
+  /* ---------- machine drawing ---------- */
+  const gBase = BP.$("#gBase"), gBelt = BP.$("#gBelt"), gMove = BP.$("#gMove"), gTop = BP.$("#gTop");
+  const BY = 150, CRY = 128; // belt top, crate center
+  // rooms
+  S("rect", { x: 20, y: 30, width: 230, height: 170, class: "room" }, gBase);
+  txt(34, 54, "REVIEW · NHẬN HỒ SƠ", "lbl", gBase, { style: "fill:var(--s-review)" });
+  txt(34, 70, "STATION 05 · KẾT QUẢ ĐÃ NỘP", "sub", gBase);
+  S("rect", { x: 850, y: 30, width: 230, height: 170, class: "room" }, gBase);
+  txt(864, 54, "DONE · ĐÃ NGHIỆM THU", "lbl", gBase, { style: "fill:var(--s-done)" });
+  txt(864, 70, "STATION 06 · TRẠNG THÁI CUỐI", "sub", gBase);
+  S("rect", { x: 20, y: 228, width: 230, height: 64, class: "room" }, gBase);
+  S("rect", { x: 26, y: 252, width: 218, height: 34, class: "hatch" }, gBase);
+  txt(34, 246, "READY · GỬI LẠI ĐỂ SỬA", "sub", gBase, { style: "fill:var(--s-ready)" });
+  // belt
+  S("rect", { x: 30, y: BY, width: 1040, height: 16, fill: "var(--bp-900)", stroke: "var(--line)" }, gBelt);
+  for (let x = 46; x < 1070; x += 32) S("circle", { cx: x, cy: BY + 8, r: 5, class: "wall-thin" }, gBelt);
+  S("line", { x1: 30, y1: BY + 22, x2: 1070, y2: BY + 22, class: "flow slow" }, gBelt);
+  // return chute
+  S("path", { d: `M660 ${BY + 16} V262 H258`, fill: "none", stroke: "var(--s-ready)", "stroke-width": 1.25, "stroke-dasharray": "5 5", "marker-end": "url(#arr)" }, gBelt);
+  txt(470, 256, "MÁNG TRẢ VỀ · REQUEUE KÈM LÝ DO", "sub", gBelt, { "text-anchor": "middle", style: "fill:var(--s-ready)" });
+  // scanner housing: body sits over the belt (gBelt), crate rides above it inside the tunnel
+  S("rect", { x: 440, y: 44, width: 200, height: 136, fill: "var(--bp-850)", stroke: "var(--line-strong)", "stroke-width": 2 }, gBelt);
+  S("rect", { x: 456, y: 100, width: 168, height: 76, fill: "var(--bp-900)", stroke: "var(--line)", "stroke-dasharray": "4 3" }, gBelt);
+  S("line", { x1: 456, y1: BY, x2: 624, y2: BY, stroke: "var(--line-soft)" }, gBelt);
+  txt(452, 62, "MÁY QUÉT QC", "lbl", gTop);
+  const LX = i => 466 + i * 37;
+  const lamps = [0, 1, 2, 3, 4].map(i => { const c = S("circle", { cx: LX(i), cy: 80, r: 7, fill: "var(--bp-950)", stroke: "var(--line-soft)" }, gTop); txt(LX(i), 95, "C" + (i + 1), "sub", gTop, { "text-anchor": "middle" }); return c; });
+  // dimension + leader
+  S("path", { d: "M440 22 H640 M440 16 V28 M640 16 V28", class: "dimline" }, gTop);
+  txt(540, 14, "tasks:review · REVIEWER ≠ NGƯỜI NỘP", "sub", gTop, { "text-anchor": "middle" });
+  S("path", { d: "M630 80 L666 60 H688", class: "leader" }, gTop);
+  txt(692, 64, "ĐÈN TIÊU CHÍ C1 → C5", "sub", gTop);
+  S("path", { d: "M624 140 L666 120 H688", class: "leader" }, gTop);
+  const scanNote = txt(692, 124, "ĐƯỜNG QUÉT", "sub", gTop);
+  // crate
+  const crate = S("g", { transform: `translate(135 ${CRY})` }, gMove);
+  const crR = S("rect", { x: -38, y: -22, width: 76, height: 44, fill: "var(--t-review)", stroke: "var(--s-review)", "stroke-width": 1.5 }, crate);
+  S("path", { d: "M-38 -8 H38", fill: "none", stroke: "var(--s-review)", "stroke-dasharray": "2 3" }, crate);
+  const crId = txt(0, -14, "T-1036", "tok-s", crate, { style: "fill:var(--ink-2)" });
+  const crCode = txt(0, 7, "BL", "tok", crate, { style: "fill:var(--s-review)" });
+  // scan beam (inside tunnel, drawn above crate)
+  const beam = S("g", { style: "opacity:0" }, gTop);
+  S("rect", { x: -7, y: 102, width: 14, height: 72, fill: "var(--scan-glow)" }, beam);
+  S("line", { x1: 0, y1: 102, x2: 0, y2: 174, stroke: "var(--s-ready)", "stroke-width": 1.5 }, beam);
+  // stamp
+  const stamp = S("g", { style: "opacity:0" }, gTop);
+  const stIn = S("g", {}, stamp);
+  S("rect", { x: -88, y: -28, width: 176, height: 56, fill: "none", stroke: "var(--s-done)", "stroke-width": 2.5 }, stIn);
+  S("rect", { x: -82, y: -22, width: 164, height: 44, fill: "var(--bp-850)", stroke: "var(--s-done)", "stroke-width": 1 }, stIn);
+  txt(0, -5, "ACCEPTED", "stamp-t", stIn, { style: "fill:var(--s-done)" });
+  const stSub = txt(0, 12, "HÀ · 13:14 · v9", "stamp-s", stIn, { style: "fill:var(--s-done)" });
+
+  /* ---------- motion ---------- */
+  function tween(ms, fn) { if (BP.reduced) { fn(1, 1); return Promise.resolve(); } return new Promise(res => { let e = 0, last = performance.now(); const st = now => { const dt = now - last; last = now; if (!BP.paused) e += dt; const t = Math.min(1, e / ms); const k = t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; fn(k, t); t < 1 ? requestAnimationFrame(st) : res(); }; requestAnimationFrame(st); }); }
+  function along(g, d, ms) { const p = S("path", { d }); const L = p.getTotalLength(); return tween(ms, k => { const q = p.getPointAtLength(L * k); g.setAttribute("transform", `translate(${q.x.toFixed(1)} ${q.y.toFixed(1)})`); }); }
+  const wait = ms => BP.reduced ? Promise.resolve() : BP.wait(ms);
+  const lampColor = s => s === "pass" ? "var(--s-done)" : s === "fail" ? "var(--red)" : "var(--s-review)";
+  const status = s => { BP.$("#qcStatus").textContent = s; };
+  let token = 0;
+
+  function setLamps(t, n) { lamps.forEach((c, i) => { const on = i < n; c.style.fill = on ? lampColor(t.crit[i][1]) : "var(--bp-950)"; c.style.stroke = on ? lampColor(t.crit[i][1]) : "var(--line-soft)"; }); }
+  function dressCrate(t) {
+    crId.textContent = t.id; crCode.textContent = BP.agent(t.agent).code;
+    const col = t.state === "done" ? "var(--s-done)" : t.state === "ready" ? "var(--s-ready)" : "var(--s-review)";
+    crR.style.stroke = col; crCode.style.fill = col;
+    crR.style.fill = t.state === "done" ? "var(--t-done)" : t.state === "ready" ? "var(--t-ready)" : "var(--t-review)";
+  }
+  function placeFinal(t) {
+    dressCrate(t); setLamps(t, 5); beam.style.opacity = 0;
+    if (t.state === "done") { crate.setAttribute("transform", `translate(965 ${CRY})`); showStamp(t, true); status(`${t.id} ĐÃ NGHIỆM THU · DONE`); }
+    else { crate.setAttribute("transform", "translate(160 262)"); stamp.style.opacity = 0; status(`${t.id} ĐÃ GỬI LẠI · READY`); }
+  }
+  function showStamp(t, instant) {
+    stSub.textContent = `${(t.by || "").toUpperCase()} · ${t.when || ""} · v${t.tv}`;
+    stamp.setAttribute("transform", `translate(965 ${CRY - 20}) rotate(-8)`);
+    if (instant) { stamp.style.opacity = 1; stIn.setAttribute("transform", "scale(1)"); return Promise.resolve(); }
+    return tween(420, k => { stamp.style.opacity = Math.min(1, k * 2); stIn.setAttribute("transform", `scale(${(1.7 - 0.7 * k).toFixed(3)})`); });
+  }
+
+  async function startScan() {
+    const my = ++token, t = sel;
+    BP.$("#btnReset").hidden = !T.some(x => x.state !== "review");
+    if (t.state !== "review") { placeFinal(t); return; }
+    stamp.style.opacity = 0; dressCrate(t);
+    t.lit = t.scanned ? 5 : 0; setLamps(t, t.lit);
+    if (t.scanned) { crate.setAttribute("transform", `translate(540 ${CRY})`); status(`${t.id} TRONG MÁY QUÉT · CHỜ QUYẾT ĐỊNH CỦA REVIEWER`); return; }
+    crate.setAttribute("transform", `translate(135 ${CRY})`);
+    status(`${t.id} ĐANG VÀO MÁY QUÉT`);
+    await along(crate, `M135 ${CRY} H540`, 1500); if (my !== token) return;
+    beam.style.opacity = 1; scanNote.textContent = "ĐƯỜNG QUÉT · ĐANG CHẠY";
+    for (let i = 0; i < 5; i++) {
+      status(`ĐANG QUÉT ${t.id} · TIÊU CHÍ C${i + 1}/5`);
+      await tween(520, (k, raw) => beam.setAttribute("transform", `translate(${(i % 2 ? 616 - 152 * k : 464 + 152 * k).toFixed(1)} 0)`));
+      if (my !== token) return;
+      t.lit = i + 1; setLamps(t, t.lit);
+      const ev = detail.querySelector(`[data-ev="${i}"]`); if (ev && sel === t) ev.innerHTML = evHTML(t, i);
+      await wait(120); if (my !== token) return;
+    }
+    beam.style.opacity = 0; scanNote.textContent = "ĐƯỜNG QUÉT";
+    t.scanned = true;
+    const fails = t.crit.filter(c => c[1] === "fail").length, man = t.crit.filter(c => c[1] === "manual").length;
+    status(`${t.id} QUÉT XONG · ${5 - fails - man} ĐẠT · ${fails} KHÔNG ĐẠT · ${man} CẦN NGƯỜI ĐỌC · CHỜ REVIEWER`);
+    if (sel === t) renderDetail();
+  }
+
+  async function accept() {
+    const t = sel; t.state = "done"; t.by = actor.name; t.when = hm(simNow()); stats.acc++; stats.nowAcc++;
+    const my = ++token;
+    renderQueue(); renderDetail(); updateStats();
+    status(`GHI QUYẾT ĐỊNH · ${t.id} · task v${t.tv}`);
+    dressCrate(t);
+    await along(crate, `M540 ${CRY} H965`, 1600); if (my !== token) return;
+    await showStamp(t, false);
+    status(`${t.id} ĐÃ NGHIỆM THU BỞI ${actor.name.toUpperCase()} · DONE`);
+    BP.$("#btnReset").hidden = false;
+    pushLog("done", "✓", `<b>${t.id}</b> nghiệm thu → Done bởi ${actor.name}. Người nộp ${nameOf(t.agent)}.`);
+    BP.toast("ACCEPTED · DONE", `${t.id} được ${actor.name} nghiệm thu. Đây là trạng thái cuối.`);
+  }
+  async function requeue(reason) {
+    const t = sel; t.state = "ready"; t.by = actor.name; t.when = hm(simNow()); t.reason = reason; stats.rq++; stats.nowRq++;
+    const my = ++token;
+    renderQueue(); renderDetail(); updateStats();
+    dressCrate(t);
+    await along(crate, `M540 ${CRY} H660 V262 H160`, 1700); if (my !== token) return;
+    status(`${t.id} GỬI LẠI → READY · CHỜ CLAIM MỚI`);
+    BP.$("#btnReset").hidden = false;
+    pushLog("ready", "◇", `<b>${t.id}</b> gửi lại → Ready bởi ${actor.name}. Lý do: ${reason}`);
+    BP.toast("REQUEUED · READY", `${t.id} về Ready kèm lý do sửa. Retry không reset.`);
+  }
+  function updateStats() {
+    const tot = stats.acc + stats.rq;
+    BP.$("#kAcc").textContent = stats.acc;
+    BP.$("#kRate").innerHTML = Math.round(stats.rq / tot * 100) + "<small>%</small>";
+    BP.$("#kRateNote").textContent = `${stats.rq} gửi lại / ${tot} quyết định · SIM DATA`;
+    BP.$("#barNow").style.width = Math.min(100, (stats.nowAcc + stats.nowRq) * 20) + "%";
+    BP.$("#barNowT").textContent = `${stats.nowAcc + stats.nowRq} · ${stats.nowRq} lại`;
+  }
+
+  /* ---------- log ---------- */
+  const feed = BP.$("#feed");
+  const pushLog = (cls, g, html) => BP.logPush(feed, `<time>${hm(simNow())}</time><span class="g c-${cls}">${g}</span><span>${html}</span>`, 12);
+  [["12:41", "done", "✓", "<b>T-1029</b> nghiệm thu → Done bởi Hà. Người nộp LENS-06."],
+   ["12:47", "review", "◎", "<b>T-1040</b> MUSE-04 nộp kết quả, 3 artifact committed."],
+   ["12:58", "ready", "◇", "<b>T-1035</b> gửi lại → Ready bởi Quản đốc. Lý do: thiếu bằng chứng test."],
+   ["13:02", "review", "◎", "<b>T-1036</b> BOLT-10 nộp kết quả, lease giải phóng."]].forEach(r =>
+    BP.logPush(feed, `<time>${r[0]}</time><span class="g c-${r[1]}">${r[2]}</span><span>${r[3]}</span>`).classList.remove("enter"));
+
+  /* ---------- controls ---------- */
+  BP.$("#btnStale").addEventListener("click", () => {
+    if (sel.state !== "review") { BP.toast("KHÔNG ÁP DỤNG", "Chọn một hồ sơ đang chờ nghiệm thu."); return; }
+    stale = true; renderDetail(); BP.toast("TASK ĐỔI PHIÊN BẢN", `${sel.id} lên v${sel.tv + 1}. Quyết định với v${sel.tv} sẽ bị từ chối.`);
+  });
+  BP.$("#btnReset").addEventListener("click", () => {
+    T.forEach(t => { if (t.state !== "review") { t.state = "review"; t.checks = t.crit.map(() => false); } });
+    stats.acc = 7; stats.rq = 2; stats.nowAcc = 3; stats.nowRq = 1; updateStats();
+    renderQueue(); renderWho(); renderDetail(); startScan();
+  });
+
+  renderQueue(); renderWho(); renderDetail(); startScan();
+})();
+</script>
+</body>
+</html>

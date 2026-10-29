@@ -1,0 +1,562 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phòng họp · CF Agent Factory</title>
+<link rel="stylesheet" href="assets/blueprint.css">
+<style>
+  .room-tools { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--line-soft); }
+  .room-scroll { overflow-x: auto; }
+  .room-scroll svg { min-width: 680px; }
+  .seat-g text.code-t { font-family: var(--f-mono); font-size: 11px; font-weight: 600; text-anchor: middle; dominant-baseline: central; }
+  .seat-g .nm { font-family: var(--f-mono); font-size: 12px; fill: var(--ink-2); text-anchor: middle; }
+  #room .sub { font-size: 11px; }
+  #room .lbl { font-size: 15px; }
+  .bubble-t { font-family: var(--f-mono); font-size: 12px; fill: var(--ink); text-anchor: middle; dominant-baseline: central; }
+  .wb-t { font-family: var(--f-mono); font-size: 12px; fill: var(--ink-2); }
+  .card-t { font-family: var(--f-mono); font-size: 10px; fill: var(--s-backlog); text-anchor: middle; dominant-baseline: central; }
+  .timer { font-family: var(--f-mono); font-size: var(--fs-xs); color: var(--ink-2); }
+  .timer b { color: var(--ink); font-weight: 500; }
+
+  .agenda { list-style: none; margin: 0; padding: 0; counter-reset: ag; }
+  .agenda li { display: grid; grid-template-columns: 26px 1fr auto; gap: var(--sp-3); align-items: center; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--grid-major); font-size: var(--fs-sm); transition: background var(--dur) var(--ease); }
+  .agenda .box { width: 20px; height: 20px; border: 1px solid var(--line-soft); display: grid; place-items: center; font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); }
+  .agenda li.now { background: var(--bp-700); }
+  .agenda li.now .box { border-color: var(--s-doing); color: var(--s-doing); }
+  .agenda li.done .box { border-color: var(--s-done); color: var(--s-done); background: var(--t-done); }
+  .agenda li.done .tx { color: var(--ink-2); }
+  .agenda .min { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); }
+
+  .people { list-style: none; margin: 0; padding: 0; }
+  .people li { display: grid; grid-template-columns: auto 1fr auto; gap: var(--sp-3); align-items: center; padding: var(--sp-2) var(--sp-4); border-bottom: 1px solid var(--grid-major); font-size: var(--fs-sm); }
+  .people .bot, .people .human-token { width: 30px; height: 30px; font-size: 10px; }
+  .people .r { font-size: var(--fs-xs); color: var(--ink-3); }
+
+  .thread { list-style: none; margin: 0; padding: 0; max-height: 520px; overflow-y: auto; }
+  .thread li { padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--grid-major); display: grid; grid-template-columns: 30px 1fr; gap: var(--sp-3); }
+  .thread li.enter { animation: log-in var(--dur-slow) var(--ease); }
+  .thread .bot, .thread .human-token { width: 30px; height: 30px; font-size: 10px; }
+  .thread .hd { display: flex; align-items: baseline; gap: var(--sp-2); flex-wrap: wrap; }
+  .thread .hd b { font-size: var(--fs-sm); }
+  .thread .hd time, .thread .hd .mid { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); }
+  .thread .bd { font-size: var(--fs-sm); color: var(--ink); margin: 2px 0 var(--sp-2); }
+  .thread .ft { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+  .thread li.cmd { background: var(--bp-850); }
+  .thread li.cmd .bd { font-family: var(--f-mono); font-size: var(--fs-xs); color: var(--s-ready); }
+  .glyph-cmd { width: 30px; height: 30px; display: grid; place-items: center; border: 1px dashed var(--s-ready); color: var(--s-ready); font-family: var(--f-mono); font-size: var(--fs-2xs); }
+
+  .out-group h4 { margin: 0; padding: var(--sp-3) var(--sp-4) var(--sp-2); font-family: var(--f-mono); font-size: var(--fs-2xs); font-weight: 500; color: var(--ink-3); letter-spacing: 0.12em; text-transform: uppercase; }
+  .out-list { list-style: none; margin: 0; padding: 0 var(--sp-4) var(--sp-3); display: flex; flex-direction: column; gap: var(--sp-2); }
+  .out-list .card { animation: reveal var(--dur-slow) var(--ease) both; }
+  .out-list .empty { padding: var(--sp-4); }
+  .act-item { display: grid; grid-template-columns: 18px 1fr; gap: var(--sp-2); font-size: var(--fs-sm); padding: var(--sp-2) var(--sp-3); border: 1px solid var(--line-soft); background: var(--bp-850); }
+  .act-item .g { font-family: var(--f-mono); color: var(--s-ready); }
+  .honest { margin: 0 var(--sp-4) var(--sp-4); }
+
+  .sched { min-width: 760px; }
+  .sched td.mono, .sched td a.mono, .sched td:first-child { white-space: nowrap; }
+  .sched td .who { display: flex; gap: 3px; }
+  .sched td .who .bot, .sched td .who .human-token { width: 24px; height: 24px; font-size: 8.5px; }
+  .tbl-scroll { overflow-x: auto; }
+  @media (max-width: 560px) { .room-tools { flex-direction: column; align-items: stretch; } .room-tools .seg { overflow-x: auto; } }
+</style>
+</head>
+<body data-sheet="14" data-title="Phòng họp">
+<div class="app paper">
+  <div id="rail"></div>
+  <div class="main">
+    <header id="topbar"></header>
+    <main class="content">
+
+      <section class="page-head reveal">
+        <div>
+          <div class="code">ROOM M-01 · PHÒNG HỌP · THREAD #MEET-AURORA</div>
+          <h2>Phòng họp của nhà máy</h2>
+          <p class="lede">Cuộc họp là một thread tin nhắn có thành phần cố định. Agent và người phát biểu lần lượt, mỗi tin nhắn gắn actor bất biến và trạng thái ACK của từng người nhận. Kết quả chỉ trở thành việc thật khi có lệnh tạo task.</p>
+        </div>
+        <div class="actions">
+          <a class="btn" href="17-mailroom.html">Mở thread trong Phòng thư</a>
+          <button class="btn primary" id="btnStart" type="button">
+            <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 2l7 4-7 4z" fill="currentColor"/></svg>
+            <span>Bắt đầu cuộc họp</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="grid g-4 reveal" aria-label="Chỉ số phòng họp">
+        <div class="panel kpi"><span class="label">Cuộc họp hôm nay</span><span class="value">4<small> / 5</small></span><span class="note">1 đã xong, 1 bị huỷ, 3 sắp tới</span></div>
+        <div class="panel kpi"><span class="label">Task tạo từ họp</span><span class="value c-ready" id="kTasks">3</span><span class="note">Chỉ đếm lệnh task.create thành công</span></div>
+        <div class="panel kpi"><span class="label">Quyết định cần người</span><span class="value c-amber" id="kDec">1</span><span class="note">Chuyển sang Cổng phê duyệt, chưa thực thi</span></div>
+        <div class="panel kpi"><span class="label">Tin nhắn chưa ACK</span><span class="value" id="kAck">2</span><span class="note">ACK chỉ xác nhận đã nhận, không phải đã làm</span></div>
+      </section>
+
+      <section class="grid g-main-side">
+        <div class="stack">
+        <div class="panel reveal">
+          <div class="room-tools">
+            <div class="seg" role="group" aria-label="Loại cuộc họp" id="segType">
+              <button type="button" aria-pressed="true" data-type="standup">Standup sáng</button>
+              <button type="button" aria-pressed="false" data-type="planning">Planning sprint</button>
+              <button type="button" aria-pressed="false" data-type="retro">Review sự cố</button>
+              <button type="button" aria-pressed="false" data-type="handoff">Bàn giao ca</button>
+            </div>
+            <span class="timer" aria-live="off">THỜI LƯỢNG <b id="timer">00:00</b> / <span id="timerMax">15:00</span></span>
+          </div>
+          <div class="room-scroll">
+            <svg id="room" class="dwg" viewBox="0 0 1000 540" role="img" aria-labelledby="roomTitle roomDesc">
+              <title id="roomTitle">Mặt bằng phòng họp M-01</title>
+              <desc id="roomDesc">Bàn oval ở giữa với 8 ghế, màn hình chiếu và whiteboard trên tường phía bắc, cửa ra hành lang dẫn về dây chuyền ở tường phía đông. Danh sách thành phần ở bảng bên cạnh là phiên bản văn bản của sơ đồ này.</desc>
+              <defs>
+                <pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                  <line x1="0" y1="0" x2="0" y2="8" style="stroke:var(--line-soft)" stroke-width="1"/>
+                </pattern>
+                <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M0 0L10 5L0 10z" style="fill:var(--s-ready)"/>
+                </marker>
+              </defs>
+              <g id="gStatic"></g>
+              <g id="gTurns"></g>
+              <g id="gSeats"></g>
+              <g id="gFly"></g>
+            </svg>
+          </div>
+          <div class="room-tools" style="border-bottom:0;border-top:1px solid var(--line-soft)">
+            <div class="legend" aria-label="Chú giải">
+              <span style="color:var(--s-doing)"><i></i>Đang phát biểu</span>
+              <span style="color:var(--s-ready)"><i></i>Lượt nói</span>
+              <span style="color:var(--amber)"><i></i>Con người</span>
+              <span style="color:var(--red)"><i></i>Tín hiệu cũ / vắng</span>
+            </div>
+            <span class="code" id="wbState">CHƯA BẮT ĐẦU</span>
+          </div>
+        </div>
+
+        <div class="panel reveal">
+          <div class="panel-head"><h3>Transcript thread</h3><span class="code" id="threadId">THR-0412 · CỐ ĐỊNH THÀNH PHẦN</span></div>
+          <ul class="thread" id="thread" aria-live="polite" aria-relevant="additions" aria-label="Tin nhắn cuộc họp"></ul>
+          <div class="empty" id="threadEmpty" style="margin:var(--sp-4)">Thread chưa có tin nhắn. Bấm "Bắt đầu cuộc họp" để mở lượt nói đầu tiên.</div>
+        </div>
+        </div>
+
+        <div class="stack">
+          <div class="panel reveal">
+            <div class="panel-head"><h3>Agenda</h3><span class="code" id="agendaCount">0 / 5 MỤC</span></div>
+            <ol class="agenda" id="agenda" aria-label="Các mục agenda"></ol>
+          </div>
+
+        <div class="panel reveal">
+          <div class="panel-head"><h3>Kết quả cuộc họp</h3><span class="code">OUTCOMES · SINH TỪ THREAD</span></div>
+          <div class="out-group">
+            <h4>Task mới vào Backlog · lệnh task.create</h4>
+            <ul class="out-list" id="outTasks"><li class="empty">Chưa có lệnh tạo task.</li></ul>
+          </div>
+          <div class="out-group">
+            <h4>Quyết định cần người</h4>
+            <ul class="out-list" id="outDec"><li class="empty">Chưa có quyết định nào được nêu.</li></ul>
+          </div>
+          <div class="out-group">
+            <h4>Action items</h4>
+            <ul class="out-list" id="outAct"><li class="empty">Chưa có action item.</li></ul>
+          </div>
+          <p class="note-red honest">Ghi chú trung thực: tin nhắn và ACK không làm thay đổi trạng thái task nào. Chỉ lệnh task.create mới tạo phiếu mới trong Backlog. Quyết định cần người được gửi sang Cổng phê duyệt và chưa thực thi cho tới khi có người duyệt đúng phiên bản đề xuất.</p>
+        </div>
+        </div>
+      </section>
+
+      <section class="grid g-side-main">
+      <div class="panel reveal">
+        <div class="panel-head"><h3>Thành phần</h3><span class="code" id="peopleCount">8 GHẾ</span></div>
+        <ul class="people" id="people" aria-label="Danh sách thành phần cuộc họp"></ul>
+        <p class="code" style="margin:0;padding:var(--sp-3) var(--sp-4)">Ngồi trong phòng họp không cấp quyền task. Task vẫn thuộc run đang giữ lease.</p>
+      </div>
+      <div class="panel reveal" aria-label="Lịch họp hôm nay">
+        <div class="panel-head"><h3>Lịch họp hôm nay</h3><span class="code">SIM DATA · GIỜ ICT</span></div>
+        <div class="tbl-scroll">
+          <table class="table sched">
+            <thead><tr><th>Giờ</th><th>Cuộc họp</th><th>Chủ trì</th><th>Thành phần</th><th>Thread</th><th>Kết quả</th><th>Trạng thái</th></tr></thead>
+            <tbody id="schedBody"></tbody>
+          </table>
+        </div>
+        <p class="code" style="margin:0;padding:var(--sp-3) var(--sp-4)">Cuộc họp bị huỷ không tạo task. Kết quả "Not reported" nghĩa là thread chưa đóng, không phải bằng 0.</p>
+      </div>
+      </section>
+
+    </main>
+    <div id="titleblock"></div>
+  </div>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(() => {
+  const F = BP.F;
+  const el = (t, a, p) => BP.svg(t, a, p);
+  const gStatic = BP.$("#gStatic"), gTurns = BP.$("#gTurns"), gSeats = BP.$("#gSeats"), gFly = BP.$("#gFly");
+  const CX = 440, CY = 290;
+
+  /* ---------- Static drawing: walls, door, screen, whiteboard, table ---------- */
+  el("rect", { x: 30, y: 30, width: 820, height: 480, class: "room" }, gStatic);
+  el("rect", { x: 30, y: 30, width: 820, height: 480, class: "wall" }, gStatic);
+  // door gap on east wall + swing
+  el("line", { x1: 850, y1: 380, x2: 850, y2: 432, stroke: "var(--bp-800)", "stroke-width": 4 }, gStatic);
+  el("path", { d: "M850 380 A52 52 0 0 1 798 432", class: "wall-thin", "stroke-dasharray": "2 3" }, gStatic);
+  el("line", { x1: 850, y1: 380, x2: 798, y2: 380, class: "wall-thin" }, gStatic);
+  // corridor to line
+  el("path", { d: "M850 392 H996 M850 420 H996", class: "wall-thin" }, gStatic);
+  el("line", { x1: 852, y1: 406, x2: 990, y2: 406, class: "flow slow", "marker-end": "url(#arr)" }, gStatic);
+  const cl = el("text", { x: 856, y: 446, class: "sub" }, gStatic); cl.textContent = "HÀNH LANG";
+  const cl2 = el("text", { x: 856, y: 460, class: "sub" }, gStatic); cl2.textContent = "→ DÂY CHUYỀN 04";
+  const dl = el("text", { x: 790, y: 372, class: "sub", "text-anchor": "end" }, gStatic); dl.textContent = "CỬA D1 · 0.9 m";
+
+  // projection screen (north wall, center)
+  el("rect", { x: 330, y: 36, width: 240, height: 10, class: "hatch" }, gStatic);
+  el("rect", { x: 330, y: 36, width: 240, height: 10, class: "wall-thin" }, gStatic);
+  const sl = el("text", { x: 450, y: 62, class: "sub", "text-anchor": "middle" }, gStatic); sl.textContent = "MÀN HÌNH CHIẾU · THREAD LIVE";
+  el("path", { d: `M${CX} ${CY - 60} L340 48 M${CX} ${CY - 60} L560 48`, class: "dimline", "stroke-dasharray": "3 4" }, gStatic);
+  el("rect", { x: CX - 6, y: CY - 66, width: 12, height: 8, class: "wall-thin" }, gStatic);
+
+  // whiteboard (north wall, west)
+  el("rect", { x: 56, y: 36, width: 220, height: 6, style: "fill:var(--line)" }, gStatic);
+  const wl = el("text", { x: 60, y: 58, class: "sub" }, gStatic); wl.textContent = "WHITEBOARD";
+  const wb1 = el("text", { x: 60, y: 76, class: "wb-t" }, gStatic); wb1.textContent = "Mục hiện tại: chưa bắt đầu";
+  const wb2 = el("text", { x: 60, y: 92, class: "wb-t" }, gStatic); wb2.textContent = "";
+
+  // credenza + plant symbol
+  el("rect", { x: 600, y: 470, width: 200, height: 24, class: "wall-thin" }, gStatic);
+  const crl = el("text", { x: 700, y: 486, class: "sub", "text-anchor": "middle" }, gStatic); crl.textContent = "TỦ HỒ SƠ · ARTIFACT IN";
+  el("circle", { cx: 66, cy: 474, r: 14, class: "wall-thin" }, gStatic);
+  el("path", { d: "M56 474h20M66 464v20", class: "wall-thin" }, gStatic);
+
+  // table
+  el("ellipse", { cx: CX, cy: CY, rx: 230, ry: 105, fill: "var(--bp-900)", stroke: "var(--line-strong)", "stroke-width": 1.5 }, gStatic);
+  el("ellipse", { cx: CX, cy: CY, rx: 214, ry: 92, class: "wall-thin", "stroke-dasharray": "2 5" }, gStatic);
+  const tl = el("text", { x: CX, y: CY - 8, class: "lbl", "text-anchor": "middle" }, gStatic); tl.textContent = "BÀN HỌP OVAL";
+  const tlType = el("text", { x: CX, y: CY + 10, class: "sub", "text-anchor": "middle" }, gStatic);
+  const tlNow = el("text", { x: CX, y: CY + 28, class: "sub", "text-anchor": "middle", style: "fill:var(--s-doing)" }, gStatic);
+
+  // dimension lines
+  el("path", { d: "M30 16 H850 M30 10 V22 M850 10 V22", class: "dimline" }, gStatic);
+  const d1 = el("text", { x: 440, y: 12, class: "sub", "text-anchor": "middle" }, gStatic); d1.textContent = "8.2 m";
+  el("path", { d: `M${CX - 230} ${CY + 132} H${CX + 230} M${CX - 230} ${CY + 126} V${CY + 138} M${CX + 230} ${CY + 126} V${CY + 138}`, class: "dimline" }, gStatic);
+
+  /* ---------- Seats ---------- */
+  const ANG = [180, 225, 270, 315, 0, 45, 90, 135];
+  const seatPos = i => { const a = ANG[i] * Math.PI / 180; return { x: CX + 288 * Math.cos(a), y: CY + 152 * Math.sin(a), a }; };
+
+  /* ---------- Meeting definitions ---------- */
+  const H = id => F.humans.find(h => h.id === id);
+  const MEETINGS = {
+    standup: {
+      label: "STANDUP SÁNG", max: "15:00", thread: "THR-0412",
+      people: ["hu-qd", "atlas", "forge", "kite", "nova", "muse", "lens", "pixel"],
+      agenda: [["Điểm danh và presence", 1], ["Hôm qua đã làm", 4], ["Hôm nay làm gì", 4], ["Vướng mắc", 4], ["Chốt việc", 2]],
+      steps: [
+        { who: "hu-qd", ag: 0, say: "điểm danh", msg: "Bắt đầu standup ca ngày. PIXEL-08 có tín hiệu cũ từ 14:02 nên không tính là có mặt, tin nhắn vẫn được lưu vào inbox." },
+        { who: "atlas", ag: 1, say: "T-1042 · lease 72%", msg: "T-1042: đã tách 3/5 endpoint xác thực. Lease còn 72%, fence 18. Không cần hỗ trợ.", ref: "T-1042" },
+        { who: "forge", ag: 1, say: "retry 1/2", msg: "T-1047 đang ở retry 1/2 sau lỗi khoá bảng runs. Đang chạy lại theo batch nhỏ hơn.", ref: "T-1047" },
+        { who: "nova", ag: 2, say: "đề xuất tách task", msg: "T-1044 cần thêm biểu đồ theo phòng ban. Đề xuất tạo task riêng để không mở rộng phạm vi run hiện tại.", ref: "T-1044",
+          out: { kind: "task", id: "T-1062", title: "Biểu đồ lease hết hạn theo phòng ban", dept: "DL-04", pri: "P2" } },
+        { who: "kite", ag: 3, say: "cần người quyết", msg: "T-1051 cần quyền đọc tài liệu trả phí của một thư viện queue. Việc này phát sinh chi phí, cần người quyết định.", ref: "T-1051",
+          out: { kind: "dec", title: "Mua quyền đọc tài liệu thư viện queue", who: "Khánh", exp: "hết hạn 17:00" } },
+        { who: "muse", ag: 3, say: "chờ nghiệm thu", msg: "T-1040 đã nộp kết quả, đang chờ Hà nghiệm thu. Tôi không tự nghiệm thu bài của mình.", ref: "T-1040" },
+        { who: "hu-qd", ag: 4, say: "chốt việc", msg: "Chốt: tạo task rà flaky test claim. LENS-06 rà a11y nhãn trạng thái của T-1055 trước 15:00.",
+          out: { kind: "task", id: "T-1063", title: "Rà soát flaky test luồng claim", dept: "KT-01", pri: "P1" },
+          act: "LENS-06 rà a11y nhãn trạng thái T-1055 trước 15:00 (chưa claim, chỉ là ghi nhớ)" }
+      ]
+    },
+    planning: {
+      label: "PLANNING SPRINT", max: "45:00", thread: "THR-0415",
+      people: ["hu-kn", "hu-qd", "atlas", "vega", "nova", "muse", "sage", "bolt"],
+      agenda: [["Mục tiêu sprint", 5], ["Năng lực và WIP", 8], ["Chọn việc từ Backlog", 15], ["Rủi ro và phụ thuộc", 10], ["Chốt cam kết", 7]],
+      steps: [
+        { who: "hu-kn", ag: 0, say: "mục tiêu sprint", msg: "Mục tiêu sprint: ổn định luồng claim và outbox trước khi mở R2." },
+        { who: "sage", ag: 1, say: "QC WIP 2/3", msg: "Trạm Kiểm định đang WIP 2/3. Mỗi task phải có reviewer khác người nộp, nên cần giữ 1 slot trống." },
+        { who: "atlas", ag: 2, say: "T-1033 hết retry", msg: "T-1033 đã hết lượt retry. Không thể đưa lại Ready, cần người duyệt task thay thế có liên kết provenance.", ref: "T-1033",
+          out: { kind: "dec", title: "Duyệt task thay thế cho T-1033 (hết retry)", who: "Quản đốc", exp: "trước planning kế" } },
+        { who: "nova", ag: 2, say: "đo query plan", msg: "T-1061 cần đo query plan trên snapshot thật trước khi tối ưu. Đề xuất task đo riêng.", ref: "T-1061",
+          out: { kind: "task", id: "T-1064", title: "Đo query plan danh sách sự kiện trên snapshot", dept: "DL-04", pri: "P2" } },
+        { who: "vega", ag: 3, say: "phụ thuộc webhook", msg: "T-1060 phụ thuộc chính sách egress. Đề nghị nâng lên P2 và gắn link tài liệu delivery-semantics.", ref: "T-1060",
+          act: "VEGA-03 cập nhật mô tả T-1060, đề xuất P2 (thay đổi ưu tiên cần lệnh riêng)" },
+        { who: "bolt", ag: 4, say: "fixture tranh chấp", msg: "Tôi có thể nhận việc viết fixture tranh chấp claim 3 runtime nếu task được tạo và ở Ready.",
+          out: { kind: "task", id: "T-1065", title: "Fixture tranh chấp claim 3 runtime", dept: "QC-06", pri: "P1" } },
+        { who: "hu-kn", ag: 4, say: "chốt cam kết", msg: "Chốt cam kết 6 task. Các task mới vào Backlog, chỉ chuyển Ready khi đủ tiêu chí nghiệm thu." }
+      ]
+    },
+    retro: {
+      label: "REVIEW SỰ CỐ · INC-0927", max: "30:00", thread: "THR-0418",
+      people: ["hu-qd", "hu-ha", "forge", "orbit", "sage", "nova", "echo"],
+      agenda: [["Dòng thời gian sự cố", 5], ["Tác động", 5], ["Nguyên nhân gốc", 8], ["Hành động khắc phục", 8], ["Chủ sở hữu", 4]],
+      steps: [
+        { who: "hu-qd", ag: 0, say: "INC-0927", msg: "Review sự cố 11:40: dispatcher tạm dừng 6 phút, lease hết hạn hàng loạt. Không quy lỗi cá nhân." },
+        { who: "orbit", ag: 0, say: "312 thông báo dồn", msg: "11:40 đến 11:46 outbox dồn 312 thông báo. Không mất tin nhắn, inbox vẫn đọc được khi polling." },
+        { who: "forge", ag: 1, say: "run r-31b9 hết lease", msg: "Run r-31b9 của T-1047 hết lease giữa chừng. Server chuyển task về Backlog với cờ outcome_unknown.", ref: "T-1047" },
+        { who: "sage", ag: 2, say: "timeout dùng chung", msg: "Nguyên nhân gốc: heartbeat dùng chung timeout 10s với lời gọi HTTP ra ngoài, nên bị chặn khi egress chậm." },
+        { who: "hu-ha", ag: 3, say: "xác minh trước", msg: "Không tạo lại việc cho tới khi xác minh kết quả bên ngoài của r-31b9. Fence mới không hoàn tác được thao tác cũ.",
+          out: { kind: "dec", title: "Xác minh kết quả ngoài của r-31b9 trước khi tạo task thay thế", who: "Hà", exp: "hết hạn 18:00" } },
+        { who: "nova", ag: 3, say: "cảnh báo outbox", msg: "Đề xuất cảnh báo khi outbox backlog vượt 200 trong 2 phút.",
+          out: { kind: "task", id: "T-1066", title: "Cảnh báo khi outbox backlog vượt 200", dept: "DL-04", pri: "P1" } },
+        { who: "hu-qd", ag: 4, say: "giao chủ sở hữu", msg: "ECHO-11 offline nên tin nhắn gửi thất bại, sẽ đọc lại qua inbox. ORBIT-05 giữ runbook cập nhật.",
+          act: "ORBIT-05 cập nhật runbook R1 mục heartbeat tách timeout (cần task riêng nếu sửa code)" }
+      ]
+    },
+    handoff: {
+      label: "BÀN GIAO CA NGÀY → CA ĐÊM", max: "10:00", thread: "THR-0420",
+      people: ["hu-qd", "orbit", "echo", "atlas", "nova", "lens"],
+      agenda: [["Việc đang Doing", 2], ["Lease sắp hết", 2], ["Chờ người quyết", 2], ["Cảnh báo hạ tầng", 2], ["Ký nhận bàn giao", 2]],
+      steps: [
+        { who: "orbit", ag: 0, say: "4 task Doing", msg: "Ca ngày còn 4 task Doing. Lease gắn với run, không gắn với ca, nên không có gì để chuyển giao quyền." },
+        { who: "atlas", ag: 1, say: "lease 72% · ổn", msg: "T-1042 lease 72%, tôi tiếp tục heartbeat. Nếu runtime dừng, lease hết hạn và task về Backlog có cờ.", ref: "T-1042" },
+        { who: "nova", ag: 1, say: "lease 88%", msg: "T-1044 lease 88%, dự kiến nộp kết quả trước 19:00.", ref: "T-1044" },
+        { who: "lens", ag: 2, say: "T-1039 · 16:30", msg: "T-1039 đang Waiting, đề xuất v2 hết hạn 16:30. Cần Khánh quyết trước khi ca đêm bắt đầu.", ref: "T-1039",
+          out: { kind: "dec", title: "Gửi email khảo sát 240 khách hàng beta (T-1039 v2)", who: "Khánh", exp: "hết hạn 16:30" } },
+        { who: "orbit", ag: 3, say: "R2 78%", msg: "Dung lượng R2 đạt 78%. Đề xuất task theo dõi sau khi dọn 1.204 artifact staged được duyệt.",
+          out: { kind: "task", id: "T-1067", title: "Theo dõi dung lượng R2 sau đợt dọn dẹp", dept: "VH-05", pri: "P3" } },
+        { who: "hu-qd", ag: 4, say: "ký nhận", msg: "Ký nhận bàn giao. ECHO-11 offline, ca đêm do ORBIT-05 trực.",
+          act: "Ca đêm: ORBIT-05 trực, gửi wake-up khi có Ready P1 (wake-up không phải claim)" }
+      ]
+    }
+  };
+
+  /* ---------- Rendering helpers ---------- */
+  const who = id => { const a = BP.agent(id); if (a) return { id, code: a.code, name: a.name, human: false, a }; const h = H(id); return { id, code: h.code, name: h.name, human: true, h }; };
+  const presenceOf = id => { const a = BP.agent(id); return a ? a.presence : "online"; };
+  const actColor = { online: "var(--ink-2)", stale: "var(--red)", offline: "var(--s-cancelled)" };
+  const tokenHTML = (id, sz) => { const w = who(id); const p = presenceOf(id);
+    if (w.human) return `<span class="human-token" aria-hidden="true">${w.code}</span>`;
+    const c = p === "stale" ? "var(--red)" : p === "offline" ? "var(--s-cancelled)" : "var(--s-ready)";
+    return `<span class="bot" style="--c:${c}" aria-hidden="true">${w.code}</span>`; };
+  const presChip = id => { const p = presenceOf(id); const w = who(id);
+    if (w.human) return `<span class="tag amber">Con người</span>`;
+    if (p === "stale") return `<span class="state stale">Tín hiệu cũ · 14:02</span>`;
+    if (p === "offline") return `<span class="state cancelled">Offline</span>`;
+    return `<span class="state online">Có tín hiệu</span>`; };
+
+  let seatEls = {};
+  let M, run = 0, running = false, results = { task: 0, dec: 0 };
+
+  function drawSeats() {
+    gSeats.innerHTML = ""; gTurns.innerHTML = ""; seatEls = {};
+    M.people.forEach((id, i) => {
+      const p = seatPos(i), w = who(id), pres = presenceOf(id);
+      const g = el("g", { class: "seat-g", transform: `translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})` }, gSeats);
+      // chair (rotated toward table)
+      const deg = ANG[i] + 90;
+      el("rect", { x: -17, y: -26, width: 34, height: 9, class: "wall-thin", transform: `rotate(${deg})` }, g);
+      const col = w.human ? "var(--amber)" : pres === "stale" ? "var(--red)" : pres === "offline" ? "var(--s-cancelled)" : "var(--s-ready)";
+      const ring = el("circle", { r: 22, fill: "none", stroke: "var(--s-doing)", "stroke-width": 1.5, opacity: 0 }, g);
+      const pulse = el("circle", { r: 22, fill: "none", stroke: "var(--s-doing)", class: "pulse", opacity: 0 }, g);
+      let shape;
+      if (w.human) shape = el("circle", { r: 15, fill: "var(--bp-950)", stroke: col, "stroke-width": 1.5 }, g);
+      else shape = el("polygon", { points: "-8,-14 8,-14 16,0 8,14 -8,14 -16,0", fill: "var(--bp-950)", stroke: col, "stroke-width": 1.5, "stroke-dasharray": pres === "stale" || pres === "offline" ? "3 2" : "" }, g);
+      if (pres === "stale" || pres === "offline") g.setAttribute("opacity", "0.55");
+      const t = el("text", { class: "code-t", style: `fill:${col}` }, g); t.textContent = w.code;
+      const below = Math.sin(p.a) >= -0.1;
+      const nm = el("text", { y: below ? 34 : -24, class: "nm" }, g);
+      nm.textContent = pres === "stale" ? `${w.name} · quan sát 14:02` : pres === "offline" ? `${w.name} · vắng` : w.name;
+      const tt = el("title", {}, g); tt.textContent = `${w.name} · ${w.human ? "con người" : pres}`;
+      seatEls[id] = { g, ring, pulse, p, below };
+    });
+    // empty seats
+    for (let i = M.people.length; i < 8; i++) {
+      const p = seatPos(i);
+      const g = el("g", { transform: `translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})` }, gSeats);
+      el("rect", { x: -17, y: -26, width: 34, height: 9, class: "wall-thin", transform: `rotate(${ANG[i] + 90})`, "stroke-dasharray": "2 3" }, g);
+      const e = el("text", { y: 4, class: "sub", "text-anchor": "middle" }, g); e.textContent = "GHẾ TRỐNG";
+    }
+  }
+
+  function setSpeaker(id) {
+    Object.entries(seatEls).forEach(([k, s]) => { const on = k === id; s.ring.setAttribute("opacity", on ? 1 : 0); s.pulse.setAttribute("opacity", on ? 1 : 0); });
+  }
+  function bubble(id, text, ms) {
+    const s = seatEls[id]; if (!s) return;
+    const b = el("g", { class: "bubble-g" }, s.g);
+    const w = text.length * 7.3 + 18, y = -60;
+    el("rect", { x: -w / 2, y, width: w, height: 22, fill: "var(--bp-950)", stroke: "var(--s-doing)" }, b);
+    el("path", { d: `M-5 ${y + 22} L0 ${y + 29} L5 ${y + 22}`, fill: "var(--bp-950)", stroke: "var(--s-doing)" }, b);
+    const t = el("text", { y: y + 11, class: "bubble-t" }, b); t.textContent = text;
+    if (ms) BP.wait(ms).then(() => b.remove());
+    return b;
+  }
+  let lastSpeaker = null;
+  function turnLine(from, to) {
+    BP.$$("path", gTurns).forEach(p => { const o = +(p.dataset.o || 1) * 0.45; p.dataset.o = o; p.setAttribute("opacity", o.toFixed(2)); if (o < 0.08) p.remove(); });
+    if (!from || from === to || !seatEls[from] || !seatEls[to]) return;
+    const a = seatEls[from].p, b = seatEls[to].p;
+    const path = el("path", { d: `M${a.x.toFixed(1)} ${a.y.toFixed(1)} Q${CX} ${CY} ${b.x.toFixed(1)} ${b.y.toFixed(1)}`, class: "flow", "marker-end": "url(#arr)" }, gTurns);
+    path.dataset.o = 1;
+  }
+
+  /* ---------- Panels ---------- */
+  function renderAgenda(cur, doneUpTo) {
+    BP.$("#agenda").innerHTML = M.agenda.map(([t, m], i) => {
+      const done = i < doneUpTo, now = i === cur && !done;
+      return `<li class="${done ? "done" : now ? "now" : ""}" ${now ? 'aria-current="step"' : ""}>
+        <span class="box" aria-hidden="true">${done ? "✓" : now ? "▶" : i + 1}</span>
+        <span class="tx">${t}${done ? '<span class="sr-only" style="position:absolute;left:-9999px"> (đã xong)</span>' : ""}</span>
+        <span class="min">${m} PHÚT</span></li>`;
+    }).join("");
+    BP.$("#agendaCount").textContent = `${Math.min(doneUpTo, M.agenda.length)} / ${M.agenda.length} MỤC`;
+  }
+  function renderPeople() {
+    BP.$("#people").innerHTML = M.people.map(id => { const w = who(id); const role = w.human ? w.h.role : `${BP.dept(w.a.dept).code} · ${F.activityVi[w.a.activity]}`;
+      return `<li>${tokenHTML(id)}<div><div>${w.name}</div><div class="r">${role}</div></div>${presChip(id)}</li>`; }).join("");
+    BP.$("#peopleCount").textContent = `${M.people.length} / 8 GHẾ`;
+  }
+  const outLists = { task: BP.$("#outTasks"), dec: BP.$("#outDec"), act: BP.$("#outAct") };
+  function resetOutcomes() {
+    outLists.task.innerHTML = '<li class="empty">Chưa có lệnh tạo task.</li>';
+    outLists.dec.innerHTML = '<li class="empty">Chưa có quyết định nào được nêu.</li>';
+    outLists.act.innerHTML = '<li class="empty">Chưa có action item.</li>';
+  }
+  function addOut(kind, html) {
+    const ul = outLists[kind]; const e = ul.querySelector(".empty"); if (e) e.remove();
+    const li = document.createElement("li"); li.innerHTML = html; ul.appendChild(li);
+  }
+
+  const thread = BP.$("#thread");
+  let msgNo = 0;
+  function pushMsg(step, now) {
+    BP.$("#threadEmpty").style.display = "none";
+    msgNo++;
+    const w = who(step.who);
+    const recips = M.people.filter(p => p !== step.who);
+    const fail = recips.filter(p => presenceOf(p) === "offline");
+    const pend = recips.filter(p => presenceOf(p) === "stale");
+    const okR = recips.filter(p => !fail.includes(p) && !pend.includes(p));
+    const li = document.createElement("li"); li.className = "enter";
+    const mid = `${M.thread}-M${String(msgNo).padStart(2, "0")}`;
+    li.innerHTML = `${tokenHTML(step.who)}<div>
+      <div class="hd"><b>${w.name}</b><time>${now}</time><span class="mid">${mid}</span>${step.ref ? `<a class="tag" href="05-work-order.html">${step.ref}</a>` : ""}</div>
+      <div class="bd">${step.msg}</div>
+      <div class="ft"><span class="tag">Đã giao ${okR.length + pend.length}/${recips.length}</span>
+        <span class="tag ackc" style="color:var(--s-done);border-color:var(--s-done)">ACK <b class="ackn">0</b>/${recips.length}</span>
+        ${pend.length ? `<span class="tag amber">Chưa ACK · ${pend.map(p => who(p).name).join(", ")}</span>` : ""}
+        ${fail.length ? `<span class="tag red">Thất bại · ${fail.map(p => who(p).name).join(", ")} offline · thử lại 3/8</span>` : ""}
+      </div></div>`;
+    thread.appendChild(li); thread.scrollTop = thread.scrollHeight;
+    // ACK count rises as recipients acknowledge (receipt only)
+    const n = li.querySelector(".ackn");
+    if (BP.reduced) n.textContent = okR.length;
+    else okR.forEach((_, k) => BP.wait(350 + k * 260).then(() => { n.textContent = k + 1; }));
+    return li;
+  }
+  function pushCmd(o, now) {
+    const li = document.createElement("li"); li.className = "enter cmd";
+    li.innerHTML = `<span class="glyph-cmd" aria-hidden="true">CMD</span><div>
+      <div class="hd"><b>Lệnh hệ thống</b><time>${now}</time><span class="mid">actor: Quản đốc · idem-key mtg-${o.id}</span></div>
+      <div class="bd">task.create ${o.id} → Backlog · task_version 1 · ${o.dept}</div>
+      <div class="ft"><span class="state backlog">Backlog</span><span class="tag">201 committed</span></div></div>`;
+    thread.appendChild(li); thread.scrollTop = thread.scrollHeight;
+  }
+
+  async function flyCard(o, token) {
+    if (BP.reduced) return;
+    const g = el("g", { transform: `translate(${CX} ${CY})` }, gFly);
+    el("rect", { x: -26, y: -9, width: 52, height: 18, fill: "var(--bp-850)", stroke: "var(--s-backlog)" }, g);
+    const t = el("text", { class: "card-t" }, g); t.textContent = o.id;
+    const p = el("path", { d: `M${CX} ${CY} L790 406 L996 406` });
+    await BP.moveAlong(g, p, 2400);
+    g.remove();
+  }
+
+  /* ---------- Timeline ---------- */
+  let sec = 0;
+  const fmt = s => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+  BP.every(1000, () => { if (running) { sec += 20; BP.$("#timer").textContent = fmt(sec); } });
+
+  function clockAt(i) { const base = { standup: [9, 30], planning: [10, 30], retro: [14, 0], handoff: [17, 45] }[curType]; const m = base[1] + i * 2; return `${String(base[0] + Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}:${String(10 + i * 7).padStart(2, "0")}`; }
+
+  let curType = "standup";
+  function setup(type) {
+    curType = type; M = MEETINGS[type]; run++; running = false; sec = 0; msgNo = 0; lastSpeaker = null;
+    BP.$("#timer").textContent = "00:00"; BP.$("#timerMax").textContent = M.max;
+    BP.$("#threadId").textContent = `${M.thread} · CỐ ĐỊNH THÀNH PHẦN`;
+    tlType.textContent = M.label; tlNow.textContent = "";
+    wb1.textContent = "Mục hiện tại: chưa bắt đầu"; wb2.textContent = `Thread ${M.thread} · ${M.people.length} người`;
+    BP.$("#wbState").textContent = "CHƯA BẮT ĐẦU";
+    thread.innerHTML = ""; BP.$("#threadEmpty").style.display = "";
+    gFly.innerHTML = "";
+    resetOutcomes(); drawSeats(); renderAgenda(-1, 0); renderPeople();
+    setStartBtn("idle");
+  }
+  const btn = BP.$("#btnStart");
+  function setStartBtn(s) {
+    btn.disabled = s === "running";
+    btn.querySelector("span").textContent = s === "running" ? "Đang họp..." : s === "done" ? "Họp lại từ đầu" : "Bắt đầu cuộc họp";
+  }
+
+  async function start() {
+    if (running) return;
+    if (msgNo) setup(curType);
+    const my = ++run; running = true; setStartBtn("running");
+    BP.$("#wbState").textContent = "ĐANG HỌP · GHI THREAD";
+    const steps = M.steps;
+    for (let i = 0; i < steps.length; i++) {
+      if (my !== run) return;
+      const s = steps[i], now = clockAt(i);
+      renderAgenda(s.ag, s.ag);
+      wb1.textContent = `Mục ${s.ag + 1}/${M.agenda.length}: ${M.agenda[s.ag][0]}`;
+      tlNow.textContent = `ĐANG NÓI · ${who(s.who).name}`;
+      setSpeaker(s.who); turnLine(lastSpeaker, s.who); lastSpeaker = s.who;
+      if (!BP.reduced) bubble(s.who, s.say, 2600);
+      pushMsg(s, now);
+      if (s.out) {
+        if (!BP.reduced) await BP.wait(900);
+        if (my !== run) return;
+        const o = s.out;
+        if (o.kind === "task") {
+          pushCmd(o, now);
+          addOut("task", `<a class="card" href="04-mission-line.html" style="text-decoration:none;color:inherit"><span class="id">${o.id} · ${o.dept} · ${o.pri}</span><span class="title">${o.title}</span><span class="meta"><span class="state backlog">Backlog</span><span>tạo bởi lệnh task.create · ${now.slice(0, 5)}</span></span></a>`);
+          results.task++; BP.$("#kTasks").textContent = 3 + results.task;
+          flyCard(o);
+          BP.toast("TASK.CREATE · 201", `${o.id} đã vào Backlog. Chưa ai claim.`);
+        } else {
+          addOut("dec", `<div class="card alert"><span class="id c-amber">CẦN NGƯỜI · ${o.who.toUpperCase()} · ${o.exp}</span><span class="title">${o.title}</span><span class="meta"><span class="state waiting">Chờ quyết định</span><a href="12-approval-gate.html">Mở Cổng phê duyệt</a></span></div>`);
+          results.dec++; BP.$("#kDec").textContent = 1 + results.dec;
+        }
+      }
+      if (s.act) addOut("act", `<div class="act-item"><span class="g" aria-hidden="true">◇</span><span>${s.act}</span></div>`);
+      if (!BP.reduced) await BP.wait(s.out ? 2600 : 3000);
+    }
+    if (my !== run) return;
+    renderAgenda(-1, M.agenda.length);
+    setSpeaker(null); tlNow.textContent = "KẾT THÚC · THREAD ĐÃ LƯU";
+    wb1.textContent = "Đã đi hết agenda"; BP.$("#wbState").textContent = "ĐÃ KẾT THÚC";
+    running = false; setStartBtn("done");
+    const pendingAck = M.people.filter(p => presenceOf(p) !== "online" && !who(p).human).length;
+    BP.$("#kAck").textContent = 2 + pendingAck;
+  }
+
+  btn.addEventListener("click", start);
+  BP.$$("#segType button").forEach(b => b.addEventListener("click", () => {
+    BP.$$("#segType button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    setup(b.dataset.type);
+  }));
+
+  /* ---------- Schedule ---------- */
+  const SCHED = [
+    ["08:45", "Bàn giao ca đêm → ca ngày", "hu-qd", ["hu-qd", "orbit", "atlas"], "THR-0409", "1 task · 0 quyết định", "done", "Đã xong"],
+    ["09:30", "Standup sáng", "hu-qd", MEETINGS.standup.people, "THR-0412", "Not reported", "doing", "Đang diễn ra"],
+    ["10:30", "Planning sprint 44", "hu-kn", MEETINGS.planning.people, "THR-0415", "Chưa họp", "backlog", "Sắp tới"],
+    ["13:00", "Đồng bộ Studio Nội dung", "muse", ["muse", "pixel", "hu-ha"], "THR-0416", "Huỷ vì PIXEL-08 tín hiệu cũ", "cancelled", "Đã huỷ"],
+    ["14:00", "Review sự cố INC-0927", "hu-ha", MEETINGS.retro.people, "THR-0418", "Chưa họp", "backlog", "Sắp tới"],
+    ["17:45", "Bàn giao ca ngày → ca đêm", "orbit", MEETINGS.handoff.people, "THR-0420", "Chưa họp", "backlog", "Sắp tới"]
+  ];
+  BP.$("#schedBody").innerHTML = SCHED.map(r => `<tr>
+    <td class="mono">${r[0]}</td><td>${r[1]}</td><td>${who(r[2]).name}</td>
+    <td><span class="who" aria-label="${r[3].map(p => who(p).name).join(", ")}">${r[3].slice(0, 5).map(p => tokenHTML(p)).join("")}${r[3].length > 5 ? `<span class="tag">+${r[3].length - 5}</span>` : ""}</span></td>
+    <td><a class="mono" href="17-mailroom.html">${r[4]}</a></td><td class="${r[5] === "Not reported" ? "unknown" : "ink2"}">${r[5]}</td><td>${BP.stateChip(r[6], r[7])}</td></tr>`).join("");
+
+  setup("standup");
+  // reduced motion: show the finished meeting statically
+  if (BP.reduced) start();
+  // deep link from 16-scenarios.html: 14-meeting-room.html#demo-retro starts that meeting
+  const m = /^#demo(?:-(\w+))?$/.exec(location.hash);
+  if (m && !BP.reduced) { const t = MEETINGS[m[1]] ? m[1] : "standup"; BP.$(`#segType [data-type="${t}"]`).click(); BP.wait(600).then(start); }
+})();
+</script>
+</body>
+</html>

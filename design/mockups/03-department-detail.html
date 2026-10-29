@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Xưởng Kỹ thuật · KT-01 · CF Agent Factory</title>
+<link rel="stylesheet" href="assets/blueprint.css">
+<style>
+  .state.cooldown { color: var(--s-ready); border-style: dashed; } .state.cooldown::before { content: "◔"; }
+  .plan-wrap { overflow-x: auto; }
+  .plan { min-width: 760px; }
+  .plan .hx text { font-family: var(--f-mono); font-size: 9px; font-weight: 600; text-anchor: middle; dominant-baseline: central; }
+  .plan .scr { font-family: var(--f-mono); font-size: 10px; fill: var(--ink); }
+  .plan .scr-dim { font-family: var(--f-mono); font-size: 9px; fill: var(--ink-3); }
+  .plan .bubble { font-family: var(--f-mono); font-size: 9px; fill: var(--ink); }
+  .plan .wb { font-family: var(--f-mono); font-size: 9.5px; fill: var(--ink-2); }
+  .plan .screen-on { animation: scron 0.9s var(--ease) 1; }
+  @keyframes scron { 0% { opacity: 0.2; } 20% { opacity: 1; } 35% { opacity: 0.4; } 100% { opacity: 1; } }
+  .plan-tools { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-3); flex-wrap: wrap; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--line-soft); }
+
+  .kb-wrap { overflow-x: auto; }
+  .kb { display: grid; grid-template-columns: repeat(6, minmax(150px, 1fr)); gap: 1px; background: var(--line-soft); min-width: 920px; }
+  .kb-col { background: var(--bp-800); display: flex; flex-direction: column; min-height: 220px; }
+  .kb-col header { display: flex; justify-content: space-between; align-items: center; padding: var(--sp-2) var(--sp-3); border-bottom: 1px solid var(--line-soft); }
+  .kb-col header b { font-family: var(--f-mono); font-size: var(--fs-xs); font-weight: 500; }
+  .kb-col .list { padding: var(--sp-2); display: flex; flex-direction: column; gap: var(--sp-2); flex: 1; }
+  .kb-col .card { padding: var(--sp-2); }
+  .kb-col .card .title { font-size: var(--fs-xs); }
+  .kb-col .empty { padding: var(--sp-3); font-size: var(--fs-2xs); flex: 1; display: grid; place-items: center; }
+  .card.enter { animation: reveal var(--dur-slow) var(--ease); }
+
+  .agents li { display: grid; grid-template-columns: auto 1fr auto; gap: var(--sp-3); align-items: center; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--grid-major); }
+  .agents ul { list-style: none; margin: 0; padding: 0; }
+  .agents .nm { font-family: var(--f-display); font-weight: 600; }
+  .agents .s { font-size: var(--fs-xs); color: var(--ink-2); }
+  .agents .right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+  .rules { margin: 0; display: grid; grid-template-columns: 140px minmax(0, 1fr); }
+  .rules dt, .rules dd { padding: var(--sp-2) var(--sp-4); border-bottom: 1px solid var(--grid-major); font-size: var(--fs-sm); }
+  .rules dt { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); letter-spacing: 0.08em; text-transform: uppercase; padding-top: 11px; }
+  .rules dd { margin: 0; color: var(--ink-2); }
+  .chart { width: 100%; height: auto; }
+  .chart .ax { font-family: var(--f-mono); font-size: 10px; fill: var(--ink-3); }
+  .chart .val { font-family: var(--f-mono); font-size: 11px; fill: var(--ink); text-anchor: middle; }
+  .feed { max-height: 300px; overflow: hidden; }
+  @media (max-width: 560px) {
+    .rules { grid-template-columns: minmax(0, 1fr); }
+    .rules dt { border-bottom: 0; padding-bottom: 0; }
+  }
+</style>
+</head>
+<body data-sheet="03" data-title="Xưởng Kỹ thuật · KT-01">
+<div class="app paper">
+  <div id="rail"></div>
+  <div class="main">
+    <header id="topbar"></header>
+    <main class="content">
+
+      <section class="page-head reveal">
+        <div>
+          <div class="code">ROOM PLAN · KT-01 · ENGINEERING · TRƯỞNG NHÓM: QUẢN ĐỐC</div>
+          <h2>Xưởng Kỹ thuật · KT-01</h2>
+          <p class="lede">Ba bàn làm việc, một tủ hàng chờ Ready và cửa ra hành lang dẫn tới Trạm Kiểm định. Màn hình mỗi bàn hiển thị task và lease thật của agent đang ngồi đó; bàn tối nghĩa là agent không giữ lease.</p>
+        </div>
+        <div class="actions">
+          <a class="btn" href="02-departments.html">Tất cả phòng ban</a>
+          <a class="btn primary" href="04-mission-line.html">Mở dây chuyền của phòng</a>
+        </div>
+      </section>
+
+      <section class="grid g-4 reveal" aria-label="Chỉ số phòng">
+        <div class="panel kpi"><span class="label">WIP / limit</span><span class="value c-doing"><span id="kWip">3</span><small style="margin-left:6px">/ 4</small></span><span class="note" id="kWipNote">Còn 1 chỗ cho claim mới</span><span class="note muted">WIP = Doing + Review</span></div>
+        <div class="panel kpi"><span class="label">Hàng chờ Ready</span><span class="value c-ready" id="kReady">2</span><span class="note">Yêu cầu capability: code</span></div>
+        <div class="panel kpi"><span class="label">Chờ nghiệm thu</span><span class="value c-review" id="kReview">1</span><span class="note">T-1036 giao SAGE-12, khác người nộp</span></div>
+        <div class="panel kpi"><span class="label">Cần phân loại</span><span class="value c-red">1</span><span class="note">T-1033 hết lượt retry, giữ ở Backlog</span></div>
+      </section>
+
+      <section class="panel reveal" aria-label="Bản vẽ mặt bằng phòng">
+        <div class="plan-tools">
+          <div class="legend">
+            <span style="color:var(--s-doing)"><i></i>Agent giữ lease</span>
+            <span style="color:var(--ink-3)"><i></i>Rảnh</span>
+            <span style="color:var(--s-ready)"><i></i>Task Ready</span>
+            <span style="color:var(--s-review)"><i></i>Ra nghiệm thu</span>
+          </div>
+          <span class="code">MẶT BẰNG 1 : 50 · SIM</span>
+        </div>
+        <div class="plan-wrap">
+          <svg id="plan" class="dwg plan" viewBox="0 0 1110 580" role="img" aria-labelledby="planT">
+            <title id="planT">Mặt bằng Xưởng Kỹ thuật: bàn ATLAS-01 đang làm T-1042, bàn FORGE-02 đang làm T-1047, bàn BOLT-10 rảnh; tủ hàng chờ Ready có 2 task; whiteboard; cửa ra hành lang tới Trạm Kiểm định.</title>
+            <defs>
+              <pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" style="stroke:var(--line-soft)"/></pattern>
+              <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" style="fill:var(--s-review)"/></marker>
+            </defs>
+            <g id="gBase"></g><g id="gFurn"></g><g id="gBoxes"></g><g id="gAgents"></g><g id="gAnno"></g>
+          </svg>
+        </div>
+      </section>
+
+      <section class="panel reveal" aria-label="Task của phòng">
+        <div class="panel-head"><h3>Task của phòng theo trạng thái</h3><a class="code" href="04-mission-line.html">Dây chuyền đầy đủ →</a></div>
+        <div class="kb-wrap"><div class="kb" id="kb"></div></div>
+      </section>
+
+      <section class="grid g-2">
+        <div class="panel reveal agents">
+          <div class="panel-head"><h3>Agent của phòng</h3><a class="code" href="07-workforce.html">Đội ngũ →</a></div>
+          <ul id="agentList"></ul>
+          <div class="panel-body"><p class="muted" style="margin:0;font-size:var(--fs-xs)">Presence là quan sát của server, tách khỏi hoạt động. BOLT-10 online nhưng không giữ task nào cho tới khi claim thành công.</p></div>
+        </div>
+        <div class="panel reveal">
+          <div class="panel-head"><h3>Quy tắc phòng</h3><span class="code">PROFILE + POLICY</span></div>
+          <dl class="rules">
+            <dt>WIP limit</dt><dd><b class="mono" style="color:var(--ink)">4</b> run đồng thời. Claim thứ 5 bị từ chối nguyên tử, không xếp hàng ngầm.</dd>
+            <dt>Capability yêu cầu</dt><dd><span class="tag">code</span> bắt buộc · <span class="tag">test</span> ưu tiên cho task có nhãn regression</dd>
+            <dt>Nghiệm thu</dt><dd>Agent QC-06 có grant <span class="mono">reviews:accept</span> hoặc Hà. Reviewer luôn khác người nộp, kể cả khác runtime.</dd>
+            <dt>Quyết định người</dt><dd>Quản đốc, Khánh. Agent không thể tự phê duyệt.</dd>
+            <dt>Retry</dt><dd>Tối đa 2. Hết lượt thì về Backlog có cờ, cần người phân loại.</dd>
+          </dl>
+          <div class="panel-body"><p class="muted" style="margin:0;font-size:var(--fs-xs)">Phòng ban chỉ mô tả trách nhiệm. Các quy tắc trên được thực thi bởi policy và grant, không phải bởi việc thuộc phòng.</p></div>
+        </div>
+      </section>
+
+      <section class="grid g-2">
+        <div class="panel reveal">
+          <div class="panel-head"><h3>Nhịp sản xuất 7 ngày</h3><span class="code">SIM DATA</span></div>
+          <div class="panel-body">
+            <svg class="chart" id="chart" viewBox="0 0 520 220" role="img" aria-labelledby="chT"><title id="chT">Task hoàn tất mỗi ngày: T5 3, T6 5, T7 2, CN 0, T2 6, T3 4, T4 3. Bị gửi lại: T6 1, T2 1.</title></svg>
+            <div class="legend" style="margin-top:var(--sp-2)"><span style="color:var(--s-done)"><i></i>Hoàn tất (Done)</span><span style="color:var(--red)"><i></i>Bị gửi lại sau review</span></div>
+          </div>
+        </div>
+        <div class="panel reveal">
+          <div class="panel-head"><h3>Hoạt động gần đây</h3><span class="code">KT-01 · LIVE</span></div>
+          <div class="feed"><ul class="log" id="feed" aria-live="polite" aria-relevant="additions"></ul></div>
+        </div>
+      </section>
+
+    </main>
+    <div id="titleblock"></div>
+  </div>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(() => {
+  const F = BP.F;
+  const el = (t, a, p) => BP.svg(t, a, p);
+  const gBase = BP.$("#gBase"), gFurn = BP.$("#gFurn"), gBoxes = BP.$("#gBoxes"), gAgents = BP.$("#gAgents"), gAnno = BP.$("#gAnno");
+  const txt = (x, y, cls, s, p, extra = {}) => { const t = el("text", { x, y, class: cls, ...extra }, p); t.textContent = s; return t; };
+  const fmt = s => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+
+  /* ---------- shell of the room ---------- */
+  el("rect", { x: 40, y: 50, width: 1020, height: 480, class: "wall" }, gBase);
+  el("line", { x1: 862, y1: 530, x2: 928, y2: 530, stroke: "var(--bp-850)", "stroke-width": 4 }, gBase);
+  el("path", { d: "M862 530 A66 66 0 0 0 928 464", class: "wall-thin", "stroke-dasharray": "2 3" }, gBase);
+  el("line", { x1: 928, y1: 530, x2: 928, y2: 464, class: "wall-thin" }, gBase);
+  el("path", { d: "M895 534 V560 H1060", fill: "none", stroke: "var(--s-review)", "stroke-width": 1, "marker-end": "url(#arr)" }, gAnno);
+  txt(870, 574, "sub", "CỬA RA · HÀNH LANG DÂY CHUYỀN → QC-06", gAnno);
+  // dimension lines
+  el("path", { d: "M40 30 H1060 M40 24 V36 M1060 24 V36", class: "dimline" }, gAnno);
+  txt(550, 26, "sub", "34.0 m · 3 BÀN · WIP LIMIT 4", gAnno, { "text-anchor": "middle" });
+  el("path", { d: "M1080 50 V530 M1074 50 H1086 M1074 530 H1086", class: "dimline" }, gAnno);
+  txt(1094, 290, "sub", "16.0 m", gAnno, { transform: "rotate(90 1094 290)", "text-anchor": "middle" });
+  txt(56, 74, "lbl", "XƯỞNG KỸ THUẬT", gBase);
+  txt(56, 88, "sub", "KT-01 · ENGINEERING · ROLE_ENGINEER", gBase);
+  // aisle
+  el("line", { x1: 60, y1: 300, x2: 920, y2: 300, class: "path-core" }, gBase);
+  txt(64, 316, "sub", "LỐI ĐI", gBase);
+
+  /* ---------- desks + monitors ---------- */
+  const DESKS = [
+    { id: "atlas", x: 90, lease: 647 },
+    { id: "forge", x: 360, lease: 278 },
+    { id: "bolt", x: 630, lease: 0 }
+  ];
+  const D = {};
+  DESKS.forEach(d => {
+    const a = BP.agent(d.id);
+    el("rect", { x: d.x, y: 108, width: 230, height: 78, class: "room" }, gFurn);
+    const scr = el("g", {}, gFurn);
+    const sr = el("rect", { x: d.x + 36, y: 116, width: 158, height: 60, fill: "var(--bp-950)", stroke: "var(--line)" }, scr);
+    const l1 = txt(d.x + 44, 132, "scr", "", scr);
+    const l2 = txt(d.x + 44, 146, "scr-dim", "", scr);
+    el("rect", { x: d.x + 44, y: 152, width: 142, height: 5, fill: "var(--bp-900)", stroke: "var(--line-soft)", "stroke-width": .6 }, scr);
+    const bar = el("rect", { x: d.x + 44, y: 152, width: 0, height: 5, fill: "var(--s-doing)" }, scr);
+    const l3 = txt(d.x + 44, 170, "scr-dim", "", scr);
+    el("rect", { x: d.x + 90, y: 176, width: 50, height: 6, class: "wall-thin" }, gFurn); // keyboard
+    el("circle", { cx: d.x + 115, cy: 226, r: 18, class: "wall-thin" }, gFurn); // chair
+    txt(d.x + 4, 104, "sub", `BÀN 0${DESKS.indexOf(d) + 1} · ${a.runtime.toUpperCase()}`, gFurn);
+    D[d.id] = { ...d, a, sr, l1, l2, l3, bar, scr, seat: { x: d.x + 115, y: 226 } };
+  });
+  function screen(id, on, task, lease, extra) {
+    const s = D[id];
+    if (!on) { s.sr.setAttribute("style", "fill:var(--bp-950);stroke:var(--line-soft)"); s.l1.textContent = "STANDBY"; s.l1.setAttribute("style", "fill:var(--ink-3)"); s.l2.textContent = "KHÔNG GIỮ LEASE"; s.l3.textContent = ""; s.bar.setAttribute("width", 0); return; }
+    s.sr.setAttribute("style", "fill:var(--t-doing);stroke:var(--s-doing)"); s.l1.setAttribute("style", "fill:var(--s-doing)");
+    s.l1.textContent = task; s.l2.textContent = `LEASE ${fmt(lease)}`; s.l3.textContent = extra || "";
+    s.bar.setAttribute("width", (142 * lease / 900).toFixed(1));
+    s.bar.setAttribute("style", `fill:${lease < 225 ? "var(--red)" : lease < 360 ? "var(--amber)" : "var(--s-doing)"}`);
+  }
+
+  /* ---------- Ready cabinet ---------- */
+  el("rect", { x: 950, y: 110, width: 92, height: 280, class: "room" }, gFurn);
+  el("rect", { x: 950, y: 110, width: 92, height: 280, class: "hatch" }, gFurn);
+  [170, 230, 290, 350].forEach(y => el("line", { x1: 950, y1: y, x2: 1042, y2: y, stroke: "var(--line)" }, gFurn));
+  txt(946, 102, "sub", "TỦ HÀNG CHỜ READY", gFurn);
+  const cabCount = txt(996, 410, "sub", "2 TASK · CAP: CODE", gFurn, { "text-anchor": "middle" });
+  const SLOTS = [140, 200, 260, 320];
+  function makeBox(id, x, y, color) {
+    const g = el("g", { transform: `translate(${x} ${y})` }, gBoxes);
+    el("rect", { x: -26, y: -13, width: 52, height: 26, fill: "var(--bp-850)", stroke: color || "var(--s-ready)", "stroke-width": 1.3 }, g);
+    const t = txt(0, 1, "scr-dim", id, g, { "text-anchor": "middle", "dominant-baseline": "central" }); t.setAttribute("style", `fill:${color || "var(--s-ready)"}`);
+    g._t = t; return g;
+  }
+  const readyQ = ["T-1062", "T-1063"];
+  let boxEls = readyQ.map((id, i) => makeBox(id, 996, SLOTS[i]));
+
+  /* ---------- whiteboard + meeting table ---------- */
+  el("rect", { x: 70, y: 420, width: 300, height: 88, class: "room" }, gFurn);
+  el("line", { x1: 70, y1: 420, x2: 370, y2: 420, stroke: "var(--line-strong)", "stroke-width": 3 }, gFurn);
+  txt(80, 412, "sub", "WHITEBOARD · SPRINT 43", gFurn);
+  txt(82, 440, "wb", "◆ Tách auth thành service riêng", gFurn);
+  txt(82, 456, "wb", "◆ Migrate runs → schema v3", gFurn);
+  const wbWip = txt(82, 472, "wb", "◆ WIP 3/4 · không vượt limit", gFurn);
+  txt(82, 496, "wb", "! T-1033 chờ người phân loại", gFurn).setAttribute("style", "fill:var(--red)");
+  el("circle", { cx: 560, cy: 440, r: 40, class: "wall-thin" }, gFurn);
+  [0, 90, 180, 270].forEach(a => { const r = a * Math.PI / 180; el("circle", { cx: 560 + Math.cos(r) * 56, cy: 440 + Math.sin(r) * 56, r: 9, class: "wall-thin" }, gFurn); });
+  txt(560, 444, "sub", "BÀN NHỎ", gFurn, { "text-anchor": "middle" });
+
+  /* ---------- agents ---------- */
+  const actColor = { doing: "var(--s-doing)", idle: "var(--ink-3)" };
+  const AG = {};
+  DESKS.forEach(d => {
+    const a = BP.agent(d.id); const p = D[d.id].seat; const col = actColor[a.activity] || "var(--line)";
+    const g = el("g", { class: "hx", transform: `translate(${p.x} ${p.y})` }, gAgents);
+    const ring = el("circle", { r: 16, fill: "none", stroke: col, opacity: 0 }, g);
+    const hex = el("polygon", { points: "-7,-12 7,-12 14,0 7,12 -7,12 -14,0", fill: "var(--bp-950)", stroke: col, "stroke-width": 1.6 }, g);
+    const t = el("text", { style: `fill:${col}` }, g); t.textContent = a.code;
+    txt(0, 30, "sub", a.name, g, { "text-anchor": "middle" });
+    AG[d.id] = { g, hex, t, ring, pos: { ...p } };
+  });
+  const recolor = (id, c) => { AG[id].hex.setAttribute("style", `stroke:${c}`); AG[id].t.setAttribute("style", `fill:${c}`); };
+  function bubble(id, text, ms = 2000) {
+    const b = el("g", {}, AG[id].g); const w = text.length * 5.6 + 14;
+    el("rect", { x: -w / 2, y: -40, width: w, height: 15, fill: "var(--bp-950)", stroke: "var(--line)" }, b);
+    txt(0, -32, "bubble", text, b, { "text-anchor": "middle", "dominant-baseline": "central" });
+    BP.wait(ms).then(() => b.remove());
+  }
+
+  /* ---------- state + kanban ---------- */
+  const state = {
+    backlog: [{ id: "T-1033", title: "Sửa lỗi heartbeat gia hạn run đã hết hạn", meta: "retry 2/2", flag: true }],
+    ready: [{ id: "T-1062", title: "Thêm idempotency key cho upload artifact", meta: "P2 · cap code" }, { id: "T-1063", title: "Adapter MCP cho lệnh yield", meta: "P3 · cap code" }],
+    doing: [{ id: "T-1042", title: "Tách module xác thực thành service riêng", meta: "ATLAS-01 · F18" }, { id: "T-1047", title: "Migrate bảng runs sang schema v3", meta: "FORGE-02 · F4" }],
+    waiting: [],
+    review: [{ id: "T-1036", title: "Viết test hồi quy cho luồng claim tranh chấp", meta: "BOLT-10 → SAGE-12" }],
+    done: [{ id: "T-1025", title: "Chuẩn hoá mã lỗi stale_fence", meta: "Hà nghiệm thu" }]
+  };
+  const titles = { "T-1062": "Thêm idempotency key cho upload artifact", "T-1063": "Adapter MCP cho lệnh yield", "T-1064": "Giới hạn kích thước body cho webhook", "T-1066": "Ghi log fence vào audit event" };
+  const COLS = ["backlog", "ready", "doing", "waiting", "review", "done"];
+  const emptyMsg = { waiting: "Không có task chờ quyết định", backlog: "Backlog trống", ready: "Hàng chờ trống · BOLT-10 sẽ rảnh", doing: "Không ai giữ lease", review: "Không có gì chờ nghiệm thu", done: "Chưa có task Done hôm nay" };
+  function renderKb(newId) {
+    BP.$("#kb").innerHTML = COLS.map(s => `<section class="kb-col" aria-label="${F.stateLabel[s]}">
+      <header>${BP.stateChip(s)}<b>${state[s].length}</b></header>
+      <div class="list">${state[s].length ? state[s].map(t => `<a class="card ${t.flag ? "punch" : ""} ${t.id === newId ? "enter" : ""}" href="05-work-order.html" style="${t.flag ? "border-color:var(--red)" : ""}">
+          <span class="id">${t.id}</span><span class="title" style="color:var(--ink)">${t.title}</span><span class="meta">${t.flag ? '<span class="tag red">Hết lượt retry</span>' : `<span class="mono">${t.meta}</span>`}</span></a>`).join("")
+        : `<div class="empty">${emptyMsg[s]}</div>`}</div></section>`).join("");
+    const wip = state.doing.length + state.review.length; // profile: WIP = Doing + Review
+    BP.$("#kWip").textContent = wip;
+    BP.$("#kReady").textContent = state.ready.length;
+    BP.$("#kReview").textContent = state.review.length;
+    const atLimit = wip >= 4;
+    BP.$("#kWipNote").innerHTML = atLimit ? '<span class="c-red">Đạt giới hạn · claim mới sẽ bị từ chối</span>' : "Còn 1 chỗ cho claim mới";
+    wbWip.textContent = `◆ WIP ${wip}/4 · ${atLimit ? "ĐẠT LIMIT" : "không vượt limit"}`;
+    cabCount.textContent = `${state.ready.length} TASK · CAP: CODE`;
+  }
+  renderKb();
+
+  /* ---------- agent list ---------- */
+  BP.$("#agentList").innerHTML = ["atlas", "forge", "bolt"].map(id => {
+    const a = BP.agent(id);
+    return `<li id="li-${id}"><span class="bot" style="--c:${a.activity === "doing" ? "var(--s-doing)" : "var(--ink-3)"}">${a.code}</span>
+      <div><div class="nm"><a href="08-agent-profile.html" style="color:var(--ink)">${a.name}</a></div><div class="s">${a.model} · ${a.caps.join(", ")}</div></div>
+      <div class="right"><span class="state online">Online</span><span data-act>${a.activity === "doing" ? `<span class="state doing">Đang làm ${a.task}</span>` : '<span class="state idle">Rảnh</span>'}</span></div></li>`;
+  }).join("");
+  const setAct = (id, html) => { BP.$(`#li-${id} [data-act]`).innerHTML = html; };
+
+  /* ---------- feed ---------- */
+  const feed = BP.$("#feed");
+  const push = (g, c, h) => BP.logPush(feed, `<time>${BP.now()}</time><span class="g" style="color:${c}">${g}</span><span>${h}</span>`, 14);
+  [["◎", "var(--s-review)", "<b>BOLT-10</b> nộp T-1036 sang Review, giao SAGE-12"], ["◆", "var(--line-strong)", "<b>ATLAS-01</b> checkpoint cp-2 · T-1042"], ["▶", "var(--s-doing)", "<b>FORGE-02</b> heartbeat T-1047 · fence 4"]].forEach(r => push(...r));
+
+  /* ---------- live screens ---------- */
+  let L = { atlas: 647, forge: 278 }, prog = 2, hbAgo = 4;
+  screen("bolt", false);
+  const paint = () => {
+    screen("atlas", true, "T-1042 · F18", L.atlas, `CP-3 ${"▮".repeat(prog)}${"▯".repeat(6 - prog)}`);
+    screen("forge", true, "T-1047 · F4", L.forge, `HB ↻ ${hbAgo}s trước`);
+  };
+  paint();
+  BP.every(1000, () => { L.atlas = Math.max(0, L.atlas - 1); L.forge = Math.max(0, L.forge - 1); hbAgo++; if (boltState.on) boltState.lease = Math.max(0, boltState.lease - 1); paint(); if (boltState.on) screen("bolt", true, `${boltState.task} · F1`, boltState.lease, "CLAIM MỚI"); });
+  // ATLAS typing progress
+  BP.every(1400, () => { prog = (prog + 1) % 7; if (prog === 0) { push("◆", "var(--line-strong)", "<b>ATLAS-01</b> checkpoint cp-3 · lưu tiến độ, không đổi task version"); } });
+  // FORGE heartbeat pulse
+  async function forgeHb() {
+    const r = AG.forge.ring;
+    while (true) {
+      await BP.wait(5200);
+      r.setAttribute("opacity", 1); r.classList.add("pulse"); hbAgo = 0; L.forge = Math.min(900, L.forge + 240);
+      bubble("forge", "heartbeat ↻", 1600);
+      push("▶", "var(--s-doing)", "<b>FORGE-02</b> heartbeat gia hạn lease T-1047 · fence 4 giữ nguyên");
+      await BP.wait(2000); r.classList.remove("pulse"); r.setAttribute("opacity", 0);
+    }
+  }
+
+  /* ---------- BOLT choreography ---------- */
+  const boltState = { on: false, task: null, lease: 900 };
+  let nextId = 1064;
+  const route = (pts) => el("path", { d: "M" + pts.map(p => p.join(" ")).join(" L") });
+  async function boltLoop() {
+    const home = D.bolt.seat;
+    while (true) {
+      await BP.wait(2500);
+      if (!state.ready.length) { await BP.wait(4000); continue; }
+      bubble("bolt", "tìm việc", 1500); await BP.wait(1200);
+      // walk to cabinet
+      await BP.moveAlong(AG.bolt.g, route([[home.x, home.y], [home.x, 300], [918, 300], [918, SLOTS[0]]]), 2600);
+      const task = state.ready[0]; const box = boxEls.shift();
+      bubble("bolt", `claim ${task.id}`, 1800);
+      push("◇", "var(--s-ready)", `<b>BOLT-10</b> claim ${task.id} thành công · run mới · fence 1 · lease 15:00`);
+      // carry box
+      AG.bolt.g.appendChild(box); box.setAttribute("transform", "translate(0 -26) scale(.7)");
+      box.querySelector("rect").setAttribute("style", "stroke:var(--s-doing)"); box._t.setAttribute("style", "fill:var(--s-doing)");
+      state.ready.shift(); state.doing.push({ id: task.id, title: task.title, meta: "BOLT-10 · F1" });
+      renderKb(task.id); recolor("bolt", "var(--s-doing)"); setAct("bolt", `<span class="state doing">Đang làm ${task.id}</span>`);
+      // shift remaining boxes up
+      boxEls.forEach((b, i) => b.setAttribute("transform", `translate(996 ${SLOTS[i]})`));
+      await BP.moveAlong(AG.bolt.g, route([[918, SLOTS[0]], [918, 300], [home.x, 300], [home.x, home.y]]), 2600);
+      // place on desk + screen on
+      box.remove();
+      boltState.on = true; boltState.task = task.id; boltState.lease = 900;
+      screen("bolt", true, `${task.id} · F1`, 900, "CLAIM MỚI");
+      D.bolt.scr.classList.remove("screen-on"); void D.bolt.scr.getBBox(); D.bolt.scr.classList.add("screen-on");
+      if (state.doing.length + state.review.length >= 4) push("✕", "var(--red)", "KT-01 đạt WIP 4/4 · claim tiếp theo trong phòng sẽ bị từ chối");
+      await BP.wait(9000);
+      // submit → Review (box exits through door)
+      const out = makeBox(task.id, home.x, 150, "var(--s-review)");
+      boltState.on = false; screen("bolt", false);
+      push("◎", "var(--s-review)", `<b>BOLT-10</b> nộp ${task.id} sang Review · lease nhả · chờ QC-06`);
+      state.doing = state.doing.filter(t => t.id !== task.id); state.review.push({ id: task.id, title: task.title, meta: "BOLT-10 → QC-06" });
+      renderKb(task.id); recolor("bolt", "var(--ink-3)"); setAct("bolt", '<span class="state idle">Rảnh</span>');
+      await BP.moveAlong(out, route([[home.x, 150], [home.x, 300], [895, 300], [895, 556]]), 3000);
+      out.remove();
+      await BP.wait(2500);
+      // reviewer pulls it, a new Ready task lands in the cabinet (sim loop)
+      state.review = state.review.filter(t => t.id !== task.id);
+      const nid = `T-${nextId}`; nextId += 2; const nt = { id: nid, title: titles[nid] || "Task Ready mới (mô phỏng)", meta: "P2 · cap code" };
+      state.ready.push(nt); boxEls.push(makeBox(nid, 996, SLOTS[boxEls.length]));
+      renderKb(nid);
+      push("◇", "var(--s-ready)", `<b>Quản đốc</b> đưa ${nid} vào Ready của KT-01 (mô phỏng lặp)`);
+    }
+  }
+  if (!BP.reduced) { boltLoop(); forgeHb(); }
+
+  /* ---------- 7-day chart ---------- */
+  const ch = BP.$("#chart");
+  const days = ["T5", "T6", "T7", "CN", "T2", "T3", "T4"], done = [3, 5, 2, 0, 6, 4, 3], back = [0, 1, 0, 0, 1, 0, 0];
+  const X0 = 44, Y0 = 180, H = 140, max = 6, bw = 36, gap = (520 - X0 - 20) / 7;
+  for (let v = 0; v <= max; v += 2) {
+    const y = Y0 - (v / max) * H;
+    el("line", { x1: X0, y1: y, x2: 510, y2: y, stroke: "var(--grid-major)", "stroke-dasharray": v ? "2 4" : "" }, ch);
+    txt(X0 - 8, y + 3, "ax", String(v), ch, { "text-anchor": "end" });
+  }
+  el("line", { x1: X0, y1: Y0, x2: 510, y2: Y0, stroke: "var(--line)" }, ch);
+  days.forEach((d, i) => {
+    const x = X0 + gap * i + (gap - bw) / 2; const h = (done[i] / max) * H;
+    const r = el("rect", { x, y: Y0 - h, width: bw, height: h, fill: "var(--t-done)", stroke: "var(--s-done)" }, ch);
+    if (!BP.reduced) { r.style.transformOrigin = `0 ${Y0}px`; r.style.transform = "scaleY(0)"; r.style.transition = `transform 600ms var(--ease) ${i * 80}ms`; requestAnimationFrame(() => requestAnimationFrame(() => r.style.transform = "scaleY(1)")); }
+    if (back[i]) el("rect", { x: x + bw - 10, y: Y0 - h - 12, width: 10, height: 10, fill: "var(--t-failed)", stroke: "var(--red)" }, ch);
+    txt(x + bw / 2, Y0 - h - (back[i] ? 18 : 6), "val", done[i] ? String(done[i]) : "0", ch);
+    txt(x + bw / 2, Y0 + 16, "ax", d, ch, { "text-anchor": "middle" });
+  });
+  el("path", { d: `M${X0} 206 H510 M${X0} 200 V212 M510 200 V212`, class: "dimline" }, ch);
+  txt(277, 216, "ax", "7 NGÀY · TỔNG 23 DONE · 2 BỊ GỬI LẠI", ch, { "text-anchor": "middle" });
+})();
+</script>
+</body>
+</html>

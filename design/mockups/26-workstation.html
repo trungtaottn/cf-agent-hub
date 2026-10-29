@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bàn làm việc · CF Agent Factory</title>
+<link rel="stylesheet" href="assets/blueprint.css">
+<style>
+  .ws-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: var(--sp-4); align-items: start; }
+  .scene { position: relative; padding: var(--sp-6) var(--sp-6) 0; overflow: hidden; }
+  .monitors { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--sp-6); max-width: 980px; margin: 0 auto; }
+  .monitor { position: relative; display: flex; flex-direction: column; } .monitor .bezel { flex: 1; } .monitor .stand, .monitor .foot { flex: none; }
+  .bezel { border: 2px solid var(--line-strong); background: var(--bp-950); padding: 8px; height: 100%; min-height: 250px; display: flex; flex-direction: column; min-width: 0; }
+  .bezel .scr { flex: 1; min-height: 0; border: 1px solid var(--line-soft); background: var(--bp-900); overflow: hidden; display: flex; flex-direction: column; }
+  .scr-head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); padding: 4px 8px; border-bottom: 1px solid var(--line-soft); font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); }
+  .scr-head .dots { display: flex; gap: 4px; } .scr-head .dots i { width: 6px; height: 6px; border: 1px solid var(--line); }
+  .stand { width: 18%; height: 34px; margin: 0 auto; border: 1px solid var(--line); border-top: 0; border-bottom: 0; }
+  .stand + .foot { width: 40%; height: 6px; margin: 0 auto; border: 1px solid var(--line); background: var(--bp-850); }
+  .term { flex: 1; overflow: hidden; padding: 6px 8px; font-family: var(--f-mono); font-size: var(--fs-2xs); line-height: 1.55; color: var(--ink-2); display: flex; flex-direction: column; justify-content: flex-end; }
+  .term div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .term .ok { color: var(--s-done); } .term .warn { color: var(--amber); } .term .cmd { color: var(--ink); } .term .info { color: var(--s-ready); }
+  .term .caret::after { content: "▌"; animation: blink 1s steps(2, jump-none) infinite; color: var(--s-doing); }
+  .wo { flex: 1; padding: 8px 10px; display: flex; flex-direction: column; gap: 8px; font-size: var(--fs-xs); min-height: 0; }
+  .wo .t { font-weight: 600; font-size: var(--fs-sm); line-height: 1.3; }
+  .wo .kv { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-2); }
+  .wo .kv span:nth-child(odd) { color: var(--ink-3); }
+  .lease-big { font-family: var(--f-display); font-size: var(--fs-2xl); font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1; }
+  .steps { display: flex; gap: 3px; } .steps i { flex: 1; height: 5px; border: 1px solid var(--line-soft); } .steps i.on { background: var(--s-doing); border-color: var(--s-doing); } .steps i.cur { background: var(--s-doing); animation: blink 1.2s steps(2, jump-none) infinite; }
+  .saver { flex: 1; display: grid; place-items: center; text-align: center; color: var(--ink-3); font-family: var(--f-mono); font-size: var(--fs-xs); padding: var(--sp-4); }
+  .desk-svg { position: relative; z-index: 2; width: 100%; height: auto; margin-top: -10%; pointer-events: none; }
+  .desk-svg text { font-family: var(--f-mono); font-size: 10px; fill: var(--ink-3); letter-spacing: .06em; }
+  .key { fill: var(--bp-850); stroke: var(--line); stroke-width: .75; transition: fill 120ms; }
+  .key.hit { fill: var(--s-doing); }
+  .steam { fill: none; stroke: var(--ink-3); stroke-width: 1; animation: steam 3s ease-in-out infinite; transform-box: fill-box; }
+  .steam.b { animation-delay: 1s; } .steam.c { animation-delay: 2s; }
+  @keyframes steam { 0% { opacity: 0; transform: translateY(6px); } 40% { opacity: .9; } 100% { opacity: 0; transform: translateY(-14px); } }
+  .typing-arm { transform-box: fill-box; transform-origin: bottom center; animation: tarm .3s steps(2, jump-none) infinite; }
+  .typing-arm.r { animation-delay: .15s; }
+  @keyframes tarm { 50% { transform: translateY(-3px); } }
+  .idle .typing-arm { animation: none; }
+  .breath { transform-box: fill-box; transform-origin: bottom center; animation: breath 4s ease-in-out infinite; }
+  @keyframes breath { 50% { transform: scaleY(1.015); } }
+  .notes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-2); }
+  .sticky { padding: var(--sp-2) var(--sp-3); border: 1px solid var(--line-soft); background: var(--bp-850); font-size: var(--fs-xs); min-height: 70px; transform: rotate(-1deg); }
+  .sticky:nth-child(2) { transform: rotate(1.2deg); } .sticky:nth-child(3) { transform: rotate(-.4deg); border-color: var(--amber); }
+  .sticky .code { display: block; margin-bottom: 2px; font-size: var(--fs-2xs); }
+  .msg { display: grid; grid-template-columns: 36px 1fr auto; gap: var(--sp-3); align-items: center; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--grid-major); font-size: var(--fs-sm); }
+  .msg .s { font-size: var(--fs-xs); color: var(--ink-2); }
+  .agent-pick { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+  .agent-pick button { display: inline-flex; align-items: center; gap: var(--sp-2); min-height: 40px; padding: 0 var(--sp-3) 0 var(--sp-1); border: 1px solid var(--line-soft); background: transparent; cursor: pointer; font-family: var(--f-mono); font-size: var(--fs-xs); color: var(--ink-2); }
+  .agent-pick button .bot { width: 30px; height: 30px; font-size: 9px; }
+  .agent-pick button[aria-pressed="true"] { border-color: var(--line-strong); background: var(--bp-700); color: var(--ink); }
+  .agent-pick button:hover { background: var(--bp-700); }
+  @media (max-width: 1280px) { .ws-grid { grid-template-columns: minmax(0, 1fr); } }
+  @media (max-width: 760px) { .monitors { grid-template-columns: minmax(0, 1fr); } .bezel { aspect-ratio: auto; min-height: 220px; } .notes { grid-template-columns: 1fr; } .scene { padding: var(--sp-4) var(--sp-4) 0; } }
+</style>
+</head>
+<body data-sheet="26" data-title="Bàn làm việc của agent">
+<div class="app paper">
+  <div id="rail"></div>
+  <div class="main">
+    <header id="topbar"></header>
+    <main class="content">
+
+      <section class="page-head reveal">
+        <div>
+          <div class="code">WORKSTATION · ELEVATION B · TẦNG 2 · <span id="deskCode">BÀN KT-1</span></div>
+          <h2 id="deskTitle">Góc làm việc của ATLAS-01</h2>
+          <p class="lede">Cận cảnh một bàn làm việc: màn hình trái là terminal của runtime, màn hình phải là phiếu công việc và đồng hồ lease. Chọn agent khác để xem bàn của họ.</p>
+        </div>
+        <div class="actions">
+          <a class="btn" href="25-office-hq.html">Về mặt bằng tầng 2</a>
+          <a class="btn primary" id="openWo" href="05-work-order.html">Mở phiếu T-1042</a>
+        </div>
+      </section>
+
+      <div class="agent-pick" role="group" aria-label="Chọn bàn của agent" id="agentPick"></div>
+
+      <section class="ws-grid">
+        <div class="panel reveal">
+          <div class="scene" id="scene">
+            <div class="monitors">
+              <div class="monitor">
+                <div class="bezel"><div class="scr">
+                  <div class="scr-head"><span class="dots"><i></i><i></i><i></i></span><span id="termTitle">rt-atlas-7f2 · terminal</span><span>UTF-8</span></div>
+                  <div class="term" id="term" aria-live="off"></div>
+                </div></div>
+                <div class="stand"></div><div class="foot"></div>
+              </div>
+              <div class="monitor">
+                <div class="bezel"><div class="scr" id="woScr"></div></div>
+                <div class="stand"></div><div class="foot"></div>
+              </div>
+            </div>
+            <svg class="desk-svg" id="deskSvg" viewBox="0 -100 1000 430" role="img" aria-labelledby="deskT">
+              <title id="deskT">Hình chiếu đứng bàn làm việc: bàn phím, chuột, cốc cà phê, đèn bàn, cây xanh và agent ngồi ghế quay lưng lại người xem.</title>
+              <!-- desk top -->
+              <rect x="40" y="20" width="920" height="16" style="fill:var(--bp-850);stroke:var(--line-strong)" stroke-width="1.5"/>
+              <path d="M70 36 V300 M930 36 V300 M70 300 H110 M890 300 H930" style="stroke:var(--line)" fill="none" stroke-width="1.5"/>
+              <rect x="760" y="36" width="160" height="150" style="fill:var(--bp-800);stroke:var(--line)"/>
+              <path d="M770 86 H910 M770 136 H910 M830 60 h20 M830 110 h20 M830 160 h20" style="stroke:var(--line-soft)"/>
+              <text x="772" y="204">HỘC TỦ · LƯU CHECKPOINT</text>
+              <!-- keyboard -->
+              <g id="kb" transform="translate(380 2)"></g>
+              <!-- mouse -->
+              <rect x="640" y="6" width="18" height="14" rx="0" style="fill:var(--bp-850);stroke:var(--line)"/>
+              <!-- mug -->
+              <g transform="translate(250 -18)">
+                <rect x="0" y="10" width="26" height="28" style="fill:var(--bp-850);stroke:var(--line)"/>
+                <path d="M26 16 h7 v14 h-7" fill="none" style="stroke:var(--line)"/>
+                <path class="steam" d="M6 6 q4 -6 0 -12 q-4 -6 0 -12"/><path class="steam b" d="M13 6 q4 -6 0 -12 q-4 -6 0 -12"/><path class="steam c" d="M20 6 q4 -6 0 -12 q-4 -6 0 -12"/>
+              </g>
+              <!-- lamp -->
+              <g transform="translate(120 20)">
+                <path d="M0 0 h40 M20 0 L40 -70 L80 -90" fill="none" style="stroke:var(--line)" stroke-width="2"/>
+                <path d="M70 -100 l30 10 l-14 22 z" style="fill:var(--bp-850);stroke:var(--line)"/>
+                <path d="M86 -70 L110 0" style="stroke:var(--amber)" stroke-dasharray="3 4" opacity=".7"/>
+              </g>
+              <!-- plant -->
+              <g transform="translate(860 20)">
+                <path d="M-14 0 h28 l-4 -26 h-20 z" style="fill:var(--bp-850);stroke:var(--line)"/>
+                <path d="M0 -26 C-20 -50 -30 -60 -26 -80 M0 -26 C10 -55 30 -60 34 -78 M0 -26 C0 -60 6 -80 2 -96" fill="none" style="stroke:var(--s-done)" stroke-width="1.5"/>
+              </g>
+              <!-- nameplate -->
+              <g transform="translate(560 -6)">
+                <path d="M0 26 L10 6 H110 L120 26 Z" style="fill:var(--bp-850);stroke:var(--line)"/>
+                <text x="18" y="21" id="plate" style="fill:var(--ink)">ATLAS-01 · KT-01</text>
+              </g>
+              <!-- chair + agent (back view) -->
+              <g id="agentFig" transform="translate(500 -110)">
+                <path d="M-70 410 L70 410 M0 410 V250 M-50 250 H50" style="stroke:var(--line)" fill="none" stroke-width="2"/>
+                <circle cx="-60" cy="414" r="5" style="fill:none;stroke:var(--line)"/><circle cx="60" cy="414" r="5" style="fill:none;stroke:var(--line)"/>
+                <rect x="-62" y="120" width="124" height="130" style="fill:var(--bp-850);stroke:var(--line)"/>
+                <g class="breath">
+                  <path id="torso" d="M-58 250 C-58 170 -50 128 0 124 C50 128 58 170 58 250 Z" style="fill:var(--bp-900);stroke:var(--s-doing)" stroke-width="2"/>
+                  <rect class="typing-arm" x="-74" y="100" width="16" height="60" style="fill:var(--bp-900);stroke:var(--s-doing)" stroke-width="1.5" id="armL"/>
+                  <rect class="typing-arm r" x="58" y="100" width="16" height="60" style="fill:var(--bp-900);stroke:var(--s-doing)" stroke-width="1.5" id="armR"/>
+                  <circle id="head" cx="0" cy="92" r="32" style="fill:var(--bp-900);stroke:var(--s-doing)" stroke-width="2"/>
+                  <path id="antenna" d="M0 60 V34" style="stroke:var(--s-doing)" stroke-width="2"/>
+                  <circle cx="0" cy="30" r="5" style="fill:var(--s-doing)" class="blink" id="antDot"/>
+                  <path d="M-34 92 h-8 M34 92 h8" style="stroke:var(--s-doing)" stroke-width="3" id="ears"/>
+                </g>
+                <text x="-48" y="200" id="backTag" style="fill:var(--ink-2)">KT · AT</text>
+              </g>
+              <!-- dimensions -->
+              <path class="dimline" d="M20 20 V300 M14 20 H26 M14 300 H26" style="stroke:var(--ink-3)" fill="none"/>
+              <text x="26" y="170" transform="rotate(-90 26 170)">75 cm</text>
+              <path d="M40 318 H960 M40 312 V324 M960 312 V324" style="stroke:var(--ink-3)" fill="none"/>
+              <text x="470" y="314">160 cm</text>
+              <path d="M90 236 L200 236" style="stroke:var(--ink-2)" fill="none"/><text x="92" y="230" id="leaseNote">LEASE CÒN 10:48</text>
+            </svg>
+          </div>
+          <div class="panel-body" style="border-top:1px solid var(--line-soft)">
+            <div class="notes" id="notes"></div>
+          </div>
+        </div>
+
+        <aside class="stack">
+          <div class="panel reveal">
+            <div class="panel-head"><h3>Trạng thái bàn</h3><span class="code" id="stCode">KT-1</span></div>
+            <div class="panel-body stack" id="status"></div>
+          </div>
+          <div class="panel reveal">
+            <div class="panel-head"><h3>Hộp thư trên bàn</h3><span class="code">2 CHƯA ACK</span></div>
+            <div id="msgs"></div>
+          </div>
+          <div class="panel reveal">
+            <div class="panel-head"><h3>Hành động gần đây</h3><span class="code">ACTION LOG</span></div>
+            <ul class="log" id="actions" aria-live="polite"></ul>
+          </div>
+        </aside>
+      </section>
+
+    </main>
+    <div id="titleblock"></div>
+  </div>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(() => {
+  const F = BP.F;
+  const actColor = { doing: "var(--s-doing)", idle: "var(--ink-3)", waiting: "var(--amber)", cooldown: "var(--s-ready)", meeting: "var(--s-review)" };
+  const DESKS = { atlas: "KT-1", forge: "KT-2", bolt: "KT-5", kite: "NC-2", nova: "DL-1", vega: "NC-1" };
+  const LOGS = {
+    atlas: ["$ cfah task show T-1042", "state=doing fence=18 run=r-88f1", "$ npm test -- auth-service", "✓ 142 passed  ✗ 0 failed", "$ git diff --stat", "  src/auth/* | 18 files changed", "$ cfah run heartbeat r-88f1", "lease renewed · run_version 41", "$ cfah artifact stage auth-split.patch", "staged · sha256 9f2c…a1e0"],
+    forge: ["$ cfah task show T-1047", "state=doing fence=4 run=r-31c0", "$ wrangler d1 migrations apply", "applying 0007_runs_v3.sql", "! lease 31% · renew soon", "$ cfah run heartbeat r-31c0", "lease renewed · run_version 12", "rows migrated 18,204 / 41,900"],
+    kite: ["$ cfah task show T-1051", "state=doing fence=2", "fetch docs: queue-lib-a", "fetch docs: queue-lib-b", "compare: throughput, retry, DLQ", "write survey-queues.md", "$ cfah artifact stage survey-queues.md"],
+    nova: ["$ cfah task show T-1044", "state=doing fence=11", "SELECT week, count(*) FROM runs …", "rows 52", "render chart lease-expiry.svg", "$ cfah run heartbeat r-c710", "lease renewed"],
+    bolt: ["$ cfah task list --state ready --eligible", "T-1055  Chuẩn hoá nhãn trạng thái", "T-1056  Thêm chỉ số outbox", "waiting for operator or claim…"],
+    vega: ["$ cfah task checkpoint T-1039", "checkpoint saved · yield authority", "$ cfah decision request --proposal v2", "proposal_version=2 · expires 16:30", "run paused · không thực thi khi chưa duyệt"]
+  };
+  const NOTES = {
+    atlas: [["CHECKPOINT 12:40", "Tách xong token verifier, còn session store."], ["TODO", "Viết test cho refresh token hết hạn."], ["CẦN NGƯỜI", "Hỏi Quản đốc: có giữ endpoint cũ 2 tuần?"]],
+    forge: [["CHECKPOINT 12:10", "Đã chạy migration trên bản sao."], ["RỦI RO", "Bảng runs lớn, cần heartbeat dày hơn."], ["CẦN NGƯỜI", "Cửa sổ bảo trì tối nay?"]],
+    kite: [["CHECKPOINT 11:55", "3 trên 5 thư viện đã so sánh."], ["GHI CHÚ", "Lib C không hỗ trợ DLQ."], ["NGUỒN", "Chỉ dùng tài liệu công khai."]],
+    nova: [["CHECKPOINT 12:30", "Query tuần đã chạy."], ["GHI CHÚ", "Số tuần 41 thiếu dữ liệu, ghi Not reported."], ["CẦN NGƯỜI", "Xác nhận định nghĩa lease hết hạn."]],
+    bolt: [["TRẠNG THÁI", "Không giữ task. Màn hình chờ."], ["GỢI Ý", "T-1055 khớp capability code, lint."], ["LƯU Ý", "Claim mới có quyền làm việc."]],
+    vega: [["CHECKPOINT 12:05", "Danh sách 240 email đã xác minh."], ["ĐỀ XUẤT", "v2 bỏ 12 địa chỉ đã huỷ đăng ký."], ["CẦN NGƯỜI", "Chờ duyệt trước 16:30."]]
+  };
+  const MSGS = {
+    default: [["HA", "Hà", "Nhớ đính kèm log test khi nộp", false], ["QĐ", "Quản đốc", "Ưu tiên P1 trong tuần này", true]]
+  };
+
+  const pick = BP.$("#agentPick");
+  pick.innerHTML = Object.keys(DESKS).map(id => { const a = BP.agent(id); return `<button data-a="${id}" aria-pressed="${id === "atlas"}"><span class="bot" style="--c:${actColor[a.activity]}">${a.code}</span>${a.name}</button>`; }).join("");
+
+  let cur = "atlas", gen = 0, leaseSec = 648;
+  const term = BP.$("#term"), actions = BP.$("#actions");
+  function kb() {
+    const g = BP.$("#kb"); g.innerHTML = "";
+    for (let r = 0; r < 3; r++) for (let k = 0; k < 14; k++) BP.svg("rect", { x: k * 15 + r * 4, y: r * 5, width: 13, height: 4, class: "key" }, g);
+    BP.svg("rect", { x: 40, y: 15, width: 120, height: 4, class: "key" }, g);
+  }
+  kb();
+  const fmt = s => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+
+  function render(id) {
+    gen++; cur = id; const my = gen;
+    const a = BP.agent(id), t = a.task ? BP.task(a.task) : null, d = BP.dept(a.dept);
+    const col = actColor[a.activity];
+    BP.$$("#agentPick button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.a === id)));
+    BP.$("#deskCode").textContent = "BÀN " + DESKS[id];
+    BP.$("#deskTitle").textContent = "Góc làm việc của " + a.name;
+    BP.$("#plate").textContent = `${a.name} · ${d.code}`;
+    BP.$("#backTag").textContent = `${d.code.slice(0, 2)} · ${a.code}`;
+    BP.$("#termTitle").textContent = `${a.runtime} · terminal`;
+    BP.$("#stCode").textContent = DESKS[id];
+    const wo = BP.$("#openWo");
+    wo.textContent = t ? `Mở phiếu ${t.id}` : "Xem việc Ready"; wo.href = t ? "05-work-order.html" : "06-pick-task.html";
+    // figure colour + idle state
+    ["torso", "armL", "armR", "head"].forEach(k => BP.$("#" + k).style.stroke = col);
+    ["antenna", "ears"].forEach(k => BP.$("#" + k).style.stroke = col);
+    BP.$("#antDot").style.fill = col;
+    BP.$("#agentFig").classList.toggle("idle", a.activity !== "doing");
+    BP.$("#agentFig").style.opacity = a.activity === "waiting" ? .35 : 1;
+    // right monitor
+    const scr = BP.$("#woScr");
+    if (t && a.activity === "doing") {
+      leaseSec = Math.round(900 * a.lease);
+      scr.innerHTML = `<div class="scr-head"><span>PHIẾU CÔNG VIỆC</span><span>${t.id}</span></div>
+        <div class="wo">
+          <div class="row between"><span class="state doing">Doing</span><span class="tag">${t.pri}</span></div>
+          <div class="t">${t.title}</div>
+          <div class="kv"><span>run</span><span>r-${a.runtime.slice(-3)}${a.fence}</span><span>fence</span><span>${a.fence}</span><span>retry</span><span>${t.retry}</span><span>runtime</span><span>${a.runtime}</span></div>
+          <div class="row between"><span class="code">LEASE CÒN</span><span class="lease-big" id="leaseBig">${fmt(leaseSec)}</span></div>
+          <div class="meter ${a.lease < .25 ? "crit" : a.lease < .4 ? "warn" : ""}"><i id="leaseBar" style="width:${a.lease * 100}%"></i></div>
+          <div><span class="code">TIẾN ĐỘ THEO CHECKPOINT</span><div class="steps" style="margin-top:4px"><i class="on"></i><i class="on"></i><i class="on"></i><i class="cur"></i><i></i></div></div>
+        </div>`;
+    } else if (a.activity === "waiting") {
+      scr.innerHTML = `<div class="scr-head"><span>PHIẾU CÔNG VIỆC</span><span>${t.id}</span></div>
+        <div class="saver"><div><span class="state waiting">Waiting</span><p style="margin:8px 0 0">Đã checkpoint và nhường quyền. Agent đang ở Cổng phê duyệt tầng 3.<br>Duyệt xong cần claim lại mới làm tiếp.</p></div></div>`;
+    } else {
+      scr.innerHTML = `<div class="scr-head"><span>MÀN HÌNH CHỜ</span><span>không có run</span></div>
+        <div class="saver"><div><span class="state idle">Không giữ task</span><p style="margin:8px 0 0">Có tín hiệu nhưng chưa claim việc nào.<br>Ngồi ở bàn không có nghĩa là đang làm.</p></div></div>`;
+    }
+    BP.$("#leaseNote").textContent = t && a.activity === "doing" ? `LEASE CÒN ${fmt(leaseSec)}` : a.activity === "waiting" ? "ĐANG Ở CỔNG PHÊ DUYỆT" : "KHÔNG CÓ LEASE";
+    // terminal
+    term.innerHTML = "";
+    const lines = LOGS[id] || [];
+    const cls = l => l.startsWith("$") ? "cmd" : l.startsWith("✓") || l.includes("renewed") || l.includes("staged") ? "ok" : l.startsWith("!") ? "warn" : "info";
+    lines.slice(0, 4).forEach(l => { const d = document.createElement("div"); d.className = cls(l); d.textContent = l; term.appendChild(d); });
+    const caret = document.createElement("div"); caret.className = "caret cmd"; caret.textContent = "$ "; term.appendChild(caret);
+    // notes
+    BP.$("#notes").innerHTML = (NOTES[id] || []).map(([h, b]) => `<div class="sticky"><span class="code ${h.includes("NGƯỜI") ? "c-amber" : ""}">${h}</span>${b}</div>`).join("");
+    // status
+    const pres = a.presence === "online" ? `<span class="state online">Có tín hiệu</span>` : a.presence === "stale" ? `<span class="state stale">Tín hiệu cũ</span>` : `<span class="state cancelled">Offline</span>`;
+    BP.$("#status").innerHTML = `
+      <div class="row between"><span class="code">PRESENCE</span>${pres}</div>
+      <div class="row between"><span class="code">HOẠT ĐỘNG</span><span class="tag" style="color:${col};border-color:${col}">${F.activityVi[a.activity]}</span></div>
+      <div class="row between"><span class="code">TASK</span>${t ? BP.stateChip(t.state, t.id) : '<span class="muted">Không</span>'}</div>
+      <div class="row between"><span class="code">MODEL</span><span class="mono ink2" style="font-size:var(--fs-xs)">${a.model}</span></div>
+      <div class="row wrap">${a.caps.map(c => `<span class="tag">${c}</span>`).join("")}</div>
+      <p class="muted" style="margin:0;font-size:var(--fs-xs)">Model là thông tin agent tự khai báo, không chứng minh danh tính.</p>
+      <div class="row wrap"><a class="btn sm" href="17-mailroom.html">Gửi tin nhắn</a><a class="btn sm" href="15-lounge.html">Cho nghỉ giải lao</a><a class="btn sm" href="08-agent-profile.html">Hồ sơ</a></div>`;
+    BP.$("#msgs").innerHTML = MSGS.default.map(([c, n, m, ack]) => `<div class="msg"><span class="human-token">${c}</span><div><div>${m}</div><div class="s">${n} · ${ack ? "đã ACK 12:02" : "đã giao, chưa ACK"}</div></div>${ack ? '<span class="tag">ACK</span>' : '<button class="btn sm" data-ack>ACK</button>'}</div>`).join("");
+    BP.$$("[data-ack]").forEach(b => b.addEventListener("click", () => { b.outerHTML = '<span class="tag">ACK</span>'; BP.toast("ACK · MESSAGE", "Đã xác nhận đọc. ACK không thay đổi trạng thái task."); }));
+    actions.innerHTML = "";
+    [["▶", "var(--s-doing)", "heartbeat · lease gia hạn"], ["▤", "var(--ink-2)", "stage artifact"], ["✎", "var(--s-review)", "ghi checkpoint"], ["◇", "var(--s-ready)", `claim ${t ? t.id : "chưa có"}`]].forEach(r => BP.logPush(actions, `<time>${BP.now()}</time><span class="g" style="color:${r[1]}">${r[0]}</span><span>${r[2]}</span>`, 8));
+
+    // live loops
+    if (BP.reduced) return;
+    let li = 4;
+    (async () => {
+      while (my === gen) {
+        await BP.wait(a.activity === "doing" ? 1300 : 3500); if (my !== gen) return;
+        const l = lines[li % lines.length]; li++;
+        const d = document.createElement("div"); d.className = cls(l); d.textContent = l; term.insertBefore(d, caret);
+        while (term.children.length > 12) term.firstElementChild.remove();
+        if (l.includes("renewed")) { leaseSec = Math.min(900, leaseSec + 300); BP.logPush(actions, `<time>${BP.now()}</time><span class="g" style="color:var(--s-doing)">▶</span><span>heartbeat · lease +5:00</span>`, 8); }
+        if (l.includes("stage")) BP.logPush(actions, `<time>${BP.now()}</time><span class="g" style="color:var(--ink-2)">▤</span><span>stage artifact · chưa committed</span>`, 8);
+      }
+    })();
+    if (a.activity === "doing") (async () => {
+      const keys = BP.$$("#kb .key");
+      while (my === gen) {
+        const k = keys[Math.floor(Math.random() * keys.length)]; k.classList.add("hit");
+        await BP.wait(110); k.classList.remove("hit"); await BP.wait(40);
+      }
+    })();
+  }
+  // lease countdown (pause-aware)
+  BP.every(1000, () => {
+    const a = BP.agent(cur); if (a.activity !== "doing") return;
+    leaseSec = Math.max(0, leaseSec - 1);
+    const lb = BP.$("#leaseBig"), bar = BP.$("#leaseBar");
+    if (lb) lb.textContent = fmt(leaseSec);
+    if (bar) bar.style.width = (leaseSec / 900 * 100) + "%";
+    BP.$("#leaseNote").textContent = `LEASE CÒN ${fmt(leaseSec)}`;
+  });
+  BP.$$("#agentPick button").forEach(b => b.addEventListener("click", () => render(b.dataset.a)));
+  render("atlas");
+})();
+</script>
+</body>
+</html>

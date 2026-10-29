@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cấu hình nhà máy · CF Agent Factory</title>
+<link rel="stylesheet" href="assets/blueprint.css">
+<style>
+  /* Light blueprint tokens (white paper, blue ink) used only by the live preview */
+  .pv { --pv-bg: var(--bp-850); --pv-grid: var(--grid-minor); --pv-ink: var(--ink); --pv-ink2: var(--ink-2); --pv-line: var(--line-soft); --pv-card: var(--bp-800); --pv-accent: var(--s-ready); }
+  .panel-head { flex-wrap: wrap; }
+  .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--line-soft); overflow-x: auto; }
+  .tabs button { flex: none; min-height: 44px; padding: 0 var(--sp-4); background: transparent; border: 0; border-bottom: 2px solid transparent; color: var(--ink-2); font-family: var(--f-display); font-weight: 600; font-size: var(--fs-sm); letter-spacing: 0.03em; cursor: pointer; }
+  .tabs button:hover { color: var(--ink); background: var(--bp-700); }
+  .tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--s-ready); background: var(--bp-700); }
+  .tabpanel { padding: var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-5); }
+  .tabpanel[hidden] { display: none; }
+  .fs { border: 1px solid var(--line-soft); padding: var(--sp-4); margin: 0; display: flex; flex-direction: column; gap: var(--sp-3); min-width: 0; }
+  .fs legend { padding: 0 var(--sp-2); font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); letter-spacing: 0.12em; text-transform: uppercase; }
+  .field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .field label, .flabel { font-size: var(--fs-sm); color: var(--ink-2); }
+  .field input[type=text], .field select, .field textarea { min-height: 40px; padding: 0 var(--sp-3); background: var(--bp-950); color: var(--ink); border: 1px solid var(--line-soft); font: inherit; font-size: var(--fs-sm); border-radius: 0; width: 100%; }
+  .field textarea { padding: var(--sp-3); font-family: var(--f-mono); font-size: var(--fs-xs); min-height: 180px; resize: vertical; }
+  .field input:focus-visible, .field select:focus-visible, .field textarea:focus-visible { outline: 2px solid var(--amber); outline-offset: 1px; }
+  .field input[aria-invalid="true"], .field textarea[aria-invalid="true"] { border-color: var(--red); background: var(--t-failed); }
+  .field input:disabled { opacity: 0.6; cursor: not-allowed; }
+  .err { font-family: var(--f-mono); font-size: var(--fs-xs); color: var(--red); }
+  .err:empty { display: none; }
+  .hint { font-size: var(--fs-xs); color: var(--ink-3); }
+  .alias-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-3); }
+  .alias-grid .field > span.state { align-self: flex-start; }
+  .rows { display: flex; flex-direction: column; gap: var(--sp-2); }
+  .rrow { display: grid; grid-template-columns: 120px 1fr auto; gap: var(--sp-3); align-items: center; }
+  .rrow .mono { color: var(--ink-3); font-size: var(--fs-xs); }
+  .checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--sp-2); }
+  .chk { display: flex; gap: var(--sp-2); align-items: center; min-height: 40px; padding: 0 var(--sp-3); border: 1px solid var(--line-soft); background: var(--bp-850); font-size: var(--fs-sm); cursor: pointer; }
+  .chk input { width: 16px; height: 16px; margin: 0; accent-color: var(--s-ready); }
+  .chk:has(input:disabled) { opacity: 0.6; cursor: not-allowed; }
+  .theme-cards { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
+  .tcard { display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-3); border: 1px solid var(--line-soft); background: var(--bp-850); cursor: pointer; }
+  .tcard:has(input:checked) { border-color: var(--s-ready); box-shadow: inset 0 0 0 1px var(--s-ready); }
+  .tcard input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .tcard:has(input:focus-visible) { outline: 2px solid var(--amber); outline-offset: 2px; }
+  .swatch { height: 64px; border: 1px solid var(--line-soft); background-size: 12px 12px; }
+  .swatch.sw { background: linear-gradient(90deg, var(--s0) 0 60%, var(--s1) 60% 80%, var(--s2) 80%); }
+  .swatch.dark { background-color: var(--bp-850); background-image: linear-gradient(var(--grid-minor) 1px, transparent 1px), linear-gradient(90deg, var(--grid-minor) 1px, transparent 1px); }
+  .switch { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); min-height: 44px; }
+  .switch input { appearance: none; width: 44px; height: 24px; border: 1px solid var(--line); background: var(--bp-950); position: relative; cursor: pointer; margin: 0; flex: none; }
+  .switch input::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; background: var(--ink-3); transition: transform var(--dur-fast) var(--ease); }
+  .switch input:checked { border-color: var(--s-doing); }
+  .switch input:checked::after { transform: translateX(20px); background: var(--s-doing); }
+  .lockrow { display: grid; grid-template-columns: 18px 1fr auto; gap: var(--sp-3); align-items: center; padding: var(--sp-3) 0; border-bottom: 1px solid var(--grid-major); font-size: var(--fs-sm); }
+  .lockrow svg { color: var(--ink-3); }
+  .lockrow b { font-family: var(--f-mono); font-weight: 500; }
+  .banner { display: grid; grid-template-columns: 18px 1fr; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); border: 1px solid var(--line); background: var(--bp-850); font-size: var(--fs-sm); }
+  .inc { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 2px var(--sp-4); font-size: var(--fs-sm); }
+  .inc li { display: grid; grid-template-columns: 18px 1fr; gap: 6px; }
+  .tscroll { overflow-x: auto; position: relative; }
+  .tscroll .table { min-width: 520px; }
+  .vlist { list-style: none; margin: 0; padding: 0; }
+  .vlist li { display: grid; grid-template-columns: 18px 1fr; gap: var(--sp-2); padding: var(--sp-2) 0; border-bottom: 1px solid var(--grid-major); font-size: var(--fs-sm); }
+  .vlist code { font-family: var(--f-mono); font-size: var(--fs-xs); color: var(--red); }
+  .save-state { font-family: var(--f-mono); font-size: var(--fs-xs); }
+  /* ---------- Live preview ---------- */
+  .pv-wrap { position: sticky; top: calc(var(--top-h) + var(--sp-4)); align-self: start; }
+  .pv { background-color: var(--pv-bg); background-image: linear-gradient(var(--pv-grid) 1px, transparent 1px), linear-gradient(90deg, var(--pv-grid) 1px, transparent 1px); background-size: 16px 16px; color: var(--pv-ink); border: 1px solid var(--pv-line); transition: background-color var(--dur) var(--ease), color var(--dur); }
+  .pv .pv-top { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-2); padding: var(--pv-pad, 10px) var(--sp-3); border-bottom: 1px solid var(--pv-line); }
+  .pv .pv-top b { font-family: var(--f-display); font-size: var(--fs-md); }
+  .pv .pv-top span { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--pv-ink2); }
+  .pv .pv-body { display: grid; grid-template-columns: 92px 1fr; min-height: 300px; }
+  .pv nav { border-right: 1px solid var(--pv-line); padding: 6px 0; display: flex; flex-direction: column; }
+  .pv nav span { padding: 4px 8px; font-size: 11px; color: var(--pv-ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pv nav span.hid { text-decoration: line-through; opacity: 0.45; }
+  .pv nav span.urgent { color: var(--amber); }
+  .pv .board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--pv-gap, 8px); padding: var(--pv-gap, 8px); align-content: start; }
+  .pv .col { border: 1px solid var(--pv-line); background: var(--pv-card); min-width: 0; }
+  .pv .col h5 { margin: 0; padding: 4px 6px; border-bottom: 1px solid var(--pv-line); font-family: var(--f-mono); font-size: 10px; font-weight: 500; letter-spacing: 0.04em; display: flex; flex-direction: column; }
+  .pv .col h5 small { color: var(--pv-ink2); font-size: 9px; }
+  .pv .mcard { margin: var(--pv-gap2, 6px); padding: var(--pv-pad2, 6px); border: 1px solid var(--pv-line); font-size: 10.5px; line-height: 1.3; }
+  .pv .mcard i { display: block; font-style: normal; font-family: var(--f-mono); font-size: 9px; color: var(--pv-ink2); }
+  .pv .belt { height: 10px; margin: 0 var(--pv-gap, 8px) var(--pv-gap, 8px); border: 1px solid var(--pv-line); background-image: repeating-linear-gradient(90deg, var(--pv-accent) 0 8px, transparent 8px 16px); background-size: 32px 100%; animation: belt 1.2s linear infinite; grid-column: 1 / -1; }
+  .pv.still .belt { animation: none; }
+  @keyframes belt { to { background-position: 32px 0; } }
+  .pv[data-density="compact"] { --pv-pad: 6px; --pv-gap: 4px; --pv-gap2: 3px; --pv-pad2: 3px; }
+  .pv[data-density="comfy"] { --pv-pad: 14px; --pv-gap: 12px; --pv-gap2: 8px; --pv-pad2: 9px; }
+  .flash { animation: flash 900ms var(--ease); }
+  @keyframes flash { 0% { box-shadow: 0 0 0 2px var(--amber); } 100% { box-shadow: 0 0 0 2px transparent; } }
+  .pv-table { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+  .pv-table td { padding: 4px 8px; border-top: 1px solid var(--pv-line); }
+  @media (max-width: 960px) { .alias-grid { grid-template-columns: 1fr 1fr; } .pv-wrap { position: static; } .inc { grid-template-columns: 1fr; } }
+  @media (max-width: 560px) { .alias-grid, .theme-cards { grid-template-columns: 1fr; } .rrow { grid-template-columns: 1fr; } .pv .board { grid-template-columns: 1fr 1fr; } .pv .pv-body { grid-template-columns: 1fr; } .pv nav { display: none; } }
+</style>
+</head>
+<body data-sheet="23" data-title="Cấu hình nhà máy · Profile & Preferences">
+<div class="app paper">
+  <div id="rail"></div>
+  <div class="main">
+    <header id="topbar"></header>
+    <main class="content">
+
+      <section class="page-head reveal">
+        <div>
+          <div class="code">CONFIG · PROFILE r14 · F27 / F28 / F29 / F30 · SPECIFIED</div>
+          <h2>Cấu hình nhà máy</h2>
+          <p class="lede">Đổi tên, nhãn, phòng ban và giao diện cho hợp đội của bạn mà không đổi hợp đồng điều phối. Máy trạng thái, danh tính agent và ranh giới nghiệm thu giữ nguyên dưới mọi profile.</p>
+        </div>
+        <div class="actions" style="align-items:center">
+          <span class="save-state" id="saveState" aria-live="polite"><span class="state done">Đã lưu · r14 · 09:02</span></span>
+          <button class="btn" type="button" id="resetBtn">Hoàn tác</button>
+          <button class="btn primary" type="button" id="saveBtn">Lưu thay đổi</button>
+        </div>
+      </section>
+
+      <section class="grid g-main-side">
+        <div class="panel reveal">
+          <div class="tabs" role="tablist" aria-label="Nhóm cấu hình">
+            <button role="tab" id="t-prof" aria-controls="p-prof" aria-selected="true">Profile</button>
+            <button role="tab" id="t-ui" aria-controls="p-ui" aria-selected="false" tabindex="-1">Giao diện cá nhân</button>
+            <button role="tab" id="t-pol" aria-controls="p-pol" aria-selected="false" tabindex="-1">Chính sách</button>
+            <button role="tab" id="t-io" aria-controls="p-io" aria-selected="false" tabindex="-1">Nhập / Xuất profile</button>
+          </div>
+
+          <!-- PROFILE -->
+          <div class="tabpanel" role="tabpanel" id="p-prof" aria-labelledby="t-prof">
+            <fieldset class="fs"><legend>Danh tính hiển thị</legend>
+              <div class="field"><label for="fName">Tên nhà máy</label>
+                <input type="text" id="fName" value="Nhà máy Aurora" maxlength="60" aria-describedby="eName hName">
+                <span class="hint" id="hName">Nhãn ngắn trên topbar. ID workspace <span class="mono">ws-aurora</span> không đổi theo tên.</span>
+                <span class="err" id="eName" role="alert"></span></div>
+            </fieldset>
+
+            <fieldset class="fs"><legend>Nhãn trạng thái tuỳ chỉnh</legend>
+              <div class="note-red">Nhãn chỉ đổi chữ hiển thị, không tạo state machine thứ hai. Nhãn gốc luôn hiện kèm (VD “Đang gia công · Doing”) và chuyển trạng thái vẫn theo vòng đời chuẩn.</div>
+              <div class="alias-grid" id="aliasGrid"></div>
+            </fieldset>
+
+            <fieldset class="fs"><legend>Phòng ban · work roles</legend>
+              <div class="rows" id="deptRows"></div>
+              <div class="row wrap"><button class="btn sm" type="button" id="addDept">Thêm phòng ban</button><span class="hint">ID ổn định do hệ thống cấp. Đổi tên không đổi ID; phòng ban vắng mặt trong lần nhập sau vẫn được giữ.</span></div>
+              <div class="rows" id="roleRows"></div>
+              <p class="hint" style="margin:0">Nhãn “Reviewer” không cấp quyền nghiệm thu. Quyền đến từ grant <span class="mono">tasks:review</span> hoặc phiên người, và người nghiệm thu luôn phải khác người nộp.</p>
+            </fieldset>
+
+            <fieldset class="fs"><legend>Ẩn mục điều hướng</legend>
+              <div class="checks" id="navChecks"></div>
+              <p class="hint" style="margin:0">Mục ẩn chỉ bớt rối. Phê duyệt khẩn hoặc lease lỗi cần người vẫn được đẩy lên topbar.</p>
+            </fieldset>
+          </div>
+
+          <!-- UI PREFS -->
+          <div class="tabpanel" role="tabpanel" id="p-ui" aria-labelledby="t-ui" hidden>
+            <div class="banner"><span class="c-ready">i</span><span>Ưu tiên cá nhân chỉ áp cho tài khoản của bạn, không nằm trong profile chia sẻ. Mục bị workspace khoá sẽ ghi rõ lý do.</span></div>
+            <fieldset class="fs"><legend>Theme</legend>
+              <div class="theme-cards" role="radiogroup" aria-label="Theme" id="themeCards">
+              </div>
+            </fieldset>
+            <fieldset class="fs"><legend>Mật độ</legend>
+              <div class="seg" role="group" aria-label="Mật độ" id="densSeg">
+                <button type="button" data-d="comfy" aria-pressed="false">Thoáng</button><button type="button" data-d="normal" aria-pressed="true">Chuẩn</button><button type="button" data-d="compact" aria-pressed="false">Gọn</button>
+              </div>
+            </fieldset>
+            <fieldset class="fs"><legend>Chuyển động &amp; ngôn ngữ</legend>
+              <label class="switch"><span><b style="font-size:var(--fs-sm)">Giảm chuyển động</b><br><span class="hint">Dừng băng chuyền, agent di chuyển, nét vẽ draw-in. Tự bật nếu hệ điều hành yêu cầu.</span></span><input type="checkbox" id="fReduce" role="switch"></label>
+              <div class="field"><label for="fLang">Ngôn ngữ giao diện</label>
+                <select id="fLang"><option value="vi">Tiếng Việt</option><option value="en">English</option></select></div>
+              <div class="field"><label for="fView">Màn hình mặc định</label>
+                <select id="fView"><option>Sàn nhà máy</option><option>Dây chuyền nhiệm vụ</option><option disabled>Phòng bảo trì (workspace chưa cấp operations:read)</option></select>
+                <span class="hint">Nếu màn hình đã chọn bị gỡ quyền, hệ thống giải thích và chuyển về màn hình được phép.</span></div>
+            </fieldset>
+          </div>
+
+          <!-- POLICY -->
+          <div class="tabpanel" role="tabpanel" id="p-pol" aria-labelledby="t-pol" hidden>
+            <div class="banner" style="border-color:var(--amber)"><span class="c-amber">!</span><span><b>Profile không thay đổi được chính sách.</b> Các giá trị dưới đây chỉ để xem. Đổi chính sách cần quy trình triển khai riêng có review, không qua màn hình này hay file nhập.</span></div>
+            <div id="polRows"></div>
+          </div>
+
+          <!-- IMPORT / EXPORT -->
+          <div class="tabpanel" role="tabpanel" id="p-io" aria-labelledby="t-io" hidden>
+            <fieldset class="fs"><legend>Xuất profile</legend>
+              <ul class="inc">
+                <li><span class="c-done">✓</span>Tên, mô tả, branding token</li>
+                <li><span class="c-red">✕</span>Secret, hash xác minh, credential</li>
+                <li><span class="c-done">✓</span>Nhãn trạng thái, điều hướng hiển thị</li>
+                <li><span class="c-red">✕</span>Thành viên, lời mời, runtime endpoint</li>
+                <li><span class="c-done">✓</span>Projects, work roles (ID ổn định)</li>
+                <li><span class="c-red">✕</span>Nội dung task, lịch sử, ưu tiên cá nhân</li>
+              </ul>
+              <div><button class="btn" type="button" id="exportBtn">Tải profile.json</button></div>
+            </fieldset>
+            <fieldset class="fs"><legend>Nhập profile</legend>
+              <div class="seg" role="group" aria-label="Mẫu file" id="sampleSeg">
+                <button type="button" data-s="bad" aria-pressed="true">Mẫu có lỗi</button><button type="button" data-s="good" aria-pressed="false">Mẫu hợp lệ</button>
+              </div>
+              <div class="field"><label for="fImport">Nội dung JSON</label><textarea id="fImport" spellcheck="false" aria-describedby="eImport"></textarea><span class="err" id="eImport" role="alert"></span></div>
+              <div class="row wrap"><button class="btn" type="button" id="previewBtn">Xem trước thay đổi</button><span class="hint">Xem trước không ghi gì. Dựa trên revision r14.</span></div>
+              <div id="ioResult" aria-live="polite"></div>
+            </fieldset>
+          </div>
+        </div>
+
+        <!-- LIVE PREVIEW -->
+        <aside class="pv-wrap stack reveal" aria-label="Xem trước trực tiếp">
+          <div class="panel">
+            <div class="panel-head"><h3>Xem trước trực tiếp</h3><span class="code" id="pvTag">BLUEPRINT TỐI · CHUẨN</span></div>
+            <div class="panel-body">
+              <div class="pv" id="pv" data-density="normal">
+                <div class="pv-top"><b id="pvName">Nhà máy Aurora</b><span id="pvSheet">SHEET 04 · DÂY CHUYỀN</span></div>
+                <div class="pv-body">
+                  <nav id="pvNav" aria-label="Điều hướng xem trước"></nav>
+                  <div class="board" id="pvBoard"></div>
+                </div>
+                <table class="pv-table" id="pvTable"></table>
+              </div>
+              <p class="hint" style="margin:var(--sp-3) 0 0">Bản xem trước dùng dữ liệu mô phỏng, đổi ngay khi bạn chỉnh. Chưa có gì được lưu cho tới khi bấm “Lưu thay đổi”.</p>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+    </main>
+    <div id="titleblock"></div>
+  </div>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(() => {
+  const F = BP.F;
+  const STATES = ["backlog", "ready", "doing", "waiting", "review", "done"];
+  const DEF_ALIAS = { backlog: "Hàng chờ", ready: "Sẵn sàng", doing: "Đang gia công", waiting: "Chờ duyệt", review: "Kiểm định", done: "Xuất xưởng" };
+  const LOCKED_NAV = ["12"];
+  const NAV = [["01", "Sàn nhà máy"], ["04", "Dây chuyền"], ["12", "Cổng phê duyệt"], ["13", "Nghiệm thu"], ["14", "Phòng họp"], ["15", "Khu giải trí"], ["16", "Kịch bản"], ["17", "Phòng thư"]];
+  const I18N = { vi: { sheet: "SHEET 04 · DÂY CHUYỀN", task: "Phiếu", owner: "Giữ bởi", dept: "Phòng ban", wip: "WIP" }, en: { sheet: "SHEET 04 · MISSION LINE", task: "Task", owner: "Held by", dept: "Department", wip: "WIP" } };
+  const state = { name: "Nhà máy Aurora", alias: { ...DEF_ALIAS }, depts: F.departments.slice(0, 4).map(d => ({ id: d.id, name: d.name })), hidden: new Set(["15", "16"]), theme: BP.theme(), density: "normal", reduce: BP.reduced, lang: "vi" };
+  let dirty = false;
+
+  /* ---------- tabs ---------- */
+  const tabs = BP.$$('[role="tab"]');
+  const selectTab = t => { tabs.forEach(x => { const on = x === t; x.setAttribute("aria-selected", String(on)); x.tabIndex = on ? 0 : -1; BP.$("#" + x.getAttribute("aria-controls")).hidden = !on; }); t.focus(); };
+  tabs.forEach((t, i) => { t.addEventListener("click", () => selectTab(t)); t.addEventListener("keydown", e => { if (e.key === "ArrowRight") selectTab(tabs[(i + 1) % tabs.length]); if (e.key === "ArrowLeft") selectTab(tabs[(i + tabs.length - 1) % tabs.length]); }); });
+
+  /* ---------- profile fields ---------- */
+  BP.$("#aliasGrid").innerHTML = STATES.map(s => `<div class="field">
+      ${BP.stateChip(s)}
+      <label for="al-${s}" class="hint">Nhãn hiển thị cho ${F.stateLabel[s]}</label>
+      <input type="text" id="al-${s}" data-alias="${s}" value="${DEF_ALIAS[s]}" maxlength="40" aria-describedby="ea-${s}">
+      <span class="err" id="ea-${s}" role="alert"></span></div>`).join("");
+  const renderDepts = () => {
+    BP.$("#deptRows").innerHTML = state.depts.map((d, i) => `<div class="rrow"><span class="mono">id: ${d.id}</span><div class="field"><label class="sr" for="dp-${i}" style="position:absolute;left:-9999px">Tên phòng ban ${d.id}</label><input type="text" id="dp-${i}" data-dept="${i}" value="${d.name}" aria-describedby="ed-${i}"><span class="err" id="ed-${i}" role="alert"></span></div><button class="btn sm" type="button" data-arch="${i}" aria-label="Lưu trữ ${d.name}">Lưu trữ</button></div>`).join("");
+  };
+  renderDepts();
+  BP.$("#roleRows").innerHTML = [["role_engineer", "Kỹ sư"], ["role_research", "Nghiên cứu viên"], ["role_reviewer", "Reviewer"]].map(([id, n], i) => `<div class="rrow"><span class="mono">id: ${id}</span><div class="field"><label style="position:absolute;left:-9999px" for="rl-${i}">Tên work role ${id}</label><input type="text" id="rl-${i}" value="${n}"></div><span class="tag">work role</span></div>`).join("");
+  BP.$("#navChecks").innerHTML = NAV.map(([no, n]) => `<label class="chk"><input type="checkbox" data-nav="${no}" ${state.hidden.has(no) ? "checked" : ""} ${LOCKED_NAV.includes(no) ? "disabled" : ""}><span><span class="mono muted">${no}</span> Ẩn ${n}${LOCKED_NAV.includes(no) ? ' <span class="tag amber">không ẩn được</span>' : ""}</span></label>`).join("");
+
+  /* ---------- validation ---------- */
+  function validate() {
+    let ok = true; const errs = [];
+    const nm = BP.$("#fName"); const v = nm.value.trim();
+    const eN = !v ? "Tên nhà máy không được trống." : v.length > 40 ? `Tối đa 40 ký tự (đang ${v.length}).` : "";
+    BP.$("#eName").textContent = eN; nm.setAttribute("aria-invalid", String(!!eN)); if (eN) { ok = false; errs.push(nm); }
+    const canon = Object.fromEntries(STATES.map(s => [F.stateLabel[s].toLowerCase(), s]));
+    const seen = {};
+    STATES.forEach(s => {
+      const inp = BP.$("#al-" + s); const a = inp.value.trim(); const low = a.toLowerCase();
+      let e = "";
+      if (!a) e = "Để trống sẽ dùng nhãn gốc. Nhập nhãn hoặc xoá hẳn trong file.";
+      else if (canon[low] && canon[low] !== s) e = `Trùng tên trạng thái gốc “${F.stateLabel[canon[low]]}”. Gây nhầm vòng đời.`;
+      else if (seen[low]) e = `Trùng nhãn với ${F.stateLabel[seen[low]]}.`;
+      else if (a.length > 24) e = `Tối đa 24 ký tự (đang ${a.length}).`;
+      seen[low] = seen[low] || s;
+      BP.$("#ea-" + s).textContent = e; inp.setAttribute("aria-invalid", String(!!e)); if (e) { ok = false; errs.push(inp); }
+    });
+    BP.$$("[data-dept]").forEach(inp => { const e = inp.value.trim() ? "" : "Tên phòng ban không được trống."; BP.$("#ed-" + inp.dataset.dept).textContent = e; inp.setAttribute("aria-invalid", String(!!e)); if (e) { ok = false; errs.push(inp); } });
+    return { ok, errs };
+  }
+
+  /* ---------- preview ---------- */
+  const pv = BP.$("#pv");
+  const flash = n => { if (!n || state.reduce) return; n.classList.remove("flash"); void n.offsetWidth; n.classList.add("flash"); };
+  function renderPreview(changed) {
+    const L = I18N[state.lang];
+    pv.classList.toggle("still", state.reduce);
+    pv.dataset.density = state.density;
+    BP.$("#pvName").textContent = state.name || "Not reported";
+    BP.$("#pvSheet").textContent = L.sheet;
+    BP.$("#pvTag").textContent = `${((BP.themes || []).find(t => t.id === state.theme) || { vi: "Blueprint" }).vi.toUpperCase()} · ${{ comfy: "THOÁNG", normal: "CHUẨN", compact: "GỌN" }[state.density]}${state.reduce ? " · TĨNH" : ""}`;
+    BP.$("#pvNav").innerHTML = NAV.map(([no, n]) => `<span class="${state.hidden.has(no) ? "hid" : ""} ${no === "12" ? "urgent" : ""}" title="${n}">${no} ${n}</span>`).join("");
+    const cols = ["ready", "doing", "review"];
+    const tasks = { ready: F.tasks.find(t => t.id === "T-1055"), doing: F.tasks.find(t => t.id === "T-1042"), review: F.tasks.find(t => t.id === "T-1036") };
+    BP.$("#pvBoard").innerHTML = cols.map(s => {
+      const t = tasks[s]; const d = state.depts.find(x => x.id === t.dept);
+      const a = state.alias[s] && state.alias[s].trim();
+      return `<div class="col" data-col="${s}"><h5><span>${a || F.stateLabel[s]}</span>${a ? `<small>${F.stateLabel[s]}</small>` : ""}</h5>
+        <div class="mcard"><i>${L.task} ${t.id}</i>${t.title}<i>${d ? d.name : "Xưởng Kỹ thuật"}${t.agent ? " · " + BP.agent(t.agent).name : ""}</i></div></div>`;
+    }).join("") + `<div class="belt" aria-hidden="true"></div>`;
+    BP.$("#pvTable").innerHTML = `<tr><td style="color:var(--pv-ink2)">${L.dept}</td><td style="color:var(--pv-ink2)">${L.wip}</td></tr>` + state.depts.slice(0, 3).map(d => { const D = F.departments.find(x => x.id === d.id); return `<tr><td>${d.name}</td><td class="mono">${D ? D.wip + "/" + D.wipLimit : '<span style="font-style:italic">Not reported</span>'}</td></tr>`; }).join("");
+    if (changed) flash(changed === "name" ? BP.$("#pvName") : changed === "alias" ? BP.$("#pvBoard") : changed === "nav" ? BP.$("#pvNav") : changed === "dept" ? BP.$("#pvTable") : pv);
+  }
+  const markDirty = () => { dirty = true; BP.$("#saveState").innerHTML = '<span class="state waiting">Có thay đổi chưa lưu</span>'; };
+
+  /* ---------- events ---------- */
+  BP.$("#fName").addEventListener("input", e => { state.name = e.target.value.trim(); validate(); markDirty(); renderPreview("name"); });
+  BP.$("#aliasGrid").addEventListener("input", e => { const s = e.target.dataset.alias; if (!s) return; state.alias[s] = e.target.value; validate(); markDirty(); renderPreview("alias"); });
+  BP.$("#deptRows").addEventListener("input", e => { const i = e.target.dataset.dept; if (i == null) return; state.depts[i].name = e.target.value; validate(); markDirty(); renderPreview("dept"); });
+  BP.$("#deptRows").addEventListener("click", e => { const b = e.target.closest("[data-arch]"); if (!b) return; BP.toast("CẦN XEM XÉT", `Lưu trữ ${state.depts[b.dataset.arch].name} chặn chọn mới nhưng giữ tham chiếu lịch sử. Task đang mở cần chọn đích ánh xạ rõ ràng.`); });
+  let nextId = 5;
+  BP.$("#addDept").addEventListener("click", () => { state.depts.push({ id: `dept_${String(nextId++).padStart(2, "0")}`, name: "" }); renderDepts(); validate(); markDirty(); BP.$(`#dp-${state.depts.length - 1}`).focus(); });
+  BP.$("#navChecks").addEventListener("change", e => { const no = e.target.dataset.nav; e.target.checked ? state.hidden.add(no) : state.hidden.delete(no); markDirty(); renderPreview("nav"); });
+  const THEME_HINT = { blueprint: "Giấy xanh cyanotype, nét sáng. Mặc định.", paper: "Giấy trắng nét xanh. Phòng sáng, in ấn.", graphite: "Xám than trung tính, ít màu.", cad: "Nền xanh lá kiểu màn hình CAD.", sunset: "Tím than ấm, nhấn cam." };
+  BP.$("#themeCards").innerHTML = (BP.themes || []).map(t => `<label class="tcard"><input type="radio" name="theme" value="${t.id}" ${t.id === state.theme ? "checked" : ""}><span class="swatch sw" aria-hidden="true" style="--s0:${t.sw[0]};--s1:${t.sw[1]};--s2:${t.sw[2]}"></span><b>${t.vi}</b><span class="hint">${THEME_HINT[t.id] || ""}</span></label>`).join("");
+  BP.$$('input[name="theme"]').forEach(r => r.addEventListener("change", () => { state.theme = r.value; BP.setTheme(r.value); markDirty(); renderPreview("theme"); }));
+  document.addEventListener("bp:theme", e => { state.theme = e.detail.theme; const r = BP.$(`input[name="theme"][value="${e.detail.theme}"]`); if (r) r.checked = true; renderPreview("theme"); });
+  BP.$$("#densSeg button").forEach(b => b.addEventListener("click", () => { BP.$$("#densSeg button").forEach(x => x.setAttribute("aria-pressed", String(x === b))); state.density = b.dataset.d; markDirty(); renderPreview("density"); }));
+  const rd = BP.$("#fReduce"); rd.checked = state.reduce;
+  rd.addEventListener("change", () => { state.reduce = rd.checked; markDirty(); renderPreview("reduce"); });
+  BP.$("#fLang").addEventListener("change", e => { state.lang = e.target.value; markDirty(); renderPreview("lang"); });
+  document.addEventListener("bp:motion", e => pv.classList.toggle("still", e.detail.paused || state.reduce));
+
+  BP.$("#saveBtn").addEventListener("click", () => {
+    const { ok, errs } = validate();
+    if (!ok) { selectTab(BP.$("#t-prof")); errs[0].focus(); BP.$("#saveState").innerHTML = `<span class="state failed">${errs.length} trường cần sửa</span>`; BP.toast("CHƯA LƯU", "Sửa các trường báo đỏ. Profile hiện tại giữ nguyên, không lưu một phần."); return; }
+    dirty = false; const t = BP.now().slice(0, 5);
+    BP.$("#saveState").innerHTML = `<span class="state done">Đã lưu · r15 · ${t}</span>`;
+    BP.toast("ĐÃ LƯU PROFILE r15", "Ghi audit event. Ưu tiên cá nhân lưu riêng cho tài khoản Quản đốc.");
+  });
+  BP.$("#resetBtn").addEventListener("click", () => location.reload());
+
+  /* ---------- policy (read-only) ---------- */
+  const LOCK = '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><rect x="2.5" y="6" width="9" height="7" fill="none" stroke="currentColor"/><path d="M4.5 6V4a2.5 2.5 0 015 0v2" fill="none" stroke="currentColor"/></svg>';
+  BP.$("#polRows").innerHTML = [
+    ["Retry limit mặc định", "2 lần / task", "Hết lượt → Backlog hold retry_exhausted"],
+    ["Reviewer độc lập", "Luôn bật", "Người nộp và agent nộp không tự nghiệm thu"],
+    ["Gửi email / tin ra bên ngoài", "Cần người duyệt", "Proposal gắn artifact JSON + sha256"],
+    ["Thao tác xoá không hoàn tác", "Cần người duyệt · hết hạn 4h", "Hết hạn không bao giờ tự duyệt"],
+    ["Lease mặc định", "15:00 phút", "Heartbeat chỉ đổi run_version"],
+    ["WIP Xưởng Kỹ thuật", "4", "Race slot cuối vẫn theo policy"]
+  ].map(([k, v, n]) => `<div class="lockrow">${LOCK}<span>${k}<br><span class="hint">${n}</span></span><b>${v}</b></div>`).join("") +
+    `<div class="field" style="margin-top:var(--sp-4)"><label for="fRetry">Retry limit (thử sửa)</label><input type="text" id="fRetry" value="2" disabled aria-describedby="hRetry"><span class="hint" id="hRetry">Khoá: thuộc lớp chính sách, profile không ghi được.</span></div>`;
+
+  /* ---------- import / export ---------- */
+  const SAMPLES = {
+    bad: `{
+  "profile_id": "aurora-delivery",
+  "display_name": "Nhà máy Aurora",
+  "state_labels": { "doing": "Done" },
+  "projects": [ { "id": "kt", "name": "Xưởng Kỹ thuật" } ],
+  "work_roles": [ { "id": "role_reviewer", "name": "Reviewer" },
+                  { "name": "Phân tích" } ],
+  "policy": { "retry_limit": 5 },
+  "theme": { "css": "body{display:none}" }
+}`,
+    good: `{
+  "profile_id": "aurora-delivery",
+  "display_name": "Nhà máy Aurora",
+  "state_labels": { "doing": "Đang gia công", "done": "Xuất xưởng" },
+  "projects": [ { "id": "kt", "name": "Xưởng Kỹ thuật" },
+                { "id": "dept_05", "name": "Phòng Thiết kế" } ],
+  "work_roles": [ { "id": "role_analysis", "name": "Phân tích" } ]
+}`
+  };
+  const ta = BP.$("#fImport"); let sample = "bad"; ta.value = SAMPLES.bad;
+  BP.$$("#sampleSeg button").forEach(b => b.addEventListener("click", () => { BP.$$("#sampleSeg button").forEach(x => x.setAttribute("aria-pressed", String(x === b))); sample = b.dataset.s; ta.value = SAMPLES[sample]; BP.$("#ioResult").innerHTML = ""; ta.removeAttribute("aria-invalid"); BP.$("#eImport").textContent = ""; }));
+  BP.$("#previewBtn").addEventListener("click", () => {
+    let j; try { j = JSON.parse(ta.value); } catch (e) { ta.setAttribute("aria-invalid", "true"); BP.$("#eImport").textContent = "JSON không hợp lệ: " + e.message; BP.$("#ioResult").innerHTML = ""; return; }
+    ta.removeAttribute("aria-invalid"); BP.$("#eImport").textContent = "";
+    const errs = [];
+    if (j.policy) errs.push(["$.policy.retry_limit", "Khoá chính sách không được phép trong profile."]);
+    if (j.theme && j.theme.css) errs.push(["$.theme.css", "Không chấp nhận CSS/HTML/JS tuỳ ý. Chỉ token màu đã duyệt."]);
+    (j.work_roles || []).forEach((r, i) => { if (!r.id) errs.push([`$.work_roles[${i}].id`, "Thiếu ID ổn định. Không ghép theo tên."]); });
+    Object.entries(j.state_labels || {}).forEach(([s, v]) => { const hit = STATES.find(x => F.stateLabel[x].toLowerCase() === String(v).toLowerCase()); if (hit && hit !== s) errs.push([`$.state_labels.${s}`, `Nhãn “${v}” trùng trạng thái gốc khác.`]); });
+    const out = BP.$("#ioResult");
+    if (errs.length) {
+      out.innerHTML = `<div class="stack"><span class="state failed">${errs.length} lỗi validation · không có gì được áp dụng</span>
+        <ul class="vlist">${errs.map(([p, m]) => `<li><span class="c-red">✕</span><span><code>${p}</code><br>${m}</span></li>`).join("")}</ul>
+        <div class="row wrap"><button class="btn" type="button" disabled>Áp dụng profile</button><span class="hint">Profile r14 hiện tại giữ nguyên.</span></div></div>`;
+    } else {
+      out.innerHTML = `<div class="stack"><span class="state done">Hợp lệ · preview dựa trên r14</span>
+        <div class="tscroll"><table class="table"><thead><tr><th>Trường</th><th>Hiện tại</th><th>Mới</th><th>Thay đổi</th></tr></thead><tbody>
+          <tr><td class="mono">state_labels.doing</td><td>Đang gia công</td><td>Đang gia công</td><td class="muted">Giữ nguyên</td></tr>
+          <tr><td class="mono">projects.dept_05</td><td class="unknown">Không có</td><td>Phòng Thiết kế</td><td class="c-done">Thêm</td></tr>
+          <tr><td class="mono">projects.nc, nd, dl</td><td>3 phòng ban</td><td class="unknown">Vắng trong file</td><td class="muted">Giữ nguyên (không xoá)</td></tr>
+          <tr><td class="mono">work_roles.role_analysis</td><td class="unknown">Không có</td><td>Phân tích</td><td class="c-amber">Thêm · có thể trùng nhãn với vai trò khác, kiểm tra</td></tr>
+        </tbody></table></div>
+        <div class="row wrap"><button class="btn" type="button" id="applyBtn">Áp dụng profile</button><span class="hint">Áp dụng nguyên khối kèm audit event, so với revision r14.</span></div></div>`;
+      BP.$("#applyBtn").addEventListener("click", () => BP.toast("ÁP DỤNG (MOCK)", "Profile r15 tạo từ file nhập. Nếu revision đã đổi, cần làm mới preview."));
+    }
+  });
+  BP.$("#exportBtn").addEventListener("click", () => BP.toast("XUẤT PROFILE (MOCK)", "profile.json chỉ chứa dữ liệu trình bày di động, không có quyền truy cập."));
+
+  validate(); renderPreview();
+})();
+</script>
+</body>
+</html>

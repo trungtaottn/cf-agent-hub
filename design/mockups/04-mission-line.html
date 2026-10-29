@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dây chuyền nhiệm vụ · CF Agent Factory</title>
+<link rel="stylesheet" href="assets/blueprint.css">
+<style>
+  .toolbar { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--sp-4); flex-wrap: wrap; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--line-soft); }
+  .filters { display: flex; gap: var(--sp-3); flex-wrap: wrap; align-items: flex-end; }
+  .fld { display: flex; flex-direction: column; gap: 4px; }
+  .fld label { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); letter-spacing: 0.1em; text-transform: uppercase; }
+  .fld select { min-height: 36px; min-width: 150px; padding: 0 var(--sp-3); background: var(--bp-850); color: var(--ink); border: 1px solid var(--line-soft); font: inherit; font-size: var(--fs-sm); border-radius: 0; }
+  .fld select:hover { border-color: var(--line); }
+  .seg button { min-height: 36px; }
+  .count-line { padding: var(--sp-2) var(--sp-4); border-bottom: 1px solid var(--line-soft); display: flex; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; }
+
+  .dock { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--line-soft); background: var(--bp-900); }
+  .dock .bot { width: 30px; height: 30px; font-size: 9px; }
+
+  .board-scroll { overflow-x: auto; }
+  .board { display: grid; grid-template-columns: repeat(6, minmax(184px, 1fr)); position: relative; }
+  .col { display: flex; flex-direction: column; border-left: 1px solid var(--line-soft); min-width: 0; transition: background var(--dur) var(--ease); }
+  .col:first-child { border-left: 0; }
+  .belt { height: 12px; border-block: 1px solid var(--line); background: repeating-linear-gradient(90deg, var(--line-soft) 0 1px, transparent 1px 14px), var(--bp-900); animation: belt 1.4s linear infinite; }
+  @keyframes belt { to { background-position: 14px 0, 0 0; } }
+  .col-head { display: grid; grid-template-columns: 40px 1fr auto; gap: var(--sp-2); align-items: center; padding: var(--sp-3) var(--sp-3) var(--sp-1); }
+  .col-head h3 { margin: 0; font-family: var(--f-display); font-size: var(--fs-md); font-weight: 600; letter-spacing: 0.03em; }
+  .col-head .vi { font-size: var(--fs-2xs); color: var(--ink-3); }
+  .col-head .cnt { font-family: var(--f-mono); font-size: var(--fs-lg); font-variant-numeric: tabular-nums; }
+  .wipdim { position: relative; display: flex; justify-content: center; height: 14px; margin: var(--sp-1) var(--sp-3) var(--sp-2); border-inline: 1px solid var(--ink-3); }
+  .wipdim::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; border-top: 1px solid var(--ink-3); }
+  .wipdim span { position: relative; padding: 0 6px; background: var(--bp-800); font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-2); line-height: 14px; letter-spacing: 0.06em; }
+  .wipdim.full { border-color: var(--amber); } .wipdim.full::before { border-color: var(--amber); } .wipdim.full span { color: var(--amber); }
+  .list { display: flex; flex-direction: column; gap: var(--sp-2); padding: 0 var(--sp-3) var(--sp-4); flex: 1; min-height: 120px; }
+  .col .why { margin: 0 var(--sp-3) var(--sp-2); }
+  .note-red.err { color: var(--red); border-color: var(--red); background: var(--t-failed); }
+  .col.drop-bad { background: var(--t-failed); outline: 1px dashed var(--red); outline-offset: -1px; }
+  .col.drop-ok { background: var(--t-ready); outline: 1px dashed var(--s-ready); outline-offset: -1px; }
+
+  .card { cursor: grab; }
+  .card:focus-visible { outline: 2px solid var(--amber); outline-offset: 1px; }
+  .card .title a { color: var(--ink); }
+  .card .title a:hover { color: var(--s-ready); }
+  .card .bot { width: 24px; height: 24px; font-size: 8px; }
+  .card .human-token { width: 24px; height: 24px; font-size: 8px; }
+  .card .foot { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-2); padding-top: var(--sp-1); border-top: 1px dashed var(--line-soft); }
+  .card .foot .btn { min-height: 36px; }
+  .card .info { font-size: var(--fs-xs); color: var(--ink-2); line-height: 1.4; }
+  .card.waiting-card { border-color: var(--amber); }
+  .card.flagged { border-color: var(--red); }
+  .card.stale { border: 1px dashed var(--red); background: var(--t-failed); }
+  .card.moving { z-index: 4; box-shadow: 0 0 0 1px var(--s-ready); }
+  .card.claimed { border-color: var(--s-doing); }
+  .lease .meter { margin-top: 4px; }
+  .secs { font-variant-numeric: tabular-nums; }
+  .conflict { display: flex; flex-direction: column; gap: var(--sp-2); }
+  .conflict p { margin: 0; font-size: var(--fs-xs); color: var(--ink); }
+  .archive { padding: var(--sp-2) var(--sp-3); margin: 0 var(--sp-3) var(--sp-3); border: 1px dashed var(--line-soft); font-size: var(--fs-xs); color: var(--ink-3); }
+
+  .fly { position: absolute; z-index: 6; pointer-events: none; left: 0; top: 0; }
+  .claimtag { position: absolute; z-index: 7; pointer-events: none; font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--s-doing); background: var(--bp-950); border: 1px solid var(--s-doing); padding: 2px 6px; white-space: nowrap; }
+  .ghost { position: absolute; left: 0; top: 0; z-index: 6; pointer-events: none; opacity: 1; border-style: dashed; border-color: var(--red); width: 170px; }
+
+  .menu { position: fixed; z-index: var(--z-overlay); min-width: 260px; background: var(--bp-950); border: 1px solid var(--line-strong); padding: var(--sp-1) 0; }
+  .menu button, .menu a { display: flex; flex-direction: column; align-items: flex-start; width: 100%; min-height: 40px; padding: var(--sp-2) var(--sp-4); border: 0; background: transparent; color: var(--ink); text-align: left; cursor: pointer; font-size: var(--fs-sm); text-decoration: none; }
+  .menu button:hover:not([disabled]), .menu a:hover { background: var(--bp-700); }
+  .menu button[disabled] { color: var(--ink-3); cursor: not-allowed; }
+  .menu small { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); }
+  .menu .danger { color: var(--red); }
+
+  .tbl-wrap { overflow-x: auto; }
+  .tbl-wrap .table { min-width: 860px; }
+  @media (max-width: 720px) {
+    .board { grid-template-columns: minmax(0, 1fr); }
+    .col { border-left: 0; border-top: 1px solid var(--line-soft); }
+    .list { min-height: 0; }
+  }
+  .rules td:first-child { white-space: nowrap; }
+  .feed { max-height: 300px; overflow: hidden; }
+  @media (max-width: 560px) { .fld select { min-width: 0; width: 100%; } .fld { flex: 1 1 40%; } .filters { width: 100%; } }
+</style>
+</head>
+<body data-sheet="04" data-title="Dây chuyền nhiệm vụ">
+<div class="app paper">
+  <div id="rail"></div>
+  <div class="main">
+    <header id="topbar"></header>
+    <main class="content">
+
+      <section class="page-head reveal">
+        <div>
+          <div class="code">PRODUCTION LINE · 6 STATIONS · WS-AURORA</div>
+          <h2>Dây chuyền nhiệm vụ</h2>
+          <p class="lede">Mỗi cột là một trạm dọc băng chuyền. Phiếu công việc chỉ đổi trạm qua lệnh nghiệp vụ hợp lệ: kéo thả là gửi lệnh với <span class="mono">task_version</span> đang hiển thị, không phải sửa nhãn cột.</p>
+        </div>
+        <div class="actions">
+          <a class="btn" href="06-pick-task.html">Xem trạm nhận việc</a>
+          <button class="btn primary" type="button" id="btnNew">Tạo phiếu công việc</button>
+        </div>
+      </section>
+
+      <section class="panel reveal" id="linePanel" aria-label="Dây chuyền">
+        <div class="toolbar">
+          <div class="filters" role="group" aria-label="Bộ lọc">
+            <div class="fld"><label for="fDept">Phòng ban</label><select id="fDept"><option value="">Tất cả phòng ban</option></select></div>
+            <div class="fld"><label for="fAgent">Agent</label><select id="fAgent"><option value="">Tất cả agent</option><option value="-">Chưa có chủ</option></select></div>
+            <div class="fld"><label for="fPri">Ưu tiên</label><select id="fPri"><option value="">Mọi mức</option><option>P1</option><option>P2</option><option>P3</option></select></div>
+            <button class="btn" type="button" id="fClear">Xoá lọc</button>
+          </div>
+          <div class="row wrap">
+            <button class="btn" type="button" id="btnDemo" title="Phát lại minh hoạ kéo thẻ vào cột không hợp lệ">Minh hoạ kéo sai cột</button>
+            <div class="seg" role="group" aria-label="Kiểu hiển thị">
+              <button type="button" aria-pressed="true" data-view="board">Board</button>
+              <button type="button" aria-pressed="false" data-view="table">Bảng</button>
+            </div>
+          </div>
+        </div>
+        <div class="count-line"><span class="code" id="countLine">Hiển thị 17 / 17 phiếu</span><span class="code">Số đếm từ kết quả truy vấn có quyền · SIM DATA</span></div>
+        <div class="dock" aria-label="Agent rảnh đủ điều kiện claim">
+          <span class="code">AGENT RẢNH CÓ THỂ CLAIM</span>
+          <span class="bot" id="dockBolt" style="--c:var(--ink-3)" title="BOLT-10 · rảnh · KT-01">BL</span><span class="code">BOLT-10</span>
+          <span class="bot" style="--c:var(--ink-3);border-style:dashed" title="PIXEL-08 · tín hiệu cũ">PX</span><span class="code">PIXEL-08 · tín hiệu cũ</span>
+          <span class="muted" style="font-size:var(--fs-xs)">Presence chỉ là quan sát, không phải quyền sở hữu task.</span>
+        </div>
+
+        <div class="board-scroll" id="boardView">
+          <div class="board" id="board"></div>
+        </div>
+
+        <div class="tbl-wrap" id="tableView" hidden>
+          <table class="table" aria-label="Danh sách phiếu công việc dạng bảng">
+            <thead><tr><th>ID</th><th>Tiêu đề</th><th>Trạm</th><th>Phòng ban</th><th>Agent</th><th>Ưu tiên</th><th>Fence</th><th>Retry</th><th>Ghi chú</th></tr></thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="grid g-3">
+        <div class="panel reveal">
+          <div class="panel-head"><h3>Nhật ký dây chuyền</h3><span class="code">APPEND-ONLY</span></div>
+          <div class="feed"><ul class="log" id="feed" aria-live="polite" aria-relevant="additions"></ul></div>
+        </div>
+        <div class="panel reveal">
+          <div class="panel-head"><h3>Kéo thả = lệnh</h3><span class="code">COMMAND MAP</span></div>
+          <table class="table rules">
+            <thead><tr><th>Kéo</th><th>Lệnh thực</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">Backlog → Ready</td><td>schedule, gửi kèm <span class="mono">expected_version</span></td></tr>
+              <tr><td class="mono">Review → Ready</td><td>requeue, bắt buộc lý do sửa</td></tr>
+              <tr><td class="mono">Review → Done</td><td class="c-review">Chỉ reviewer độc lập, qua Trạm nghiệm thu</td></tr>
+              <tr><td class="mono">* → Doing</td><td class="c-red">Không hỗ trợ. Chỉ runtime đã bind mới claim</td></tr>
+              <tr><td class="mono">* → Waiting</td><td class="c-red">Không hỗ trợ. Chỉ qua đề xuất của run</td></tr>
+            </tbody>
+          </table>
+          <div class="panel-body"><p class="muted" style="margin:0;font-size:var(--fs-xs)">Mỗi thẻ có nút <b>Lệnh</b> tương đương bàn phím cho mọi thao tác kéo thả.</p></div>
+        </div>
+        <div class="panel reveal">
+          <div class="panel-head"><h3>Chú giải trạm</h3><span class="code">LEGEND</span></div>
+          <div class="panel-body stack">
+            <div class="row wrap">
+              <span class="state backlog">Backlog</span><span class="state ready">Ready</span><span class="state doing">Doing</span>
+              <span class="state waiting">Waiting</span><span class="state review">Review</span><span class="state done">Done</span>
+            </div>
+            <div class="row wrap"><span class="state stale">Stale version</span><span class="tag red">✕ Hết lượt retry</span><span class="tag amber">Cần người</span></div>
+            <div class="stack" style="gap:var(--sp-2)">
+              <div class="row between"><span class="code">LEASE MẶC ĐỊNH</span><span class="mono">60s</span></div>
+              <div class="row between"><span class="code">HEARTBEAT KHUYẾN NGHỊ</span><span class="mono">20s</span></div>
+              <div class="row between"><span class="code">WIP DOING (POLICY)</span><span class="mono" id="wipLegend">4 / 6</span></div>
+            </div>
+            <a class="btn" href="10-activity.html">Mở nhật ký đầy đủ</a>
+          </div>
+        </div>
+      </section>
+
+    </main>
+    <div id="titleblock"></div>
+  </div>
+</div>
+<div class="menu" id="menu" role="menu" hidden></div>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(() => {
+  const F = BP.F;
+  const COLS = [
+    { s: "backlog", no: "01", vi: "Chờ lên lịch", wip: null },
+    { s: "ready", no: "02", vi: "Sẵn sàng nhận", wip: null },
+    { s: "doing", no: "03", vi: "Đang làm", wip: 6 },
+    { s: "waiting", no: "04", vi: "Chờ quyết định", wip: null },
+    { s: "review", no: "05", vi: "Chờ nghiệm thu", wip: 4 },
+    { s: "done", no: "06", vi: "Hoàn tất", wip: null }
+  ];
+  const sc = s => `var(--s-${s})`;
+  const SYM = {
+    backlog: c => `<rect x="4" y="16" width="32" height="8" style="fill:none;stroke:${c}"/><rect x="8" y="8" width="24" height="8" style="fill:none;stroke:${c}"/><path d="M8 24v4M32 24v4M20 24v4" style="stroke:${c}"/>`,
+    ready: c => `<path d="M20 4L34 18L20 32L6 18z" style="fill:none;stroke:${c}"/><path d="M14 18h12M20 12v12" style="stroke:${c}"/>`,
+    doing: c => `<circle cx="20" cy="18" r="9" style="fill:none;stroke:${c}"/><circle cx="20" cy="18" r="3" style="fill:${c}"/><path d="M20 4v5M20 27v5M6 18h5M29 18h5M10 8l3.5 3.5M26.5 24.5L30 28M30 8l-3.5 3.5M13.5 24.5L10 28" style="stroke:${c}"/>`,
+    waiting: c => `<path d="M6 32V6M34 32V6" style="stroke:${c};stroke-width:2"/><path d="M6 14h28M6 20h28" style="stroke:${c};stroke-dasharray:4 3"/><circle cx="20" cy="27" r="2.5" style="fill:${c}"/>`,
+    review: c => `<rect x="5" y="6" width="30" height="24" style="fill:none;stroke:${c}"/><circle cx="20" cy="18" r="7" style="fill:none;stroke:${c}"/><path d="M5 18h30" style="stroke:${c};stroke-dasharray:2 3"/>`,
+    done: c => `<path d="M6 14l14-8l14 8v16H6z" style="fill:none;stroke:${c}"/><path d="M13 20l5 5l9-10" style="fill:none;stroke:${c};stroke-width:1.75"/>`
+  };
+  // page-local extra facts (synthetic)
+  const X = {
+    "T-1042": { v: 14, run: "r-88f1", secs: 43 }, "T-1047": { v: 9, run: "r-31c0", secs: 19 },
+    "T-1051": { v: 5, run: "r-5a72", secs: 33 }, "T-1044": { v: 11, run: "r-c4e9", secs: 53 },
+    "T-1039": { v: 8, pv: 2 }, "T-1053": { v: 4, pv: 1 },
+    "T-1036": { v: 12, at: "11:58" }, "T-1040": { v: 6, at: "12:21" },
+    "T-1055": { v: 3 }, "T-1056": { v: 2 }, "T-1057": { v: 4 }, "T-1058": { v: 1 },
+    "T-1060": { v: 1 }, "T-1061": { v: 3, stale: { shown: 3, now: 4, by: "Khánh", what: "đổi phòng ban sang DL-04" } }, "T-1033": { v: 17 },
+    "T-1029": { v: 9, at: "10:14" }, "T-1031": { v: 7, at: "09:30" }
+  };
+  const tasks = F.tasks.filter(t => t.state !== "cancelled").map(t => ({ ...t, ...(X[t.id] || {}) }));
+  const archived = F.tasks.filter(t => t.state === "cancelled");
+  const T = id => tasks.find(t => t.id === id);
+  const who = id => { if (!id) return null; if (id.startsWith("hu-")) { const h = F.humans.find(x => x.id === id); return { human: true, code: h.code, name: h.name }; } const a = BP.agent(id); return { code: a.code, name: a.name, a }; };
+  const token = (id, s) => { const w = who(id); if (!w) return ""; return w.human ? `<span class="human-token" aria-hidden="true">${w.code}</span>` : `<span class="bot" style="--c:${sc(s)}" aria-hidden="true">${w.code}</span>`; };
+  const leaseCls = r => r < 0.15 ? "crit" : r < 0.3 ? "warn" : "";
+
+  /* ---------- Build board ---------- */
+  const board = BP.$("#board");
+  board.innerHTML = COLS.map(c => `
+    <section class="col" data-col="${c.s}" aria-labelledby="h-${c.s}">
+      <div class="belt" aria-hidden="true"></div>
+      <header class="col-head">
+        <svg width="40" height="36" viewBox="0 0 40 36" role="img" aria-label="Ký hiệu trạm ${F.stateLabel[c.s]}"><title>Ký hiệu trạm ${F.stateLabel[c.s]}</title>${SYM[c.s](sc(c.s))}</svg>
+        <div><div class="code">STATION ${c.no}</div><h3 id="h-${c.s}" style="color:${sc(c.s)}">${F.stateLabel[c.s]}</h3><div class="vi">${c.vi}</div></div>
+        <span class="cnt" data-cnt>0</span>
+      </header>
+      <div class="wipdim" data-wip><span>-</span></div>
+      <div class="why" data-why role="alert" hidden></div>
+      <div class="list" role="list" data-list></div>
+      ${c.s === "done" ? `<div class="archive">Lưu trữ: ${archived.length} phiếu đã huỷ (${archived.map(a => a.id).join(", ")}). Không biến mất khỏi tìm kiếm và lịch sử.</div>` : ""}
+    </section>`).join("");
+  const colEl = s => board.querySelector(`[data-col="${s}"]`);
+
+  function cardInner(t) {
+    const d = BP.dept(t.dept); const w = who(t.agent);
+    let body = "";
+    if (t.stale) {
+      body = `<div class="conflict"><span class="state stale">VERSION_CONFLICT</span>
+        <p>Lệnh schedule gửi với v${t.stale.shown}, hiện tại v${t.stale.now}: ${t.stale.by} vừa ${t.stale.what}. Ý định của bạn được giữ, không tự gửi lại.</p>
+        <button class="btn sm" type="button" data-refresh>Xem trạng thái hiện tại</button></div>`;
+    } else if (t.state === "doing") {
+      const r = t.secs / 60;
+      body = `<div class="lease" data-lease><div class="row between"><span class="code">FENCE ${t.fence}</span><span class="code secs" data-secs>${t.secs}s</span></div>
+        <div class="meter ticks ${leaseCls(r)}"><i style="width:${(r * 100).toFixed(0)}%"></i></div></div>
+        <div class="info mono">${w.a.runtime} · ${t.run}</div>`;
+    } else if (t.state === "waiting") {
+      const [what, due] = (t.decision || "").split(" · ");
+      body = `<div class="info"><span class="tag amber">CẦN NGƯỜI</span> ${what}</div><div class="code c-amber">${due} · PROPOSAL V${t.pv}</div>`;
+    } else if (t.state === "review") {
+      const rv = who(t.reviewer);
+      body = `<div class="info">Nộp bởi <b>${w.name}</b> lúc ${t.at}</div><div class="row" style="gap:6px">${token(t.reviewer, "review")}<span class="info">Reviewer: <b>${rv.name}</b>${rv.human ? " (người)" : ""}</span></div>`;
+    } else if (t.state === "done") {
+      const rv = who(t.reviewer);
+      body = `<div class="info">Nghiệm thu bởi <b>${rv.name}</b> · ${t.at}</div><div class="info muted">Người nộp: ${w.name}</div>`;
+    } else if (t.flag) {
+      body = `<span class="tag red">✕ ${t.flag} ${t.retry}</span><div class="info muted">retry_exhausted chặn Ready, Requeue và Claim. Cần phiếu sửa đổi.</div>`;
+    } else if (t.state === "ready") {
+      body = `<div class="info muted">Chưa có chủ. Agent đủ capability và còn WIP mới claim được.</div>`;
+    } else {
+      body = `<div class="info muted">Chưa lên lịch · retry ${t.retry}</div>`;
+    }
+    return `
+      <div class="row between"><span class="id">${t.id} · v${t.v}</span><span class="tag${t.pri === "P1" ? " amber" : ""}" title="Ưu tiên">${t.pri}</span></div>
+      <div class="title"><a href="05-work-order.html">${t.title}</a></div>
+      <div class="meta"><span class="tag">${d.code}</span>${w ? `${token(t.agent, t.state)}<span>${w.name}</span>` : ""}</div>
+      ${t.stale ? "" : BP.stateChip(t.state)}
+      ${body}
+      <div class="foot"><span class="code">RETRY ${t.retry}</span><button class="btn sm" type="button" data-cmd aria-haspopup="menu" aria-label="Lệnh cho ${t.id}">Lệnh ▾</button></div>`;
+  }
+  function cardClass(t) { return "card" + (t.stale ? " stale" : t.state === "waiting" ? " waiting-card" : t.flag ? " flagged" : ""); }
+  const cards = {};
+  tasks.forEach(t => {
+    const c = document.createElement("article");
+    c.className = cardClass(t); c.dataset.id = t.id; c.setAttribute("role", "listitem"); c.tabIndex = 0; c.draggable = true;
+    c.setAttribute("aria-label", `${t.id} ${t.title}, trạm ${F.stateLabel[t.state]}`);
+    c.innerHTML = cardInner(t); cards[t.id] = c;
+    colEl(t.state).querySelector("[data-list]").appendChild(c);
+  });
+  function rerender(id) { const t = T(id), c = cards[id]; c.className = cardClass(t); c.innerHTML = cardInner(t); c.setAttribute("aria-label", `${t.id} ${t.title}, trạm ${F.stateLabel[t.state]}`); }
+
+  /* ---------- Filters + counts + table ---------- */
+  BP.$("#fDept").insertAdjacentHTML("beforeend", F.departments.map(d => `<option value="${d.id}">${d.code} · ${d.name}</option>`).join(""));
+  BP.$("#fAgent").insertAdjacentHTML("beforeend", F.agents.map(a => `<option value="${a.id}">${a.name}</option>`).join(""));
+  const match = t => {
+    const d = BP.$("#fDept").value, a = BP.$("#fAgent").value, p = BP.$("#fPri").value;
+    return (!d || t.dept === d) && (!a || (a === "-" ? !t.agent : t.agent === a)) && (!p || t.pri === p);
+  };
+  function refresh() {
+    let shown = 0;
+    COLS.forEach(c => {
+      const col = colEl(c.s), list = col.querySelector("[data-list]");
+      const inCol = tasks.filter(t => t.state === c.s);
+      let vis = 0;
+      inCol.forEach(t => { const ok = match(t); cards[t.id].hidden = !ok; if (ok) vis++; });
+      shown += vis;
+      col.querySelector("[data-cnt]").textContent = vis;
+      let em = list.querySelector(".empty");
+      if (!vis && !em) list.insertAdjacentHTML("beforeend", `<div class="empty">Không có phiếu khớp bộ lọc ở trạm này.</div>`);
+      if (vis && em) em.remove();
+      const wd = col.querySelector("[data-wip]");
+      if (c.wip) { wd.querySelector("span").textContent = `WIP ${inCol.length} / ${c.wip}`; wd.classList.toggle("full", inCol.length >= c.wip - 1); }
+      else wd.querySelector("span").textContent = c.s === "done" ? "KHÔNG GIỚI HẠN" : "KHÔNG GIỚI HẠN WIP";
+    });
+    BP.$("#wipLegend").textContent = `${tasks.filter(t => t.state === "doing").length} / 6`;
+    BP.$("#countLine").textContent = `Hiển thị ${shown} / ${tasks.length} phiếu trên board chính (lưu trữ ${archived.length})`;
+    BP.$("#tbody").innerHTML = tasks.filter(match).map(t => {
+      const w = who(t.agent), d = BP.dept(t.dept);
+      const note = t.stale ? `<span class="state stale">Stale v${t.stale.shown}</span>` : t.state === "doing" ? `lease ${t.secs}s` : t.state === "waiting" ? `<span class="c-amber">${t.decision}</span>` : t.state === "review" || t.state === "done" ? `reviewer ${who(t.reviewer).name}` : t.flag ? `<span class="c-red">${t.flag}</span>` : "";
+      return `<tr><td class="mono">${t.id}</td><td><a href="05-work-order.html">${t.title}</a></td><td>${BP.stateChip(t.state)}</td><td class="mono">${d.code}</td><td>${w ? w.name : '<span class="muted">Chưa có chủ</span>'}</td><td class="mono">${t.pri}</td><td class="mono">${t.fence || "-"}</td><td class="mono">${t.retry}</td><td>${note}</td></tr>`;
+    }).join("") || `<tr><td colspan="9"><div class="empty">Không có phiếu khớp bộ lọc.</div></td></tr>`;
+  }
+  ["#fDept", "#fAgent", "#fPri"].forEach(s => BP.$(s).addEventListener("change", refresh));
+  BP.$("#fClear").addEventListener("click", () => { ["#fDept", "#fAgent", "#fPri"].forEach(s => BP.$(s).value = ""); refresh(); });
+  refresh();
+
+  /* ---------- View toggle ---------- */
+  function setView(v) {
+    BP.$$(".seg [data-view]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.view === v)));
+    BP.$("#boardView").hidden = v !== "board"; BP.$("#tableView").hidden = v !== "table";
+  }
+  BP.$$(".seg [data-view]").forEach(b => b.addEventListener("click", () => setView(b.dataset.view)));
+
+  /* ---------- Feed ---------- */
+  const feed = BP.$("#feed");
+  const push = (g, c, html) => BP.logPush(feed, `<time>${BP.now()}</time><span class="g" style="color:${c}">${g}</span><span>${html}</span>`, 20);
+  [["✓", sc("done"), "<b>Hà</b> nghiệm thu T-1029 · reviewer khác người nộp"],
+   ["◎", sc("review"), "<b>BOLT-10</b> submit T-1036 · fence 9 · 3 artifact committed"],
+   ["◌", "var(--red)", "Lệnh schedule T-1061 bị từ chối · <span class='mono'>VERSION_CONFLICT</span> v3 ≠ v4"],
+   ["❚❚", "var(--amber)", "<b>VEGA-03</b> yêu cầu quyết định T-1039 · proposal v2"]].forEach(r => push(...r));
+
+  /* ---------- Rules for drag = command ---------- */
+  const WHY = {
+    doing: "Doing chỉ đạt được khi runtime đã bind claim thành công. Kéo thả không tạo run, lease hay fence.",
+    waiting: "Waiting chỉ đạt được qua đề xuất từ run đang giữ lease, kèm checkpoint và proposal_version mới.",
+    done: "Done chỉ đạt được qua nghiệm thu độc lập. Reviewer phải khác người nộp và agent nộp. Mở Trạm nghiệm thu.",
+    backlog: "Không có lệnh kéo ngược về Backlog. Dùng Huỷ, hoặc Từ chối tại Cổng phê duyệt."
+  };
+  function verdict(t, to) {
+    if (t.state === to) return { same: true };
+    if (to === "ready" && t.state === "backlog") return t.flag ? { ok: false, why: "retry_exhausted chặn Ready. Tạo phiếu sửa đổi có liên kết nguồn gốc." } : t.stale ? { ok: false, why: "Phiếu đang lệch version. Xem trạng thái hiện tại trước khi gửi lệnh." } : { ok: true, cmd: "schedule" };
+    if (to === "ready" && t.state === "review") return { ok: true, cmd: "requeue" };
+    if (to === "ready") return { ok: false, why: "Không có lệnh đưa phiếu từ " + F.stateLabel[t.state] + " về Ready bằng kéo thả." };
+    return { ok: false, why: WHY[to] };
+  }
+  function showWhy(col, text) { const w = col.querySelector("[data-why]"); w.className = "why note-red err"; w.textContent = text; w.hidden = false; col.classList.add("drop-bad"); }
+  function clearWhy(col) { const w = col.querySelector("[data-why]"); w.hidden = true; col.classList.remove("drop-bad", "drop-ok"); }
+  function applyMove(t, to, cmd) {
+    const c = cards[t.id]; const first = c.getBoundingClientRect();
+    const from = t.state; t.state = to; t.v += 1;
+    if (cmd === "requeue") { t.agent = null; }
+    rerender(t.id); colEl(to).querySelector("[data-list]").prepend(c); refresh();
+    const last = c.getBoundingClientRect();
+    flip(c, first, last, 520);
+    push("◇", sc(to), `Lệnh <b>${cmd}</b> ${t.id} · ${F.stateLabel[from]} → ${F.stateLabel[to]} · task_version v${t.v}`);
+    BP.toast("COMMAND · " + cmd.toUpperCase(), `${t.id} đã chuyển ${F.stateLabel[to]} (mô phỏng). Lệnh gửi expected_version v${t.v - 1}.`);
+    c.focus({ preventScroll: true });
+  }
+
+  /* ---------- Native drag & drop ---------- */
+  let dragId = null;
+  board.addEventListener("dragstart", e => { const c = e.target.closest(".card"); if (!c) return; dragId = c.dataset.id; e.dataTransfer.setData("text/plain", dragId); e.dataTransfer.effectAllowed = "move"; });
+  board.addEventListener("dragend", () => { dragId = null; BP.$$(".col").forEach(clearWhy); });
+  BP.$$(".col").forEach(col => {
+    col.addEventListener("dragover", e => {
+      if (!dragId) return; const v = verdict(T(dragId), col.dataset.col);
+      if (v.same) return; e.preventDefault();
+      BP.$$(".col").forEach(x => x !== col && clearWhy(x));
+      if (v.ok) { col.classList.add("drop-ok"); e.dataTransfer.dropEffect = "move"; } else { showWhy(col, v.why); e.dataTransfer.dropEffect = "none"; }
+    });
+    col.addEventListener("dragleave", e => { if (!col.contains(e.relatedTarget)) clearWhy(col); });
+    col.addEventListener("drop", e => {
+      e.preventDefault(); const t = T(dragId); const v = verdict(t, col.dataset.col); clearWhy(col);
+      if (v.ok) applyMove(t, col.dataset.col, v.cmd);
+      else if (!v.same) { push("✕", "var(--red)", `Từ chối kéo ${t.id} vào ${F.stateLabel[col.dataset.col]}: ${v.why}`); BP.toast("INVALID_STATE", v.why); }
+    });
+  });
+
+  /* ---------- Command menu (keyboard equivalent) ---------- */
+  const menu = BP.$("#menu");
+  function openMenu(btn, t) {
+    const items = [];
+    const vr = verdict(t, "ready");
+    if (t.state === "backlog") items.push({ label: "Lên lịch → Ready", sub: vr.ok ? `schedule · expected_version v${t.v}` : vr.why, to: "ready", cmd: "schedule", off: !vr.ok });
+    if (t.state === "backlog" || t.state === "ready") items.push({ label: "Sửa metadata", sub: "Chỉ cho phép ở Backlog, Ready", toast: true });
+    if (t.state === "ready") items.push({ label: "Chuyển sang Doing", sub: "Không hỗ trợ: chỉ runtime claim", off: true });
+    if (t.state === "doing") items.push({ label: "Mở phiếu đang thực thi", href: "05-work-order.html" }, { label: "Sửa metadata", sub: "Khoá khi đang Doing", off: true });
+    if (t.state === "waiting") items.push({ label: "Mở cổng phê duyệt", sub: `proposal v${t.pv}`, href: "12-approval-gate.html" });
+    if (t.state === "review") items.push({ label: "Mở Trạm nghiệm thu", sub: "Accept chỉ dành cho reviewer độc lập", href: "13-qc-review.html" }, { label: "Gửi lại → Ready", sub: "requeue · cần lý do sửa", to: "ready", cmd: "requeue" });
+    if (t.state === "done") items.push({ label: "Xem bằng chứng đã lưu", href: "18-warehouse.html" });
+    if (t.state !== "done") items.push({ label: "Huỷ phiếu", sub: "cancel · cần quyền tasks:cancel", danger: true, toast: true });
+    menu.innerHTML = items.map((it, i) => it.href ? `<a role="menuitem" href="${it.href}">${it.label}${it.sub ? `<small>${it.sub}</small>` : ""}</a>` : `<button role="menuitem" type="button" data-i="${i}" ${it.off ? "disabled" : ""} class="${it.danger ? "danger" : ""}">${it.label}${it.sub ? `<small>${it.sub}</small>` : ""}</button>`).join("");
+    const r = btn.getBoundingClientRect();
+    menu.hidden = false;
+    const mw = menu.offsetWidth, mh = menu.offsetHeight;
+    menu.style.left = Math.max(8, Math.min(r.right - mw, innerWidth - mw - 8)) + "px";
+    menu.style.top = (r.bottom + mh + 8 > innerHeight ? r.top - mh - 4 : r.bottom + 4) + "px";
+    menu.onclick = e => {
+      const b = e.target.closest("button[data-i]"); if (!b) return; const it = items[+b.dataset.i]; closeMenu();
+      if (it.to) applyMove(t, it.to, it.cmd);
+      else BP.toast("COMMAND", `${it.label} ${t.id}: mở hộp thoại lệnh (mô phỏng).`);
+    };
+    const f = menu.querySelector("button:not([disabled]), a"); if (f) f.focus();
+    menu._btn = btn;
+  }
+  function closeMenu() { if (menu.hidden) return; menu.hidden = true; if (menu._btn) menu._btn.focus({ preventScroll: true }); }
+  board.addEventListener("click", e => {
+    const cb = e.target.closest("[data-cmd]"); if (cb) { e.stopPropagation(); openMenu(cb, T(cb.closest(".card").dataset.id)); return; }
+    const rf = e.target.closest("[data-refresh]");
+    if (rf) {
+      const t = T(rf.closest(".card").dataset.id); t.v = t.stale.now; t.dept = "dl"; delete t.stale; rerender(t.id); refresh();
+      push("↻", sc("ready"), `Đã tải trạng thái hiện tại ${t.id} · v${t.v}. Lệnh cũ không gửi lại tự động.`);
+      BP.toast("REFRESHED", `${t.id} v${t.v}: phòng ban giờ là DL-04. Kiểm tra lại trước khi lên lịch.`);
+    }
+  });
+  document.addEventListener("click", e => { if (!menu.contains(e.target)) closeMenu(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") closeMenu(); });
+  BP.$("#btnNew").addEventListener("click", () => BP.toast("CREATE", "Phiếu mới luôn bắt đầu ở Backlog, không tự tạo run (mô phỏng)."));
+
+  /* ---------- Motion helpers ---------- */
+  function tween(ms, fn) {
+    return new Promise(res => {
+      let el = 0, last = performance.now();
+      const step = now => { const dt = now - last; last = now; if (!BP.paused) el += dt; const t = Math.min(1, el / ms); const e = t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; fn(e, t); t < 1 ? requestAnimationFrame(step) : res(); };
+      requestAnimationFrame(step);
+    });
+  }
+  function flip(c, first, last, ms) {
+    const dx = first.left - last.left, dy = first.top - last.top;
+    c.classList.add("moving");
+    return tween(ms, e => { c.style.transform = `translate(${dx * (1 - e)}px, ${dy * (1 - e)}px)`; }).then(() => { c.style.transform = ""; c.classList.remove("moving"); });
+  }
+  const panel = BP.$("#linePanel");
+  const rel = r => { const p = panel.getBoundingClientRect(); return { x: r.left - p.left, y: r.top - p.top, w: r.width, h: r.height }; };
+
+  /* ---------- Lease countdown + heartbeat ---------- */
+  BP.every(1000, () => {
+    tasks.filter(t => t.state === "doing").forEach(t => {
+      t.secs = Math.max(0, t.secs - 1);
+      const hbAt = t.id === "T-1047" ? 6 : 20;
+      if (t.secs <= hbAt) { t.secs = 60; push("▶", sc("doing"), `<b>${who(t.agent).name}</b> heartbeat ${t.run} · lease gia hạn 60s · fence giữ ${t.fence}`); }
+      const c = cards[t.id]; const s = c.querySelector("[data-secs]"); if (!s) return;
+      const r = t.secs / 60; s.textContent = t.secs + "s";
+      const m = c.querySelector(".meter"); m.className = "meter ticks " + leaseCls(r); m.querySelector("i").style.width = (r * 100) + "%";
+    });
+  });
+
+  /* ---------- Scene: illustrate invalid drop into Done ---------- */
+  let demoBusy = false;
+  async function demoInvalid() {
+    if (demoBusy) return; demoBusy = true;
+    const src = cards["T-1036"]; const done = colEl("done");
+    if (src.hidden || BP.$("#boardView").hidden) { demoBusy = false; return; }
+    const g = src.cloneNode(true); g.classList.add("ghost"); g.removeAttribute("id"); g.setAttribute("aria-hidden", "true"); g.querySelectorAll("button,a").forEach(x => x.tabIndex = -1);
+    const a = rel(src.getBoundingClientRect()), b = rel(done.querySelector("[data-list]").getBoundingClientRect());
+    g.style.width = a.w + "px"; panel.appendChild(g);
+    const tx = b.x + 8, ty = b.y + 150;
+    let shown = false;
+    await tween(BP.reduced ? 1 : 900, e => { g.style.transform = `translate(${a.x + (tx - a.x) * e}px, ${a.y + (ty - a.y) * e}px) rotate(${2 * e}deg)`; if (e > 0.7 && !shown) { shown = true; showWhy(done, WHY.done); } });
+    if (!shown) showWhy(done, WHY.done);
+    push("✕", "var(--red)", "Minh hoạ: kéo T-1036 vào Done bị từ chối. Quản đốc không phải reviewer được giao (SAGE-12).");
+    await BP.wait(4200);
+    await tween(BP.reduced ? 1 : 600, e => { g.style.transform = `translate(${tx + (a.x - tx) * e}px, ${ty + (a.y - ty) * e}px)`; g.style.opacity = 1 - e * 0.6; });
+    g.remove(); clearWhy(done); demoBusy = false;
+  }
+  BP.$("#btnDemo").addEventListener("click", () => { setView("board"); demoInvalid(); });
+
+  /* ---------- Scene: BOLT-10 claims T-1055 ---------- */
+  async function sceneClaim() {
+    const t = T("T-1055"); if (t.state !== "ready" || BP.$("#boardView").hidden || cards[t.id].hidden) return;
+    const c = cards[t.id];
+    const dock = BP.$("#dockBolt");
+    const fly = BP.h(`<span class="bot fly" style="--c:var(--s-doing)" aria-hidden="true">BL</span>`); panel.appendChild(fly);
+    const a = rel(dock.getBoundingClientRect()), b = rel(c.getBoundingClientRect());
+    const tx = b.x + b.w - 44, ty = b.y + 6;
+    dock.style.opacity = 0.3;
+    await tween(1300, e => { fly.style.transform = `translate(${a.x + (tx - a.x) * e}px, ${a.y + (ty - a.y) * e - Math.sin(e * Math.PI) * 40}px)`; });
+    const nf = (t.fence || 0) + 1;
+    const tag = BP.h(`<span class="claimtag">claim · fence ${nf}</span>`); panel.appendChild(tag);
+    tag.style.transform = `translate(${tx - 60}px, ${ty - 22}px)`;
+    c.classList.add("claimed");
+    push("◇", sc("doing"), `<b>BOLT-10</b> claim T-1055 · <span class="mono">rt-bolt-03c</span> · fence ${nf} · lease 60s`);
+    await BP.wait(700);
+    t.state = "doing"; t.agent = "bolt"; t.fence = nf; t.v += 1; t.run = "r-0b17"; t.secs = 60;
+    const first = c.getBoundingClientRect();
+    rerender(t.id); c.classList.add("claimed"); colEl("doing").querySelector("[data-list]").appendChild(c); refresh();
+    const last = c.getBoundingClientRect();
+    const f2 = rel(last);
+    await Promise.all([flip(c, first, last, 900), tween(900, e => { fly.style.transform = `translate(${tx + (f2.x + f2.w - 44 - tx) * e}px, ${ty + (f2.y + 6 - ty) * e}px)`; tag.style.transform = `translate(${tx - 60 + (f2.x + f2.w - 104 - tx + 60) * e}px, ${ty - 22 + (f2.y - 16 - ty + 22) * e}px)`; })]);
+    await BP.wait(900); fly.remove(); tag.remove(); c.classList.remove("claimed");
+    await BP.wait(9000);
+    // reset for the loop (honestly labelled)
+    const f3 = c.getBoundingClientRect();
+    t.state = "ready"; t.agent = null; t.v += 1; rerender(t.id); colEl("ready").querySelector("[data-list]").prepend(c); refresh();
+    flip(c, f3, c.getBoundingClientRect(), 600);
+    dock.style.opacity = 1;
+    push("○", sc("backlog"), "Đặt lại kịch bản: T-1055 về Ready (mô phỏng lặp, không phải lệnh thật)");
+  }
+
+  async function loop() {
+    await BP.wait(700); await demoInvalid();
+    while (true) { await BP.wait(2500); await sceneClaim(); await BP.wait(3000); await demoInvalid(); }
+  }
+  if (!BP.reduced) loop();
+})();
+</script>
+</body>
+</html>

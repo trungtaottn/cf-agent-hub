@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kịch bản mô phỏng · CF Agent Factory</title>
+<link rel="stylesheet" href="assets/blueprint.css">
+<style>
+  .scn-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: var(--sp-3); }
+  .scn { display: flex; flex-direction: column; gap: var(--sp-2); padding: 0; background: var(--bp-800); border: 1px solid var(--line-soft); color: var(--ink); text-align: left; cursor: pointer; min-width: 0; transition: border-color var(--dur-fast), transform var(--dur-fast) var(--ease); }
+  .scn:hover { border-color: var(--line); transform: translateY(-2px); }
+  .scn[aria-pressed="true"] { border-color: var(--s-ready); box-shadow: inset 0 0 0 1px var(--s-ready); }
+  .scn svg { width: 100%; height: auto; border-bottom: 1px solid var(--line-soft); background: var(--bp-900); }
+  .scn .meta { padding: 0 var(--sp-3) var(--sp-3); display: flex; flex-direction: column; gap: 2px; }
+  .scn .code { font-size: var(--fs-2xs); }
+  .scn b { font-family: var(--f-display); font-size: var(--fs-sm); font-weight: 600; line-height: 1.25; }
+  .scn .d { font-size: var(--fs-2xs); color: var(--ink-2); }
+  .scn[aria-pressed="true"] .code { color: var(--s-ready); }
+
+  .stage svg { width: 100%; height: auto; }
+  .stage-scroll { overflow-x: auto; }
+  .stage-scroll svg { min-width: 760px; }
+  .rm { stroke-width: 1.25; transition: fill var(--dur-slow) var(--ease), stroke var(--dur-slow); }
+  .ag text { font-family: var(--f-mono); font-size: 9px; font-weight: 600; text-anchor: middle; dominant-baseline: central; }
+  .ag .nm { font-size: 8.5px; font-weight: 500; fill: var(--ink-2); }
+  .hu text { font-family: var(--f-mono); font-size: 9px; font-weight: 600; text-anchor: middle; dominant-baseline: central; fill: var(--amber); }
+  .banner rect { fill: var(--t-failed); stroke: var(--red); }
+  .banner text { font-family: var(--f-mono); font-size: 13px; font-weight: 600; letter-spacing: 0.12em; fill: var(--red); }
+  .night .dwg .lbl { fill: var(--ink-2); }
+
+  .tl { padding: var(--sp-4); border-top: 1px solid var(--line-soft); display: flex; flex-direction: column; gap: var(--sp-3); }
+  .track { position: relative; height: 44px; }
+  .track .rail-line { position: absolute; left: 0; right: 0; top: 20px; height: 4px; background: var(--bp-950); border: 1px solid var(--line-soft); }
+  .track .fill { position: absolute; left: 0; top: 20px; height: 4px; background: var(--s-ready); width: 0; }
+  .track .ms { position: absolute; top: 0; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 2px; background: none; border: 0; padding: 0; cursor: pointer; min-width: 36px; min-height: 44px; color: var(--ink-3); font-family: var(--f-mono); font-size: var(--fs-2xs); }
+  .track .ms i { width: 9px; height: 9px; margin-top: 17px; background: var(--bp-850); border: 1px solid var(--line); transform: rotate(45deg); }
+  .track .ms span { order: -1; line-height: 1; height: 12px; }
+  .track .ms.past { color: var(--ink-2); } .track .ms.past i { background: var(--s-ready); border-color: var(--s-ready); }
+  .track .ms.cur { color: var(--ink); } .track .ms.cur i { background: var(--ink); border-color: var(--ink); box-shadow: 0 0 0 3px var(--t-ready); }
+  .track .ms:hover { color: var(--ink); }
+  .track .ms:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+  .track .head { position: absolute; top: 12px; width: 2px; height: 20px; background: var(--ink); transform: translateX(-1px); pointer-events: none; }
+  .tl-ctrl { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; }
+  .clock-big { font-family: var(--f-display); font-size: var(--fs-2xl); font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1; }
+  .cap { font-size: var(--fs-sm); color: var(--ink-2); min-height: 1.5em; }
+  .cap b { color: var(--ink); }
+
+  .checks { list-style: none; margin: 0; padding: 0; }
+  .checks li { display: grid; grid-template-columns: auto 1fr; gap: var(--sp-3); align-items: start; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--grid-major); font-size: var(--fs-sm); }
+  .checks li .state { margin-top: 1px; }
+  .checks li.ok { animation: reveal var(--dur-slow) var(--ease); }
+  .kpis4 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kpis4 .kpi { border-top: 1px solid var(--line-soft); }
+  .kpis4 .kpi:nth-child(odd) { border-right: 1px solid var(--line-soft); }
+  .kpis4 .kpi:nth-child(-n+2) { border-top: 0; }
+  .kpis4 .value { font-size: var(--fs-2xl); }
+
+  .evt tr.cur td { background: var(--bp-600); }
+  .evt tr.future td { color: var(--ink-3); }
+  .evt td { padding: var(--sp-2) var(--sp-3); font-size: var(--fs-sm); }
+  .evt th { padding: var(--sp-2) var(--sp-3); }
+  .evt-wrap { overflow-x: auto; }
+  .evt { min-width: 680px; }
+
+  @media (max-width: 1280px) { .scn-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  @media (max-width: 560px) { .scn-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .track .ms span { display: none; } .clock-big { font-size: var(--fs-xl); } }
+</style>
+</head>
+<body data-sheet="16" data-title="Kịch bản mô phỏng">
+<div class="app paper">
+  <div id="rail"></div>
+  <div class="main">
+    <header id="topbar"></header>
+    <main class="content">
+
+      <section class="page-head reveal">
+        <div>
+          <div class="code">SCENARIO STUDIO · 7 BẢN VẼ · <span class="c-amber">MÔ PHỎNG TRÌNH DIỄN</span></div>
+          <h2>Kịch bản mô phỏng toàn nhà máy</h2>
+          <p class="lede">Chọn một kịch bản để xem nhà máy vận hành theo choreography dựng sẵn. Đây là mô phỏng trình diễn: không gửi lệnh, không đổi dữ liệu thật. Mỗi kịch bản chỉ ra quy tắc nghiệp vụ mà nó minh hoạ để đội kiểm thử dùng làm kịch bản nghiệm thu.</p>
+        </div>
+        <div class="actions">
+          <a class="btn" href="01-factory-floor.html">Về sàn nhà máy</a>
+          <a class="btn" href="14-meeting-room.html">Mở phòng họp</a>
+        </div>
+      </section>
+
+      <section aria-label="Danh sách kịch bản">
+        <div class="scn-grid" id="scnGrid" role="group" aria-label="Chọn kịch bản"></div>
+      </section>
+
+      <section class="grid g-main-side">
+        <div class="panel stage reveal">
+          <div class="panel-head"><h3 id="stageTitle">Sân khấu</h3><span class="tag amber">SIM · KHÔNG PHẢI DỮ LIỆU THẬT</span></div>
+          <div class="stage-scroll scan">
+            <svg id="stage" class="dwg" viewBox="0 0 1000 560" role="img" aria-labelledby="stageT">
+              <title id="stageT">Mặt bằng nhà máy rút gọn đang chạy kịch bản được chọn. Bảng sự kiện bên dưới mô tả cùng nội dung.</title>
+              <defs><pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" style="stroke:var(--line-soft)" stroke-width="1"/></pattern></defs>
+              <g id="gRooms"></g><g id="gHall"></g><g id="gBoxes"></g><g id="gIso"></g><g id="gFx"></g><g id="gAgents"></g><g id="gBanner"></g>
+            </svg>
+          </div>
+          <div class="tl">
+            <div class="tl-ctrl">
+              <div class="row"><span class="clock-big" id="simClock">08:00</span><span class="code" id="simDay">SIM CLOCK</span></div>
+              <div class="row wrap">
+                <button class="btn sm" id="rewBtn" aria-label="Tua lại từ đầu"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 2v8M10 2L4 6l6 4z" fill="currentColor" stroke="currentColor"/></svg>Tua lại</button>
+                <button class="btn primary" id="playBtn"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 2l7 4-7 4z" fill="currentColor"/></svg><span>Phát</span></button>
+                <button class="btn sm" id="stepBtn" aria-label="Bước tới mốc kế tiếp"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 2l6 4-6 4zM10 2v8" fill="currentColor" stroke="currentColor"/></svg>Bước</button>
+                <div class="seg" role="group" aria-label="Tốc độ" id="spd"><button aria-pressed="true" data-s="1">1x</button><button aria-pressed="false" data-s="2">2x</button><button aria-pressed="false" data-s="4">4x</button></div>
+              </div>
+            </div>
+            <div class="track" id="track"><div class="rail-line"></div><div class="fill" id="fill"></div><div class="head" id="head"></div></div>
+            <div class="cap" id="cap" aria-live="polite"></div>
+          </div>
+        </div>
+
+        <aside class="stack">
+          <div class="panel reveal">
+            <div class="panel-head"><h3>Kịch bản này kiểm chứng điều gì</h3><span class="code" id="chkCount">0/0</span></div>
+            <ul class="checks" id="checks"></ul>
+          </div>
+          <div class="panel reveal">
+            <div class="panel-head"><h3>Đồng hồ nhà máy</h3><span class="code">THEO MỐC</span></div>
+            <div class="kpis4">
+              <div class="kpi"><span class="label">Doing · có lease</span><span class="value c-doing" id="kDoing">4</span></div>
+              <div class="kpi"><span class="label">Agent online</span><span class="value" id="kOnline">10</span></div>
+              <div class="kpi"><span class="label">Hold · đối soát</span><span class="value c-red" id="kHold">0</span></div>
+              <div class="kpi"><span class="label">Chờ người</span><span class="value c-amber" id="kHuman">2</span></div>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <section class="panel reveal" aria-label="Bảng sự kiện kịch bản">
+        <div class="panel-head"><h3>Bảng sự kiện kịch bản</h3><span class="code">THAY THẾ CHO ANIMATION · CẬP NHẬT THEO PLAYHEAD</span></div>
+        <div class="evt-wrap"><table class="table evt"><thead><tr><th>Giờ mô phỏng</th><th>Sự kiện</th><th>Actor</th><th>Quy tắc minh hoạ</th></tr></thead><tbody id="evtRows"></tbody></table></div>
+      </section>
+
+    </main>
+    <div id="titleblock"></div>
+  </div>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(() => {
+  const F = BP.F;
+  const el = (t, a, p) => BP.svg(t, a, p);
+
+  /* ---------- rooms of the reduced floor ---------- */
+  const ROOMS = {
+    kt: { x: 30, y: 30, w: 230, h: 140, name: "XƯỞNG KỸ THUẬT", sub: "KT-01" },
+    nc: { x: 280, y: 30, w: 170, h: 140, name: "NGHIÊN CỨU", sub: "NC-02" },
+    nd: { x: 470, y: 30, w: 170, h: 140, name: "STUDIO NỘI DUNG", sub: "ND-03" },
+    dl: { x: 660, y: 30, w: 150, h: 140, name: "DỮ LIỆU", sub: "DL-04" },
+    ops: { x: 830, y: 30, w: 140, h: 140, name: "BẢO TRÌ · VH", sub: "VH-05 · OUTBOX" },
+    meet: { x: 30, y: 290, w: 230, h: 180, name: "PHÒNG HỌP", sub: "THREAD · STANDUP" },
+    lounge: { x: 280, y: 290, w: 200, h: 180, name: "KHU GIẢI TRÍ", sub: "IDLE · COOLDOWN" },
+    gate: { x: 500, y: 290, w: 170, h: 180, name: "CỔNG PHÊ DUYỆT", sub: "HUMAN DECISION" },
+    qc: { x: 690, y: 290, w: 150, h: 180, name: "TRẠM QC", sub: "QC-06 · REVIEW" },
+    wh: { x: 860, y: 290, w: 110, h: 180, name: "KHO R2", sub: "ARTIFACT", hatch: true }
+  };
+  const HALL_Y = 230;
+  const LIGHT = {
+    norm: ["var(--bp-800)", "var(--line)"], on: ["var(--t-doing)", "var(--s-doing)"], human: ["var(--t-waiting)", "var(--amber)"],
+    alert: ["var(--t-failed)", "var(--red)"], dim: ["var(--bp-950)", "var(--line-soft)"], meet: ["var(--t-review)", "var(--s-review)"], cool: ["var(--t-ready)", "var(--s-ready)"]
+  };
+  const gRooms = BP.$("#gRooms"), gHall = BP.$("#gHall"), gBoxes = BP.$("#gBoxes"), gIso = BP.$("#gIso"), gFx = BP.$("#gFx"), gAgents = BP.$("#gAgents"), gBanner = BP.$("#gBanner");
+  Object.entries(ROOMS).forEach(([id, r]) => {
+    r.rect = el("rect", { x: r.x, y: r.y, width: r.w, height: r.h, class: "rm", fill: LIGHT.norm[0], stroke: LIGHT.norm[1] }, gRooms);
+    if (r.hatch) el("rect", { x: r.x + 6, y: r.y + 44, width: r.w - 12, height: r.h - 50, class: "hatch" }, gRooms);
+    const t = el("text", { x: r.x + 10, y: r.y + 19, class: "lbl" }, gRooms); t.textContent = r.name;
+    const s = el("text", { x: r.x + 10, y: r.y + 33, class: "sub" }, gRooms); s.textContent = r.sub;
+  });
+  // furniture hints
+  el("circle", { cx: 145, cy: 395, r: 34, class: "wall-thin" }, gRooms);
+  el("rect", { x: 300, y: 420, width: 90, height: 26, class: "wall-thin" }, gRooms);
+  el("rect", { x: 410, y: 330, width: 50, height: 30, class: "wall-thin" }, gRooms);
+  el("line", { x1: 435, y1: 330, x2: 435, y2: 360, class: "wall-thin" }, gRooms);
+  // hall + conveyor
+  el("rect", { x: 30, y: HALL_Y - 22, width: 940, height: 44, fill: "var(--bp-900)", stroke: "var(--line)" }, gHall);
+  el("line", { x1: 30, y1: HALL_Y, x2: 970, y2: HALL_Y, class: "path-core" }, gHall);
+  el("line", { x1: 30, y1: HALL_Y - 15, x2: 970, y2: HALL_Y - 15, class: "flow slow" }, gHall);
+  const STN = [["BACKLOG", 60, "var(--s-backlog)"], ["READY", 230, "var(--s-ready)"], ["DOING", 400, "var(--s-doing)"], ["WAITING", 560, "var(--amber)"], ["REVIEW", 720, "var(--s-review)"], ["DONE", 880, "var(--s-done)"]];
+  STN.forEach(([n, x, c]) => { el("line", { x1: x, y1: HALL_Y - 22, x2: x, y2: HALL_Y + 22, stroke: c, "stroke-dasharray": "3 3" }, gHall); const t = el("text", { x: x + 5, y: HALL_Y + 17, class: "sub", style: `fill:${c}` }, gHall); t.textContent = n; });
+  el("path", { d: "M30 14 H970 M30 8 V20 M970 8 V20", class: "dimline" }, gHall);
+  const dt = el("text", { x: 500, y: 11, class: "sub", "text-anchor": "middle" }, gHall); dt.textContent = "MẶT BẰNG RÚT GỌN · TẦNG 01";
+  // isolation environment (restore drill)
+  const iso = el("g", { style: "display:none" }, gIso);
+  el("rect", { x: 30, y: 492, width: 940, height: 54, fill: "var(--bp-900)", stroke: "var(--s-ready)", "stroke-dasharray": "6 4" }, iso);
+  const it = el("text", { x: 44, y: 514, class: "lbl" }, iso); it.textContent = "MÔI TRƯỜNG CÁCH LY · RESTORE TEST";
+  const is = el("text", { x: 44, y: 532, class: "sub" }, iso); is.textContent = "WORKER + NAMESPACE + BUCKET RIÊNG · DELIVERY TẮT · KHÔNG CREDENTIAL PRODUCTION";
+  const isoPkt = el("rect", { x: -8, y: -6, width: 16, height: 12, fill: "var(--bp-950)", stroke: "var(--s-ready)", "stroke-width": 1.5, style: "display:none" }, gFx);
+
+  /* ---------- agents + humans ---------- */
+  const ST = { doing: "var(--s-doing)", idle: "var(--ink-3)", wait: "var(--amber)", meet: "var(--s-review)", cool: "var(--s-ready)", review: "var(--s-review)", stale: "var(--red)", off: "var(--s-cancelled)" };
+  const HOME = {}; F.agents.forEach(a => HOME[a.id] = a.dept === "vh" ? "ops" : a.dept === "qc" ? "qc" : a.dept);
+  const defSt = a => a.presence === "stale" ? "stale" : a.presence === "offline" ? "off" : ({ doing: "doing", idle: "idle", waiting: "wait", cooldown: "cool", meeting: "idle" })[a.activity];
+  const A = {};
+  F.agents.forEach(a => {
+    const g = el("g", { class: "ag" }, gAgents);
+    const hex = el("polygon", { points: "-7,-12 7,-12 13,0 7,12 -7,12 -13,0", fill: "var(--bp-950)", "stroke-width": 1.5 }, g);
+    const t = el("text", { y: 0.5 }, g); t.textContent = a.code;
+    const n = el("text", { y: 21, class: "nm" }, g); n.textContent = a.name.split("-")[0];
+    const tt = el("title", {}, g); tt.textContent = a.name;
+    A[a.id] = { g, hex, t, x: 0, y: 0, tok: 0 };
+  });
+  const HUM = {};
+  F.humans.forEach(h => {
+    const g = el("g", { class: "hu", style: "opacity:0" }, gAgents);
+    el("circle", { r: 12, fill: "var(--bp-950)", stroke: "var(--amber)", "stroke-width": 1.5 }, g);
+    const t = el("text", { y: 0.5 }, g); t.textContent = h.code;
+    HUM[h.id] = { g, x: 500, y: 520, tok: 0, human: true };
+  });
+  function setSt(id, s) {
+    const a = A[id]; if (!a) return; const c = ST[s] || ST.idle;
+    a.hex.style.stroke = c; a.t.style.fill = c;
+    a.hex.style.strokeDasharray = s === "stale" || s === "off" ? "3 2" : "";
+    a.g.style.opacity = s === "off" ? 0.55 : 1;
+  }
+  function slotPos(room, i) {
+    if (room === "ready") return { x: 205 + (i % 3) * 26, y: HALL_Y + (i < 3 ? -2 : 2) - 2 };
+    if (room === "out") return { x: 500, y: 560 };
+    const r = ROOMS[room]; const cols = Math.max(1, Math.floor((r.w - 24) / 44));
+    return { x: r.x + 30 + (i % cols) * 44, y: r.y + 66 + Math.floor(i / cols) * 44 };
+  }
+  // pause-aware tween with cancel token; walks via the hall corridor
+  function walk(o, to, ms) {
+    const tok = ++o.tok; const from = { x: o.x, y: o.y };
+    if (ms <= 0 || (Math.abs(from.x - to.x) < 1 && Math.abs(from.y - to.y) < 1)) { o.x = to.x; o.y = to.y; o.g.setAttribute("transform", `translate(${to.x} ${to.y})`); return Promise.resolve(); }
+    const lane = from.y < HALL_Y && to.y < HALL_Y ? HALL_Y - 8 : HALL_Y + 8;
+    const p = el("path", { d: to.y === HALL_Y - 4 || from.y === HALL_Y - 4 ? `M${from.x} ${from.y} V${lane} H${to.x} V${to.y}` : `M${from.x} ${from.y} V${lane} H${to.x} V${to.y}` });
+    const len = p.getTotalLength();
+    return new Promise(res => {
+      let el2 = 0, last = performance.now();
+      const step = now => {
+        if (tok !== o.tok) return res();
+        const dt = now - last; last = now; if (!BP.paused) el2 += dt;
+        const t = Math.min(1, el2 / ms), e = t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+        const pt = p.getPointAtLength(len * e); o.x = pt.x; o.y = pt.y;
+        o.g.setAttribute("transform", `translate(${pt.x.toFixed(1)} ${pt.y.toFixed(1)})`);
+        t < 1 ? requestAnimationFrame(step) : res();
+      };
+      requestAnimationFrame(step);
+    });
+  }
+
+  /* ---------- scenarios ---------- */
+  const H = id => (BP.agent(id) || {}).name || id;
+  const SC = [
+    { id: "a", code: "SCN-A", name: "Ca làm việc bình thường", d: "08:00 → 17:00 · 8 mốc", start: 480, thumb: "normal",
+      checks: [["Claim nguyên tử tạo một run có lease và fence", 1], ["Waiting không giữ lease thực thi", 3], ["Reviewer khác người nộp (SAGE-12 ≠ BOLT-10)", 4], ["Ở khu giải trí không đổi quyền sở hữu task", 5], ["Done chỉ sau khi được nghiệm thu độc lập", 7]],
+      ms: [
+        { t: 0, title: "Vào ca", ev: "10 runtime gửi presence · 4 run đang giữ lease", who: "Hệ thống", inv: "Presence không phải quyền sở hữu task", lights: { kt: "on", nc: "on", nd: "norm", dl: "on", ops: "norm" }, kpi: [4, 10, 0, 2] },
+        { t: 30, title: "BOLT-10 nhận việc", ev: "BOLT-10 claim T-1055 · fence 1 · lease 60 s", who: "BOLT-10", inv: "Claim nguyên tử: chỉ một run thắng", pos: { bolt: "ready" }, st: { bolt: "doing" }, kpi: [5] },
+        { t: 45, title: "Quay về bàn", ev: "BOLT-10 bắt đầu thực thi, heartbeat mỗi 20 s", who: "BOLT-10", inv: "Heartbeat chỉ đổi run_version", pos: { bolt: "home" } },
+        { t: 120, title: "Cần người quyết", ev: "VEGA-03 checkpoint T-1039 · proposal v2 · run paused", who: "VEGA-03", inv: "Waiting không giữ lease", pos: { vega: "gate" }, st: { vega: "wait" }, lights: { gate: "human" } },
+        { t: 210, title: "Nộp kết quả", ev: "BOLT-10 submit T-1036 → Review · SAGE-12 kiểm định", who: "BOLT-10 · SAGE-12", inv: "Reviewer phải khác người nộp", st: { sage: "review" }, lights: { qc: "on" } },
+        { t: 240, title: "Nghỉ trưa", ev: "MUSE-04, PIXEL-08, ORBIT-05, LENS-06 về khu giải trí", who: "4 agent", inv: "Lounge chỉ là trình bày presence", pos: { muse: "lounge", orbit: "lounge", lens: "lounge" }, st: { muse: "cool", orbit: "cool", lens: "cool" }, lights: { lounge: "cool" } },
+        { t: 300, title: "Ca chiều", ev: "Các agent trở lại bàn làm việc", who: "4 agent", inv: "Không có quyền nào được cấp thêm", pos: { muse: "home", orbit: "home", lens: "home" }, st: { muse: "idle", orbit: "idle", lens: "idle" }, lights: { lounge: "norm" } },
+        { t: 420, title: "Nghiệm thu", ev: "Hà accept T-1029 · task sang Done", who: "Hà", inv: "Done chỉ sau accept độc lập", pos: { "hu-ha": "qc" }, kpi: [5, 10, 0, 2] },
+        { t: 540, title: "Kết ca", ev: "Đèn dịu · run đang mở tiếp tục theo lease, không tự đóng", who: "Hệ thống", inv: "Hết ca không tự huỷ hay tự hoàn tất task", pos: { "hu-ha": "out" }, lights: { kt: "dim", nc: "dim", nd: "dim", dl: "dim", qc: "dim" } }
+      ] },
+    { id: "b", code: "SCN-B", name: "Họp standup sáng", d: "08:50 → 09:20 · agent tụ về phòng họp", start: 530, thumb: "standup",
+      checks: [["Đang họp vẫn phải heartbeat để giữ lease", 1], ["201 nghĩa là đã lưu, chưa phải đã nhận", 2], ["ACK không cấp quyền thực thi", 3], ["Giao việc trong họp vẫn phải claim nguyên tử", 5]],
+      ms: [
+        { t: 0, title: "Trước giờ họp", ev: "Nhà máy chạy bình thường", who: "Hệ thống", inv: "Mốc chuẩn", lights: { kt: "on", nc: "on", dl: "on" }, kpi: [4, 10, 0, 2] },
+        { t: 10, title: "Vào phòng họp", ev: "10 agent online vào phòng họp · thread #standup", who: "10 agent", inv: "Presence ở phòng họp không trả lease", pos: { atlas: "meet", forge: "meet", bolt: "meet", vega: "meet", kite: "meet", muse: "meet", nova: "meet", orbit: "meet", sage: "meet", lens: "meet" }, st: { bolt: "meet", muse: "meet", orbit: "meet", lens: "meet", vega: "meet" }, lights: { meet: "meet" } },
+        { t: 15, title: "Gửi thư", ev: "MUSE-04 post m-5521 tới 10 người nhận · 201 stored", who: "MUSE-04", inv: "201 ≠ đã giao ≠ đã ACK" },
+        { t: 18, title: "ACK", ev: "9 ACK ghi nhận · ECHO-11 offline chưa ACK", who: "9 agent", inv: "ACK không phải claim" },
+        { t: 22, title: "Tín hiệu cũ", ev: "PIXEL-08 vắng mặt · presence stale, không giữ task", who: "PIXEL-08", inv: "Stale không đồng nghĩa mất việc đang có", st: { pixel: "stale" } },
+        { t: 25, title: "Chốt kế hoạch", ev: "T-1056 giao cho DL-04 · NOVA-07 sẽ claim sau họp", who: "Quản đốc", inv: "Phân công không phải claim", pos: { "hu-qd": "meet" } },
+        { t: 30, title: "Tan họp", ev: "Agent trở về bàn · NOVA-07 claim T-1056 fence 1", who: "10 agent", inv: "Claim mới mới có quyền thực thi", pos: { atlas: "home", forge: "home", bolt: "home", vega: "gate", kite: "home", muse: "home", nova: "home", orbit: "home", sage: "home", lens: "home", "hu-qd": "out" }, st: { bolt: "idle", muse: "idle", orbit: "cool", lens: "idle", vega: "wait" }, lights: { meet: "norm" }, kpi: [5] }
+      ] },
+    { id: "c", code: "SCN-C", name: "Giờ giải trí · hồi quota", d: "12:00 → 13:00 · mini game", start: 720, thumb: "lounge",
+      checks: [["Lounge và cooldown không đổi quyền sở hữu task", 1], ["Agent đang cooldown không tự claim", 3], ["Lease của agent đang làm vẫn do heartbeat quyết định", 4], ["Hết cooldown phải claim như bình thường", 5]],
+      ms: [
+        { t: 0, title: "Giữa trưa", ev: "4 agent đang làm, 4 agent rảnh", who: "Hệ thống", inv: "Mốc chuẩn", lights: { kt: "on", nc: "on", dl: "on" }, kpi: [4, 10, 0, 2] },
+        { t: 5, title: "Vào khu giải trí", ev: "ORBIT-05, BOLT-10, MUSE-04, LENS-06 hồi quota", who: "4 agent", inv: "Cooldown chỉ là trạng thái trình bày", pos: { orbit: "lounge", bolt: "lounge", muse: "lounge", lens: "lounge" }, st: { orbit: "cool", bolt: "cool", muse: "cool", lens: "cool" }, lights: { lounge: "cool" } },
+        { t: 10, title: "Mini game", ev: "BOLT-10 vs LENS-06 · bóng bàn khối lục giác", who: "BOLT-10 · LENS-06", inv: "Giải trí không chạm vào hàng đợi", fx: "game" },
+        { t: 20, title: "Có việc mới", ev: "T-1057 Ready · ORBIT-05 đang cooldown nên không claim", who: "Hệ thống", inv: "Cooldown không tự claim" },
+        { t: 30, title: "Heartbeat", ev: "FORGE-02 heartbeat T-1047 · lease còn hợp lệ", who: "FORGE-02", inv: "Lease do heartbeat, không do vị trí" },
+        { t: 45, title: "Hết cooldown", ev: "ORBIT-05 claim T-1057 · fence 1", who: "ORBIT-05", inv: "Claim nguyên tử như bình thường", pos: { orbit: "ready" }, st: { orbit: "doing" }, fx: "stop", kpi: [5] },
+        { t: 60, title: "Trở lại ca", ev: "Mọi agent về bàn", who: "4 agent", inv: "Không có quyền nào được cấp thêm", pos: { orbit: "home", bolt: "home", muse: "home", lens: "home" }, st: { bolt: "idle", muse: "idle", lens: "idle" }, lights: { lounge: "norm" } }
+      ] },
+    { id: "d", code: "SCN-D", name: "Sự cố: runtime mất kết nối", d: "14:00 → 15:00 · lease hết hạn hàng loạt", start: 840, thumb: "incident",
+      checks: [["Không agent nào giữ việc khi mất lease", 2], ["Lease hết hạn vào hold, không tự retry", 2], ["Lệnh của run cũ bị chặn bằng fence", 3], ["Chỉ replay-safe khai báo trước mới tự retry", 4], ["Việc thay thế cần claim mới, fence tăng", 7]],
+      ms: [
+        { t: 0, title: "Bình thường", ev: "4 run giữ lease hợp lệ", who: "Hệ thống", inv: "Mốc chuẩn", lights: { kt: "on", nc: "on", dl: "on" }, kpi: [4, 10, 0, 2] },
+        { t: 5, title: "Mất kết nối", ev: "rt-forge, rt-kite, rt-nova mất kết nối · heartbeat dừng", who: "3 runtime", inv: "Presence stale chưa phải hết lease", st: { forge: "stale", kite: "stale", nova: "stale" }, lights: { kt: "alert", nc: "alert", dl: "alert" }, banner: "SỰ CỐ · 3 RUNTIME MẤT KẾT NỐI", kpi: [4, 7] },
+        { t: 6, title: "Lease hết hạn", ev: "T-1047, T-1051, T-1044 → Backlog hold outcome_unknown", who: "Server expiry", inv: "Không ai giữ việc khi mất lease", lights: { ops: "alert" }, kpi: [1, 7, 3, 2] },
+        { t: 10, title: "Run cũ gửi lệnh", ev: "rt-forge cũ submit T-1047 · 409 STALE_FENCE", who: "FORGE-02 (run cũ)", inv: "Fence chặn lệnh trễ" },
+        { t: 15, title: "Retry an toàn", ev: "T-1044 có phân loại replay-safe từ trước → Ready (retry 1/2)", who: "Server", inv: "Chỉ replay-safe khai báo trước", kpi: [1, 7, 2, 2] },
+        { t: 30, title: "Đối soát", ev: "Quản đốc đối soát tác động ngoài của T-1047, T-1051", who: "Quản đốc", inv: "Không có lệnh xoá hold", pos: { "hu-qd": "ops" }, banner: "" },
+        { t: 45, title: "Enroll lại", ev: "rt-forge-b02, rt-kite-1c4 enroll · runtime proof mới", who: "Quản đốc", inv: "Không gắn run cũ vào credential mới", st: { forge: "idle", kite: "idle", nova: "idle" }, lights: { kt: "norm", nc: "norm", dl: "norm" }, kpi: [1, 10, 2, 2] },
+        { t: 60, title: "Việc thay thế", ev: "FORGE-02 claim T-1047R fence 5 · KITE-09 claim T-1051R fence 3", who: "FORGE-02 · KITE-09", inv: "Fence mới lớn hơn fence cũ", pos: { forge: "ready", kite: "ready", "hu-qd": "out" }, st: { forge: "doing", kite: "doing" }, lights: { ops: "norm", kt: "on", nc: "on" }, kpi: [3, 10, 2, 2] }
+      ] },
+    { id: "e", code: "SCN-E", name: "Ca đêm tự động", d: "22:00 → 06:00 · chỉ replay-safe", start: 1320, thumb: "night", night: true,
+      checks: [["Chỉ task replay-safe chạy khi không có người", 1], ["Đề xuất hết hạn vẫn ở Waiting", 2], ["Retry tự động trong ngân sách và phân loại trước", 3], ["Bàn giao ca báo đúng quyết định còn treo", 6]],
+      ms: [
+        { t: 0, title: "Vào ca đêm", ev: "Đèn dịu · 9 agent nghỉ, chỉ NOVA-07 và ORBIT-05 trực", who: "Hệ thống", inv: "Lịch đêm chỉ nhận task replay-safe", pos: { atlas: "lounge", forge: "lounge", bolt: "lounge", kite: "lounge", muse: "lounge", sage: "lounge", lens: "lounge" }, st: { atlas: "off", forge: "off", bolt: "off", kite: "off", muse: "off", sage: "off", lens: "off", orbit: "idle" }, lights: { kt: "dim", nc: "dim", nd: "dim", qc: "dim", meet: "dim", lounge: "dim", dl: "on", ops: "norm", gate: "human" }, kpi: [1, 3, 0, 2] },
+        { t: 60, title: "ETL đêm", ev: "NOVA-07 claim T-1061 (replay-safe) · fence 1", who: "NOVA-07", inv: "Phân loại replay-safe ghi trước khi chạy", pos: { nova: "ready" }, st: { nova: "doing" } },
+        { t: 120, title: "Hết hạn quyết định", ev: "Đề xuất T-1039 hết hạn · vẫn Waiting, chờ người sáng mai", who: "Hệ thống", inv: "Không có người: không tự duyệt", pos: { nova: "home" } },
+        { t: 240, title: "Lease rớt", ev: "NOVA-07 lỡ heartbeat · T-1061 replay-safe → Ready (retry 1/2)", who: "Server", inv: "Retry chỉ trong ngân sách", st: { nova: "stale" }, lights: { dl: "alert" } },
+        { t: 250, title: "Claim lại", ev: "NOVA-07 claim T-1061 · fence 2", who: "NOVA-07", inv: "Run mới có fence lớn hơn", pos: { nova: "ready" }, st: { nova: "doing" }, lights: { dl: "on" } },
+        { t: 420, title: "Kiểm tra readiness", ev: "ORBIT-05 kiểm readiness · 0 dead-letter mới", who: "ORBIT-05", inv: "Số chưa đo ghi Not reported", pos: { nova: "home" } },
+        { t: 480, title: "Bàn giao ca", ev: "Sáng: 1 quyết định treo (T-1039), 0 hold mới", who: "Hệ thống", inv: "Bàn giao trung thực", pos: { atlas: "home", forge: "home", bolt: "home", kite: "home", muse: "home", sage: "home", lens: "home" }, st: { atlas: "doing", forge: "doing", bolt: "idle", kite: "doing", muse: "idle", sage: "review", lens: "idle" }, lights: { kt: "on", nc: "on", nd: "norm", qc: "on", meet: "norm", lounge: "norm" }, kpi: [4, 10, 0, 2] }
+      ] },
+    { id: "f", code: "SCN-F", name: "Diễn tập khôi phục", d: "16:00 → 17:00 · backup/restore", start: 960, thumb: "restore",
+      checks: [["Dispatcher tạm dừng trước khi chụp", 1], ["Snapshot nhất quán nhờ quiesce", 3], ["Restore vào môi trường cách ly trước", 4], ["Lease cũ không còn hiệu lực sau restore", 5], ["Resume theo thứ tự, có biên nhận", 6]],
+      ms: [
+        { t: 0, title: "Bình thường", ev: "Nhà máy chạy · chuẩn bị diễn tập", who: "Hệ thống", inv: "Mốc chuẩn", lights: { kt: "on", nc: "on", dl: "on" }, kpi: [4, 10, 0, 2] },
+        { t: 5, title: "Dừng dispatcher", ev: "Quản đốc tạm dừng dispatcher · outbox giữ nguyên", who: "Quản đốc", inv: "Delivery dừng trong khi đối soát", pos: { "hu-qd": "ops" }, lights: { ops: "human" } },
+        { t: 10, title: "Quiesce", ev: "Ngừng nhận claim mới · run hiện tại submit hoặc yield", who: "Hệ thống", inv: "Capture cần trạng thái tĩnh", st: { atlas: "idle", forge: "idle", kite: "idle", nova: "idle" }, lights: { kt: "dim", nc: "dim", dl: "dim" }, kpi: [0] },
+        { t: 20, title: "Chụp snapshot", ev: "Checkpoint SQL + manifest checksum 1.204 artifact committed", who: "Quản đốc", inv: "Upload dở không được coi là đã lưu", lights: { wh: "on" }, fx: "capture" },
+        { t: 35, title: "Restore cách ly", ev: "Khôi phục vào môi trường cách ly · delivery tắt", who: "Quản đốc", inv: "Không ghi đè production làm bài test đầu", iso: true, fx: "restore" },
+        { t: 50, title: "Kiểm chứng", ev: "Lease cũ thất bại · claim mới có fence hợp lệ · approval cũ bị từ chối", who: "Kiểm thử", inv: "Restore không hồi sinh quyền cũ" },
+        { t: 60, title: "Biên nhận", ev: "Biên nhận khôi phục · resume: mutation → delivery → cleanup", who: "Quản đốc", inv: "Bản snapshot một mình không chứng nhận an toàn", iso: false, pos: { "hu-qd": "out" }, st: { atlas: "doing", forge: "doing", kite: "doing", nova: "doing" }, lights: { kt: "on", nc: "on", dl: "on", ops: "norm", wh: "norm" }, kpi: [4] }
+      ] },
+    { id: "g", code: "SCN-G", name: "Cao điểm: WIP đầy", d: "10:00 → 11:00 · hàng chờ dài", start: 600, thumb: "peak",
+      checks: [["Tranh chấp claim chỉ một agent thắng", 2], ["WIP limit được kiểm trong transaction", 3], ["Approval chỉ đưa về Ready, chưa thực thi", 5], ["Không mất task khi tắc nghẽn", 6]],
+      ms: [
+        { t: 0, title: "Bắt đầu", ev: "Ready 4 · WIP KT-01 3/4", who: "Hệ thống", inv: "Mốc chuẩn", lights: { kt: "on", nc: "on", dl: "on" }, boxes: 4, kpi: [4, 10, 0, 2] },
+        { t: 10, title: "Đổ việc", ev: "Connector tạo 8 task · Ready tăng lên 12", who: "Connector", inv: "Tạo task không tạo run", boxes: 12 },
+        { t: 15, title: "Tranh chấp", ev: "BOLT-10 và ORBIT-05 cùng claim T-1055 · BOLT-10 thắng, ORBIT-05 nhận 409", who: "BOLT-10 · ORBIT-05", inv: "Chỉ một claim thắng", pos: { bolt: "ready", orbit: "ready" }, st: { bolt: "doing" }, boxes: 11, kpi: [5] },
+        { t: 20, title: "WIP đầy", ev: "KT-01 đạt WIP 4/4 · claim kế tiếp bị từ chối WIP_LIMIT", who: "Server", inv: "WIP kiểm nguyên tử", pos: { bolt: "home", orbit: "home" }, lights: { kt: "alert" }, banner: "WIP KT-01 · 4/4" },
+        { t: 30, title: "Hàng chờ quyết định", ev: "4 đề xuất chờ người tại cổng phê duyệt", who: "4 agent", inv: "Quyết định chỉ do người có quyền", pos: { vega: "gate", orbit: "gate" }, st: { vega: "wait", orbit: "wait" }, lights: { gate: "human" }, kpi: [5, 10, 0, 4] },
+        { t: 45, title: "Người duyệt", ev: "Khánh duyệt 2 đề xuất · task về Ready, cần claim mới", who: "Khánh · Quản đốc", inv: "Approval ≠ đã thực thi", pos: { "hu-kn": "gate", "hu-qd": "gate" }, boxes: 13, kpi: [5, 10, 0, 2] },
+        { t: 60, title: "Giảm tải", ev: "Ready còn 7 · không task nào bị mất", who: "Hệ thống", inv: "Mọi task còn trong log", pos: { "hu-kn": "out", "hu-qd": "out", orbit: "home", vega: "home" }, st: { orbit: "cool", vega: "idle" }, lights: { kt: "on", gate: "norm" }, banner: "", boxes: 7 }
+      ] }
+  ];
+
+  /* ---------- thumbnails (SMIL, paused by the global motion toggle) ---------- */
+  const s = (k, v) => `style="${k}:${v}"`;
+  function thumb(kind) {
+    const room = (x, y, w, h, c = "var(--line)", f = "var(--bp-800)") => `<rect x="${x}" y="${y}" width="${w}" height="${h}" ${s("fill", f)} style="fill:${f};stroke:${c}"/>`;
+    const base = room(8, 8, 56, 32) + room(70, 8, 56, 32) + room(132, 8, 60, 32) + `<rect x="8" y="48" width="184" height="12" style="fill:var(--bp-950);stroke:var(--line-soft)"/>` + room(8, 68, 70, 34) + room(84, 68, 52, 34) + room(142, 68, 50, 34);
+    const dot = (c, path, dur, r = 3.5, extra = "") => `<circle r="${r}" style="fill:${c}"${extra}><animateMotion dur="${dur}s" repeatCount="indefinite" path="${path}"/></circle>`;
+    const box = (path, dur, begin) => `<rect x="-3" y="-3" width="6" height="6" style="fill:var(--bp-950);stroke:var(--s-ready)"><animateMotion dur="${dur}s" begin="${begin}s" repeatCount="indefinite" path="${path}"/></rect>`;
+    let k = "";
+    if (kind === "normal") k = base + box("M10 54 H190", 4, 0) + box("M10 54 H190", 4, 1.3) + box("M10 54 H190", 4, 2.6) + dot("var(--s-doing)", "M36 24 V54 H100 V24", 5) + dot("var(--amber)", "M160 24 V54 H110 V84", 6);
+    if (kind === "standup") k = base.replace(room(8, 68, 70, 34), room(8, 68, 70, 34, "var(--s-review)", "var(--t-review)")) + `<circle cx="43" cy="85" r="9" style="fill:none;stroke:var(--s-review)"/>` + ["M36 24 V54 H43 V85", "M98 24 V54 H43 V85", "M160 24 V54 H43 V85", "M110 84 V54 H43 V85"].map((p, i) => dot(i % 2 ? "var(--s-review)" : "var(--s-doing)", p, 3 + i * 0.4)).join("");
+    if (kind === "lounge") k = base.replace(room(84, 68, 52, 34), room(84, 68, 52, 34, "var(--s-ready)", "var(--t-ready)")) + `<circle cx="94" cy="85" r="3.5" style="fill:var(--s-ready)"/><circle cx="126" cy="85" r="3.5" style="fill:var(--s-ready)"/>` + `<circle r="2" style="fill:var(--ink)"><animateMotion dur="1.4s" repeatCount="indefinite" path="M98 85 Q110 74 122 85 Q110 74 98 85"/></circle>`;
+    if (kind === "incident") k = base.replace(room(8, 8, 56, 32), room(8, 8, 56, 32, "var(--red)", "var(--t-failed)")).replace(room(132, 8, 60, 32), room(132, 8, 60, 32, "var(--red)", "var(--t-failed)")) + `<circle cx="36" cy="24" r="4" style="fill:none;stroke:var(--red);stroke-dasharray:2 2"><animate attributeName="opacity" values="1;0.2;1" dur="1.2s" repeatCount="indefinite"/></circle><circle cx="162" cy="24" r="4" style="fill:none;stroke:var(--red);stroke-dasharray:2 2"><animate attributeName="opacity" values="0.2;1;0.2" dur="1.2s" repeatCount="indefinite"/></circle><text x="100" y="58" text-anchor="middle" style="fill:var(--red);font-family:var(--f-mono);font-size:8px">LEASE EXPIRED</text>`;
+    if (kind === "night") k = base.replace(/fill:var\(--bp-800\)/g, "fill:var(--bp-950)") + `<path d="M178 14a7 7 0 1 0 6 10a6 6 0 0 1-6-10z" style="fill:none;stroke:var(--ink-2)"/>` + dot("var(--s-doing)", "M160 30 V54 H60 V54 H160 V30", 9, 3) + `<rect x="132" y="8" width="60" height="32" style="fill:none;stroke:var(--s-doing)"/>`;
+    if (kind === "restore") k = room(10, 14, 76, 46) + `<rect x="114" y="14" width="76" height="46" style="fill:var(--bp-900);stroke:var(--s-ready);stroke-dasharray:4 3"/><text x="48" y="74" text-anchor="middle" style="fill:var(--ink-3);font-family:var(--f-mono);font-size:8px">PROD</text><text x="152" y="74" text-anchor="middle" style="fill:var(--s-ready);font-family:var(--f-mono);font-size:8px">CÁCH LY</text><path d="M86 37 H114" style="stroke:var(--line);stroke-dasharray:2 3"/>` + `<rect x="-5" y="-4" width="10" height="8" style="fill:var(--bp-950);stroke:var(--s-ready)"><animateMotion dur="2.6s" repeatCount="indefinite" path="M48 37 H152"/></rect><path d="M140 88l6 6 12-12" style="fill:none;stroke:var(--s-done);stroke-width:2"/>`;
+    if (kind === "peak") k = base.replace(room(8, 8, 56, 32), room(8, 8, 56, 32, "var(--red)", "var(--t-failed)")) + Array.from({ length: 9 }, (_, i) => `<rect x="${22 + (i % 5) * 8}" y="${49 + Math.floor(i / 5) * 5}" width="6" height="4" style="fill:var(--bp-950);stroke:var(--s-ready)"/>`).join("") + `<rect x="12" y="14" width="48" height="5" style="fill:var(--bp-950);stroke:var(--line-soft)"/><rect x="12" y="14" width="48" height="5" style="fill:var(--red)"/>` + dot("var(--amber)", "M110 84 V60 H110 V84", 2, 3);
+    return `<svg viewBox="0 0 200 110" aria-hidden="true">${k}</svg>`;
+  }
+  BP.$("#scnGrid").innerHTML = SC.map(c => `<button class="scn" aria-pressed="false" data-id="${c.id}">${thumb(c.thumb)}<span class="meta"><span class="code">${c.code}</span><b>${c.name}</b><span class="d">${c.d}</span></span></button>`).join("");
+  if (BP.paused) BP.$$("#scnGrid svg").forEach(v => { try { v.pauseAnimations(); } catch (e) {} });
+
+  /* ---------- engine ---------- */
+  let cur = null, t = 0, idx = -1, playing = false, speed = 1, pos = {}, gameOn = false;
+  const PLAY_SEC = 36; // real seconds for a full scenario at 1x
+  const fmt = m => { const mm = ((Math.round(m) % 1440) + 1440) % 1440; return String(Math.floor(mm / 60)).padStart(2, "0") + ":" + String(mm % 60).padStart(2, "0"); };
+  const dur = () => cur.ms[cur.ms.length - 1].t + Math.max(5, cur.ms[cur.ms.length - 1].t * 0.04);
+  const track = BP.$("#track"), fill = BP.$("#fill"), head = BP.$("#head");
+
+  function layout(instant) {
+    const byRoom = {};
+    Object.entries(pos).forEach(([id, room]) => { const r = room === "home" ? HOME[id] : room; (byRoom[r] = byRoom[r] || []).push(id); });
+    Object.entries(byRoom).forEach(([room, ids]) => ids.forEach((id, i) => {
+      const o = A[id] || HUM[id]; if (!o) return;
+      const p = slotPos(room, i);
+      if (o.human) o.g.style.opacity = room === "out" ? 0 : 1;
+      walk(o, p, instant ? 0 : 1500 / speed);
+    }));
+  }
+  function setLights(map) { Object.entries(map || {}).forEach(([r, k]) => { const R = ROOMS[r]; if (!R) return; R.rect.style.fill = LIGHT[k][0]; R.rect.style.stroke = LIGHT[k][1]; }); }
+  function setBanner(txt) {
+    gBanner.innerHTML = ""; if (!txt) return;
+    const g = el("g", { class: "banner" }, gBanner);
+    const w = txt.length * 8.6 + 40;
+    el("rect", { x: 500 - w / 2, y: 252, width: w, height: 28 }, g);
+    const tx = el("text", { x: 500, y: 271, "text-anchor": "middle", class: "blink" }, g); tx.textContent = txt;
+  }
+  function setBoxes(n) {
+    gBoxes.innerHTML = "";
+    for (let i = 0; i < n; i++) el("rect", { x: 236 + (i % 7) * 14, y: HALL_Y - 10 - Math.floor(i / 7) * 10 + (Math.floor(i / 7) ? 0 : 0), width: 11, height: 8, fill: "var(--bp-950)", stroke: "var(--s-ready)" }, gBoxes);
+  }
+  function setKpi(k) { if (!k) return; const ids = ["kDoing", "kOnline", "kHold", "kHuman"]; k.forEach((v, i) => { if (v != null) BP.$("#" + ids[i]).textContent = v; }); }
+  async function game() {
+    gameOn = true;
+    const ball = el("circle", { r: 4, fill: "var(--ink)" }, gFx);
+    const a = slotPos("lounge", 1), b = slotPos("lounge", 3);
+    const p1 = el("path", { d: `M${a.x + 12} ${a.y} Q${(a.x + b.x) / 2} ${a.y - 30} ${b.x - 12} ${b.y}` });
+    while (gameOn) { await BP.moveAlong(ball, p1, 900 / speed); if (!gameOn) break; await BP.moveAlong(ball, p1, 900 / speed, { reverse: true }); }
+    ball.remove();
+  }
+  async function packet(from, to) {
+    isoPkt.style.display = "";
+    await BP.moveAlong(isoPkt, el("path", { d: `M${from.x} ${from.y} L${to.x} ${to.y}` }), 1600 / speed);
+    isoPkt.style.display = "none";
+  }
+  function apply(i, instant) {
+    const m = cur.ms[i]; idx = i;
+    if (m.pos) Object.assign(pos, m.pos);
+    if (m.st) Object.entries(m.st).forEach(([id, s2]) => setSt(id, s2));
+    setLights(m.lights);
+    if (m.banner !== undefined) setBanner(m.banner);
+    if (m.boxes !== undefined) setBoxes(m.boxes);
+    if (m.iso !== undefined) iso.style.display = m.iso ? "" : "none";
+    setKpi(m.kpi);
+    layout(instant);
+    if (m.fx === "game" && !gameOn && !instant) game();
+    if (m.fx === "stop") gameOn = false;
+    if (m.fx === "capture" && !instant) packet({ x: 900, y: 100 }, { x: 915, y: 400 });
+    if (m.fx === "restore" && !instant) packet({ x: 915, y: 400 }, { x: 500, y: 519 });
+    renderUi();
+  }
+  function renderUi() {
+    const D = dur();
+    BP.$("#simClock").textContent = fmt(cur.start + t);
+    const pct = Math.min(100, t / D * 100);
+    fill.style.width = pct + "%"; head.style.left = pct + "%";
+    BP.$$("#track .ms").forEach((b, i) => { b.classList.toggle("past", i < idx); b.classList.toggle("cur", i === idx); });
+    const m = cur.ms[idx];
+    BP.$("#cap").innerHTML = m ? `<b>${fmt(cur.start + m.t)} · ${m.title}.</b> ${m.ev}` : "";
+    BP.$$("#evtRows tr").forEach((r, i) => { r.classList.toggle("cur", i === idx); r.classList.toggle("future", i > idx); });
+    const ok = cur.checks.filter(c => idx >= c[1]).length;
+    BP.$("#chkCount").textContent = `${ok}/${cur.checks.length} ĐÃ MINH HOẠ`;
+    BP.$$("#checks li").forEach((li, i) => {
+      const done = idx >= cur.checks[i][1];
+      if (done && !li.classList.contains("ok")) { li.classList.add("ok"); li.querySelector(".state").outerHTML = '<span class="state done">Đã thấy</span>'; }
+      if (!done && li.classList.contains("ok")) { li.classList.remove("ok"); li.querySelector(".state").outerHTML = '<span class="state idle">Chờ mốc</span>'; }
+    });
+  }
+  function rewind() {
+    gameOn = false; gFx.querySelectorAll("circle").forEach(c => c.remove());
+    t = 0; idx = -1; pos = {};
+    F.agents.forEach(a => { pos[a.id] = "home"; setSt(a.id, defSt(a)); });
+    F.humans.forEach(h => pos[h.id] = "out");
+    Object.keys(ROOMS).forEach(r => setLights({ [r]: cur.night ? "dim" : "norm" }));
+    setBanner(""); setBoxes(4); iso.style.display = "none";
+    BP.$("#stage").closest(".panel").classList.toggle("night", !!cur.night);
+    apply(0, true);
+  }
+  function setPlaying(p) {
+    playing = p;
+    const b = BP.$("#playBtn");
+    b.querySelector("span").textContent = p ? "Tạm dừng" : (t >= dur() ? "Phát lại" : "Phát");
+    b.querySelector("svg").innerHTML = p ? '<path d="M3 2v8M9 2v8" stroke="currentColor" stroke-width="2"/>' : '<path d="M3 2l7 4-7 4z" fill="currentColor"/>';
+    b.setAttribute("aria-pressed", String(p));
+  }
+  function load(id) {
+    cur = SC.find(c => c.id === id);
+    BP.$$("#scnGrid .scn").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.id === id)));
+    BP.$("#stageTitle").textContent = `${cur.code} · ${cur.name}`;
+    BP.$("#simDay").textContent = `BẮT ĐẦU ${fmt(cur.start)} · ${cur.ms.length} MỐC`;
+    const D = dur();
+    track.querySelectorAll(".ms").forEach(n => n.remove());
+    cur.ms.forEach((m, i) => {
+      const b = document.createElement("button"); b.className = "ms"; b.style.left = (m.t / D * 100) + "%";
+      b.setAttribute("aria-label", `Tới mốc ${fmt(cur.start + m.t)} ${m.title}`);
+      b.innerHTML = `<span>${i % 2 === 0 || cur.ms.length < 7 ? fmt(cur.start + m.t) : ""}</span><i></i>`;
+      b.title = `${fmt(cur.start + m.t)} · ${m.title}`;
+      b.addEventListener("click", () => jump(i));
+      track.appendChild(b);
+    });
+    BP.$("#checks").innerHTML = cur.checks.map(c => `<li><span class="state idle">Chờ mốc</span><span>${c[0]}</span></li>`).join("");
+    BP.$("#evtRows").innerHTML = cur.ms.map(m => `<tr><td class="mono">${fmt(cur.start + m.t)}</td><td>${m.ev}</td><td class="ink2">${m.who}</td><td class="mono" style="font-size:var(--fs-xs)">${m.inv}</td></tr>`).join("");
+    rewind();
+    if (BP.reduced) { jumpEnd(); setPlaying(false); } else setPlaying(true);
+  }
+  function jump(i) {
+    // replay deterministically from the start up to milestone i (instant), keeps state consistent
+    rewind(); for (let k = 1; k <= i; k++) apply(k, true); t = cur.ms[i].t; renderUi();
+    setPlaying(false);
+  }
+  function jumpEnd() { jump(cur.ms.length - 1); t = dur(); renderUi(); }
+  BP.$("#scnGrid").addEventListener("click", e => { const b = e.target.closest(".scn"); if (b) load(b.dataset.id); });
+  BP.$("#playBtn").addEventListener("click", () => { if (!playing && t >= dur()) rewind(); setPlaying(!playing); });
+  BP.$("#rewBtn").addEventListener("click", () => { rewind(); setPlaying(false); renderUi(); });
+  BP.$("#stepBtn").addEventListener("click", () => {
+    setPlaying(false);
+    if (idx < cur.ms.length - 1) { t = cur.ms[idx + 1].t; apply(idx + 1, false); }
+  });
+  BP.$$("#spd button").forEach(b => b.addEventListener("click", () => { BP.$$("#spd button").forEach(x => x.setAttribute("aria-pressed", String(x === b))); speed = +b.dataset.s; }));
+
+  let last = performance.now();
+  function loop(now) {
+    const dt = now - last; last = now;
+    if (cur && playing && !BP.paused) {
+      t += dt / 1000 * (dur() / PLAY_SEC) * speed;
+      while (idx < cur.ms.length - 1 && t >= cur.ms[idx + 1].t) apply(idx + 1, false);
+      if (t >= dur()) { t = dur(); setPlaying(false); }
+      renderUi();
+    }
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+  load("d");
+})();
+</script>
+</body>
+</html>

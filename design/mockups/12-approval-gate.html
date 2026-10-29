@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cổng phê duyệt · CF Agent Factory</title>
+<link rel="stylesheet" href="assets/blueprint.css">
+<style>
+  .gate-wrap { overflow-x: auto; }
+  #gate { min-width: 640px; }
+  #gate .tok { font-family: var(--f-mono); font-size: 11px; font-weight: 600; text-anchor: middle; dominant-baseline: central; }
+  #gate .sub { font-size: 11px; } #gate .lbl { font-size: 15px; }
+  #gate .cardtxt { font-family: var(--f-mono); font-size: 11px; fill: var(--ink); text-anchor: middle; dominant-baseline: central; }
+  #gate .big { font-family: var(--f-mono); font-size: 14px; fill: var(--amber); }
+  .gate-note { padding: var(--sp-3) var(--sp-4); border-top: 1px solid var(--line-soft); display: flex; gap: var(--sp-3); align-items: center; justify-content: space-between; flex-wrap: wrap; }
+
+  .q { list-style: none; margin: 0; padding: 0; }
+  .q li { border-bottom: 1px solid var(--grid-major); }
+  .q button { display: grid; grid-template-columns: 1fr auto; gap: 4px var(--sp-3); width: 100%; min-height: 44px; padding: var(--sp-3) var(--sp-4); background: transparent; border: 0; border-left: 2px solid transparent; text-align: left; cursor: pointer; color: var(--ink); }
+  .q button:hover { background: var(--bp-700); }
+  .q button[aria-current="true"] { background: var(--bp-700); border-left-color: var(--amber); }
+  .q .id { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); }
+  .q .t { font-size: var(--fs-sm); font-weight: 500; line-height: 1.35; grid-column: 1 / -1; }
+  .q .cd { font-family: var(--f-mono); font-size: var(--fs-xs); color: var(--amber); font-variant-numeric: tabular-nums; }
+  .q .cd.exp { color: var(--red); }
+  .hist li { display: grid; grid-template-columns: auto 1fr; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--grid-major); font-size: var(--fs-sm); }
+  .hist ul { list-style: none; margin: 0; padding: 0; }
+  .hist small { display: block; font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); }
+
+  .dhead { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-bottom: 1px solid var(--line-soft); }
+  .dhead > div { padding: var(--sp-3) var(--sp-4); border-left: 1px solid var(--line-soft); min-width: 0; }
+  .dhead > div:first-child { border-left: 0; }
+  .dhead span.k { display: block; font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
+  .dhead b { font-family: var(--f-mono); font-weight: 500; }
+  .facts { display: grid; grid-template-columns: 150px 1fr; }
+  .facts > div { padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--grid-major); font-size: var(--fs-sm); min-width: 0; }
+  .facts > div:nth-child(odd) { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); letter-spacing: 0.08em; text-transform: uppercase; padding-top: calc(var(--sp-3) + 2px); }
+  pre.json { margin: var(--sp-2) 0 0; padding: var(--sp-3); background: var(--bp-950); border: 1px solid var(--line-soft); font-family: var(--f-mono); font-size: var(--fs-xs); color: var(--ink-2); overflow-x: auto; white-space: pre; }
+  .diff { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+  .diff th { text-align: left; font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); letter-spacing: 0.1em; text-transform: uppercase; padding: var(--sp-2) var(--sp-4); border-bottom: 1px solid var(--line-soft); }
+  .diff td { padding: var(--sp-2) var(--sp-4); border-bottom: 1px solid var(--grid-major); vertical-align: top; }
+  .diff .old { color: var(--red); text-decoration: line-through; text-decoration-thickness: 1px; }
+  .diff .new { color: var(--s-done); }
+  .diff .old::before { content: "− "; text-decoration: none; display: inline-block; }
+  .diff .new::before { content: "+ "; }
+  .decide { padding: var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-3); border-top: 1px solid var(--line-soft); background: var(--bp-850); }
+  .decide textarea { width: 100%; min-height: 72px; resize: vertical; background: var(--bp-950); color: var(--ink); border: 1px solid var(--line-soft); padding: var(--sp-2) var(--sp-3); font: inherit; font-size: var(--fs-sm); border-radius: 0; }
+  .decide textarea:focus-visible { outline: 2px solid var(--amber); outline-offset: 1px; }
+  .decide label { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); letter-spacing: 0.1em; text-transform: uppercase; }
+  .sign { font-family: var(--f-mono); font-size: var(--fs-xs); color: var(--ink-2); }
+  .banner { display: flex; gap: var(--sp-3); align-items: flex-start; justify-content: space-between; flex-wrap: wrap; padding: var(--sp-3) var(--sp-4); border: 1px dashed var(--red); background: var(--t-failed); margin: var(--sp-4) var(--sp-4) 0; }
+  .banner p { margin: 2px 0 0; font-size: var(--fs-sm); }
+  .outcome { margin: 0 var(--sp-4) var(--sp-4); }
+  .outcome.ok { border: 1px solid var(--s-ready); background: var(--t-ready); padding: var(--sp-3) var(--sp-4); font-size: var(--fs-sm); }
+  .outcome.rej { border: 1px solid var(--s-backlog); background: var(--bp-850); padding: var(--sp-3) var(--sp-4); font-size: var(--fs-sm); }
+  @media (max-width: 960px) { .dhead { grid-template-columns: 1fr 1fr; } .dhead > div:nth-child(3) { border-left: 0; } }
+  @media (max-width: 560px) { .facts { grid-template-columns: 1fr; } .facts > div:nth-child(odd) { border-bottom: 0; padding-bottom: 0; } }
+</style>
+</head>
+<body data-sheet="12" data-title="Cổng phê duyệt">
+<div class="app paper">
+  <div id="rail"></div>
+  <div class="main">
+    <header id="topbar"></header>
+    <main class="content">
+
+      <section class="page-head reveal">
+        <div>
+          <div class="code">HUMAN DECISION GATE · 2 CHỜ · 1 HẾT HẠN</div>
+          <h2>Cổng phê duyệt</h2>
+          <p class="lede">Mỗi đề xuất là một yêu cầu quyền cụ thể, gắn với một phiên bản và một artifact JSON bất biến. Duyệt đưa task về Ready để chờ claim mới, không phải đã thực thi. Từ chối đưa task về Backlog.</p>
+        </div>
+        <div class="actions">
+          <a class="btn" href="04-mission-line.html">Mở dây chuyền</a>
+          <button class="btn" type="button" id="btnStale">Mô phỏng: agent gửi proposal mới</button>
+        </div>
+      </section>
+
+      <section class="panel reveal" aria-label="Cánh cổng">
+        <div class="gate-wrap">
+          <svg id="gate" class="dwg" viewBox="0 0 1100 240" role="img" aria-labelledby="gateT">
+            <title id="gateT">Mặt bằng cổng phê duyệt: agent đứng ngoài cổng cầm thẻ đề xuất. Khi duyệt, cổng mở và task đi vào trạm Ready. Khi từ chối, task quay về Backlog.</title>
+            <g id="gBase"></g><g id="gLeaves"></g><g id="gMove"></g>
+          </svg>
+        </div>
+        <div class="gate-note">
+          <span class="code" id="gateStatus" aria-live="polite">CỔNG ĐÓNG · CHỜ NGƯỜI CÓ QUYỀN approvals:decide</span>
+          <button class="btn sm" type="button" id="btnResetGate" hidden>Đặt lại minh hoạ</button>
+        </div>
+      </section>
+
+      <section class="grid g-side-main">
+        <div class="stack" style="gap:var(--sp-4)">
+          <div class="panel reveal">
+            <div class="panel-head"><h3>Quyết định chờ</h3><span class="code">ĐỒNG HỒ MÔ PHỎNG</span></div>
+            <ul class="q" id="queue"></ul>
+          </div>
+          <div class="panel hist reveal">
+            <div class="panel-head"><h3>Lịch sử quyết định</h3><span class="code">HÔM NAY</span></div>
+            <ul id="hist">
+              <li><span class="state done">Duyệt</span><div>T-1042 · proposal v1 · chạy migration trên staging<small>Khánh · 11:28 · task v7 · sau đó claim mới fence 17</small></div></li>
+              <li><span class="state backlog">Từ chối</span><div>T-1045 · proposal v2 · xoá nhánh staging cũ<small>Quản đốc · 09:50 · lý do: còn deploy preview đang dùng</small></div></li>
+              <li><span class="state done">Duyệt</span><div>T-1031 · proposal v1 · chạy thử runbook khôi phục<small>Quản đốc · 08:12 · task v3</small></div></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="panel reveal" id="detail" aria-live="polite"></div>
+      </section>
+
+    </main>
+    <div id="titleblock"></div>
+  </div>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(() => {
+  const S = (t, a, p) => BP.svg(t, a, p);
+  const txt = (x, y, s, cls, p, extra = {}) => { const t = S("text", { x, y, class: cls, ...extra }, p); t.textContent = s; return t; };
+  /* ---------- Simulated clock: base 13:12:00 ---------- */
+  const t0 = performance.now(); let paused = 0, pAt = 0;
+  document.addEventListener("bp:motion", e => { if (e.detail.paused) pAt = performance.now(); else if (pAt) { paused += performance.now() - pAt; pAt = 0; } });
+  const simNow = () => 13 * 3600 + 12 * 60 + ((pAt || performance.now()) - t0 - paused) / 1000;
+  const hms = s => { s = Math.max(0, Math.floor(s)); return [s / 3600 | 0, (s % 3600) / 60 | 0, s % 60].map(n => String(n).padStart(2, "0")).join(":"); };
+
+  /* ---------- Decisions ---------- */
+  const D = [
+    { id: "T-1039", title: "Gửi email khảo sát tới 240 khách hàng beta", agent: "vega", tv: 8, pv: 2, exp: 16 * 3600 + 30 * 60, state: "pending",
+      action: "Gửi email khảo sát qua connector email tới danh sách <span class='mono'>beta-2026-10</span>",
+      scope: "240 người nhận bên ngoài · 1 template · kênh email · không hoàn tác sau khi gửi",
+      art: { name: "proposal-T1039-v2.json", id: "art-7c1e", digest: "sha256:3a9f…e0d4" },
+      json: `{\n  "action": "email.send_batch",\n  "list": "beta-2026-10",\n  "recipients": 240,\n  "template": "survey-v2",\n  "window": "14:00-16:00 local"\n}`,
+      cp: "cp-0088 · run r-77d2 (paused) · 12:58", impact: "Bên ngoài, không hoàn tác. Chi phí gửi: Not reported.",
+      who: "Khánh (Member · Decision), Quản đốc (Owner) · cần approvals:decide",
+      diff: [["Người nhận", "312 địa chỉ", "240 địa chỉ (loại 72 đã huỷ đăng ký)"], ["Template", "survey-v1", "survey-v2 · thêm link huỷ đăng ký"], ["Thời điểm gửi", "Ngay khi duyệt", "14:00-16:00 theo múi giờ khách"], ["Digest input", "sha256:91bd…7a20", "sha256:3a9f…e0d4"]] },
+    { id: "T-1053", title: "Xoá 1.204 artifact staged quá 7 ngày", agent: "orbit", tv: 4, pv: 1, exp: 18 * 3600, state: "pending",
+      action: "Xoá vĩnh viễn object R2 và đánh dấu tombstone cho artifact staged quá 7 ngày",
+      scope: "1.204 artifact staged · không gồm artifact committed · 3 project · không hoàn tác",
+      art: { name: "proposal-T1053-v1.json", id: "art-b20f", digest: "sha256:c71e…5b93" },
+      json: `{\n  "action": "artifact.purge_staged",\n  "older_than_days": 7,\n  "count": 1204,\n  "exclude_state": ["committed"]\n}`,
+      cp: "cp-0011 · run r-e3e9 (paused) · 12:31", impact: "Giải phóng 3,8 GB (ước tính của agent). Artifact committed không bị đụng tới.",
+      who: "Quản đốc (Owner) · cần approvals:decide", diff: null },
+    { id: "T-1049", title: "Đăng thông báo bảo trì lên kênh trạng thái công khai", agent: "echo", tv: 6, pv: 1, exp: 11 * 3600, state: "expired",
+      action: "Đăng bài lên kênh trạng thái công khai", scope: "1 bài đăng công khai · kênh #status",
+      art: { name: "proposal-T1049-v1.json", id: "art-41d0", digest: "sha256:0e6a…a1f7" },
+      json: `{\n  "action": "status.publish",\n  "channel": "status-public"\n}`,
+      cp: "cp-0042 · run r-1aa0 (paused) · 10:02", impact: "Công khai ra ngoài.", who: "Quản đốc (Owner)", diff: null }
+  ];
+  let sel = D[0];
+  const ag = id => BP.agent(id);
+
+  /* ---------- Queue ---------- */
+  const queue = BP.$("#queue");
+  function renderQueue() {
+    queue.innerHTML = D.map(d => {
+      const left = d.exp - simNow(); const exp = d.state === "expired" || left <= 0;
+      const st = d.state === "approved" ? BP.stateChip("ready", "Đã duyệt → Ready") : d.state === "rejected" ? BP.stateChip("backlog", "Từ chối → Backlog") : BP.stateChip("waiting");
+      return `<li><button type="button" data-id="${d.id}" aria-current="${d === sel}">
+        <span class="id">${d.id} · ${ag(d.agent).name} · PROPOSAL V${d.pv}</span>${st}
+        <span class="t">${d.title}</span>
+        <span class="cd ${exp ? "exp" : ""}" data-cd="${d.id}">${exp ? "Hết hạn " + hms(d.exp).slice(0, 5) + " · vẫn Waiting" : "Còn " + hms(left) + " · hạn " + hms(d.exp).slice(0, 5)}</span>
+      </button></li>`;
+    }).join("");
+  }
+  queue.addEventListener("click", e => { const b = e.target.closest("button[data-id]"); if (!b) return; sel = D.find(d => d.id === b.dataset.id); stale = false; renderQueue(); renderDetail(); resetGate(true); });
+  BP.every(1000, () => D.forEach(d => {
+    const c = queue.querySelector(`[data-cd="${d.id}"]`); if (!c || d.state === "expired") return;
+    c.textContent = "Còn " + hms(d.exp - simNow()) + " · hạn " + hms(d.exp).slice(0, 5);
+    if (d === sel) { const g = BP.$("#gateCd"); if (g) g.textContent = "HẾT HẠN SAU " + hms(d.exp - simNow()); const dc = BP.$("#detCd"); if (dc) dc.textContent = hms(d.exp - simNow()); }
+  }));
+
+  /* ---------- Detail ---------- */
+  let stale = false;
+  const detail = BP.$("#detail");
+  function renderDetail() {
+    const d = sel, a = ag(d.agent);
+    const expired = d.state === "expired";
+    const done = d.state === "approved" || d.state === "rejected";
+    const left = d.exp - simNow();
+    detail.innerHTML = `
+      <div class="panel-head"><h3>${d.id} · ${d.title}</h3><span class="code">ĐỀ XUẤT ĐANG CHỌN</span></div>
+      <div class="dhead">
+        <div><span class="k">Trạng thái</span>${done ? (d.state === "approved" ? BP.stateChip("ready") : BP.stateChip("backlog")) : BP.stateChip("waiting")}</div>
+        <div><span class="k">Agent đề xuất</span><span class="row" style="gap:6px"><span class="bot" style="--c:var(--amber);width:26px;height:26px;font-size:9px">${a.code}</span><b>${a.name}</b></span></div>
+        <div><span class="k">Phiên bản</span><b>task v${d.tv} · proposal v${stale ? d.pv + 1 : d.pv}</b></div>
+        <div><span class="k">Hết hạn</span>${expired ? `<b class="c-red">${hms(d.exp).slice(0, 5)} · đã hết</b>` : `<b class="c-amber" id="detCd">${hms(left)}</b>`}</div>
+      </div>
+      ${stale ? `<div class="banner" role="alert"><div><span class="state stale">Stale version</span><p><b>Đề xuất đã thay đổi, quyết định cũ không còn hiệu lực.</b> Bạn đang xem proposal v${d.pv}, máy chủ hiện có v${d.pv + 1}. Quyết định gửi kèm v${d.pv} sẽ bị từ chối <span class="mono">VERSION_CONFLICT</span>.</p></div><button class="btn sm" type="button" id="btnReload">Đọc lại đề xuất v${d.pv + 1}</button></div>` : ""}
+      ${expired ? `<div class="banner" role="note"><div><span class="state stale">Approval expired</span><p>Đề xuất hết hạn lúc ${hms(d.exp).slice(0, 5)}. Task vẫn ở Waiting để hiển thị trung thực: không tự duyệt, không tự từ chối, không thực thi. Người lên lịch có quyền có thể huỷ và tạo phiếu sửa đổi.</p></div><a class="btn sm" href="05-work-order.html">Mở phiếu ${d.id}</a></div>` : ""}
+      <div class="facts" style="margin-top:var(--sp-2)">
+        <div>Hành động dự định</div><div>${d.action}</div>
+        <div>Phạm vi</div><div>${d.scope}</div>
+        <div>Input binding</div><div><span class="tag">${d.art.name}</span> <span class="tag">${d.art.id}</span> <span class="tag">${d.art.digest}</span> <span class="tag" style="color:var(--s-done);border-color:var(--s-done)">committed · digest đã xác minh</span>
+          <pre class="json" aria-label="Nội dung artifact JSON">${d.json}</pre>
+          <div class="muted" style="font-size:var(--fs-xs);margin-top:4px">Tóm tắt chữ không phải toàn bộ yêu cầu quyền. Quyết định ký lên đúng artifact và digest này.</div></div>
+        <div>Checkpoint</div><div class="mono">${d.cp}</div>
+        <div>Ảnh hưởng</div><div>${d.impact}</div>
+        <div>Người có quyền</div><div>${d.who}</div>
+      </div>
+      <div class="panel-head" style="border-top:1px solid var(--line-soft)"><h3>Khác biệt giữa các phiên bản</h3><span class="code">${d.diff ? `PROPOSAL V${d.pv - 1} → V${d.pv}` : "CHỈ CÓ V" + d.pv}</span></div>
+      ${d.diff ? `<div style="overflow-x:auto"><table class="diff"><thead><tr><th>Trường</th><th>v${d.pv - 1}</th><th>v${d.pv}</th></tr></thead><tbody>${d.diff.map(r => `<tr><td class="mono">${r[0]}</td><td class="old">${r[1]}</td><td class="new">${r[2]}</td></tr>`).join("")}</tbody></table></div>` : `<div class="panel-body"><div class="empty">Không có phiên bản trước để so sánh.</div></div>`}
+      ${done ? outcomeHTML(d) : `
+      <div class="decide">
+        <div class="sign">Bạn sẽ ký: Quản đốc · ${d.id} · task v${d.tv} · proposal v${d.pv} · ${d.art.digest}</div>
+        <label for="reason">Lý do (bắt buộc khi từ chối)</label>
+        <textarea id="reason" placeholder="VD: Danh sách còn địa chỉ nội bộ, cần lọc lại" ${expired || stale ? "disabled" : ""}></textarea>
+        <div class="row wrap between">
+          <span class="muted" style="font-size:var(--fs-xs)" id="decHint">${expired ? "Không thể quyết định đề xuất đã hết hạn." : stale ? "Đọc lại đề xuất mới trước khi quyết định." : "Duyệt chỉ cho phép lần chạy kế tiếp, policy vẫn được kiểm lại lúc chạy."}</span>
+          <div class="row wrap">
+            <button class="btn danger" type="button" id="btnReject" disabled>Từ chối kèm lý do</button>
+            <button class="btn human" type="button" id="btnApprove" ${expired || stale ? "disabled" : ""}>Duyệt đề xuất v${d.pv}</button>
+          </div>
+        </div>
+      </div>`}`;
+    const r = BP.$("#reason"), bj = BP.$("#btnReject"), ba = BP.$("#btnApprove");
+    if (r) r.addEventListener("input", () => { bj.disabled = r.value.trim().length < 8; });
+    if (ba) ba.addEventListener("click", approve);
+    if (bj) bj.addEventListener("click", () => reject(r.value.trim()));
+    const rl = BP.$("#btnReload"); if (rl) rl.addEventListener("click", () => { stale = false; renderDetail(); BP.toast("ĐÃ ĐỌC LẠI", `Proposal mới của ${d.id} cần được xem lại từ đầu (mô phỏng giữ v${d.pv}).`); });
+  }
+  function outcomeHTML(d) {
+    return d.state === "approved"
+      ? `<div class="outcome ok" style="margin-top:var(--sp-4)"><b>Đã duyệt proposal v${d.pv}.</b> ${d.id} về Ready. <b>Duyệt KHÔNG phải đã thực thi</b>: cần một claim mới với fence mới trước khi hành động diễn ra, và policy hiện hành được kiểm lại khi run bắt đầu và khi gửi ra ngoài.</div>`
+      : `<div class="outcome rej" style="margin-top:var(--sp-4)"><b>Đã từ chối.</b> ${d.id} về Backlog, không chạy lại ngầm. Lý do: “${d.reason}”. Cần chỉnh sửa rõ ràng trước khi lên lịch lại.</div>`;
+  }
+
+  /* ---------- Gate drawing ---------- */
+  const gBase = BP.$("#gBase"), gLeaves = BP.$("#gLeaves"), gMove = BP.$("#gMove");
+  const WX = 560, O1 = 82, O2 = 158, MID = 120;
+  S("path", { d: `M${WX} 14 V${O1} M${WX} ${O2} V226`, class: "wall" }, gBase);
+  S("rect", { x: WX - 5, y: O1 - 6, width: 10, height: 10, fill: "var(--bp-950)", stroke: "var(--amber)" }, gBase);
+  S("rect", { x: WX - 5, y: O2 - 4, width: 10, height: 10, fill: "var(--bp-950)", stroke: "var(--amber)" }, gBase);
+  S("path", { d: `M${WX} ${O1} A38 38 0 0 1 ${WX + 38} ${MID}`, class: "wall-thin", "stroke-dasharray": "2 3" }, gBase);
+  S("path", { d: `M${WX} ${O2} A38 38 0 0 0 ${WX + 38} ${MID}`, class: "wall-thin", "stroke-dasharray": "2 3" }, gBase);
+  const leafA = S("line", { x1: WX, y1: O1, x2: WX, y2: MID, stroke: "var(--amber)", "stroke-width": 3 }, gLeaves);
+  const leafB = S("line", { x1: WX, y1: O2, x2: WX, y2: MID, stroke: "var(--amber)", "stroke-width": 3 }, gLeaves);
+  const lock = S("g", { transform: `translate(${WX - 26} ${MID})` }, gLeaves);
+  S("rect", { x: -6, y: -3, width: 12, height: 9, fill: "var(--bp-950)", stroke: "var(--amber)" }, lock);
+  S("path", { d: "M-3.5 -3 V-6 a3.5 3.5 0 0 1 7 0 V-3", fill: "none", stroke: "var(--amber)" }, lock);
+  txt(WX, 236, "CỔNG PHÊ DUYỆT · HUMAN DECISION", "sub", gBase, { "text-anchor": "middle" });
+  // outside zone
+  txt(250, 34, "NGOÀI CỔNG · WAITING", "lbl", gBase, { style: "fill:var(--amber)" });
+  txt(250, 50, "RUN ĐÃ PAUSED · KHÔNG GIỮ LEASE", "sub", gBase);
+  S("path", { d: `M120 ${MID} H${WX - 40}`, class: "path" }, gBase);
+  // ready room
+  S("rect", { x: 780, y: 28, width: 290, height: 100, class: "room" }, gBase);
+  txt(794, 50, "TRẠM READY", "lbl", gBase, { style: "fill:var(--s-ready)" }); txt(794, 66, "STATION 02 · CHỜ CLAIM MỚI", "sub", gBase);
+  S("path", { d: `M${WX} ${MID} H700 V78 H780`, class: "path-core" }, gBase);
+  // backlog room
+  S("rect", { x: 30, y: 160, width: 260, height: 66, class: "room" }, gBase);
+  S("rect", { x: 36, y: 186, width: 248, height: 34, class: "hatch" }, gBase);
+  txt(44, 180, "BACKLOG · KHI BỊ TỪ CHỐI", "sub", gBase);
+  S("defs", {}, gBase).innerHTML = `<pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" style="stroke:var(--line-soft)"/></pattern>`;
+  // dimension + callout
+  S("path", { d: `M${WX + 20} ${O1} H${WX + 120} M${WX + 20} ${O2} H${WX + 120} M${WX + 110} ${O1} V${O2}`, class: "dimline" }, gBase);
+  txt(WX + 118, MID + 4, "approvals:decide", "sub", gBase);
+  S("path", { d: `M470 ${MID - 30} L430 70 H360`, class: "leader" }, gBase);
+  const cdT = txt(356, 66, "HẾT HẠN SAU --:--:--", "big", gBase, { "text-anchor": "end", id: "gateCd" });
+
+  // moving actors
+  const agentG = S("g", { transform: `translate(470 ${MID})` }, gMove);
+  const ring = S("circle", { r: 20, fill: "none", stroke: "var(--amber)", class: "pulse" }, agentG);
+  S("polygon", { points: "-9,-16 9,-16 18,0 9,16 -9,16 -18,0", fill: "var(--bp-950)", stroke: "var(--amber)", "stroke-width": 1.5 }, agentG);
+  const agCode = txt(0, 0.5, "VG", "tok", agentG, { style: "fill:var(--amber)" });
+  const agName = txt(0, 32, "VEGA-03", "sub", agentG, { "text-anchor": "middle" });
+  const card = S("g", { transform: `translate(500 ${MID - 34})` }, gMove);
+  const cardR = S("rect", { x: -46, y: -13, width: 92, height: 26, fill: "var(--t-waiting)", stroke: "var(--amber)" }, card);
+  const cardT = txt(0, 0, "T-1039 · v2", "cardtxt", card);
+
+  function tween(ms, fn) { if (BP.reduced) ms = 1; return new Promise(res => { let e = 0, last = performance.now(); const st = now => { const dt = now - last; last = now; if (!BP.paused) e += dt; const t = Math.min(1, e / ms); const k = t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; fn(k); t < 1 ? requestAnimationFrame(st) : res(); }; requestAnimationFrame(st); }); }
+  function along(g, d, ms) { const p = S("path", { d }); const L = p.getTotalLength(); return tween(ms, k => { const q = p.getPointAtLength(L * k); g.setAttribute("transform", `translate(${q.x} ${q.y})`); }); }
+  function setLeaves(a) { leafA.setAttribute("transform", `rotate(${-a * -1} ${WX} ${O1})`); leafB.setAttribute("transform", `rotate(${-a} ${WX} ${O2})`); }
+
+  function resetGate(sync) {
+    setLeaves(0); lock.style.opacity = 1;
+    const d = sel, a = ag(d.agent);
+    agCode.textContent = a.code; agName.textContent = a.name;
+    card.setAttribute("transform", `translate(500 ${MID - 34})`);
+    cardT.textContent = `${d.id} · v${d.pv}`;
+    cardR.style.stroke = d.state === "expired" ? "var(--red)" : "var(--amber)";
+    cdT.textContent = d.state === "expired" ? "ĐÃ HẾT HẠN · VẪN WAITING" : "HẾT HẠN SAU " + hms(d.exp - simNow());
+    cdT.style.fill = d.state === "expired" ? "var(--red)" : "var(--amber)";
+    leafA.style.stroke = leafB.style.stroke = "var(--amber)";
+    BP.$("#gateStatus").textContent = d.state === "expired" ? "CỔNG ĐÓNG · ĐỀ XUẤT HẾT HẠN, KHÔNG TỰ MỞ" : "CỔNG ĐÓNG · CHỜ NGƯỜI CÓ QUYỀN approvals:decide";
+    BP.$("#btnResetGate").hidden = true;
+    if (sync && (d.state === "approved")) { setLeaves(80); lock.style.opacity = 0; card.setAttribute("transform", "translate(900 96)"); }
+    if (sync && (d.state === "rejected")) { card.setAttribute("transform", "translate(160 203)"); }
+  }
+
+  async function approve() {
+    const d = sel; d.state = "approved";
+    BP.$("#gateStatus").textContent = "ĐANG MỞ CỔNG · GHI QUYẾT ĐỊNH task v" + d.tv + " · proposal v" + d.pv;
+    renderQueue(); renderDetail();
+    lock.style.opacity = 0; leafA.style.stroke = leafB.style.stroke = "var(--s-ready)";
+    await tween(900, k => setLeaves(80 * k));
+    await along(card, `M500 ${MID - 34} L540 ${MID} H700 V78 H900 V96`, 1800);
+    cdT.textContent = "ĐÃ DUYỆT · CHỜ CLAIM MỚI"; cdT.style.fill = "var(--s-ready)";
+    BP.$("#gateStatus").textContent = `ĐÃ DUYỆT · ${d.id} VỀ READY · DUYỆT KHÔNG PHẢI ĐÃ THỰC THI, CẦN CLAIM MỚI`;
+    BP.$("#btnResetGate").hidden = false;
+    addHist("done", "Duyệt", `${d.id} · proposal v${d.pv} · ${d.title.toLowerCase()}`, `Quản đốc · ${hms(simNow()).slice(0, 5)} · task v${d.tv} · chờ claim mới`);
+    BP.toast("APPROVED · KHÔNG PHẢI ĐÃ THỰC THI", `${d.id} về Ready. Hành động chỉ diễn ra sau một claim mới.`);
+  }
+  async function reject(reason) {
+    const d = sel; d.state = "rejected"; d.reason = reason;
+    renderQueue(); renderDetail();
+    leafA.style.stroke = leafB.style.stroke = "var(--red)";
+    await along(card, `M500 ${MID - 34} L470 150 H160 V203`, 1700);
+    leafA.style.stroke = leafB.style.stroke = "var(--amber)";
+    cdT.textContent = "ĐÃ TỪ CHỐI · VỀ BACKLOG"; cdT.style.fill = "var(--s-backlog)";
+    BP.$("#gateStatus").textContent = `ĐÃ TỪ CHỐI · ${d.id} VỀ BACKLOG · KHÔNG CHẠY LẠI NGẦM`;
+    BP.$("#btnResetGate").hidden = false;
+    addHist("backlog", "Từ chối", `${d.id} · proposal v${d.pv}`, `Quản đốc · ${hms(simNow()).slice(0, 5)} · lý do: ${reason}`);
+    BP.toast("REJECTED", `${d.id} về Backlog kèm lý do.`);
+  }
+  function addHist(s, l, t, small) { BP.$("#hist").insertAdjacentHTML("afterbegin", `<li class="reveal"><span class="state ${s}">${l}</span><div>${t}<small>${small}</small></div></li>`); }
+  BP.$("#btnResetGate").addEventListener("click", () => { sel.state = "pending"; sel.reason = ""; renderQueue(); renderDetail(); resetGate(); });
+  BP.$("#btnStale").addEventListener("click", () => {
+    if (sel.state !== "pending") { BP.toast("KHÔNG ÁP DỤNG", "Chọn một đề xuất đang chờ để mô phỏng proposal mới."); return; }
+    stale = true; renderDetail(); BP.toast("PROPOSAL MỚI", `${ag(sel.agent).name} vừa gửi proposal v${sel.pv + 1} cho ${sel.id}.`);
+  });
+
+  // idle motion: agent sways in place while waiting
+  let sway = 0;
+  BP.every(60, () => { if (sel.state !== "pending" || BP.reduced) return; sway += 0.12; const y = MID + Math.sin(sway) * 3; agentG.setAttribute("transform", `translate(470 ${y.toFixed(1)})`); });
+
+  renderQueue(); renderDetail(); resetGate();
+})();
+</script>
+</body>
+</html>

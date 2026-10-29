@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Luồng vận hành · CF Agent Factory</title>
+<link rel="stylesheet" href="assets/blueprint.css">
+<style>
+  .flow-tools { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--line-soft); }
+  .flow-scroll { overflow-x: auto; }
+  .flow-scroll svg { min-width: 980px; width: 100%; height: auto; }
+  .ctrl-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); align-items: start; }
+  .steps.cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--sp-6); }
+  .node rect.box { fill: var(--bp-850); stroke-width: 1.25; }
+  .node .lbl { font-size: 15px; }
+  .node .cnt { font-family: var(--f-display); font-size: 24px; font-weight: 600; }
+  .node .sub { font-size: 10.5px; }
+  .band { fill: none; stroke-linecap: butt; opacity: 0.28; transition: opacity var(--dur); }
+  .core { fill: none; stroke-width: 1; stroke-dasharray: 3 5; opacity: 0.9; }
+  .elbl { font-family: var(--f-mono); font-size: 12px; fill: var(--ink); }
+  .dwg .sub.note { font-size: 11px; }
+  .elbl-bg { fill: var(--bp-900); stroke: var(--line-soft); }
+  .edge.off { display: none; }
+  .particle { pointer-events: none; }
+  .tracker-cap rect { fill: var(--bp-950); stroke: var(--ink); }
+  .tracker-cap text { font-family: var(--f-mono); font-size: 11px; fill: var(--ink); }
+
+  .ctrl .field { display: flex; flex-direction: column; gap: var(--sp-2); }
+  .ctrl .field > span { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); letter-spacing: 0.1em; text-transform: uppercase; }
+  .ctrl .seg button { min-height: 36px; padding: 0 var(--sp-4); }
+  .layer { display: flex; align-items: center; gap: var(--sp-3); min-height: 40px; padding: 0 var(--sp-3); border: 1px solid var(--line-soft); background: var(--bp-850); cursor: pointer; font-size: var(--fs-sm); color: var(--ink-2); width: 100%; text-align: left; }
+  .layer:hover { border-color: var(--line); color: var(--ink); }
+  .layer .sw { width: 22px; height: 0; border-top: 3px solid currentColor; flex: none; }
+  .layer[aria-pressed="true"] { color: var(--ink); background: var(--bp-700); border-color: var(--line); }
+  .layer[aria-pressed="false"] .sw { border-top-style: dotted; opacity: 0.5; }
+  .layer .k { margin-left: auto; font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); }
+  .select { min-height: 36px; padding: 0 var(--sp-3); background: var(--bp-850); color: var(--ink); border: 1px solid var(--line-soft); font: inherit; font-size: var(--fs-sm); border-radius: 0; flex: 1; min-width: 0; }
+
+  .steps { list-style: none; margin: 0; padding: 0; position: relative; }
+  .steps::before { content: ""; position: absolute; left: 7px; top: 8px; bottom: 8px; width: 1px; background: var(--line-soft); }
+  .steps li { position: relative; display: grid; grid-template-columns: 16px 1fr; gap: var(--sp-3); padding: 6px 0; font-size: var(--fs-sm); color: var(--ink-3); }
+  .steps li i { width: 15px; height: 15px; margin-top: 2px; border: 1px solid var(--line-soft); background: var(--bp-850); position: relative; z-index: 1; }
+  .steps li b { display: block; font-family: var(--f-mono); font-size: var(--fs-xs); font-weight: 500; letter-spacing: 0.04em; }
+  .steps li.done { color: var(--ink-2); } .steps li.done i { background: var(--line); border-color: var(--line); }
+  .steps li.now { color: var(--ink); } .steps li.now i { background: var(--s-ready); border-color: var(--s-ready); box-shadow: 0 0 0 3px var(--t-ready); }
+
+  .acts { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  .act { display: flex; flex-direction: column; align-items: center; gap: var(--sp-2); padding: var(--sp-4) var(--sp-2); border-left: 1px solid var(--line-soft); text-align: center; transition: background var(--dur) var(--ease); }
+  .act:first-child { border-left: 0; }
+  .act svg { width: 40px; height: 40px; stroke: var(--ink-3); fill: none; stroke-width: 1.25; transition: stroke var(--dur-fast); }
+  .act .nm { font-family: var(--f-mono); font-size: var(--fs-xs); color: var(--ink-2); letter-spacing: 0.06em; text-transform: uppercase; }
+  .act .n { font-family: var(--f-display); font-size: var(--fs-xl); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .act .d { font-size: var(--fs-2xs); color: var(--ink-3); line-height: 1.35; }
+  .act.glow { background: var(--bp-700); }
+  .act.glow svg { stroke: var(--c, var(--s-doing)); filter: drop-shadow(0 0 6px var(--c, var(--s-doing))); }
+  .act.glow .nm { color: var(--ink); }
+
+  .lg-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: var(--sp-3); }
+  .alt-wrap { overflow-x: auto; }
+  .alt-wrap .table td, .alt-wrap .table th { padding: var(--sp-2) var(--sp-3); }
+
+  @media (max-width: 1280px) { .acts { grid-template-columns: repeat(4, minmax(0, 1fr)); } .act:nth-child(5) { border-left: 0; } .act:nth-child(n+5) { border-top: 1px solid var(--line-soft); } }
+  @media (max-width: 960px) { .ctrl-grid { grid-template-columns: minmax(0, 1fr); } }
+  @media (max-width: 560px) { .steps.cols { grid-template-columns: minmax(0, 1fr); } }
+  @media (max-width: 560px) { .acts { grid-template-columns: repeat(2, minmax(0, 1fr)); } .act { border-left: 1px solid var(--line-soft) !important; border-top: 1px solid var(--line-soft); } .act:nth-child(odd) { border-left: 0 !important; } }
+</style>
+</head>
+<body data-sheet="11" data-title="Luồng vận hành">
+<div class="app paper">
+  <div id="rail"></div>
+  <div class="main">
+    <header id="topbar"></header>
+    <main class="content">
+
+      <section class="page-head reveal">
+        <div>
+          <div class="code">FLOW DIAGRAM · SANKEY BLUEPRINT · CỬA SỔ 60 PHÚT · SIM</div>
+          <h2>Luồng vận hành</h2>
+          <p class="lede">Task chảy từ nguồn việc qua các trạm tới Done. Độ dày dải là khối lượng task trong 60 phút, hạt sáng là từng task đang chuyển trạm. Nhánh lỗi cho thấy lease hết hạn bị giữ lại để đối soát, không tự chạy lại.</p>
+        </div>
+        <div class="actions">
+          <a class="btn" href="10-activity.html">Mở nhật ký sự kiện</a>
+          <a class="btn" href="04-mission-line.html">Mở dây chuyền</a>
+        </div>
+      </section>
+
+      <section class="stack">
+        <div class="panel reveal">
+          <div class="flow-tools">
+            <div class="legend" aria-label="Chú giải trạng thái">
+              <span style="color:var(--s-backlog)"><i></i>Backlog</span><span style="color:var(--s-ready)"><i></i>Ready</span>
+              <span style="color:var(--s-doing)"><i></i>Doing</span><span style="color:var(--amber)"><i></i>Waiting · người quyết</span>
+              <span style="color:var(--s-review)"><i></i>Review · QC</span><span style="color:var(--s-done)"><i></i>Done</span>
+              <span style="color:var(--red)"><i></i>Lỗi · hold</span>
+            </div>
+            <span class="code" id="rate">TỐC ĐỘ 1x · -- TASK/PH</span>
+          </div>
+          <div class="flow-scroll scan">
+            <svg id="flow" class="dwg" viewBox="0 0 1400 560" role="img" aria-labelledby="flowTitle flowDesc">
+              <title id="flowTitle">Sơ đồ dòng chảy task</title>
+              <desc id="flowDesc">Nguồn việc gồm người và connector đổ vào Backlog, rồi Ready, claim sang Doing, submit sang Review, QC và Done. Doing có nhánh Waiting tới Cổng phê duyệt, nhánh retry về Ready và nhánh lease hết hạn vào uncertainty hold. Bảng thay thế bên dưới liệt kê số lượng từng dòng.</desc>
+              <defs>
+                <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:var(--line-strong)"/></marker>
+                <pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" style="stroke:var(--t-failed)" stroke-width="3"/></pattern>
+              </defs>
+              <g id="gAnno"></g><g id="gEdges"></g><g id="gNodes"></g><g id="gLabels"></g><g id="gParticles"></g><g id="gTrack"></g>
+            </svg>
+          </div>
+        </div>
+
+        <div class="grid ctrl-grid">
+          <div class="panel ctrl reveal">
+            <div class="panel-head"><h3>Điều khiển trình diễn</h3><span class="code">CTRL</span></div>
+            <div class="panel-body stack" style="gap:var(--sp-4)">
+              <div class="field"><span>Tốc độ</span>
+                <div class="seg" role="group" aria-label="Tốc độ" id="speed"><button aria-pressed="false" data-s="0.5">0.5x</button><button aria-pressed="true" data-s="1">1x</button><button aria-pressed="false" data-s="2">2x</button></div>
+              </div>
+              <div class="field"><span>Lớp hiển thị</span>
+                <div class="stack" style="gap:var(--sp-2)" id="layers">
+                  <button class="layer" aria-pressed="true" data-l="main" style="color:var(--s-doing)"><span class="sw"></span><span style="color:var(--ink)">Luồng chính</span><span class="k">8 dòng</span></button>
+                  <button class="layer" aria-pressed="true" data-l="error" style="color:var(--red)"><span class="sw"></span><span style="color:var(--ink)">Lỗi · retry · cancel</span><span class="k">5 dòng</span></button>
+                  <button class="layer" aria-pressed="true" data-l="human" style="color:var(--amber)"><span class="sw"></span><span style="color:var(--ink)">Con người</span><span class="k">5 dòng</span></button>
+                </div>
+              </div>
+              <div class="field"><span>Theo dõi 1 task</span>
+                <div class="row">
+                  <label class="sr" for="trackSel" style="position:absolute;left:-9999px">Chọn task</label>
+                  <select class="select" id="trackSel"><option value="T-1042">T-1042 · Tách module xác thực</option><option value="T-1047" disabled>T-1047 · đang hold (không phát lại)</option></select>
+                  <button class="btn primary" id="trackBtn">Theo dõi</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="panel reveal">
+            <div class="panel-head"><h3>Hành trình T-1042</h3><span class="code" id="trackState">CHƯA CHẠY</span></div>
+            <div class="panel-body">
+              <ol class="steps cols" id="steps" aria-live="polite"></ol>
+              <p class="muted" style="margin:var(--sp-3) 0 0;font-size:var(--fs-xs)">Thực tế T-1042 đang ở Doing với fence 18. Các bước sau submit là trình diễn mô phỏng để minh hoạ quy tắc.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel reveal" aria-label="Hành động agent">
+        <div class="panel-head"><h3>Hành động agent · phát sáng khi xảy ra</h3><span class="code">ACTION STRIP · ĐẾM TRONG PHIÊN</span></div>
+        <div class="acts" id="acts"></div>
+      </section>
+
+      <section class="grid g-2">
+        <div class="panel reveal">
+          <div class="panel-head"><h3>Bảng thay thế · Nguồn → Đích</h3><span class="code">A11Y · 60 PHÚT</span></div>
+          <div class="alt-wrap"><table class="table" aria-label="Khối lượng từng dòng chảy"><thead><tr><th>Nguồn</th><th>Đích</th><th>Lệnh</th><th style="text-align:right">Số lượng</th><th>Lớp</th></tr></thead><tbody id="alt"></tbody></table></div>
+        </div>
+        <div class="panel reveal">
+          <div class="panel-head"><h3>Đọc sơ đồ cho đúng</h3><span class="code">NOTES</span></div>
+          <div class="panel-body stack">
+            <ul class="log" style="margin:0 calc(var(--sp-4) * -1)">
+              <li><time>LEASE</time><span class="g c-red">✕</span><span>Lease hết hạn không có phân loại replay-safe từ trước sẽ vào <b>uncertainty hold</b> (Backlog · outcome_unknown). Không có lệnh xoá hold; chỉ tạo việc thay thế sau đối soát.</span></li>
+              <li><time>RETRY</time><span class="g c-ready">↻</span><span>Retry về Ready chỉ khi lỗi đã biết an toàn và còn ngân sách retry. Hết ngân sách thì về Backlog với cờ retry_exhausted.</span></li>
+              <li><time>WAITING</time><span class="g c-amber">❚❚</span><span>Waiting không giữ lease. Approve đưa task về Ready, cần claim mới với fence lớn hơn. Approval không phải là đã thực thi.</span></li>
+              <li><time>EXPIRY</time><span class="g c-amber">◌</span><span>Đề xuất hết hạn vẫn ở Waiting (mũi tên ngược về Waiting), không tự duyệt hay tự từ chối.</span></li>
+              <li><time>DONE</time><span class="g c-done">✓</span><span>Done chỉ sau khi reviewer độc lập chấp nhận. Reviewer phải khác cả người nộp lẫn agent nộp.</span></li>
+            </ul>
+            <div class="empty" id="noLayer" hidden>Tất cả lớp đang tắt. Bật ít nhất một lớp để xem dòng chảy.</div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+    <div id="titleblock"></div>
+  </div>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(() => {
+  const el = (t, a, p) => BP.svg(t, a, p);
+  const C = { backlog: "var(--s-backlog)", ready: "var(--s-ready)", doing: "var(--s-doing)", waiting: "var(--amber)", review: "var(--s-review)", done: "var(--s-done)", red: "var(--red)", human: "var(--amber)", line: "var(--line)" };
+  const gA = BP.$("#gAnno"), gE = BP.$("#gEdges"), gN = BP.$("#gNodes"), gL = BP.$("#gLabels"), gP = BP.$("#gParticles"), gT = BP.$("#gTrack");
+
+  /* ---------- nodes ---------- */
+  const N = {
+    human:   { x: 30, y: 100, w: 140, h: 64, name: "NGƯỜI", sub: "QĐ · KHÁNH", c: C.human, cnt: 14 },
+    conn:    { x: 30, y: 250, w: 140, h: 64, name: "CONNECTOR", sub: "GITHUB · HOOK", c: C.line, cnt: 9 },
+    backlog: { x: 240, y: 170, w: 130, h: 72, name: "BACKLOG", sub: "ST-01", c: C.backlog, cnt: 3 },
+    ready:   { x: 440, y: 170, w: 130, h: 72, name: "READY", sub: "ST-02 · CHỜ CLAIM", c: C.ready, cnt: 4 },
+    doing:   { x: 650, y: 170, w: 130, h: 72, name: "DOING", sub: "ST-03 · CÓ LEASE", c: C.doing, cnt: 4 },
+    review:  { x: 880, y: 170, w: 120, h: 72, name: "REVIEW", sub: "ST-05 · ĐÃ NỘP", c: C.review, cnt: 2 },
+    qc:      { x: 1060, y: 170, w: 120, h: 72, name: "QC", sub: "ĐỘC LẬP", c: C.review, cnt: 1 },
+    done:    { x: 1240, y: 170, w: 130, h: 72, name: "DONE", sub: "ST-06", c: C.done, cnt: 2 },
+    waiting: { x: 700, y: 330, w: 130, h: 64, name: "WAITING", sub: "KHÔNG LEASE", c: C.waiting, cnt: 2 },
+    gate:    { x: 900, y: 330, w: 150, h: 64, name: "CỔNG PHÊ DUYỆT", sub: "HUMAN DECISION", c: C.human, cnt: 2, human: true },
+    hold:    { x: 430, y: 462, w: 170, h: 64, name: "UNCERTAINTY HOLD", sub: "OUTCOME_UNKNOWN", c: C.red, cnt: 1, hatch: true },
+    cancel:  { x: 1240, y: 330, w: 130, h: 64, name: "CANCELLED", sub: "LƯU TRỮ", c: "var(--s-cancelled)", cnt: 1 }
+  };
+  Object.entries(N).forEach(([id, n]) => {
+    const g = el("g", { class: "node", id: "n-" + id }, gN);
+    el("rect", { x: n.x, y: n.y, width: n.w, height: n.h, class: "box", stroke: n.c, "stroke-dasharray": id === "hold" || id === "cancel" ? "5 3" : "" }, g);
+    if (n.hatch) el("rect", { x: n.x + 1, y: n.y + 1, width: n.w - 2, height: n.h - 2, fill: "url(#hatch)", opacity: 0.6 }, g);
+    el("rect", { x: n.x, y: n.y, width: 4, height: n.h, fill: n.c }, g);
+    const t = el("text", { x: n.x + 14, y: n.y + 22, class: "lbl" }, g); t.textContent = n.name;
+    const s = el("text", { x: n.x + 14, y: n.y + 37, class: "sub" }, g); s.textContent = n.sub;
+    const c = el("text", { x: n.x + n.w - 10, y: n.y + n.h - 10, class: "cnt", "text-anchor": "end", fill: n.c }, g); c.textContent = n.cnt;
+    n.cntEl = c;
+  });
+
+  /* ---------- edges (Sankey-like width = volume / 60 min) ---------- */
+  const EDGES = [
+    { id: "h-b", from: "human", to: "backlog", d: "M170 132 C205 132 205 190 240 190", v: 14, c: C.human, layers: ["main", "human"], cmd: "create" },
+    { id: "c-b", from: "conn", to: "backlog", d: "M170 282 C205 282 205 222 240 222", v: 9, c: C.line, layers: ["main"], cmd: "create (connector)" },
+    { id: "b-r", from: "backlog", to: "ready", d: "M370 206 H440", v: 20, c: C.ready, layers: ["main"], cmd: "ready" },
+    { id: "r-d", from: "ready", to: "doing", d: "M570 206 H650", v: 18, c: C.doing, layers: ["main"], cmd: "claim", lbl: "claim" },
+    { id: "d-rv", from: "doing", to: "review", d: "M780 206 H880", v: 12, c: C.review, layers: ["main"], cmd: "submit result", lbl: "submit" },
+    { id: "rv-qc", from: "review", to: "qc", d: "M1000 206 H1060", v: 12, c: C.review, layers: ["main"], cmd: "giao reviewer" },
+    { id: "qc-dn", from: "qc", to: "done", d: "M1180 206 H1240", v: 10, c: C.done, layers: ["main", "human"], cmd: "accept result", lbl: "accept" },
+    { id: "d-w", from: "doing", to: "waiting", d: "M745 242 V330", v: 4, c: C.waiting, layers: ["main", "human"], cmd: "request decision", lbl: "checkpoint" },
+    { id: "w-g", from: "waiting", to: "gate", d: "M830 352 H900", v: 4, c: C.human, layers: ["human"], cmd: "proposal vN", lbl: "đề xuất", lp: [865, 316] },
+    { id: "g-w", from: "gate", to: "waiting", d: "M900 376 H830", v: 1, c: C.human, layers: ["human", "error"], cmd: "proposal expiry (vẫn Waiting)", dash: true, lbl: "hết hạn", lp: [865, 414] },
+    { id: "g-r", from: "gate", to: "ready", d: "M975 394 V438 H520 V242", v: 2, c: C.human, layers: ["human"], cmd: "approve", lbl: "approve → claim mới", lp: [790, 438] },
+    { id: "g-b", from: "gate", to: "backlog", d: "M1020 394 V452 H300 V242", v: 1, c: C.human, layers: ["human"], cmd: "reject", lbl: "reject", lp: [1062, 424] },
+    { id: "d-r", from: "doing", to: "ready", d: "M700 170 C700 112 530 112 530 170", v: 2, c: C.red, layers: ["error"], cmd: "fail · retry an toàn", lbl: "retry" },
+    { id: "d-h", from: "doing", to: "hold", d: "M668 242 V494 H600", v: 1, c: C.red, layers: ["error"], cmd: "lease expiry", lbl: "lease hết hạn", lp: [592, 290] },
+    { id: "h-bk", from: "hold", to: "backlog", d: "M430 494 H272 V242", v: 0, c: C.red, layers: ["error"], cmd: "việc thay thế sau đối soát", dash: true, lbl: "chờ đối soát", lp: [352, 494] },
+    { id: "qc-r", from: "qc", to: "ready", d: "M1120 170 C1120 56 505 56 505 170", v: 2, c: C.red, layers: ["error"], cmd: "requeue (sửa lại)", lbl: "requeue" },
+    { id: "qc-x", from: "qc", to: "cancel", d: "M1140 242 V362 H1240", v: 1, c: "var(--s-cancelled)", layers: ["error"], cmd: "cancel", lbl: "cancel", lp: [1192, 362] }
+  ];
+  const width = v => v === 0 ? 2 : 3 + v * 1.1;
+  EDGES.forEach(e => {
+    const g = el("g", { class: "edge", "data-id": e.id }, gE);
+    e.band = el("path", { d: e.d, class: "band", stroke: e.c, "stroke-width": width(e.v) }, g);
+    e.path = el("path", { d: e.d, class: "core", stroke: e.c, "marker-end": "url(#ah)", "stroke-dasharray": e.dash ? "6 4" : "" }, g);
+    e.g = g;
+    // number label at midpoint
+    const L = e.path.getTotalLength(), mp = e.path.getPointAtLength(L * 0.5);
+    const p = e.lp ? { x: e.lp[0], y: e.lp[1] } : mp;
+    const inGap = ["r-d", "d-rv", "qc-dn"].includes(e.id); // narrow gaps: command word above, number on band
+    const txt = inGap ? String(e.v) : (e.lbl ? e.lbl + " · " : "") + e.v;
+    const w = txt.length * 7.4 + 12;
+    const lg = el("g", { class: "edge-lbl", "data-id": e.id }, gL);
+    if (inGap) { const ct = el("text", { x: p.x, y: p.y - 16, class: "sub", "text-anchor": "middle", style: `fill:${e.c}` }, lg); ct.textContent = e.lbl.toUpperCase(); }
+    el("rect", { x: p.x - w / 2, y: p.y - 10, width: w, height: 19, class: "elbl-bg", stroke: e.c }, lg);
+    const t = el("text", { x: p.x, y: p.y + 4, class: "elbl", "text-anchor": "middle" }, lg); t.textContent = txt;
+    e.lg = lg;
+  });
+
+  /* annotations: dimension line + title */
+  el("path", { d: "M240 154 H1370 M240 148 V160 M1370 148 V160", class: "dimline" }, gA);
+  const at = el("text", { x: 805, y: 150, class: "sub", "text-anchor": "middle" }, gA); at.textContent = "LUỒNG CHÍNH · BACKLOG → DONE";
+  const nt = el("text", { x: 30, y: 552, class: "sub note" }, gA); nt.textContent = "ĐỘ DÀY DẢI = SỐ TASK / 60 PHÚT · SỐ TRÊN NHÃN = KHỐI LƯỢNG · NÉT ĐỨT = CHƯA PHÁT SINH HOẶC CHỈ GIỮ TRẠNG THÁI";
+
+  /* ---------- alternative table ---------- */
+  const nm = id => ({ human: "Người", conn: "Connector", backlog: "Backlog", ready: "Ready", doing: "Doing", review: "Review", qc: "QC", done: "Done", waiting: "Waiting", gate: "Cổng phê duyệt", hold: "Uncertainty hold", cancel: "Cancelled" })[id];
+  const layerVi = { main: "Chính", error: "Lỗi", human: "Người" };
+  BP.$("#alt").innerHTML = EDGES.map(e => `<tr data-id="${e.id}"><td>${nm(e.from)}</td><td>${nm(e.to)}</td><td class="mono muted">${e.cmd}</td><td class="mono" style="text-align:right">${e.v === 0 ? '<span class="unknown">0 · chờ đối soát</span>' : e.v}</td><td>${e.layers.map(l => `<span class="tag ${l === "error" ? "red" : l === "human" ? "amber" : ""}">${layerVi[l]}</span>`).join(" ")}</td></tr>`).join("");
+
+  /* ---------- layers ---------- */
+  const on = new Set(["main", "error", "human"]);
+  function applyLayers() {
+    EDGES.forEach(e => { const vis = e.layers.some(l => on.has(l)); e.g.classList.toggle("off", !vis); e.lg.classList.toggle("edge", true); e.lg.classList.toggle("off", !vis); e.hidden = !vis; });
+    BP.$("#noLayer").hidden = on.size > 0;
+  }
+  BP.$$("#layers .layer").forEach(b => b.addEventListener("click", () => {
+    const l = b.dataset.l; on.has(l) ? on.delete(l) : on.add(l); b.setAttribute("aria-pressed", String(on.has(l))); applyLayers();
+  }));
+
+  /* ---------- speed ---------- */
+  let speed = 1;
+  const total = EDGES.reduce((a, e) => a + e.v, 0);
+  const rateEl = BP.$("#rate");
+  const setRate = () => rateEl.textContent = `TỐC ĐỘ ${speed}x · ${total} LƯỢT CHUYỂN / 60 PH`;
+  setRate();
+  BP.$$("#speed button").forEach(b => b.addEventListener("click", () => { BP.$$("#speed button").forEach(x => x.setAttribute("aria-pressed", String(x === b))); speed = +b.dataset.s; setRate(); }));
+
+  /* ---------- action strip ---------- */
+  const ACTS = [
+    { k: "claim", c: "var(--s-ready)", d: "Nhận việc nguyên tử, tạo lease + fence", svg: '<path d="M8 20h24M24 12l8 8-8 8"/><rect x="4" y="6" width="10" height="28"/>' },
+    { k: "heartbeat", c: "var(--s-doing)", d: "Gia hạn run, đổi run_version", svg: '<path d="M2 20h9l4-10 6 20 4-10h13"/>' },
+    { k: "checkpoint", c: "var(--s-doing)", d: "Lưu mốc, có thể kèm đề xuất", svg: '<path d="M10 4v32"/><path d="M10 6h20l-5 7 5 7H10"/>' },
+    { k: "upload", c: "var(--s-review)", d: "Stage → upload → commit artifact", svg: '<path d="M20 28V8M12 16l8-8 8 8"/><path d="M6 26v8h28v-8"/>' },
+    { k: "submit", c: "var(--s-review)", d: "Nộp kết quả, kết thúc run", svg: '<rect x="6" y="8" width="28" height="24"/><path d="M12 20l6 6 10-12"/>' },
+    { k: "ACK", c: "var(--s-ready)", d: "Xác nhận đã nhận thư, không cấp quyền làm", svg: '<path d="M4 10h32v20H4z"/><path d="M4 10l16 12 16-12"/>' },
+    { k: "yield", c: "var(--red)", d: "Trả việc hoặc retry về Ready", svg: '<path d="M32 20H8M16 12l-8 8 8 8"/><rect x="26" y="6" width="10" height="28"/>' }
+  ];
+  const actCount = {};
+  BP.$("#acts").innerHTML = ACTS.map(a => `<div class="act" id="act-${a.k}" style="--c:${a.c}"><svg viewBox="0 0 40 40" aria-hidden="true">${a.svg}</svg><span class="nm">${a.k}</span><span class="n" id="actn-${a.k}">0</span><span class="d">${a.d}</span></div>`).join("");
+  ACTS.forEach(a => actCount[a.k] = 0);
+  function glow(k) {
+    const n = BP.$("#act-" + k); if (!n) return;
+    actCount[k]++; BP.$("#actn-" + k).textContent = actCount[k];
+    n.classList.add("glow"); clearTimeout(n._t); n._t = setTimeout(() => n.classList.remove("glow"), 650);
+  }
+
+  /* ---------- particles ---------- */
+  const acc = {};
+  function spawn(e, opts = {}) {
+    const p = el("g", { class: "particle" }, gP);
+    el("rect", { x: -5, y: -4, width: 10, height: 8, fill: "var(--bp-950)", stroke: e.c, "stroke-width": 1.5 }, p);
+    const len = e.path.getTotalLength();
+    return BP.moveAlong(p, e.path, Math.max(700, len / (110 * speed) * 1000), { linear: true }).then(() => p.remove());
+  }
+  const byId = Object.fromEntries(EDGES.map(e => [e.id, e]));
+  BP.every(100, () => {
+    EDGES.forEach(e => {
+      if (e.hidden || e.v === 0) return;
+      acc[e.id] = (acc[e.id] || Math.random()) + e.v * 0.0045 * speed;
+      if (acc[e.id] >= 1) {
+        acc[e.id] -= 1; spawn(e);
+        if (e.id === "r-d") glow("claim");
+        if (e.id === "d-rv") { glow("upload"); setTimeout(() => glow("submit"), 300); }
+        if (e.id === "d-w") glow("checkpoint");
+        if (e.id === "d-r" || e.id === "qc-r") glow("yield");
+      }
+    });
+  });
+  BP.every(1400, () => { if (Math.random() < 0.8 * Math.min(speed, 1.5)) glow("heartbeat"); if (Math.random() < 0.25) glow("checkpoint"); });
+  BP.every(3200, () => glow("ACK"));
+
+  /* ---------- tracking T-1042 ---------- */
+  const STEPS = [
+    { k: "ready", t: "Ready · T-1042 đủ điều kiện", d: "Phân công KT-01 · WIP 3/4 còn chỗ" },
+    { k: "claim", t: "claim · fence 18 · lease 60 s", d: "ATLAS-01 thắng claim nguyên tử, run r-88f1" },
+    { k: "heartbeat", t: "heartbeat · run v2 → v8", d: "Gia hạn lease, task_version giữ 21" },
+    { k: "checkpoint", t: "checkpoint cp-07", d: "Artifact a-7731 committed vào kho" },
+    { k: "submit", t: "submit · result rs-1042-1", d: "Run kết thúc submitted, lease được trả" },
+    { k: "review", t: "Review → QC", d: "Giao SAGE-12 kiểm định độc lập" },
+    { k: "accept", t: "accept · SAGE-12", d: "Khác ATLAS-01 · task sang Done" }
+  ];
+  const stepsEl = BP.$("#steps");
+  function renderSteps(cur) {
+    stepsEl.innerHTML = STEPS.map((s, i) => `<li class="${i < cur ? "done" : i === cur ? "now" : ""}"><i></i><span><b>${s.t}</b>${s.d}</span></li>`).join("");
+  }
+  renderSteps(BP.reduced ? STEPS.length : -1);
+  let tracking = false;
+  const trackBtn = BP.$("#trackBtn"), trackState = BP.$("#trackState");
+  function nodeCenter(id) { const n = N[id]; return { x: n.x + n.w / 2, y: n.y + n.h / 2 }; }
+  async function track() {
+    if (tracking) return; tracking = true;
+    trackBtn.disabled = true; trackBtn.textContent = "Đang theo dõi";
+    trackState.textContent = "ĐANG CHẠY";
+    gT.innerHTML = "";
+    const g = el("g", {}, gT);
+    el("circle", { r: 14, fill: "none", stroke: "var(--ink)", class: "pulse" }, g);
+    el("rect", { x: -8, y: -6, width: 16, height: 12, fill: "var(--ink)", stroke: "var(--s-ready)", "stroke-width": 2 }, g);
+    const cap = el("g", { class: "tracker-cap" }, g);
+    const capR = el("rect", { x: 14, y: -38, height: 20 }, cap);
+    const capT = el("text", { x: 22, y: -24 }, cap);
+    const say = (i, txt) => { renderSteps(i); capT.textContent = txt; capR.setAttribute("width", txt.length * 6.8 + 16); };
+    const start = nodeCenter("ready");
+    g.setAttribute("transform", `translate(${start.x} ${start.y})`);
+    say(0, "T-1042 · READY"); await BP.wait(1500 / speed);
+    say(1, "claim · fence 18"); glow("claim");
+    await BP.moveAlong(g, el("path", { d: `M${start.x} ${start.y} H${nodeCenter("doing").x}` }), 1600 / speed);
+    for (let i = 0; i < 3; i++) { say(2, `heartbeat · run v${2 + i * 3}`); glow("heartbeat"); await BP.wait(900 / speed); }
+    say(3, "checkpoint cp-07"); glow("checkpoint"); glow("upload"); await BP.wait(1400 / speed);
+    say(4, "submit · rs-1042-1"); glow("submit");
+    await BP.moveAlong(g, el("path", { d: `M${nodeCenter("doing").x} ${nodeCenter("doing").y} H${nodeCenter("review").x}` }), 1500 / speed);
+    say(5, "review → QC · SAGE-12");
+    await BP.moveAlong(g, el("path", { d: `M${nodeCenter("review").x} ${nodeCenter("review").y} H${nodeCenter("qc").x}` }), 1300 / speed);
+    await BP.wait(900 / speed);
+    say(6, "accept · reviewer ≠ người nộp");
+    await BP.moveAlong(g, el("path", { d: `M${nodeCenter("qc").x} ${nodeCenter("qc").y} H${nodeCenter("done").x - 60}` }), 1300 / speed);
+    renderSteps(STEPS.length);
+    capT.textContent = "DONE · mô phỏng"; capR.setAttribute("width", 120);
+    trackState.textContent = "HOÀN TẤT · MÔ PHỎNG";
+    BP.toast("TRACE · T-1042", "Hành trình trình diễn kết thúc. Xem các sự kiện thật trong Nhật ký hoạt động.");
+    await BP.wait(4000);
+    tracking = false; trackBtn.disabled = false; trackBtn.textContent = "Theo dõi lại";
+  }
+  trackBtn.addEventListener("click", track);
+
+  applyLayers();
+  if (!BP.reduced) BP.wait(1200).then(track);
+})();
+</script>
+</body>
+</html>

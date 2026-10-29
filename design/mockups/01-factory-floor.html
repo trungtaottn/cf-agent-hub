@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sàn nhà máy · CF Agent Factory</title>
+<link rel="stylesheet" href="assets/blueprint.css">
+<style>
+  .floor-wrap { position: relative; }
+  .floor-tools { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--line-soft); }
+  .floor svg { width: 100%; height: auto; }
+  .floor .room-hit { cursor: pointer; }
+  .floor .room-hit:hover .room, .floor .room-hit:focus .room { fill: var(--bp-700); }
+  .floor .room-hit:focus { outline: none; }
+  .floor .room-hit:focus .room { stroke: var(--amber); stroke-width: 2; }
+  .agent-g text { font-family: var(--f-mono); font-size: 8.5px; font-weight: 600; text-anchor: middle; dominant-baseline: central; }
+  .agent-g .bubble { font-family: var(--f-mono); font-size: 8.5px; fill: var(--ink); }
+  .box-g rect { stroke-width: 1; }
+  .need li { display: grid; grid-template-columns: auto 1fr auto; gap: var(--sp-3); align-items: center; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--grid-major); }
+  .need ul { list-style: none; margin: 0; padding: 0; }
+  .need .t { font-size: var(--fs-sm); line-height: 1.35; }
+  .need .s { font-size: var(--fs-xs); color: var(--ink-2); }
+  .dept-strip { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .dept-strip a { display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-4); color: var(--ink); text-decoration: none; border-left: 1px solid var(--line-soft); }
+  .dept-strip a:first-child { border-left: 0; }
+  .dept-strip a:hover { background: var(--bp-700); }
+  .dept-strip .nm { font-family: var(--f-display); font-weight: 600; font-size: var(--fs-md); }
+  .dept-strip .bots { display: flex; gap: 4px; }
+  .dept-strip .bots .bot { width: 26px; height: 26px; font-size: 9px; }
+  .feed { max-height: 412px; overflow: hidden; }
+  @media (max-width: 1280px) { .dept-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); } .dept-strip a:nth-child(4) { border-left: 0; } .dept-strip a:nth-child(n+4) { border-top: 1px solid var(--line-soft); } }
+  @media (max-width: 560px) { .dept-strip { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body data-sheet="01" data-title="Sàn nhà máy · Tổng quan">
+<div class="app paper">
+  <div id="rail"></div>
+  <div class="main">
+    <header id="topbar"></header>
+    <main class="content">
+
+      <section class="page-head reveal">
+        <div>
+          <div class="code">FLOOR PLAN · LEVEL 01 · WS-AURORA</div>
+          <h2>Toàn cảnh nhà máy lúc này</h2>
+          <p class="lede">Mỗi phòng là một phòng ban hoặc một trạm của quy trình. Agent di chuyển giữa các phòng khi nhận việc, chờ quyết định, đi họp hay nghỉ hồi quota. Bấm vào phòng để mở chi tiết.</p>
+        </div>
+        <div class="actions">
+          <a class="btn" href="16-scenarios.html">Chọn kịch bản</a>
+          <a class="btn primary" href="04-mission-line.html">Mở dây chuyền</a>
+        </div>
+      </section>
+
+      <section class="grid g-4 reveal" aria-label="Chỉ số chính">
+        <div class="panel kpi"><span class="label">Đang làm · Doing</span><span class="value c-doing" id="kDoing">4</span><span class="note">4 lease hợp lệ, 1 lease còn dưới 20%</span></div>
+        <div class="panel kpi"><span class="label">Chờ quyết định · Waiting</span><span class="value c-amber">2</span><span class="note">Gần hết hạn nhất: 16:30 hôm nay</span></div>
+        <div class="panel kpi"><span class="label">Chờ nghiệm thu · Review</span><span class="value c-review">2</span><span class="note">1 cần người, 1 giao SAGE-12</span></div>
+        <div class="panel kpi"><span class="label">Agent có tín hiệu</span><span class="value">9<small> / 12</small></span><span class="note">1 tín hiệu cũ (PIXEL-08), 2 offline</span></div>
+      </section>
+
+      <section class="stack">
+        <div class="panel floor-wrap reveal">
+          <div class="floor-tools">
+            <div class="legend" aria-label="Chú giải">
+              <span style="color:var(--s-ready)"><i></i>Task di chuyển</span>
+              <span style="color:var(--s-doing)"><i></i>Agent đang làm</span>
+              <span style="color:var(--amber)"><i></i>Cần con người</span>
+              <span style="color:var(--s-review)"><i></i>Nghiệm thu</span>
+            </div>
+            <div class="seg" role="group" aria-label="Lớp hiển thị">
+              <button aria-pressed="true" data-layer="all">Tất cả</button>
+              <button aria-pressed="false" data-layer="tasks">Chỉ task</button>
+              <button aria-pressed="false" data-layer="agents">Chỉ agent</button>
+            </div>
+          </div>
+          <div class="floor scan">
+            <svg id="floor" class="dwg" viewBox="0 0 1200 690" role="img" aria-labelledby="floorTitle">
+              <title id="floorTitle">Mặt bằng nhà máy: 5 phòng ban phía trên, dây chuyền nhiệm vụ ở giữa, các trạm hỗ trợ phía dưới.</title>
+              <defs>
+                <pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                  <line x1="0" y1="0" x2="0" y2="8" style="stroke:var(--line-soft)" stroke-width="1"/>
+                </pattern>
+                <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M0 0L10 5L0 10z" style="fill:var(--line)"/>
+                </marker>
+              </defs>
+              <g id="gRooms"></g>
+              <g id="gConveyor"></g>
+              <g id="gBoxes" data-layer="tasks"></g>
+              <g id="gAgents" data-layer="agents"></g>
+              <g id="gAnno"></g>
+            </svg>
+          </div>
+        </div>
+
+        <div class="grid g-2">
+          <div class="panel need reveal">
+            <div class="panel-head"><h3>Cần con người xử lý</h3><span class="code">4 mục</span></div>
+            <ul>
+              <li><span class="human-token" aria-hidden="true">!</span><div><div class="t">Gửi email khảo sát tới 240 khách hàng beta</div><div class="s">VEGA-03 · T-1039 · hết hạn 16:30</div></div><a class="btn sm human" href="12-approval-gate.html">Xem đề xuất</a></li>
+              <li><span class="human-token" aria-hidden="true">!</span><div><div class="t">Xoá 1.204 artifact staged quá 7 ngày</div><div class="s">ORBIT-05 · T-1053 · không hoàn tác</div></div><a class="btn sm human" href="12-approval-gate.html">Xem đề xuất</a></li>
+              <li><span class="bot" style="--c:var(--s-review)" aria-hidden="true">MU</span><div><div class="t">Bản dịch tài liệu HTTP API</div><div class="s">Chờ Hà nghiệm thu · T-1040</div></div><a class="btn sm" href="13-qc-review.html">Nghiệm thu</a></li>
+              <li><span class="bot" style="--c:var(--s-failed)" aria-hidden="true">!</span><div><div class="t">T-1033 hết lượt retry</div><div class="s">Cần phân loại trước khi đưa về Ready</div></div><a class="btn sm" href="05-work-order.html">Mở phiếu</a></li>
+            </ul>
+          </div>
+          <div class="panel reveal">
+            <div class="panel-head"><h3>Sự kiện trực tiếp</h3><span class="code" aria-live="off">EVENT STREAM</span></div>
+            <div class="feed"><ul class="log" id="feed" aria-live="polite" aria-relevant="additions"></ul></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel reveal" aria-label="Phòng ban">
+        <div class="panel-head"><h3>Công suất phòng ban</h3><a class="code" href="02-departments.html">Xem tất cả phòng ban →</a></div>
+        <div class="dept-strip" id="deptStrip"></div>
+      </section>
+
+    </main>
+    <div id="titleblock"></div>
+  </div>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(() => {
+  const NS = "http://www.w3.org/2000/svg";
+  const F = BP.F;
+  const svg = BP.$("#floor");
+  const gRooms = BP.$("#gRooms"), gConv = BP.$("#gConveyor"), gBoxes = BP.$("#gBoxes"), gAgents = BP.$("#gAgents"), gAnno = BP.$("#gAnno");
+  const el = (tag, attrs, parent) => BP.svg(tag, attrs, parent);
+  const CY = 300; // conveyor centerline
+
+  /* ---------- Rooms ---------- */
+  const ROOMS = [
+    { id: "sec", x: 40, y: 40, w: 150, h: 200, name: "CỔNG AN NINH", sub: "RUNTIME ENROLL", href: "19-security-gate.html", side: "top" },
+    { id: "kt", x: 210, y: 40, w: 260, h: 200, name: "XƯỞNG KỸ THUẬT", sub: "KT-01 · ENGINEERING", href: "03-department-detail.html", side: "top", hot: true, dim: "26.0 m" },
+    { id: "nc", x: 490, y: 40, w: 200, h: 200, name: "PHÒNG NGHIÊN CỨU", sub: "NC-02 · RESEARCH", href: "03-department-detail.html", side: "top", hot: true },
+    { id: "nd", x: 710, y: 40, w: 200, h: 200, name: "STUDIO NỘI DUNG", sub: "ND-03 · CONTENT", href: "03-department-detail.html", side: "top" },
+    { id: "dl", x: 930, y: 40, w: 230, h: 200, name: "PHÒNG DỮ LIỆU", sub: "DL-04 · DATA", href: "03-department-detail.html", side: "top", hot: true },
+    { id: "vh", x: 40, y: 360, w: 190, h: 280, name: "TT VẬN HÀNH", sub: "VH-05 · OPERATIONS", href: "03-department-detail.html", side: "bottom" },
+    { id: "mail", x: 250, y: 360, w: 180, h: 130, name: "PHÒNG THƯ", sub: "MESSAGES · ACK", href: "17-mailroom.html", side: "bottom" },
+    { id: "gate", x: 450, y: 360, w: 280, h: 130, name: "CỔNG PHÊ DUYỆT", sub: "HUMAN DECISION · 2 CHỜ", href: "12-approval-gate.html", side: "bottom", human: true },
+    { id: "wh", x: 250, y: 510, w: 300, h: 130, name: "KHO ARTIFACT", sub: "R2 · COMMITTED EVIDENCE", href: "18-warehouse.html", side: "bottom", hatch: true },
+    { id: "ctl", x: 570, y: 510, w: 160, h: 130, name: "PHÒNG ĐIỀU KHIỂN", sub: "STATUS WALL", href: "09-control-room.html", side: "bottom" },
+    { id: "qc", x: 750, y: 360, w: 200, h: 280, name: "TRẠM KIỂM ĐỊNH", sub: "QC-06 · REVIEW", href: "13-qc-review.html", side: "bottom", hot: true },
+    { id: "meet", x: 970, y: 360, w: 190, h: 140, name: "PHÒNG HỌP", sub: "THREAD · STANDUP", href: "14-meeting-room.html", side: "bottom" },
+    { id: "lounge", x: 970, y: 520, w: 190, h: 120, name: "KHU GIẢI TRÍ", sub: "IDLE · COOLDOWN", href: "15-lounge.html", side: "bottom" }
+  ];
+  const R = Object.fromEntries(ROOMS.map(r => [r.id, r]));
+  const door = r => ({ x: r.x + r.w - 34, y: r.side === "top" ? r.y + r.h : r.y });
+
+  ROOMS.forEach(r => {
+    const a = el("a", { href: r.href, class: "room-hit", "aria-label": `${r.name}, mở chi tiết` }, gRooms);
+    el("rect", { x: r.x, y: r.y, width: r.w, height: r.h, class: `room${r.hot ? " hot" : ""}${r.human ? " human" : ""}` }, a);
+    if (r.hatch) el("rect", { x: r.x + 6, y: r.y + 40, width: r.w - 12, height: r.h - 46, class: "hatch" }, a);
+    const t = el("text", { x: r.x + 12, y: r.y + 20, class: "lbl" }, a); t.textContent = r.name;
+    const s = el("text", { x: r.x + 12, y: r.y + 34, class: "sub" }, a); s.textContent = r.sub;
+    // door opening + swing arc
+    const d = door(r);
+    el("line", { x1: d.x - 14, y1: d.y, x2: d.x + 14, y2: d.y, stroke: "var(--bp-850)", "stroke-width": 3 }, gRooms);
+    const sweep = r.side === "top" ? `M${d.x - 14} ${d.y} A28 28 0 0 1 ${d.x + 14} ${d.y - 26}` : `M${d.x - 14} ${d.y} A28 28 0 0 0 ${d.x + 14} ${d.y + 26}`;
+    el("path", { d: sweep, class: "wall-thin", "stroke-dasharray": "2 3" }, gRooms);
+    if (r.hot) { const c = el("circle", { cx: r.x + r.w - 14, cy: r.y + 16, r: 3.5, fill: "var(--s-doing)" }, gRooms); const p = el("circle", { cx: r.x + r.w - 14, cy: r.y + 16, r: 3.5, fill: "none", stroke: "var(--s-doing)", class: "pulse" }, gRooms); }
+  });
+
+  // furniture: desks in departments, round table in meeting room, sofa in lounge, shelves in warehouse
+  [["kt", 3], ["nc", 2], ["nd", 2], ["dl", 2], ["vh", 2], ["qc", 2]].forEach(([id, n]) => {
+    const r = R[id];
+    for (let i = 0; i < n; i++) {
+      const dx = r.x + 22 + i * ((r.w - 44) / n), dy = r.side === "top" ? r.y + 70 : r.y + 70;
+      el("rect", { x: dx, y: dy, width: (r.w - 44) / n - 14, height: 26, class: "wall-thin" }, gRooms);
+      el("line", { x1: dx + 6, y1: dy + 13, x2: dx + (r.w - 44) / n - 20, y2: dy + 13, stroke: "var(--line-soft)" }, gRooms);
+    }
+  });
+  el("circle", { cx: 1065, cy: 468, r: 16, class: "wall-thin" }, gRooms);
+  el("rect", { x: 990, y: 590, width: 80, height: 22, class: "wall-thin" }, gRooms);
+  el("circle", { cx: 1125, cy: 580, r: 10, class: "wall-thin" }, gRooms);
+  el("path", { d: "M1119 580h12M1125 574v12", class: "wall-thin" }, gRooms);
+  for (let i = 0; i < 3; i++) el("rect", { x: 600 + i * 38, y: 560, width: 30, height: 14, class: "wall-thin" }, gRooms);
+
+  // dimension annotation on KT
+  el("path", { d: "M210 24 H470 M210 18 V30 M470 18 V30", class: "dimline" }, gAnno);
+  const dt = el("text", { x: 340, y: 20, class: "sub", "text-anchor": "middle" }, gAnno); dt.textContent = "26.0 m · 3 BÀN · WIP 3/4";
+  el("path", { d: "M1176 40 V640 M1170 40 H1182 M1170 640 H1182", class: "dimline" }, gAnno);
+  const dv = el("text", { x: 1190, y: 340, class: "sub", transform: "rotate(90 1190 340)", "text-anchor": "middle" }, gAnno); dv.textContent = "MẶT BẰNG TẦNG 01";
+
+  /* ---------- Conveyor + stations ---------- */
+  el("rect", { x: 40, y: CY - 22, width: 1120, height: 44, fill: "var(--bp-900)", stroke: "var(--line)" }, gConv);
+  el("line", { x1: 40, y1: CY, x2: 1160, y2: CY, class: "path-core" }, gConv);
+  const flow = el("line", { x1: 40, y1: CY - 16, x2: 1160, y2: CY - 16, class: "flow slow" }, gConv);
+  const STATIONS = [
+    { s: "backlog", x: 120, vi: "BACKLOG" }, { s: "ready", x: 300, vi: "READY" }, { s: "doing", x: 460, vi: "DOING" },
+    { s: "waiting", x: 590, vi: "WAITING" }, { s: "review", x: 850, vi: "REVIEW" }, { s: "done", x: 1065, vi: "DONE" }
+  ];
+  const ST = Object.fromEntries(STATIONS.map(s => [s.s, s]));
+  const stColor = { backlog: "var(--s-backlog)", ready: "var(--s-ready)", doing: "var(--s-doing)", waiting: "var(--s-waiting)", review: "var(--s-review)", done: "var(--s-done)" };
+  STATIONS.forEach((s, i) => {
+    el("line", { x1: s.x, y1: CY - 22, x2: s.x, y2: CY + 22, stroke: stColor[s.s], "stroke-width": 1, "stroke-dasharray": "3 3" }, gConv);
+    const t = el("text", { x: s.x + 5, y: CY + 16, class: "sub", fill: stColor[s.s], style: `fill:${stColor[s.s]}` }, gConv); t.textContent = s.vi;
+  });
+  const convPath = el("path", { d: `M50 ${CY} H1150`, fill: "none" }, gConv);
+
+  /* ---------- Task boxes on conveyor ---------- */
+  const boxes = {};
+  function makeBox(task, x) {
+    const g = el("g", { class: "box-g", transform: `translate(${x} ${CY - 4})` }, gBoxes);
+    el("rect", { x: -9, y: -8, width: 18, height: 12, fill: "var(--bp-850)", stroke: stColor[task.state] || "var(--line)" }, g);
+    const tt = el("title", {}, g); tt.textContent = task.id + " · " + task.title;
+    g.dataset.state = task.state;
+    boxes[task.id] = g; return g;
+  }
+  function setBoxState(g, s) { g.dataset.state = s; g.querySelector("rect").setAttribute("stroke", stColor[s]); }
+  const counts = {};
+  F.tasks.filter(t => ST[t.state]).forEach(t => { counts[t.state] = (counts[t.state] || 0); makeBox(t, ST[t.state].x + 26 + counts[t.state] * 22); counts[t.state]++; });
+  function slideBox(g, toX, ms = 1400) {
+    const m = /translate\(([-\d.]+)/.exec(g.getAttribute("transform")); const fromX = +m[1];
+    const p = el("path", { d: `M${fromX} ${CY - 4} H${toX}` });
+    return BP.moveAlong(g, p, ms);
+  }
+
+  /* ---------- Agents ---------- */
+  const actColor = { doing: "var(--s-doing)", idle: "var(--ink-3)", waiting: "var(--amber)", cooldown: "var(--s-ready)", meeting: "var(--s-review)" };
+  const seats = {
+    atlas: ["kt", 0], forge: ["kt", 1], bolt: ["kt", 2], vega: ["gate", 0], kite: ["nc", 1], muse: ["meet", 0],
+    pixel: ["nd", 1], nova: ["dl", 0], orbit: ["lounge", 0], echo: ["vh", 1], sage: ["qc", 0], lens: ["meet", 1]
+  };
+  function seatPos(roomId, i) {
+    const r = R[roomId];
+    if (roomId === "meet") return [{ x: 1015, y: 462 }, { x: 1115, y: 462 }, { x: 1065, y: 420 }][i];
+    if (roomId === "lounge") return { x: 1000 + i * 30, y: 578 };
+    if (roomId === "gate") return { x: 520 + i * 40, y: 440 };
+    const n = roomId === "kt" ? 3 : 2;
+    return { x: r.x + 22 + i * ((r.w - 44) / n) + ((r.w - 44) / n - 14) / 2, y: r.side === "top" ? r.y + 120 : r.y + 120 };
+  }
+  const agentEls = {};
+  F.agents.forEach(a => {
+    const [room, i] = seats[a.id]; const p = seatPos(room, i);
+    const g = el("g", { class: "agent-g", transform: `translate(${p.x} ${p.y})` }, gAgents);
+    const col = a.presence === "offline" ? "var(--s-cancelled)" : actColor[a.activity];
+    if (a.activity === "doing") el("circle", { r: 13, fill: "none", stroke: col, class: "pulse" }, g);
+    const hex = el("polygon", { points: "-6,-11 6,-11 12,0 6,11 -6,11 -12,0", fill: "var(--bp-950)", stroke: col, "stroke-width": 1.5, "stroke-dasharray": a.presence === "stale" ? "3 2" : "" }, g);
+    const t = el("text", { y: 0.5, fill: col, style: `fill:${col}` }, g); t.textContent = a.code;
+    const lb = el("text", { y: 22, class: "sub", "text-anchor": "middle" }, g); lb.textContent = a.name;
+    if (a.activity === "doing" && a.task) {
+      el("rect", { x: -16, y: 27, width: 32, height: 3, fill: "var(--bp-950)", stroke: "var(--line-soft)", "stroke-width": .5 }, g);
+      el("rect", { x: -16, y: 27, width: 32 * a.lease, height: 3, fill: a.lease < 0.25 ? "var(--red)" : "var(--s-doing)" }, g);
+    }
+    agentEls[a.id] = { g, a, room, pos: p, col, hex, t };
+  });
+  function recolor(id, act) {
+    const A = agentEls[id]; const c = actColor[act];
+    A.hex.setAttribute("stroke", c); A.t.style.fill = c;
+  }
+  // path from current position to a target point via the conveyor corridor
+  function route(from, to) {
+    const midY = CY + (from.y < CY ? -34 : 34) * 0; // walk on conveyor edge lane
+    const lane = CY + 34 > 352 ? CY + 30 : CY + 30;
+    const laneY = from.y < CY && to.y < CY ? CY - 32 : CY + 32;
+    return el("path", { d: `M${from.x} ${from.y} V${laneY} H${to.x} V${to.y}` });
+  }
+  async function walk(id, to, ms = 2400) {
+    const A = agentEls[id]; const p = route(A.pos, to);
+    await BP.moveAlong(A.g, p, ms); A.pos = to;
+  }
+  function bubble(id, text, ms = 2200) {
+    const A = agentEls[id];
+    const b = el("g", {}, A.g);
+    const w = text.length * 5.4 + 12;
+    el("rect", { x: -w / 2, y: -34, width: w, height: 14, fill: "var(--bp-950)", stroke: "var(--line)" }, b);
+    const t = el("text", { y: -27, class: "bubble", "text-anchor": "middle", "dominant-baseline": "central" }, b); t.textContent = text;
+    BP.wait(ms).then(() => b.remove());
+  }
+
+  /* ---------- Event feed ---------- */
+  const feed = BP.$("#feed");
+  const push = (glyph, color, html) => BP.logPush(feed, `<time>${BP.now()}</time><span class="g" style="color:${color}">${glyph}</span><span>${html}</span>`, 24);
+  [
+    ["▶", "var(--s-doing)", "<b>ATLAS-01</b> heartbeat run <span class='mono'>r-88f1</span>, lease còn 72%"],
+    ["❚❚", "var(--amber)", "<b>VEGA-03</b> checkpoint T-1039, yêu cầu quyết định v2"],
+    ["◎", "var(--s-review)", "<b>BOLT-10</b> nộp kết quả T-1036 kèm 3 artifact"],
+    ["✓", "var(--s-done)", "<b>Hà</b> nghiệm thu T-1029, chuyển Done"]
+  ].reverse().forEach(r => push(...r));
+
+  /* ---------- Choreography (loops forever, pause-aware) ---------- */
+  const home = id => seatPos(...seats[id]);
+  async function sceneClaim() {
+    // BOLT walks to READY, claims T-1055, carries it back to KT
+    const box = boxes["T-1055"]; if (!box) return;
+    bubble("bolt", "tìm việc"); await BP.wait(600);
+    const bx = +/translate\(([-\d.]+)/.exec(box.getAttribute("transform"))[1];
+    await walk("bolt", { x: bx, y: CY - 32 }, 2200);
+    bubble("bolt", "claim T-1055");
+    push("◇", "var(--s-ready)", "<b>BOLT-10</b> claim T-1055 thành công · fence 1 · lease 15:00");
+    setBoxState(box, "doing"); recolor("bolt", "doing");
+    await slideBox(box, ST.doing.x + 26 + counts.doing * 22, 1200); counts.doing++;
+    BP.$("#kDoing").textContent = 5;
+    await walk("bolt", home("bolt"), 2200);
+    await BP.wait(5000);
+    // reset for loop
+    push("⊘", "var(--s-cancelled)", "<b>Quản đốc</b> yield T-1055 về Ready (mô phỏng lặp)");
+    counts.doing--; setBoxState(box, "ready"); recolor("bolt", "idle"); BP.$("#kDoing").textContent = 4;
+    await slideBox(box, bx, 900);
+  }
+  async function sceneMeeting() {
+    // KITE walks to meeting room, joins MUSE + LENS, returns
+    bubble("muse", "standup 10:00?");
+    await BP.wait(900);
+    await walk("kite", seatPos("meet", 2), 2600);
+    push("◇", "var(--s-review)", "<b>KITE-09</b> tham gia thread <span class='mono'>#standup-nc</span>");
+    bubble("lens", "đã ACK"); await BP.wait(2600);
+    await walk("kite", home("kite"), 2600);
+  }
+  async function sceneReview() {
+    // T-1036 moves Review -> Done after SAGE accepts
+    const box = boxes["T-1036"]; if (!box) return;
+    bubble("sage", "đang kiểm định"); await BP.wait(2400);
+    push("✓", "var(--s-done)", "<b>SAGE-12</b> nghiệm thu T-1036 · khác người nộp (BOLT-10)");
+    setBoxState(box, "done"); await slideBox(box, ST.done.x + 70, 1600);
+    await BP.wait(4000);
+    setBoxState(box, "review"); await slideBox(box, ST.review.x + 26, 900);
+  }
+  async function sceneDecision() {
+    // FORGE lease low -> heartbeat; ORBIT leaves lounge for gate check
+    bubble("forge", "heartbeat ↻"); push("▶", "var(--s-doing)", "<b>FORGE-02</b> gia hạn lease run <span class='mono'>r-31c0</span>");
+    await BP.wait(1500);
+    recolor("orbit", "waiting");
+    await walk("orbit", seatPos("gate", 1), 2600);
+    bubble("orbit", "chờ duyệt xoá");
+    push("❚❚", "var(--amber)", "<b>ORBIT-05</b> đề xuất v1 T-1053 · cần quyết định của người");
+    await BP.wait(3200);
+    await walk("orbit", home("orbit"), 2600); recolor("orbit", "cooldown");
+  }
+  async function loop() {
+    const scenes = [sceneClaim, sceneMeeting, sceneReview, sceneDecision];
+    let i = 0;
+    while (true) { await scenes[i % scenes.length](); await BP.wait(1200); i++; }
+  }
+  if (!BP.reduced) loop();
+
+  /* ---------- Layers ---------- */
+  BP.$$(".seg [data-layer]").forEach(b => b.addEventListener("click", () => {
+    BP.$$(".seg [data-layer]").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    const L = b.dataset.layer;
+    gBoxes.style.opacity = L === "agents" ? 0.15 : 1;
+    gAgents.style.opacity = L === "tasks" ? 0.15 : 1;
+  }));
+
+  /* ---------- Department strip ---------- */
+  BP.$("#deptStrip").innerHTML = F.departments.map(d => {
+    const ratio = d.wip / d.wipLimit;
+    return `<a href="03-department-detail.html">
+      <span class="code">${d.code}</span>
+      <span class="nm">${d.name}</span>
+      <span class="bots">${d.agents.map(id => { const a = BP.agent(id); return `<span class="bot" style="--c:${a.presence === "offline" ? "var(--s-cancelled)" : actColor[a.activity]}" title="${a.name} · ${F.activityVi[a.activity]}">${a.code}</span>`; }).join("")}</span>
+      <span class="row between"><span class="code">WIP ${d.wip}/${d.wipLimit}</span><span class="code">${d.en}</span></span>
+      <span class="meter ticks ${ratio >= 1 ? "crit" : ratio >= .75 ? "warn" : ""}"><i style="width:${ratio * 100}%"></i></span>
+    </a>`;
+  }).join("");
+})();
+</script>
+</body>
+</html>

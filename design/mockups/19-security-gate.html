@@ -1,0 +1,540 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cổng an ninh · CF Agent Factory</title>
+<link rel="stylesheet" href="assets/blueprint.css">
+<style>
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .gate-wrap { overflow-x: auto; }
+  .gate-wrap svg { min-width: 640px; }
+  .gate-tools { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--line-soft); }
+  .rt-g text { font-family: var(--f-mono); font-size: 9px; font-weight: 600; text-anchor: middle; dominant-baseline: central; }
+  .pop text { font-family: var(--f-mono); font-size: 10px; }
+  .keylist { list-style: none; margin: 0; padding: var(--sp-3) var(--sp-4); display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--sp-2) var(--sp-4); font-size: var(--fs-xs); color: var(--ink-2); border-top: 1px solid var(--line-soft); }
+  .keylist b { font-family: var(--f-mono); color: var(--ink); margin-right: 6px; }
+  .gate-log { max-height: 210px; overflow: hidden; border-top: 1px solid var(--line-soft); }
+  .tscroll { overflow-x: auto; position: relative; }
+  .tscroll .table { min-width: 760px; }
+  .tscroll .table.compact { min-width: 520px; }
+  .table td.mono { white-space: nowrap; }
+  .scopes { display: flex; flex-wrap: wrap; gap: 4px; max-width: 300px; }
+  .exp-warn { display: block; margin-top: 2px; }
+  .state.active { color: var(--s-doing); background: var(--t-doing); } .state.active::before { content: "●"; }
+  .state.revoked { color: var(--red); background: var(--t-failed); } .state.revoked::before { content: "✕"; }
+  .state.expired { color: var(--ink-2); border-style: dashed; } .state.expired::before { content: "⊘"; }
+  .panel-head { flex-wrap: wrap; }
+  .seg { max-width: 100%; overflow-x: auto; }
+  .seg button { flex: none; }
+  .row-revoked td { color: var(--ink-3); }
+  /* Wizard */
+  .wiz { position: sticky; top: calc(var(--top-h) + var(--sp-4)); align-self: start; }
+  .steps { list-style: none; margin: 0; padding: var(--sp-3) var(--sp-4); display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; border-bottom: 1px solid var(--line-soft); }
+  .steps li { display: flex; flex-direction: column; gap: 4px; font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); letter-spacing: 0.04em; }
+  .steps li i { display: block; height: 3px; background: var(--bp-950); border: 1px solid var(--line-soft); }
+  .steps li.done { color: var(--s-done); } .steps li.done i { background: var(--s-done); border-color: var(--s-done); }
+  .steps li.current { color: var(--ink); } .steps li.current i { background: var(--s-ready); border-color: var(--s-ready); }
+  .wstep { display: none; padding: var(--sp-4); flex-direction: column; gap: var(--sp-3); }
+  .wstep.on { display: flex; }
+  .wstep h4 { margin: 0; font-family: var(--f-display); font-size: var(--fs-md); font-weight: 600; }
+  .wstep p { margin: 0; font-size: var(--fs-sm); color: var(--ink-2); }
+  .opt { display: grid; grid-template-columns: auto auto 1fr; gap: var(--sp-3); align-items: center; min-height: 44px; padding: var(--sp-2) var(--sp-3); border: 1px solid var(--line-soft); background: var(--bp-850); cursor: pointer; font-size: var(--fs-sm); }
+  .opt:hover { border-color: var(--line); }
+  .opt:has(input:checked) { border-color: var(--s-ready); background: var(--t-ready); }
+  .opt:has(input:disabled) { opacity: 0.5; cursor: not-allowed; }
+  .opt .bot { width: 28px; height: 28px; font-size: 9px; }
+  .opt small { display: block; font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); }
+  .opt input { width: 16px; height: 16px; accent-color: var(--s-ready); margin: 0; }
+  .scope-opt { grid-template-columns: auto 1fr auto; min-height: 40px; }
+  .field { display: flex; flex-direction: column; gap: 4px; font-size: var(--fs-sm); }
+  .field label { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); letter-spacing: 0.1em; text-transform: uppercase; }
+  .field select, .field input[type=text] { min-height: 40px; padding: 0 var(--sp-3); background: var(--bp-950); color: var(--ink); border: 1px solid var(--line-soft); font: inherit; border-radius: 0; }
+  .field select:focus-visible, .field input:focus-visible { outline: 2px solid var(--amber); outline-offset: 1px; }
+  .err { font-family: var(--f-mono); font-size: var(--fs-xs); color: var(--red); min-height: 1em; }
+  .wfoot { display: flex; justify-content: space-between; gap: var(--sp-2); padding: var(--sp-3) var(--sp-4); border-top: 1px solid var(--line-soft); }
+  .secret { display: flex; gap: var(--sp-2); align-items: stretch; }
+  .secret code { flex: 1; min-width: 0; overflow-wrap: anywhere; padding: var(--sp-3); background: var(--bp-950); border: 1px dashed var(--s-ready); font-family: var(--f-mono); font-size: var(--fs-xs); color: var(--s-ready); }
+  .danger-box { border: 1px solid var(--red); background: var(--t-failed); color: var(--ink); padding: var(--sp-3); font-size: var(--fs-sm); }
+  .danger-box b { color: var(--red); font-family: var(--f-mono); font-size: var(--fs-xs); letter-spacing: 0.08em; display: block; margin-bottom: 2px; }
+  .check { display: flex; gap: var(--sp-3); align-items: flex-start; min-height: 44px; padding: var(--sp-2) 0; font-size: var(--fs-sm); cursor: pointer; }
+  .check input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--s-done); }
+  .codeblock { margin: 0; padding: var(--sp-3); background: var(--bp-950); border: 1px solid var(--line-soft); font-family: var(--f-mono); font-size: var(--fs-xs); color: var(--ink-2); white-space: pre-wrap; overflow-wrap: anywhere; }
+  .codeblock .k { color: var(--s-ready); } .codeblock .s { color: var(--s-done); } .codeblock .n { color: var(--red); }
+  .reveal-cmp { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
+  .rot { list-style: none; margin: 0; padding: 0; counter-reset: r; }
+  .rot li { display: grid; grid-template-columns: 30px 1fr auto; gap: var(--sp-3); align-items: start; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--grid-major); font-size: var(--fs-sm); }
+  .rot li::before { counter-increment: r; content: counter(r, decimal-leading-zero); font-family: var(--f-mono); font-size: var(--fs-xs); color: var(--ink-3); padding-top: 2px; }
+  .rot li.cur { background: var(--bp-700); }
+  .rot .s { font-size: var(--fs-xs); color: var(--ink-2); }
+  .rules { list-style: none; margin: 0; padding: 0; }
+  .rules li { display: grid; grid-template-columns: 22px 1fr; gap: var(--sp-2); padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--grid-major); font-size: var(--fs-sm); }
+  .rules li span:first-child { font-family: var(--f-mono); color: var(--s-ready); }
+  @media (max-width: 960px) { .reveal-cmp { grid-template-columns: 1fr; } .wiz { position: static; } }
+</style>
+</head>
+<body data-sheet="19" data-title="Cổng an ninh · Runtime & Credential">
+<div class="app paper">
+  <div id="rail"></div>
+  <div class="main">
+    <header id="topbar"></header>
+    <main class="content">
+
+      <section class="page-head reveal">
+        <div>
+          <div class="code">CHECKPOINT 00 · RUNTIME ENROLLMENT · F12 / F13 · SPECIFIED</div>
+          <h2>Cổng an ninh</h2>
+          <p class="lede">Mọi runtime phải đi qua cổng: trình credential của workspace, được cấp runtime proof đúng một lần, rồi mới được claim việc. Tên hiển thị, model hay vai trò không mở được barrier. Credential bị thu hồi thì lệnh kế tiếp bị chặn ngay.</p>
+        </div>
+        <div class="actions">
+          <a class="btn" href="10-activity.html">Xem nhật ký kiểm soát</a>
+          <a class="btn" href="#rotation">Mở runbook xoay vòng</a>
+        </div>
+      </section>
+
+      <section class="grid g-4 reveal" aria-label="Chỉ số cổng">
+        <div class="panel kpi"><span class="label">Credential active</span><span class="value c-doing">8<small> / 11</small></span><span class="note">Chỉ lưu hash xác minh, không lưu secret</span></div>
+        <div class="panel kpi"><span class="label">Sắp hết hạn · 7 ngày</span><span class="value c-amber">2</span><span class="note">cred-forge-02, cred-nova-09 cần người xoay vòng</span></div>
+        <div class="panel kpi"><span class="label">Runtime proof bị từ chối · 24h</span><span class="value c-red" id="kDenied">3</span><span class="note">Tất cả từ credential đã thu hồi hoặc hết hạn</span></div>
+        <div class="panel kpi"><span class="label">Runtime đang hiện diện</span><span class="value">9<small> / 12</small></span><span class="note">Hiện diện không phải quyền sở hữu task</span></div>
+      </section>
+
+      <section class="grid g-main-side">
+        <div class="stack">
+          <div class="panel reveal">
+            <div class="gate-tools">
+              <div class="legend" aria-label="Chú giải">
+                <span style="color:var(--s-doing)"><i></i>Proof hợp lệ</span>
+                <span style="color:var(--s-ready)"><i></i>Đang quét</span>
+                <span style="color:var(--red)"><i></i>Bị chặn</span>
+              </div>
+              <span class="code">LANE 01 · INGRESS → WS-AURORA</span>
+            </div>
+            <div class="gate-wrap">
+              <svg id="gate" class="dwg" viewBox="0 0 960 380" role="img" aria-labelledby="gateTitle">
+                <title id="gateTitle">Bản vẽ cổng kiểm soát: làn xe từ trái sang phải, máy quét thẻ trước barrier, buồng gác chính sách, đèn tín hiệu. Runtime hợp lệ được cấp proof và qua cổng; runtime dùng credential đã thu hồi bị chặn.</title>
+                <defs>
+                  <pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                    <line x1="0" y1="0" x2="0" y2="8" style="stroke:var(--line-soft)" stroke-width="1"/>
+                  </pattern>
+                  <pattern id="stripe" width="16" height="16" patternUnits="userSpaceOnUse" patternTransform="rotate(0)">
+                    <rect width="16" height="8" style="fill:var(--ink)"/>
+                    <rect y="8" width="16" height="8" style="fill:var(--red)"/>
+                  </pattern>
+                  <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:var(--line)"/></marker>
+                </defs>
+                <!-- zones -->
+                <rect x="20" y="40" width="480" height="300" class="wall-thin" style="stroke-dasharray:4 4"/>
+                <rect x="540" y="40" width="400" height="300" class="wall-thin"/>
+                <text x="32" y="60" class="lbl">NGOÀI NHÀ MÁY</text>
+                <text x="32" y="74" class="sub">PUBLIC INGRESS · CHƯA XÁC THỰC</text>
+                <text x="760" y="60" class="lbl">SÀN NHÀ MÁY</text>
+                <text x="760" y="74" class="sub">WS-AURORA · ĐÃ CÓ PROOF</text>
+                <rect x="20" y="96" width="480" height="40" class="hatch"/>
+                <rect x="20" y="264" width="410" height="76" class="hatch"/>
+                <!-- lane -->
+                <rect x="20" y="150" width="920" height="100" style="fill:var(--bp-900);stroke:var(--line)"/>
+                <line x1="20" y1="200" x2="940" y2="200" class="path-core"/>
+                <path d="M120 200 H420" class="flow slow" marker-end="url(#arr)"/>
+                <path d="M600 200 H900" class="flow mint slow" marker-end="url(#arr)"/>
+                <!-- dimension -->
+                <path d="M950 150 V250 M944 150 H956 M944 250 H956" class="dimline"/>
+                <text x="948" y="270" class="sub" text-anchor="end">LÀN 4.0 m</text>
+                <path d="M440 30 H520 M440 24 V36 M520 24 V36" class="dimline"/>
+                <text x="480" y="22" class="sub" text-anchor="middle">VÙNG QUÉT 8.0 m</text>
+                <!-- scanner pedestal -->
+                <rect x="430" y="256" width="30" height="40" class="room" style="stroke:var(--s-ready)"/>
+                <rect x="436" y="262" width="18" height="10" style="fill:var(--bp-950);stroke:var(--s-ready)"/>
+                <polygon id="beam" points="445,256 410,206 480,206" style="fill:var(--t-ready);stroke:var(--s-ready);opacity:0" stroke-width="0.75"/>
+                <text x="445" y="312" class="sub" text-anchor="middle">MÁY QUÉT THẺ</text>
+                <text x="445" y="324" class="sub" text-anchor="middle">BEARER + X-RUNTIME-TOKEN</text>
+                <!-- barrier post + arm -->
+                <rect x="508" y="124" width="24" height="26" class="room"/>
+                <circle cx="520" cy="137" r="4" style="fill:var(--line-strong)"/>
+                <g id="arm"><rect x="516" y="140" width="8" height="116" style="fill:url(#stripe);stroke:var(--ink)" stroke-width="0.75"/></g>
+                <text x="500" y="118" class="sub" text-anchor="end">BARRIER</text>
+                <!-- guard booth -->
+                <rect x="590" y="88" width="170" height="54" class="room"/>
+                <path d="M596 94 H754 M596 136 H754" class="wall-thin" style="stroke-dasharray:2 3"/>
+                <text x="602" y="112" class="lbl" style="font-size:11px">BUỒNG GÁC</text>
+                <text x="602" y="126" class="sub">POLICY · GRANT · FENCE</text>
+                <!-- signal -->
+                <rect x="548" y="262" width="28" height="62" class="room"/>
+                <circle id="lampRed" cx="562" cy="280" r="8" style="fill:var(--bp-950);stroke:var(--red)"/>
+                <circle id="lampGreen" cx="562" cy="306" r="8" style="fill:var(--bp-950);stroke:var(--s-doing)"/>
+                <text x="586" y="296" class="sub">ĐÈN TÍN HIỆU</text>
+                <!-- callout numbers -->
+                <g class="num">
+                  <circle cx="400" cy="274" r="9" class="leader"/><text x="400" y="277.5" text-anchor="middle" class="num">1</text>
+                  <path d="M409 274 H430" class="leader"/>
+                  <circle cx="556" cy="112" r="9" class="leader"/><text x="556" y="115.5" text-anchor="middle" class="num">2</text>
+                  <path d="M548 117 L532 128" class="leader"/>
+                  <circle cx="784" cy="115" r="9" class="leader"/><text x="784" y="118.5" text-anchor="middle" class="num">3</text>
+                  <path d="M775 115 H760" class="leader"/>
+                  <circle cx="680" cy="300" r="9" class="leader"/><text x="680" y="303.5" text-anchor="middle" class="num">4</text>
+                </g>
+                <g id="gRt"></g>
+                <g id="gPop"></g>
+              </svg>
+            </div>
+            <ul class="keylist" aria-label="Chú thích bản vẽ">
+              <li><b>1</b>Máy quét: kiểm tra bearer credential và runtime proof cùng lúc</li>
+              <li><b>2</b>Barrier: chỉ mở khi grant còn hiệu lực, đúng workspace</li>
+              <li><b>3</b>Buồng gác: kiểm tra scope, actor kind, fence của run</li>
+              <li><b>4</b>Sàn nhà máy: runtime vào được vẫn phải claim mới có việc</li>
+            </ul>
+            <div class="panel-head" style="border-top:1px solid var(--line-soft)"><h3>Nhật ký cổng</h3><span class="code">REDACTED · KHÔNG GHI SECRET</span></div>
+            <div class="gate-log"><ul class="log" id="gateLog" aria-live="polite" aria-relevant="additions"></ul></div>
+          </div>
+        </div>
+
+        <!-- Wizard -->
+        <aside class="panel wiz reveal" id="wizard" aria-label="Đăng ký runtime">
+          <div class="panel-head"><h3>Đăng ký runtime</h3><span class="code" id="wizCount">BƯỚC 1/5</span></div>
+          <ol class="steps" id="steps">
+            <li class="current"><i></i>AGENT</li><li><i></i>SCOPE</li><li><i></i>CRED</li><li><i></i>SECRET</li><li><i></i>XÁC NHẬN</li>
+          </ol>
+
+          <div class="wstep on" data-step="1">
+            <h4>Chọn agent nhận credential</h4>
+            <p>Danh tính agent do người tạo trong phiên đăng nhập. Tên hiển thị và model khai báo chỉ để nhận diện, không cấp quyền.</p>
+            <div class="stack" id="agentOpts" role="radiogroup" aria-label="Agent"></div>
+            <div class="err" id="err1" role="alert"></div>
+          </div>
+
+          <div class="wstep" data-step="2">
+            <h4>Chọn scope theo nguyên tắc tối thiểu</h4>
+            <p>Mặc định chỉ tích những scope runtime thực thi cần. Scope chỉ dành cho phiên người bị khoá.</p>
+            <div class="row between"><button class="btn sm" type="button" id="minPreset">Đặt lại mức tối thiểu</button><span class="code" id="scopeCount">6 SCOPE</span></div>
+            <div class="stack" id="scopeOpts"></div>
+            <div class="note-red" id="scopeWarn" hidden>Đang rộng hơn mức tối thiểu. Mỗi scope thêm là bề mặt rủi ro nếu runtime bị chiếm quyền.</div>
+            <div class="err" id="err2" role="alert"></div>
+          </div>
+
+          <div class="wstep" data-step="3">
+            <h4>Tạo credential</h4>
+            <p>Credential là giá trị bearer ngẫu nhiên, gắn workspace và grant. Hub chỉ giữ hash để so khớp.</p>
+            <div class="field"><label for="cExp">Hết hạn</label>
+              <select id="cExp"><option value="30">30 ngày (khuyến nghị)</option><option value="60">60 ngày</option><option value="90">90 ngày</option><option value="">Không đặt hạn</option></select>
+              <span class="err" id="errExp"></span></div>
+            <div class="field"><label for="cProj">Giới hạn dự án</label>
+              <select id="cProj"><option>Chỉ phòng ban của agent</option><option>Toàn workspace</option></select></div>
+            <div class="field"><label for="cNote">Lý do cấp (ghi vào audit)</label>
+              <input type="text" id="cNote" placeholder="VD: thay credential sắp hết hạn" aria-describedby="err3">
+              <span class="err" id="err3" role="alert"></span></div>
+          </div>
+
+          <div class="wstep" data-step="4">
+            <h4>Secret hiển thị một lần</h4>
+            <div class="danger-box"><b>KHÔNG LƯU LẠI · ĐÓNG LÀ MẤT</b>Hub không lưu và không hiển thị lại giá trị này. Mất thì cấp credential mới, không có cách khôi phục.</div>
+            <div class="secret"><code id="secretVal">cfah_nat_7Q2xK9vRm4TzL8pW3nJd6hYb1cFs</code><button class="btn sm" type="button" id="copyBtn" aria-label="Sao chép secret">Sao chép</button></div>
+            <p class="mono" style="font-size:var(--fs-2xs)">ID: <b id="newCredId">cred-forge-11</b> · hash sha256 đã lưu · expires <span id="newExp">2026-11-28</span></p>
+            <label class="check"><input type="checkbox" id="ackCopy"><span>Tôi đã sao chép và cất secret vào kho bí mật của runtime (biến môi trường hoặc credential store), không dán vào chat hay file dự án.</span></label>
+            <div class="err" id="err4" role="alert"></div>
+          </div>
+
+          <div class="wstep" data-step="5">
+            <h4>Đã cấp credential</h4>
+            <p>Secret đã bị ẩn vĩnh viễn. Bước tiếp theo chạy trên máy runtime để ghi danh và nhận runtime proof.</p>
+            <pre class="codeblock">export CF_AGENT_HUB_TOKEN=<span class="n">********</span>
+cfah runtime register --input runtime.json \
+  --idempotency-key <span class="s">enr-forge-b02</span></pre>
+            <div class="note-red">Nếu đây là xoay vòng: drain run cũ của agent trước, rồi mới thu hồi credential cũ.</div>
+            <a class="btn" href="#rotation">Mở runbook xoay vòng</a>
+          </div>
+
+          <div class="wfoot">
+            <button class="btn" type="button" id="wBack" disabled>Quay lại</button>
+            <button class="btn primary" type="button" id="wNext">Tiếp tục</button>
+          </div>
+        </aside>
+      </section>
+
+      <section class="panel reveal" aria-label="Credential và grant">
+        <div class="panel-head">
+          <h3>Credential &amp; grant</h3>
+          <div class="seg" role="group" aria-label="Lọc credential" id="credFilter">
+            <button aria-pressed="true" data-f="all">Tất cả</button>
+            <button aria-pressed="false" data-f="active">Active</button>
+            <button aria-pressed="false" data-f="soon">Sắp hết hạn</button>
+            <button aria-pressed="false" data-f="revoked">Revoked</button>
+            <button aria-pressed="false" data-f="pending">Chờ cấp</button>
+          </div>
+        </div>
+        <div class="tscroll">
+          <table class="table">
+            <thead><tr><th>ID</th><th>Agent</th><th>Scopes</th><th>Tạo lúc</th><th>Hết hạn</th><th>Trạng thái</th><th>Lần dùng cuối</th><th><span class="sr">Thao tác</span></th></tr></thead>
+            <tbody id="credBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="grid g-2">
+        <div class="panel reveal" aria-label="Runtime instances">
+          <div class="panel-head"><h3>Runtime instances</h3><span class="code">PROOF HASH · KHÔNG HIỂN THỊ</span></div>
+          <div class="tscroll">
+            <table class="table compact">
+              <thead><tr><th>Runtime · Agent</th><th>Credential</th><th>Heartbeat</th><th>Hiện diện · Proof</th></tr></thead>
+              <tbody id="rtBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel reveal" aria-label="Minh hoạ one-time reveal">
+          <div class="panel-head"><h3>Minh hoạ: one-time reveal</h3><span class="code">POST /runtimes</span></div>
+          <div class="panel-body stack">
+            <div class="reveal-cmp">
+              <div class="stack">
+                <span class="state active">Lần đầu</span>
+<pre class="codeblock">{
+  <span class="k">"runtime"</span>: { <span class="k">"id"</span>: <span class="s">"rt-forge-b02"</span> },
+  <span class="k">"runtime_token"</span>: <span class="s">"rtk_9fA2…(1 lần)"</span>,
+  <span class="k">"revealed"</span>: <span class="s">true</span>
+}</pre>
+              </div>
+              <div class="stack">
+                <span class="state expired">Replay / đọc lại</span>
+<pre class="codeblock">{
+  <span class="k">"runtime"</span>: { <span class="k">"id"</span>: <span class="s">"rt-forge-b02"</span> },
+  <span class="k">"runtime_token"</span>: <span class="n">null</span>,
+  <span class="k">"revealed"</span>: <span class="n">false</span>
+}</pre>
+              </div>
+            </div>
+            <p class="ink2" style="margin:0;font-size:var(--fs-sm)">Replay cùng Idempotency-Key trả lại runtime nhưng không trả proof. Mất proof ở lần đầu: ghi danh runtime mới, runtime cũ không dùng được và tự hết hạn hiện diện.</p>
+            <div class="empty">Không có yêu cầu khôi phục secret. Tính năng này cố ý không tồn tại.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid g-2">
+        <div class="panel reveal" id="rotation" aria-label="Runbook xoay vòng">
+          <div class="panel-head"><h3>Xoay vòng cred-forge-02</h3><span class="state waiting">Cần người</span></div>
+          <ol class="rot">
+            <li><div><b>Drain run cũ</b><div class="s">T-1047 Doing · run r-31c0 · lease còn 31%. Không nhận việc mới bằng credential cũ.</div></div><span class="state doing">Đang drain</span></li>
+            <li class="cur"><div><b>Đối soát kết quả bên ngoài</b><div class="s">Hoàn tất, huỷ hoặc để lease hết hạn. Run cũ không được chuyển sang credential mới.</div></div><span class="state waiting">Cần người</span></li>
+            <li><div><b>Cấp credential thay thế</b><div class="s">cred-forge-11 · scope không rộng hơn bản cũ</div></div><span class="state backlog">Chưa</span></li>
+            <li><div><b>Ghi danh runtime mới</b><div class="s">rt-forge-b02 · proof gắn với cred-forge-11</div></div><span class="state backlog">Chưa</span></li>
+            <li><div><b>Kiểm thử hẹp rồi claim lại</b><div class="s">Claim mới tạo fence cao hơn, không tái sử dụng run cũ</div></div><span class="state backlog">Chưa</span></li>
+            <li><div><b>Thu hồi credential cũ</b><div class="s">Proof của rt-forge-a19 mất hiệu lực theo. Sự cố: thu hồi trước, chấp nhận gián đoạn.</div></div><span class="state backlog">Chưa</span></li>
+          </ol>
+        </div>
+        <div class="panel reveal" aria-label="Nguyên tắc">
+          <div class="panel-head"><h3>Nguyên tắc của cổng</h3><span class="code">SECURITY MODEL · R2</span></div>
+          <ul class="rules">
+            <li><span>01</span><span><b>Tên hiển thị và model không cấp quyền.</b> Chỉ grant hiện hành, đúng workspace và đúng scope mới mở barrier.</span></li>
+            <li><span>02</span><span><b>Runtime ID không phải bằng chứng.</b> Mỗi lệnh claim, heartbeat, submit cần cả bearer lẫn X-Runtime-Token.</span></li>
+            <li><span>03</span><span><b>Xoay vòng cần drain run cũ.</b> Credential mới phải ghi danh runtime mới và claim mới.</span></li>
+            <li><span>04</span><span><b>Thu hồi chặn lệnh kế tiếp.</b> Hiệu ứng đang xếp hàng do grant đó cấp cũng bị dừng.</span></li>
+            <li><span>05</span><span><b>Agent không tự nâng quyền.</b> Cấp mới và mở rộng scope chỉ qua phiên người có quyền quản trị.</span></li>
+            <li><span>06</span><span><b>Secret không vào log.</b> Audit ghi ID credential và kết quả, không ghi giá trị.</span></li>
+          </ul>
+        </div>
+      </section>
+
+    </main>
+    <div id="titleblock"></div>
+  </div>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(() => {
+  const F = BP.F;
+  const el = (t, a, p) => BP.svg(t, a, p);
+  const tween = (ms, fn) => new Promise(r => { let e = 0, last = performance.now(); const f = now => { if (!BP.paused) e += now - last; last = now; const t = Math.min(1, e / ms); fn(t); t < 1 ? requestAnimationFrame(f) : r(); }; requestAnimationFrame(f); });
+
+  /* ---------- Credential data ---------- */
+  const CREDS = [
+    { id: "cred-atlas-01", agent: "atlas", scopes: ["workspace:read", "tasks:claim", "tasks:execute", "artifacts:write", "runtimes:manage"], created: "2026-09-14", exp: "2026-12-14", st: "active", used: "12:41:08" },
+    { id: "cred-forge-02", agent: "forge", scopes: ["workspace:read", "tasks:claim", "tasks:execute", "runtimes:manage"], created: "2026-08-01", exp: "2026-10-31", soon: "còn 2 ngày", st: "active", used: "12:40:55" },
+    { id: "cred-bolt-03", agent: "bolt", scopes: ["workspace:read", "tasks:claim", "tasks:execute", "artifacts:write"], created: "2026-09-20", exp: "2026-12-20", st: "active", used: "12:38:12" },
+    { id: "cred-vega-04", agent: "vega", scopes: ["workspace:read", "tasks:execute", "messages:send"], created: "2026-09-02", exp: "2026-12-02", st: "active", used: "11:52:40" },
+    { id: "cred-kite-05", agent: "kite", scopes: ["workspace:read", "tasks:claim", "tasks:execute"], created: "2026-10-10", exp: null, st: "active", used: "12:41:01" },
+    { id: "cred-sage-06", agent: "sage", scopes: ["workspace:read", "tasks:read", "tasks:review"], created: "2026-09-11", exp: "2026-12-11", st: "active", used: "12:39:47" },
+    { id: "cred-echo-07", agent: "echo", scopes: ["workspace:read", "messages:send", "messages:ack"], created: "2026-07-30", exp: "2026-11-30", st: "revoked", note: "Thu hồi 27/10 · sự cố", used: "27/10 09:14" },
+    { id: "cred-pixel-08", agent: "pixel", scopes: ["workspace:read", "artifacts:write"], created: "2026-07-20", exp: "2026-10-20", st: "expired", used: "20/10 17:02" },
+    { id: "cred-nova-09", agent: "nova", scopes: ["workspace:read", "tasks:claim", "tasks:execute", "artifacts:write"], created: "2026-08-03", exp: "2026-11-01", soon: "còn 3 ngày", st: "active", used: "12:41:10" },
+    { id: "cred-orbit-10", agent: "orbit", scopes: ["workspace:read", "tasks:execute", "events:read"], created: "2026-09-25", exp: "2026-12-25", st: "active", used: null },
+    { id: "cred-lens-05b", agent: "lens", scopes: ["workspace:read", "tasks:review"], created: "2026-06-01", exp: "2026-09-01", st: "revoked", note: "Thay bằng bản mới · đã drain", used: "01/09 10:20" }
+  ];
+  const stLabel = { active: "Active", revoked: "Revoked", expired: "Expired" };
+  const credBody = BP.$("#credBody");
+  function renderCreds(f) {
+    const rows = CREDS.filter(c => f === "all" || (f === "active" && c.st === "active") || (f === "soon" && c.soon) || (f === "revoked" && c.st === "revoked") || f === "pending" && false);
+    if (!rows.length) { credBody.innerHTML = `<tr><td colspan="8"><div class="empty">Không có credential nào đang chờ cấp. Cấp mới qua wizard “Đăng ký runtime” bằng phiên người.</div></td></tr>`; return; }
+    credBody.innerHTML = rows.map(c => {
+      const a = BP.agent(c.agent);
+      const exp = c.exp ? `<span class="mono">${c.exp}</span>${c.soon ? `<span class="exp-warn"><span class="tag amber">▲ ${c.soon}</span></span>` : ""}` : `<span class="unknown">Không đặt hạn</span>`;
+      const act = c.st === "active"
+        ? `<button class="btn sm danger" type="button" data-revoke="${c.id}">Thu hồi</button>`
+        : `<span class="muted mono" style="font-size:var(--fs-2xs)">${c.note || "Không còn hiệu lực"}</span>`;
+      return `<tr class="${c.st !== "active" ? "row-revoked" : ""}">
+        <td class="mono">${c.id}</td>
+        <td><span class="row" style="gap:8px"><span class="bot" style="width:26px;height:26px;font-size:9px">${a.code}</span>${a.name}</span></td>
+        <td><span class="scopes">${c.scopes.map(s => `<span class="tag">${s}</span>`).join("")}</span></td>
+        <td class="mono">${c.created}</td>
+        <td>${exp}</td>
+        <td><span class="state ${c.st}">${stLabel[c.st]}</span></td>
+        <td class="mono">${c.used || '<span class="unknown">Not reported</span>'}</td>
+        <td>${act}</td></tr>`;
+    }).join("");
+  }
+  renderCreds("all");
+  BP.$$("#credFilter button").forEach(b => b.addEventListener("click", () => {
+    BP.$$("#credFilter button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    renderCreds(b.dataset.f);
+  }));
+  credBody.addEventListener("click", e => {
+    const b = e.target.closest("[data-revoke]"); if (!b) return;
+    BP.toast("MOCK · CẦN XÁC NHẬN", `Thu hồi ${b.dataset.revoke} sẽ chặn lệnh kế tiếp và vô hiệu runtime proof gắn với nó. Trên bản thật cần xác nhận lần hai.`);
+  });
+
+  /* ---------- Runtime instances ---------- */
+  const RT = [
+    ["atlas", "cred-atlas-01", "8s trước", "online", "ok"], ["forge", "cred-forge-02", "12s trước", "online", "ok"],
+    ["bolt", "cred-bolt-03", "5s trước", "online", "ok"], ["kite", "cred-kite-05", "9s trước", "online", "ok"],
+    ["pixel", "cred-pixel-08", "21 phút trước", "stale", "expired"], ["echo", "cred-echo-07", "Not reported", "offline", "revoked"],
+    ["sage", "cred-sage-06", "14s trước", "online", "ok"]
+  ];
+  BP.$("#rtBody").innerHTML = RT.map(([id, cred, hb, pr, proof]) => {
+    const a = BP.agent(id);
+    const pres = pr === "online" ? '<span class="state online">Online</span>' : pr === "stale" ? '<span class="state stale">Stale</span>' : '<span class="state idle">Offline</span>';
+    const pf = proof === "ok" ? '<span class="state active">Hợp lệ</span>' : proof === "revoked" ? '<span class="state revoked">Vô hiệu</span>' : '<span class="state expired">Hết hạn</span>';
+    return `<tr><td><span class="mono">${a.runtime}</span><br><span class="muted" style="font-size:var(--fs-xs)">${a.name}</span></td><td class="mono">${cred}</td><td class="mono">${hb === "Not reported" ? '<span class="unknown">Not reported</span>' : hb}</td><td><span class="row wrap" style="gap:4px">${pres}${pf}</span></td></tr>`;
+  }).join("");
+
+  /* ---------- Gate log ---------- */
+  const log = BP.$("#gateLog");
+  const push = (g, c, html) => BP.logPush(log, `<time>${BP.now()}</time><span class="g" style="color:${c}">${g}</span><span>${html}</span>`, 14);
+  [
+    ["●", "var(--s-doing)", "<b>rt-atlas-7f2</b> heartbeat · proof hợp lệ · cred-atlas-01"],
+    ["✕", "var(--red)", "<b>rt-pixel-9d4</b> runtime proof denied · credential hết hạn 20/10"],
+    ["●", "var(--s-doing)", "<b>rt-bolt-03c</b> claim T-1055 · bearer + X-Runtime-Token khớp"]
+  ].forEach(r => push(...r));
+
+  /* ---------- Gate motion ---------- */
+  const gRt = BP.$("#gRt"), gPop = BP.$("#gPop"), arm = BP.$("#arm"), beam = BP.$("#beam");
+  const lampR = BP.$("#lampRed"), lampG = BP.$("#lampGreen");
+  const lamp = s => {
+    lampR.style.fill = s === "red" ? "var(--red)" : "var(--bp-950)";
+    lampG.style.fill = s === "green" ? "var(--s-doing)" : "var(--bp-950)";
+    lampR.classList.toggle("blink", s === "red");
+  };
+  const setArm = deg => arm.setAttribute("transform", `rotate(${deg} 520 140)`);
+  function makeRt(code, label, color, dashed) {
+    const g = el("g", { class: "rt-g", transform: "translate(-30 200)" }, gRt);
+    el("polygon", { points: "-12,-20 12,-20 24,0 12,20 -12,20 -24,0", fill: "var(--bp-950)", stroke: color, "stroke-width": 1.5, "stroke-dasharray": dashed ? "4 3" : "" }, g);
+    const t = el("text", { y: 0.5, style: `fill:${color}` }, g); t.textContent = code;
+    const l = el("text", { y: 32, class: "sub" }, g); l.textContent = label;
+    return g;
+  }
+  function pop(x, lines, color) {
+    const g = el("g", { class: "pop", transform: `translate(${x} 104)` }, gPop);
+    const w = Math.max(...lines.map(s => s.length)) * 6.3 + 20;
+    el("rect", { x: -w / 2, y: -18, width: w, height: lines.length * 15 + 12, fill: "var(--bp-950)", stroke: color }, g);
+    el("path", { d: `M0 ${lines.length * 15 - 6} V${lines.length * 15 + 20}`, stroke: color, "stroke-width": 0.75 }, g);
+    lines.forEach((s, i) => { const t = el("text", { x: -w / 2 + 10, y: i * 15 + 1, style: `fill:${i === 0 ? color : "var(--ink-2)"}` }, g); t.textContent = s; });
+    return g;
+  }
+  async function scan(ms) { beam.style.opacity = 0.9; beam.classList.add("blink"); await BP.wait(ms); beam.style.opacity = 0; beam.classList.remove("blink"); }
+
+  async function sceneEnroll() {
+    const rt = makeRt("FG", "rt-forge-b02", "var(--s-ready)");
+    push("◇", "var(--s-ready)", "<b>rt-forge-b02</b> tiến tới cổng · POST /runtimes · cred-forge-11");
+    await BP.moveAlong(rt, el("path", { d: "M-30 200 H445" }), 2600);
+    await scan(1400);
+    const p = pop(445, ["RUNTIME PROOF · HIỂN THỊ 1 LẦN", "rtk_9fA2•••• · revealed: true"], "var(--s-ready)");
+    push("●", "var(--s-doing)", "<b>rt-forge-b02</b> nhận runtime proof (1 lần) · lưu hash, không ghi giá trị");
+    await BP.wait(1800);
+    p.querySelectorAll("text")[1].textContent = "đã ẩn · replay: runtime_token null";
+    lamp("green");
+    await tween(700, t => setArm(-84 * t));
+    rt.querySelector("polygon").style.stroke = "var(--s-doing)"; rt.querySelector("text").style.fill = "var(--s-doing)";
+    push("●", "var(--s-doing)", "Barrier mở · <b>rt-forge-b02</b> vào sàn. Chưa có task cho tới khi claim.");
+    await BP.moveAlong(rt, el("path", { d: "M445 200 H1000" }), 2600);
+    await tween(600, t => setArm(-84 * (1 - t)));
+    lamp("off"); p.remove(); rt.remove();
+  }
+  async function sceneDeny() {
+    const rt = makeRt("EC", "rt-echo-1aa", "var(--ink-2)", true);
+    push("◇", "var(--s-ready)", "<b>rt-echo-1aa</b> tiến tới cổng · trình cred-echo-07");
+    await BP.moveAlong(rt, el("path", { d: "M-30 200 H445" }), 2600);
+    await scan(1400);
+    rt.querySelector("polygon").style.stroke = "var(--red)"; rt.querySelector("text").style.fill = "var(--red)";
+    lamp("red");
+    const p = pop(445, ["RUNTIME PROOF DENIED", "cred-echo-07 revoked 27/10 · 401"], "var(--red)");
+    push("✕", "var(--red)", "<b>rt-echo-1aa</b> runtime proof denied · credential đã thu hồi · barrier giữ nguyên");
+    const k = BP.$("#kDenied"); k.textContent = +k.textContent + 1;
+    await BP.wait(2600);
+    await BP.moveAlong(rt, el("path", { d: "M445 200 H-40" }), 2400);
+    lamp("off"); p.remove(); rt.remove();
+  }
+  function staticState() {
+    const rt = makeRt("EC", "rt-echo-1aa", "var(--red)", true); rt.setAttribute("transform", "translate(445 200)");
+    lamp("red"); lampR.classList.remove("blink");
+    pop(445, ["RUNTIME PROOF DENIED", "cred-echo-07 revoked 27/10 · 401"], "var(--red)");
+  }
+  if (BP.reduced) staticState();
+  else (async () => { await BP.wait(800); while (true) { await sceneEnroll(); await BP.wait(1500); await sceneDeny(); await BP.wait(1800); } })();
+
+  /* ---------- Wizard ---------- */
+  const SCOPES = [
+    ["workspace:read", "Đọc ngữ cảnh workspace", true], ["tasks:read", "Đọc task và run", true],
+    ["tasks:claim", "Nhận việc ở trạm Ready", true], ["tasks:execute", "Heartbeat, submit, request-decision", true],
+    ["artifacts:write", "Stage, upload, commit artifact", true], ["runtimes:manage", "Ghi danh và heartbeat runtime", true],
+    ["artifacts:read", "Đọc artifact đã commit", false], ["messages:send", "Gửi tin nhắn", false],
+    ["messages:ack", "ACK tin nhắn nhận được", false], ["events:read", "Đọc dòng sự kiện", false],
+    ["tasks:review", "Nghiệm thu kết quả của agent khác", false],
+    ["approvals:decide", "Chỉ phiên người", null], ["credentials:manage", "Chỉ phiên người", null], ["agents:manage", "Chỉ phiên người", null]
+  ];
+  BP.$("#agentOpts").innerHTML = F.agents.filter(a => ["forge", "nova", "bolt", "lens"].includes(a.id)).map(a =>
+    `<label class="opt"><input type="radio" name="wAgent" value="${a.id}"><span class="bot">${a.code}</span><span>${a.name}<small>${BP.dept(a.dept).name} · ${a.model}</small></span></label>`).join("");
+  const scopeBox = BP.$("#scopeOpts");
+  scopeBox.innerHTML = SCOPES.map(([s, d, def]) =>
+    `<label class="opt scope-opt"><input type="checkbox" value="${s}" ${def ? "checked" : ""} ${def === null ? "disabled" : ""}><span><span class="mono">${s}</span><small>${d}</small></span>${def === null ? '<span class="tag amber">HUMAN</span>' : def ? '<span class="tag">TỐI THIỂU</span>' : ""}</label>`).join("");
+  const scopeSel = () => BP.$$("input:checked", scopeBox).map(i => i.value);
+  const refreshScope = () => {
+    const n = scopeSel().length; BP.$("#scopeCount").textContent = `${n} SCOPE`;
+    BP.$("#scopeWarn").hidden = n <= 6;
+  };
+  scopeBox.addEventListener("change", refreshScope);
+  BP.$("#minPreset").addEventListener("click", () => { BP.$$("input", scopeBox).forEach((i, k) => { if (!i.disabled) i.checked = !!SCOPES[k][2]; }); refreshScope(); });
+
+  let step = 1; const N = 5;
+  const show = () => {
+    BP.$$(".wstep").forEach(s => s.classList.toggle("on", +s.dataset.step === step));
+    BP.$$("#steps li").forEach((li, i) => { li.className = i + 1 < step ? "done" : i + 1 === step ? "current" : ""; li.setAttribute("aria-current", i + 1 === step ? "step" : "false"); });
+    BP.$("#wizCount").textContent = `BƯỚC ${step}/${N}`;
+    BP.$("#wBack").disabled = step === 1 || step >= 4;
+    const nx = BP.$("#wNext");
+    nx.textContent = step === 3 ? "Tạo credential" : step === 4 ? "Hoàn tất" : step === 5 ? "Đăng ký runtime khác" : "Tiếp tục";
+    nx.disabled = step === 4 && !BP.$("#ackCopy").checked;
+  };
+  const err = (id, m) => { BP.$(id).textContent = m; return !m; };
+  BP.$("#ackCopy").addEventListener("change", show);
+  BP.$("#copyBtn").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(BP.$("#secretVal").textContent); } catch (e) {}
+    BP.$("#copyBtn").textContent = "Đã sao chép";
+  });
+  BP.$("#wBack").addEventListener("click", () => { if (step > 1) { step--; show(); } });
+  BP.$("#wNext").addEventListener("click", () => {
+    if (step === 1) { const a = BP.$('input[name="wAgent"]:checked'); if (!err("#err1", a ? "" : "Chọn một agent để gắn credential.")) return;
+      const ag = BP.agent(a.value); BP.$("#newCredId").textContent = `cred-${ag.id}-11`; }
+    if (step === 2 && !err("#err2", scopeSel().length ? "" : "Cần ít nhất một scope.")) return;
+    if (step === 3) { const v = BP.$("#cNote").value.trim(); if (!err("#err3", v.length >= 6 ? "" : "Ghi lý do cấp (tối thiểu 6 ký tự) để lưu vào audit.")) { BP.$("#cNote").setAttribute("aria-invalid", "true"); BP.$("#cNote").focus(); return; }
+      BP.$("#cNote").removeAttribute("aria-invalid");
+      const d = BP.$("#cExp").value; BP.$("#newExp").textContent = d ? `+${d} ngày` : "không đặt hạn";
+      BP.$("#errExp").textContent = d ? "" : "Không đặt hạn: nhớ xoay vòng thủ công.";
+      push("◇", "var(--s-ready)", `<b>Quản đốc</b> tạo ${BP.$("#newCredId").textContent} · ${scopeSel().length} scope · secret hiển thị 1 lần`); }
+    if (step === 4) { BP.$("#secretVal").textContent = "•••• đã ẩn vĩnh viễn ••••"; BP.$("#copyBtn").disabled = true;
+      BP.toast("CREDENTIAL ĐÃ CẤP", "Secret đã ẩn. Hub chỉ giữ hash xác minh."); }
+    if (step === 5) { step = 1; BP.$("#ackCopy").checked = false; BP.$("#copyBtn").disabled = false; BP.$("#copyBtn").textContent = "Sao chép"; BP.$("#secretVal").textContent = "cfah_nat_3Wm8Hq2Lx7Rv0Tb5Kz9Yc4Np6Ds"; show(); return; }
+    step++; show();
+  });
+  show();
+})();
+</script>
+</body>
+</html>

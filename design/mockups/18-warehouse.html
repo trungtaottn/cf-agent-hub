@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kho Artifact · CF Agent Factory</title>
+<link rel="stylesheet" href="assets/blueprint.css">
+<style>
+  .wh-tools { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--line-soft); }
+  .wh-scroll { overflow-x: auto; }
+  .wh-scroll svg { min-width: 760px; }
+  #wh .sub { font-size: 11px; }
+  #wh .lbl { font-size: 14px; }
+  .zone-n { font-family: var(--f-display); font-size: 22px; font-weight: 600; }
+  .box-t { font-family: var(--f-mono); font-size: 9px; text-anchor: middle; dominant-baseline: central; }
+  .ticker { display: flex; gap: var(--sp-4); align-items: center; padding: var(--sp-2) var(--sp-4); border-top: 1px solid var(--line-soft); font-family: var(--f-mono); font-size: var(--fs-xs); color: var(--ink-2); min-height: 40px; }
+  .ticker b { color: var(--ink); font-weight: 500; }
+
+  .filters { display: flex; gap: var(--sp-3); flex-wrap: wrap; align-items: center; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--line-soft); }
+  .filters .seg { max-width: 100%; overflow-x: auto; }
+  .filters .seg button { white-space: nowrap; flex: none; }
+  .filters select { font: inherit; font-size: var(--fs-sm); color: var(--ink); background: var(--bp-900); border: 1px solid var(--line-soft); min-height: 34px; padding: 0 var(--sp-3); border-radius: 0; }
+  .filters label { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); letter-spacing: 0.1em; text-transform: uppercase; }
+  .tbl-scroll { overflow-x: auto; }
+  .art { min-width: 980px; }
+  .art tbody tr { cursor: pointer; }
+  .art tbody tr[aria-selected="true"] td { background: var(--bp-600); }
+  .art tbody tr:focus-visible { outline: 2px solid var(--amber); outline-offset: -2px; }
+  .art td { padding: var(--sp-2) var(--sp-3); }
+  .art th { padding: var(--sp-2) var(--sp-3); }
+  .art .nm { font-weight: 500; }
+  .state.uploaded { color: var(--s-ready); background: var(--t-ready); } .state.uploaded::before { content: "▲"; }
+  .state.committed { color: var(--s-done); background: var(--t-done); } .state.committed::before { content: "■"; }
+  .state.staged { color: var(--s-backlog); } .state.staged::before { content: "□"; }
+  .state.quarantine { color: var(--red); border-style: dashed; background: var(--t-failed); } .state.quarantine::before { content: "⚠"; }
+  .state.expired { color: var(--s-cancelled); border-style: dashed; } .state.expired::before { content: "⊘"; }
+
+  .kv { display: grid; grid-template-columns: 112px 1fr; gap: var(--sp-2) var(--sp-3); font-size: var(--fs-sm); margin: 0; }
+  .kv dt { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); letter-spacing: 0.08em; text-transform: uppercase; padding-top: 3px; }
+  .kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+  .stepper { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .stepper li { position: relative; padding-top: 30px; text-align: center; font-size: var(--fs-xs); color: var(--ink-3); }
+  .stepper li::before { content: attr(data-n); position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 24px; height: 24px; display: grid; place-items: center; border: 1px solid var(--line-soft); background: var(--bp-900); font-family: var(--f-mono); font-size: var(--fs-2xs); z-index: 1; }
+  .stepper li::after { content: ""; position: absolute; top: 12px; left: -50%; width: 100%; height: 1px; background: var(--line-soft); }
+  .stepper li:first-child::after { display: none; }
+  .stepper li.done { color: var(--ink); } .stepper li.done::before { content: "✓"; border-color: var(--s-done); color: var(--s-done); background: var(--t-done); }
+  .stepper li.done::after, .stepper li.now::after { background: var(--s-done); }
+  .stepper li.now { color: var(--ink); } .stepper li.now::before { border-color: var(--s-ready); color: var(--s-ready); }
+  .stepper li.bad::before { content: "✕"; border-color: var(--red); color: var(--red); }
+  .stepper b { display: block; font-family: var(--f-mono); font-size: var(--fs-2xs); letter-spacing: 0.08em; }
+  .access { border: 1px solid var(--line-soft); padding: var(--sp-3); font-size: var(--fs-sm); background: var(--bp-850); }
+  .access.locked { border-color: var(--amber); border-style: dashed; }
+  .why { font-size: var(--fs-xs); color: var(--ink-2); }
+
+  .cap .meter { height: 12px; display: flex; }
+  .cap .meter > i { position: static; height: 100%; }
+  .cap .seg-c { background: var(--s-done); } .cap .seg-s { background: var(--s-backlog); } .cap .seg-o { background: var(--red); }
+  .cap-legend { display: flex; gap: var(--sp-4); flex-wrap: wrap; font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-2); }
+  .cap-legend i { display: inline-block; width: 10px; height: 10px; margin-right: 6px; vertical-align: -1px; }
+  .recon { list-style: none; margin: 0; padding: 0; }
+  .recon li { display: grid; grid-template-columns: 1fr auto; gap: var(--sp-2) var(--sp-3); padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--grid-major); align-items: center; }
+  .recon .k { font-family: var(--f-mono); font-size: var(--fs-xs); overflow-wrap: anywhere; }
+  .recon .d { grid-column: 1 / -1; font-size: var(--fs-xs); color: var(--ink-2); }
+</style>
+</head>
+<body data-sheet="18" data-title="Kho Artifact">
+<div class="app paper">
+  <div id="rail"></div>
+  <div class="main">
+    <header id="topbar"></header>
+    <main class="content">
+
+      <section class="page-head reveal">
+        <div>
+          <div class="code">STORE W-04 · KHO ARTIFACT · BYTE TRÊN R2 · MANIFEST TRONG SQL</div>
+          <h2>Kho Artifact</h2>
+          <p class="lede">Mỗi artifact đi qua ba kệ: staged (đã khai manifest), uploaded (đã có byte, đang kiểm digest) và committed (metadata đã chốt). Chỉ artifact committed mới đọc được và mới được đính kèm vào tin nhắn, checkpoint hay kết quả.</p>
+        </div>
+        <div class="actions">
+          <a class="btn" href="12-approval-gate.html">Đề xuất dọn dẹp · T-1053</a>
+          <button class="btn" type="button" id="btnRecon">Chạy đối chiếu R2</button>
+        </div>
+      </section>
+
+      <section class="grid g-4 reveal" aria-label="Chỉ số kho">
+        <div class="panel kpi"><span class="label">Committed</span><span class="value c-done" id="kCom">3.418</span><span class="note">Đọc được, đính kèm được</span></div>
+        <div class="panel kpi"><span class="label">Staged</span><span class="value" id="kSt">1.296</span><span class="note c-amber">1.204 quá 7 ngày, chờ duyệt xoá</span></div>
+        <div class="panel kpi"><span class="label">Uploaded chờ commit</span><span class="value c-ready" id="kUp">7</span><span class="note">Đang kiểm digest và kích thước</span></div>
+        <div class="panel kpi"><span class="label">Quarantine · đối chiếu</span><span class="value c-red" id="kQ">3</span><span class="note">Có byte trên R2, không có metadata committed</span></div>
+      </section>
+
+      <section class="panel reveal" aria-label="Bản vẽ kho">
+        <div class="wh-tools">
+          <div class="legend" aria-label="Chú giải">
+            <span style="color:var(--s-backlog)"><i></i>Staged · chỉ manifest</span>
+            <span style="color:var(--s-ready)"><i></i>Uploaded · có byte</span>
+            <span style="color:var(--s-done)"><i></i>Committed</span>
+            <span style="color:var(--red)"><i></i>Quarantine</span>
+          </div>
+          <span class="code">MẶT BẰNG KHO W-04 · 1 Ô = 1 THÙNG MẪU</span>
+        </div>
+        <div class="wh-scroll">
+          <svg id="wh" class="dwg" viewBox="0 0 1200 400" role="img" aria-labelledby="whTitle whDesc">
+            <title id="whTitle">Mặt bằng kho artifact</title>
+            <desc id="whDesc">Cửa nhận phía tây, bốn khu kệ Staged, Uploaded, Committed và Quarantine dọc lối đi giữa. Xe nâng chở thùng artifact sang kệ mới mỗi khi trạng thái chuyển. Bảng artifact bên dưới là phiên bản văn bản.</desc>
+            <defs>
+              <pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                <line x1="0" y1="0" x2="0" y2="8" style="stroke:var(--line-soft)" stroke-width="1"/>
+              </pattern>
+              <pattern id="hatchRed" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)">
+                <line x1="0" y1="0" x2="0" y2="8" style="stroke:var(--t-failed)" stroke-width="3"/>
+              </pattern>
+            </defs>
+            <g id="gS"></g><g id="gBoxes"></g><g id="gLift"></g>
+          </svg>
+        </div>
+        <div class="ticker" aria-live="polite"><span class="code">NHẬT KÝ KHO</span><span id="tick">Xe nâng chờ lệnh ở cửa nhận.</span></div>
+      </section>
+
+      <section class="grid g-main-side">
+        <div class="panel reveal">
+          <div class="panel-head"><h3>Danh sách artifact</h3><span class="code" id="artCount">12 MỤC · MẪU</span></div>
+          <div class="filters">
+            <div class="seg" role="group" aria-label="Lọc theo trạng thái" id="segState">
+              <button type="button" aria-pressed="true" data-s="all">Tất cả</button>
+              <button type="button" aria-pressed="false" data-s="staged">Staged</button>
+              <button type="button" aria-pressed="false" data-s="uploaded">Uploaded</button>
+              <button type="button" aria-pressed="false" data-s="committed">Committed</button>
+              <button type="button" aria-pressed="false" data-s="quarantine">Quarantine</button>
+            </div>
+            <label for="fTask">Task</label>
+            <select id="fTask"><option value="">Mọi task</option></select>
+          </div>
+          <div class="tbl-scroll">
+            <table class="table art" aria-label="Artifact">
+              <thead><tr><th>ID</th><th>Tên</th><th>Loại</th><th>Kích thước</th><th>Digest sha256</th><th>Task</th><th>Trạng thái</th><th>Người tạo</th><th>Thời gian</th></tr></thead>
+              <tbody id="artBody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="artEmpty" style="display:none;margin:var(--sp-4)">Không có artifact nào khớp bộ lọc. Thử bỏ lọc task hoặc chọn "Tất cả".</div>
+        </div>
+
+        <div class="panel reveal" aria-live="polite">
+          <div class="panel-head"><h3>Chi tiết artifact</h3><span class="code" id="dId">A-5540</span></div>
+          <div class="panel-body stack" id="detail"></div>
+        </div>
+      </section>
+
+      <section class="grid g-2">
+        <div class="panel reveal cap">
+          <div class="panel-head"><h3>Dung lượng và dọn dẹp</h3><span class="tag amber">SIM</span></div>
+          <div class="panel-body stack">
+            <div class="row between wrap"><span class="kpi" style="padding:0"><span class="value">78,4<small> / 100 GB</small></span></span><span class="code">R2 BUCKET · WS-AURORA</span></div>
+            <div class="meter" role="img" aria-label="Committed 61,2 GB, staged 16,9 GB, orphan 0,3 GB trên giới hạn 100 GB"><i class="seg-c" style="width:61.2%"></i><i class="seg-s" style="width:16.9%"></i><i class="seg-o" style="width:0.3%"></i></div>
+            <div class="cap-legend"><span><i class="seg-c"></i>Committed 61,2 GB</span><span><i class="seg-s"></i>Staged 16,9 GB</span><span><i class="seg-o"></i>Orphan 0,3 GB</span><span>Giới hạn do operator đặt</span></div>
+            <div class="card alert">
+              <span class="id c-amber">T-1053 · ORBIT-05 · CẦN NGƯỜI · HẾT HẠN 18:00</span>
+              <span class="title">Xoá 1.204 artifact staged quá 7 ngày (≈ 15,8 GB)</span>
+              <span class="meta"><span class="state waiting">Chờ quyết định</span><span>Thao tác xoá không hoàn tác. Chưa có gì bị xoá.</span></span>
+              <div class="row wrap"><a class="btn human sm" href="12-approval-gate.html">Xem đề xuất ở Cổng phê duyệt</a><a class="btn sm" href="05-work-order.html">Mở phiếu T-1053</a></div>
+            </div>
+            <p class="why" style="margin:0">Dọn dẹp đúng thứ tự: đánh dấu manifest <span class="mono">expired</span> trong SQL trước (tombstone), sau đó mới xoá byte. Commit và cleanup không thể cùng thắng. Không xoá artifact committed chỉ vì task bị huỷ.</p>
+          </div>
+        </div>
+
+        <div class="panel reveal">
+          <div class="panel-head"><h3>Đối chiếu R2 ↔ metadata</h3><span class="code" id="reconTime">LẦN CUỐI 14:20 · 3 PHÁT HIỆN</span></div>
+          <p class="note-red" style="margin:var(--sp-4) var(--sp-4) 0">Object có trên R2 nhưng không có metadata committed thì chưa phải artifact hợp lệ. Không đọc, không đính kèm, không tính là bằng chứng.</p>
+          <ul class="recon" id="recon">
+            <li><span class="k">r2://ws-aurora/obj/9f4e…e1c0 · 4,2 MB</span><span class="state quarantine">Không manifest</span><span class="d">Không khớp manifest nào. Giữ ở Quarantine, chờ dọn theo chính sách. Không tự tạo artifact từ object lạ.</span></li>
+            <li><span class="k">A-5512 · build-notes.md · 18 KB</span><span class="state expired">Upload muộn</span><span class="d">Byte tới sau khi manifest đã expired. Orphan, không thể hồi sinh hay commit bản ghi đã hết hạn.</span></li>
+            <li><span class="k">A-5539 · migration-dryrun.txt · 7 KB</span><span class="state uploaded">Có thể đối chiếu</span><span class="d">Byte đã ghi nhưng mất cập nhật metadata. Digest khớp manifest bất biến. Client thử commit lại đúng upload identity cũ, không tạo object mới.</span></li>
+          </ul>
+        </div>
+      </section>
+
+    </main>
+    <div id="titleblock"></div>
+  </div>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(() => {
+  const el = (t, a, p) => BP.svg(t, a, p);
+  const gS = BP.$("#gS"), gB = BP.$("#gBoxes"), gL = BP.$("#gLift");
+  const txt = (x, y, s, cls, extra, parent) => { const t = el("text", { x, y, class: cls || "sub", ...(extra || {}) }, parent || gS); t.textContent = s; return t; };
+
+  /* ---------- Artifact data (SIM) ---------- */
+  const ART = [
+    { id: "A-5540", name: "runs-v3-migration.sql", type: "sql", size: "12 KB", dg: "2b6e…90ad", task: "T-1047", st: "staged", by: "forge", t: "14:30", run: "r-31c0", fence: 4, exp: "14:45" },
+    { id: "A-5544", name: "queue-survey.pdf", type: "pdf", size: "3,8 MB", dg: "61cc…d02b", task: "T-1051", st: "staged", by: "kite", t: "14:31", run: "r-51a2", fence: 2, exp: "14:46" },
+    { id: "A-4987", name: "icon-draft-03.png", type: "image", size: "1,6 MB", dg: "Not reported", task: "T-1058", st: "staged", by: "pixel", t: "21/10 09:14", run: "r-58e0", fence: 1, exp: "đã quá hạn", old: true },
+    { id: "A-5541", name: "http-api.vi.md", type: "markdown", size: "96 KB", dg: "a8f1…7720", task: "T-1040", st: "uploaded", by: "muse", t: "14:29", run: "r-40c3", fence: 3, exp: "14:44" },
+    { id: "A-5539", name: "migration-dryrun.txt", type: "text", size: "7 KB", dg: "d3e9…41ba", task: "T-1047", st: "uploaded", by: "forge", t: "14:18", run: "r-31b9", fence: 3, exp: "14:33" },
+    { id: "A-5508", name: "lease-w43.csv", type: "csv", size: "2,4 MB", dg: "9f2c…a71e", task: "T-1044", st: "committed", by: "nova", t: "12:14" },
+    { id: "A-5521", name: "lock-trace.txt", type: "text", size: "184 KB", dg: "3b8d…04c2", task: "T-1042", st: "committed", by: "atlas", t: "14:08" },
+    { id: "A-5533", name: "outbox-0927.json", type: "json", size: "1,1 MB", dg: "c41a…9e30", task: "T-1031", st: "committed", by: "orbit", t: "14:02" },
+    { id: "A-5490", name: "recipients-v2.csv", type: "csv", size: "38 KB", dg: "77e0…b15d", task: "T-1039", st: "committed", by: "vega", t: "13:40" },
+    { id: "A-5536", name: "claim-race.test.ts", type: "code", size: "22 KB", dg: "5d19…e8f7", task: "T-1036", st: "committed", by: "bolt", t: "13:12" },
+    { id: "A-5537", name: "claim-race.log", type: "log", size: "640 KB", dg: "e0a2…1c44", task: "T-1036", st: "committed", by: "bolt", t: "13:12" },
+    { id: "Q-0003", name: "obj 9f4e…e1c0", type: "Not reported", size: "4,2 MB", dg: "không có manifest", task: "", st: "quarantine", by: "", t: "11:52" }
+  ];
+  const byName = id => id ? (BP.agent(id) || {}).name : "Not reported";
+  let selected = "A-5540", fState = "all", fTask = "";
+
+  /* ---------- Drawing ---------- */
+  el("rect", { x: 20, y: 24, width: 1160, height: 356, class: "room" }, gS);
+  el("rect", { x: 20, y: 24, width: 1160, height: 356, class: "wall" }, gS);
+  el("path", { d: "M20 12 H1180 M20 6 V18 M1180 6 V18", class: "dimline" }, gS);
+  txt(600, 9, "KHO W-04 · 36.0 m", "sub", { "text-anchor": "middle" });
+  // receiving dock (west) + door gap
+  el("line", { x1: 20, y1: 160, x2: 20, y2: 240, stroke: "var(--bp-800)", "stroke-width": 4 }, gS);
+  el("path", { d: "M20 160 h-12 M20 240 h-12", class: "wall-thin" }, gS);
+  el("rect", { x: 34, y: 110, width: 150, height: 180, class: "room hot" }, gS);
+  for (let y = 130; y < 290; y += 16) el("line", { x1: 44, y1: y, x2: 100, y2: y, class: "wall-thin" }, gS);
+  txt(44, 104, "CỬA NHẬN", "lbl");
+  txt(110, 140, "STAGE");
+  txt(110, 154, "MANIFEST");
+  txt(110, 270, "PUT /content");
+  txt(110, 284, "HẠN UPLOAD");
+  // aisle
+  el("line", { x1: 184, y1: 200, x2: 1170, y2: 200, class: "path-core" }, gS);
+  txt(200, 192, "LỐI ĐI XE NÂNG");
+
+  const ZONES = [
+    { s: "staged", x: 220, w: 220, name: "STAGED", sub: "CHỈ MANIFEST · CHƯA ĐỌC ĐƯỢC", col: "var(--s-backlog)" },
+    { s: "uploaded", x: 460, w: 180, name: "UPLOADED", sub: "CÓ BYTE · KIỂM DIGEST", col: "var(--s-ready)" },
+    { s: "committed", x: 660, w: 320, name: "COMMITTED", sub: "ĐỌC ĐƯỢC · ĐÍNH KÈM ĐƯỢC", col: "var(--s-done)" },
+    { s: "quarantine", x: 1000, w: 165, name: "QUARANTINE", sub: "R2 CÓ · METADATA KHÔNG", col: "var(--red)" }
+  ];
+  const Z = {};
+  ZONES.forEach(z => {
+    const red = z.s === "quarantine";
+    [62, 236].forEach(y => {
+      el("rect", { x: z.x, y, width: z.w, height: 100, class: red ? "" : "hatch", fill: red ? "url(#hatchRed)" : "" }, gS);
+      el("rect", { x: z.x, y, width: z.w, height: 100, fill: "none", stroke: z.col, "stroke-width": 1.2, "stroke-dasharray": red ? "5 4" : "" }, gS);
+      el("line", { x1: z.x, y1: y + 50, x2: z.x + z.w, y2: y + 50, class: "wall-thin" }, gS);
+    });
+    txt(z.x, 54, z.name, "lbl", { style: `fill:${z.col}` });
+    txt(z.x, 356, z.sub);
+    Z[z.s] = { ...z, slots: [], next: 0 };
+    // slot grid: 2 racks x 2 shelves
+    [62, 236].forEach(y => [y + 25, y + 75].forEach(cy => { for (let x = z.x + 22; x < z.x + z.w - 10; x += 34) Z[z.s].slots.push({ x, y: cy }); }));
+  });
+  const counts = { staged: txt(400, 54, "1.296", "zone-n", { style: "fill:var(--s-backlog)", "text-anchor": "end" }), uploaded: txt(636, 54, "7", "zone-n", { style: "fill:var(--s-ready)", "text-anchor": "end" }), committed: txt(976, 54, "3.418", "zone-n", { style: "fill:var(--s-done)", "text-anchor": "end" }), quarantine: txt(1163, 54, "3", "zone-n", { style: "fill:var(--red)", "text-anchor": "end" }) };
+  txt(222, 374, "1.204 THÙNG QUÁ 7 NGÀY · CHỜ DUYỆT XOÁ (T-1053)", "sub", { style: "fill:var(--amber)" });
+
+  function box(state, label, parent) {
+    const g = el("g", {}, parent || gB);
+    const st = { staged: { f: "var(--bp-950)", s: "var(--s-backlog)", d: "3 2" }, uploaded: { f: "var(--t-ready)", s: "var(--s-ready)", d: "" }, committed: { f: "var(--t-done)", s: "var(--s-done)", d: "" }, quarantine: { f: "var(--t-failed)", s: "var(--red)", d: "3 2" } }[state];
+    el("rect", { x: -13, y: -10, width: 26, height: 20, fill: st.f, stroke: st.s, "stroke-dasharray": st.d }, g);
+    el("path", { d: "M-13 -3 H13", stroke: st.s, "stroke-width": 0.75 }, g);
+    if (label) { const t = el("text", { y: 4, class: "box-t", style: `fill:${st.s}` }, g); t.textContent = label; }
+    return g;
+  }
+  function place(state, label) {
+    const z = Z[state]; const s = z.slots[z.next++ % z.slots.length];
+    const g = box(state, label); g.setAttribute("transform", `translate(${s.x} ${s.y})`); g.dataset.slot = z.next - 1; return { g, s };
+  }
+  // pre-fill sample boxes
+  for (let i = 0; i < 9; i++) place("staged");
+  for (let i = 0; i < 4; i++) place("uploaded");
+  for (let i = 0; i < 17; i++) place("committed");
+  for (let i = 0; i < 3; i++) place("quarantine");
+
+  /* ---------- Forklift ---------- */
+  const lift = el("g", { transform: "translate(140 200)" }, gL);
+  el("rect", { x: -22, y: -12, width: 34, height: 24, fill: "var(--bp-950)", stroke: "var(--amber)", "stroke-width": 1.5 }, lift);
+  el("rect", { x: -18, y: -8, width: 14, height: 16, fill: "none", stroke: "var(--amber)" }, lift);
+  el("line", { x1: 12, y1: -14, x2: 12, y2: 14, stroke: "var(--amber)", "stroke-width": 2 }, lift);
+  el("path", { d: "M12 -8 H34 M12 8 H34", stroke: "var(--amber)", "stroke-width": 1.5 }, lift);
+  [-14, 4].forEach(x => [-14, 14].forEach(y => el("rect", { x, y: y - 2, width: 8, height: 4, fill: "var(--line)" }, lift)));
+  const carry = el("g", { transform: "translate(23 0)" }, lift);
+  const liftLbl = el("text", { x: -22, y: 30, class: "sub", style: "fill:var(--amber)" }, lift); liftLbl.textContent = "XE NÂNG FL-1";
+  let liftX = 140;
+  async function drive(toX, ms) { const p = el("path", { d: `M${liftX} 200 H${toX}` }); await BP.moveAlong(lift, p, ms || Math.max(900, Math.abs(toX - liftX) * 4)); liftX = toX; }
+  function setCarry(state, label) { carry.innerHTML = ""; if (state) { const b = box(state, label, carry); } }
+  async function dropTo(state, label) {
+    const z = Z[state]; const s = z.slots[z.next % z.slots.length];
+    await drive(s.x - 23);
+    setCarry(null);
+    const g = box(state, label); g.setAttribute("transform", `translate(${s.x} 200)`);
+    const p = el("path", { d: `M${s.x} 200 V${s.y}` }); await BP.moveAlong(g, p, 600);
+    z.next++; return g;
+  }
+  async function pickFrom(g, state, label) {
+    const m = /translate\(([-\d.]+) ([-\d.]+)/.exec(g.getAttribute("transform")); const x = +m[1], y = +m[2];
+    await drive(x - 23);
+    const p = el("path", { d: `M${x} ${y} V200` }); await BP.moveAlong(g, p, 500); g.remove();
+    setCarry(state, label);
+  }
+
+  const tick = BP.$("#tick");
+  const say = html => { tick.innerHTML = `<span class="mono">${BP.now()}</span> · ${html}`; };
+  const setState = (id, st) => { const a = ART.find(x => x.id === id); a.st = st; renderTable(); if (selected === id) renderDetail(); };
+  const kv = { st: 1296, up: 7, com: 3418, q: 3 };
+  const kpi = () => { BP.$("#kSt").textContent = kv.st.toLocaleString("vi-VN"); BP.$("#kUp").textContent = kv.up; BP.$("#kCom").textContent = kv.com.toLocaleString("vi-VN"); BP.$("#kQ").textContent = kv.q;
+    counts.staged.textContent = kv.st.toLocaleString("vi-VN"); counts.uploaded.textContent = kv.up; counts.committed.textContent = kv.com.toLocaleString("vi-VN"); counts.quarantine.textContent = kv.q; };
+
+  async function cycleArtifact() {
+    // 1. stage manifest at dock
+    setCarry("staged", "5540"); say("<b>FORGE-02</b> stage manifest <b>A-5540</b> · expected sha256 2b6e…90ad · 12 KB · hạn upload 14:45 · gắn run r-31c0, fence 4");
+    await BP.wait(1400);
+    const g1 = await dropTo("staged", "5540"); kv.st++; kpi(); setState("A-5540", "staged");
+    await BP.wait(2400);
+    // 2. upload bytes
+    say("<b>PUT /content</b> A-5540 · stream 12.288 byte · đang băm sha256…");
+    await pickFrom(g1, "uploaded", "5540"); kv.st--; kpi();
+    const g2 = await dropTo("uploaded", "5540"); kv.up++; kpi(); setState("A-5540", "uploaded");
+    say("A-5540 · digest khớp, kích thước khớp, số đính kèm hợp lệ. <b>Chưa đọc được</b> cho tới khi commit metadata.");
+    await BP.wait(2600);
+    // 3. commit metadata
+    say("<b>POST :commit</b> A-5540 · kiểm hạn upload, fence 4 còn hiệu lực · ghi metadata committed");
+    await pickFrom(g2, "committed", "5540"); kv.up--; kpi();
+    const g3 = await dropTo("committed", "5540"); kv.com++; kpi(); setState("A-5540", "committed");
+    say("<b>A-5540 committed</b>. Giờ mới đọc được và mới đính kèm vào kết quả T-1047 được.");
+    await drive(140, 1800);
+    await BP.wait(3200);
+    return g3;
+  }
+  async function orphan() {
+    setCarry("quarantine", "?"); say("Đối chiếu tìm thấy object <span class='mono'>r2://…/obj/c27a…</span> không có metadata committed. Chuyển Quarantine, chưa phải artifact hợp lệ.");
+    await BP.wait(900);
+    const g = await dropTo("quarantine", "?"); kv.q++; kpi();
+    await drive(140, 2000);
+    await BP.wait(2000);
+    return g;
+  }
+  async function loop() {
+    let n = 0;
+    while (true) {
+      const g = await cycleArtifact();
+      if (n % 2 === 1) { const o = await orphan(); BP.wait(6000).then(() => { o.remove(); kv.q--; kpi(); Z.quarantine.next--; }); }
+      // reset mock loop
+      g.remove(); Z.committed.next--; kv.com--; kv.st; kpi(); setState("A-5540", "staged");
+      say("Mô phỏng lặp: A-5540 trở lại staged để minh hoạ lại vòng đời.");
+      await BP.wait(1600); n++;
+    }
+  }
+  if (!BP.reduced) loop();
+
+  /* ---------- Table + filters ---------- */
+  const tasks = [...new Set(ART.map(a => a.task).filter(Boolean))].sort();
+  BP.$("#fTask").innerHTML += tasks.map(t => `<option value="${t}">${t}</option>`).join("");
+  const stLabel = { staged: "Staged", uploaded: "Uploaded", committed: "Committed", quarantine: "Quarantine" };
+  function renderTable() {
+    const rows = ART.filter(a => (fState === "all" || a.st === fState) && (!fTask || a.task === fTask));
+    BP.$("#artBody").innerHTML = rows.map(a => `<tr tabindex="0" data-id="${a.id}" aria-selected="${a.id === selected}">
+      <td class="mono">${a.id}</td><td class="nm">${a.name}</td><td class="${a.type === "Not reported" ? "unknown" : "ink2"}">${a.type}</td><td class="mono">${a.size}</td>
+      <td class="mono ${a.dg.includes("…") ? "" : "unknown"}">${a.dg}</td><td>${a.task ? `<a class="mono" href="05-work-order.html">${a.task}</a>` : '<span class="muted">Không</span>'}</td>
+      <td><span class="state ${a.st}">${stLabel[a.st]}</span>${a.old ? ' <span class="tag amber">&gt; 7 ngày</span>' : ""}</td><td>${a.by ? byName(a.by) : '<span class="unknown">Not reported</span>'}</td><td class="mono">${a.t}</td></tr>`).join("");
+    BP.$("#artEmpty").style.display = rows.length ? "none" : "";
+    BP.$("#artCount").textContent = `${rows.length} / ${ART.length} MỤC · MẪU`;
+    BP.$$("#artBody tr").forEach(tr => {
+      const go = () => { selected = tr.dataset.id; renderTable(); renderDetail(); };
+      tr.addEventListener("click", go);
+      tr.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
+    });
+  }
+  BP.$$("#segState button").forEach(b => b.addEventListener("click", () => { BP.$$("#segState button").forEach(x => x.setAttribute("aria-pressed", String(x === b))); fState = b.dataset.s; renderTable(); }));
+  BP.$("#fTask").addEventListener("change", e => { fTask = e.target.value; renderTable(); });
+
+  /* ---------- Detail ---------- */
+  function renderDetail() {
+    const a = ART.find(x => x.id === selected);
+    BP.$("#dId").textContent = a.id;
+    const order = ["staged", "uploaded", "committed"], idx = order.indexOf(a.st);
+    const step = (s, i, label, sub) => {
+      let cls = "";
+      if (a.st === "quarantine") cls = i === 0 ? "bad" : "";
+      else if (i < idx || (i === idx && a.st === "committed")) cls = "done";
+      else if (i === idx) cls = "now";
+      return `<li class="${cls}" data-n="${i + 1}"><b>${label}</b>${sub}</li>`;
+    };
+    const ok = a.st === "committed";
+    const access = ok
+      ? `<div class="access"><b class="c-done">Đọc được.</b> Thành viên workspace có <span class="mono">artifacts:read</span> và quyền theo task ${a.task || ""}. Tải xuống được tái xác thực mỗi lần, không lộ object key.</div>`
+      : a.st === "quarantine"
+        ? `<div class="access locked"><b class="c-red">Không phải artifact hợp lệ.</b> Object có trên R2 nhưng không có metadata committed. Không ai đọc được qua API.</div>`
+        : `<div class="access locked"><b class="c-amber">Chưa đọc được.</b> Chỉ uploader ${byName(a.by)} (run ${a.run}, fence ${a.fence}) được upload và commit trước hạn ${a.exp}. Không đính kèm được vào tin nhắn hay kết quả.</div>`;
+    BP.$("#detail").innerHTML = `
+      <div><span class="state ${a.st}">${stLabel[a.st]}</span></div>
+      <dl class="kv">
+        <dt>Tên</dt><dd>${a.name}</dd>
+        <dt>Loại · cỡ</dt><dd>${a.type} · <span class="mono">${a.size}</span></dd>
+        <dt>Digest</dt><dd class="mono">${ok ? "sha256 " + a.dg : a.dg.includes("…") ? "kỳ vọng sha256 " + a.dg : '<span class="unknown">' + a.dg + "</span>"}</dd>
+        <dt>Task</dt><dd>${a.task ? `<a href="05-work-order.html">${a.task}</a>` : '<span class="muted">Không liên kết</span>'}</dd>
+        <dt>Người tạo</dt><dd>${a.by ? byName(a.by) : '<span class="unknown">Not reported</span>'}</dd>
+        <dt>Object key</dt><dd class="mono muted">do server sinh · ẩn</dd>
+      </dl>
+      <ol class="stepper" aria-label="Vòng đời artifact">
+        ${step("staged", 0, "STAGED", "manifest")}${step("uploaded", 1, "UPLOADED", "byte + digest")}${step("committed", 2, "COMMITTED", "metadata chốt")}
+      </ol>
+      ${access}
+      <button class="btn primary" type="button" id="btnDl" ${ok ? "" : 'disabled aria-describedby="dlWhy"'}>
+        <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1v8M3.5 5.5L7 9l3.5-3.5M2 12h10" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
+        Tải xuống
+      </button>
+      ${ok ? "" : `<p class="why" id="dlWhy" style="margin:0">Nút tắt vì artifact chưa committed. Byte có thể đã nằm trên R2 nhưng chưa được xác minh và chốt metadata.</p>`}`;
+    const dl = BP.$("#btnDl"); if (ok) dl.addEventListener("click", () => BP.toast("GET /artifacts/" + a.id + "/content", "Đã tái xác thực quyền. Bắt đầu tải " + a.name + " (mock)."));
+  }
+
+  BP.$("#btnRecon").addEventListener("click", () => {
+    BP.$("#reconTime").textContent = `LẦN CUỐI ${BP.now().slice(0, 5)} · 3 PHÁT HIỆN`;
+    BP.toast("RECONCILE · SIM", "So khớp inventory R2 với manifest. Không xoá gì, chỉ báo cáo phát hiện.");
+  });
+
+  kpi(); renderTable(); renderDetail();
+})();
+</script>
+</body>
+</html>

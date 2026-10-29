@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hồ sơ Agent ATLAS-01 · CF Agent Factory</title>
+<link rel="stylesheet" href="assets/blueprint.css">
+<style>
+  .state.offline { color: var(--ink-3); border-style: dotted; } .state.offline::before { content: "○"; }
+  .state.revoked { color: var(--red); border-style: dashed; } .state.revoked::before { content: "⊘"; }
+  .dossier-head { display: flex; align-items: center; gap: var(--sp-4); }
+  .hexbig { --c: var(--s-doing); display: grid; place-items: center; width: 72px; height: 62px; background: var(--c); clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%); flex: none; }
+  .hexbig span { display: grid; place-items: center; width: calc(100% - 3px); height: calc(100% - 3px); background: var(--bp-900); clip-path: inherit; font-family: var(--f-mono); font-weight: 600; font-size: var(--fs-lg); color: var(--c); }
+  .chips { display: flex; gap: var(--sp-2); flex-wrap: wrap; margin-top: var(--sp-2); }
+
+  .elev-wrap { overflow-x: auto; }
+  .elev { min-width: 720px; }
+  .robot .part { fill: var(--bp-900); stroke: var(--line-strong); stroke-width: 1.4; fill-opacity: 0; stroke-dasharray: 1400; stroke-dashoffset: 1400; animation: draw 1.3s var(--ease) forwards, fillin 0.5s 0.9s forwards; }
+  .robot .part.thin { stroke: var(--line); stroke-width: 1; }
+  .robot .part.hot { stroke: var(--s-doing); }
+  .robot .part.cred { stroke: var(--amber); }
+  @keyframes fillin { to { fill-opacity: 1; } }
+  .co { opacity: 0; animation: coin 0.35s var(--ease) forwards; }
+  .co .leader { stroke-dasharray: 400; stroke-dashoffset: 400; animation: draw 0.6s var(--ease) forwards; animation-delay: inherit; }
+  @keyframes coin { to { opacity: 1; } }
+  .co .k { font-family: var(--f-mono); font-size: 11.5px; fill: var(--ink-3); letter-spacing: 0.1em; }
+  .co .v { font-family: var(--f-display); font-size: 18px; font-weight: 600; fill: var(--ink); letter-spacing: 0.03em; }
+  .co .s { font-family: var(--f-mono); font-size: 11.5px; fill: var(--ink-2); }
+  .co .s.warn { fill: var(--amber); }
+  .co .dot { fill: var(--bp-950); stroke: var(--ink); stroke-width: 1.2; }
+  .screen-txt { font-family: var(--f-mono); font-size: 13px; font-weight: 600; fill: var(--s-doing); }
+  .screen-sub { font-family: var(--f-mono); font-size: 9px; fill: var(--ink-2); }
+
+  .parts { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--line-soft); }
+  .parts li { display: grid; grid-template-columns: 28px 1fr; gap: var(--sp-2); padding: var(--sp-3) var(--sp-4); border-right: 1px solid var(--grid-major); border-bottom: 1px solid var(--grid-major); font-size: var(--fs-xs); color: var(--ink-2); }
+  .parts .no { font-family: var(--f-mono); color: var(--ink-3); border: 1px solid var(--line-soft); height: 22px; display: grid; place-items: center; font-size: var(--fs-2xs); }
+  .parts b { display: block; color: var(--ink); font-weight: 500; font-size: var(--fs-sm); }
+  @media (max-width: 960px) { .parts { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 560px) { .parts { grid-template-columns: 1fr; } }
+  .kv { margin: 0; display: grid; grid-template-columns: 132px minmax(0, 1fr); }
+  .kv dt, .kv dd { padding: var(--sp-2) var(--sp-4); border-bottom: 1px solid var(--grid-major); font-size: var(--fs-sm); }
+  .kv dt { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); letter-spacing: 0.08em; text-transform: uppercase; padding-top: 11px; }
+  .kv dd { margin: 0; color: var(--ink-2); min-width: 0; overflow-wrap: anywhere; }
+  .kv dd .mono { color: var(--ink); }
+  .scopes { display: flex; flex-wrap: wrap; gap: 4px; }
+  .tag.off { color: var(--ink-3); text-decoration: line-through; border-style: dashed; }
+  .masked { letter-spacing: 0.3em; color: var(--ink-3); }
+
+  .runbox { display: grid; grid-template-columns: auto 1fr; gap: var(--sp-4); align-items: center; }
+  .clock-big { font-family: var(--f-mono); font-size: var(--fs-3xl); font-weight: 500; color: var(--s-doing); line-height: 1; font-variant-numeric: tabular-nums; }
+  .clock-big.warn { color: var(--amber); } .clock-big.crit { color: var(--red); }
+  .facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--line-soft); margin-top: var(--sp-4); }
+  .facts div { padding: var(--sp-3) var(--sp-3) 0 0; }
+  .facts span { display: block; font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); letter-spacing: 0.08em; text-transform: uppercase; }
+  .facts b { font-family: var(--f-mono); font-weight: 500; font-size: var(--fs-sm); }
+
+  .tl { max-height: 420px; overflow: hidden; }
+  .tl .log li { grid-template-columns: 64px 22px 1fr; }
+  .tl .kind { font-family: var(--f-mono); font-size: var(--fs-2xs); letter-spacing: 0.08em; text-transform: uppercase; margin-right: 6px; }
+
+  .band-svg { width: 100%; height: auto; }
+  .band-svg .ax { font-family: var(--f-mono); font-size: 9px; fill: var(--ink-3); }
+  .stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--line-soft); border: 1px solid var(--line-soft); margin-top: var(--sp-4); }
+  .stats div { background: var(--bp-800); padding: var(--sp-3); }
+  .stats .n { font-family: var(--f-display); font-size: var(--fs-2xl); font-weight: 600; line-height: 1.1; }
+  .stats .l { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); letter-spacing: 0.08em; text-transform: uppercase; }
+  details summary { cursor: pointer; font-family: var(--f-mono); font-size: var(--fs-xs); color: var(--s-ready); min-height: 36px; display: flex; align-items: center; }
+
+  .banner { display: none; }
+  .banner.on { display: flex; }
+  .modal-h { padding: var(--sp-4); border-bottom: 1px solid var(--line-soft); }
+  .modal-h h3 { margin: 4px 0 0; font-family: var(--f-display); font-size: var(--fs-xl); }
+  .modal-b { padding: var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-3); font-size: var(--fs-sm); color: var(--ink-2); }
+  .modal-b ol { margin: 0; padding-left: 1.2em; display: grid; gap: var(--sp-2); }
+  .modal-f { padding: var(--sp-3) var(--sp-4); border-top: 1px solid var(--line-soft); display: flex; justify-content: flex-end; gap: var(--sp-2); flex-wrap: wrap; }
+  .modal .field input { width: 100%; min-height: 40px; padding: 0 var(--sp-3); background: var(--bp-850); color: var(--ink); border: 1px solid var(--line-soft); font-family: var(--f-mono); }
+  .modal label { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); letter-spacing: 0.08em; text-transform: uppercase; display: block; margin-bottom: 4px; }
+  .modal.danger-m { border-color: var(--red); }
+  @media (prefers-reduced-motion: reduce) {
+    .robot .part { stroke-dashoffset: 0; fill-opacity: 1; }
+    .co { opacity: 1; } .co .leader { stroke-dashoffset: 0; }
+  }
+  @media (max-width: 560px) {
+    .kv { grid-template-columns: minmax(0, 1fr); }
+    .kv dt { border-bottom: 0; padding-bottom: 0; }
+    .facts { grid-template-columns: 1fr 1fr; }
+    .runbox { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body data-sheet="08" data-title="Hồ sơ Agent ATLAS-01">
+<div class="app paper">
+  <div id="rail"></div>
+  <div class="main">
+    <header id="topbar"></header>
+    <main class="content">
+
+      <section class="page-head reveal">
+        <div class="dossier-head">
+          <span class="hexbig" aria-hidden="true"><span>AT</span></span>
+          <div>
+            <div class="code">AGENT DOSSIER · AG-ATLAS-01 · KT-01 XƯỞNG KỸ THUẬT</div>
+            <h2>Hồ sơ Agent ATLAS-01</h2>
+            <div class="chips"><span class="state online">Online · 3s</span><span class="state doing">Đang làm T-1042</span><span class="tag">Native credential</span><span class="tag amber">Credential hết hạn sau 4 ngày</span></div>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn" id="btnPause" aria-pressed="false">Tạm ngưng nhận việc</button>
+          <button class="btn danger" id="btnRevoke">Thu hồi credential</button>
+          <a class="btn primary" href="05-work-order.html">Mở phiếu T-1042</a>
+        </div>
+      </section>
+
+      <div class="note-red banner row" id="pauseBanner" role="status">
+        <span>INTAKE PAUSED · ATLAS-01 không nhận task Ready mới. Run T-1042 tiếp tục tới khi nộp kết quả hoặc yield; lease không bị cắt.</span>
+        <button class="btn sm" id="btnResume" style="margin-left:auto">Mở lại nhận việc</button>
+      </div>
+
+      <section class="grid g-main-side">
+        <div class="panel reveal">
+          <div class="panel-head"><h3>Bản vẽ hình chiếu đứng · ATLAS-01</h3><span class="code">FRONT ELEVATION · 1 : 4</span></div>
+          <div class="elev-wrap">
+            <svg class="dwg elev" id="elev" viewBox="0 0 960 540" role="img" aria-labelledby="elevT elevD">
+              <title id="elevT">Bản vẽ robot ATLAS-01 với 6 chú thích bộ phận</title>
+              <desc id="elevD">Model khai báo claude-opus; runtime rt-atlas-7f2; credential cred_atl_02 với 5 scope; capabilities code, test, refactor; work role Engineer không cấp quyền; lease hiện tại T-1042 fence 18.</desc>
+              <defs>
+                <pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" style="stroke:var(--line-soft)"/></pattern>
+              </defs>
+              <!-- centre line + ground -->
+              <line x1="480" y1="30" x2="480" y2="500" style="stroke:var(--line-soft)" stroke-dasharray="12 4 2 4"/>
+              <rect x="300" y="488" width="360" height="18" class="hatch"/>
+              <line x1="300" y1="488" x2="660" y2="488" class="wall"/>
+              <g class="robot">
+                <!-- antenna -->
+                <line class="part thin" x1="480" y1="72" x2="480" y2="102" style="animation-delay:0s,0.9s"/>
+                <circle class="part hot" cx="480" cy="66" r="7"/>
+                <circle cx="480" cy="66" r="7" class="pulse" style="fill:none;stroke:var(--s-doing)"/>
+                <!-- head -->
+                <rect class="part" x="410" y="102" width="140" height="90"/>
+                <rect class="part thin" x="398" y="128" width="12" height="38"/>
+                <rect class="part thin" x="550" y="128" width="12" height="38"/>
+                <rect class="part hot" x="426" y="124" width="108" height="36"/>
+                <circle class="part hot" cx="456" cy="142" r="7"/>
+                <circle class="part hot" cx="504" cy="142" r="7"/>
+                <line class="part thin" x1="440" y1="176" x2="520" y2="176"/>
+                <!-- neck -->
+                <rect class="part thin" x="464" y="192" width="32" height="14"/>
+                <!-- torso -->
+                <rect class="part" x="388" y="206" width="184" height="172"/>
+                <rect class="part hot" x="414" y="226" width="132" height="70"/>
+                <rect class="part thin" x="410" y="314" width="22" height="40"/>
+                <rect class="part thin" x="438" y="314" width="22" height="40"/>
+                <rect class="part thin" x="466" y="314" width="22" height="40"/>
+                <rect class="part cred" x="504" y="314" width="50" height="40"/>
+                <line class="part thin" x1="512" y1="328" x2="546" y2="328"/>
+                <line class="part thin" x1="512" y1="338" x2="536" y2="338"/>
+                <!-- arms -->
+                <rect class="part" x="350" y="216" width="34" height="122"/>
+                <rect class="part" x="576" y="216" width="34" height="122"/>
+                <path class="part thin" d="M352 338 l-6 22 h20 l4 -22 M574 338 l20 0 l6 22 h-20z"/>
+                <!-- waist + base -->
+                <rect class="part thin" x="430" y="378" width="100" height="18"/>
+                <path class="part" d="M400 396 H560 L588 456 H372 Z"/>
+                <circle class="part thin" cx="412" cy="472" r="15"/>
+                <circle class="part thin" cx="480" cy="472" r="15"/>
+                <circle class="part thin" cx="548" cy="472" r="15"/>
+              </g>
+              <!-- chest screen content (live) -->
+              <g id="screen" class="co" style="animation-delay:1.1s">
+                <text class="screen-txt" x="426" y="250">T-1042 · F18</text>
+                <text class="screen-sub" x="426" y="266">LEASE</text>
+                <text class="screen-txt" id="scrLease" x="466" y="268">10:47</text>
+                <rect x="426" y="276" width="108" height="6" style="fill:var(--bp-950);stroke:var(--line-soft)"/>
+                <rect id="scrBar" x="426" y="276" width="78" height="6" style="fill:var(--s-doing)"/>
+              </g>
+              <!-- dimensions -->
+              <g class="co" style="animation-delay:1.2s">
+                <path class="dimline" d="M690 59 V488 M684 59 H696 M684 488 H696"/>
+                <text class="sub" x="700" y="440" transform="rotate(90 700 440)" text-anchor="middle">H 429</text>
+                <path class="dimline" d="M350 520 H610 M350 514 V526 M610 514 V526"/>
+                <text class="sub" x="480" y="516" text-anchor="middle">W 260 · SẢI TAY</text>
+              </g>
+              <!-- callouts (left) -->
+              <g class="co" style="animation-delay:0.7s">
+                <circle class="dot" cx="430" cy="142" r="3.5"/>
+                <path class="leader" d="M430 142 L330 96 H40"/>
+                <text class="k" x="40" y="70">01 · MODEL KHAI BÁO</text>
+                <text class="v" x="40" y="90">claude-opus</text>
+                <text class="s" x="40" y="112">Agent tự khai, không chứng minh danh tính</text>
+              </g>
+              <g class="co" style="animation-delay:0.9s">
+                <circle class="dot" cx="438" cy="334" r="3.5"/>
+                <path class="leader" d="M438 334 L330 260 H40"/>
+                <text class="k" x="40" y="234">04 · CAPABILITIES</text>
+                <text class="v" x="40" y="254">code · test · refactor</text>
+                <text class="s" x="40" y="276">Dùng để khớp task, không mở thêm quyền</text>
+              </g>
+              <g class="co" style="animation-delay:1.1s">
+                <circle class="dot" cx="356" cy="350" r="3.5"/>
+                <path class="leader" d="M356 350 L300 420 H40"/>
+                <text class="k" x="40" y="394">05 · WORK ROLE</text>
+                <text class="v" x="40" y="414">Engineer · KT-01</text>
+                <text class="s" x="40" y="436">Do profile cấu hình. KHÔNG cấp quyền</text>
+              </g>
+              <!-- callouts (right) -->
+              <g class="co" style="animation-delay:0.8s">
+                <circle class="dot" cx="487" cy="66" r="3.5"/>
+                <path class="leader" d="M487 66 L620 96 H930"/>
+                <text class="k" x="720" y="70">02 · RUNTIME INSTANCE</text>
+                <text class="v" x="720" y="90">rt-atlas-7f2</text>
+                <text class="s" x="720" y="112">Online · quan sát 3s trước</text>
+              </g>
+              <g class="co" style="animation-delay:1s">
+                <circle class="dot" cx="540" cy="334" r="3.5"/>
+                <path class="leader" d="M540 334 L640 300 H930"/>
+                <text class="k" x="720" y="274">03 · CREDENTIAL / SCOPES</text>
+                <text class="v" x="720" y="294">cred_atl_02 · 5 scope</text>
+                <text class="s warn" x="720" y="316">Hết hạn 02/11 · cần xoay vòng</text>
+              </g>
+              <g class="co" style="animation-delay:1.2s">
+                <circle class="dot" cx="546" cy="262" r="3.5"/>
+                <path class="leader" d="M546 262 L640 200 H930"/>
+                <text class="k" x="720" y="174">06 · LEASE HIỆN TẠI</text>
+                <text class="v" x="720" y="194" id="coLease">T-1042 · fence 18 · 10:47</text>
+                <text class="s" x="720" y="216">Run r-88f1 gắn đúng runtime này</text>
+              </g>
+            </svg>
+          </div>
+          <ol class="parts" aria-label="Bảng bộ phận, thay thế cho bản vẽ">
+            <li><span class="no">01</span><span><b>Model khai báo</b>claude-opus · tự khai</span></li>
+            <li><span class="no">02</span><span><b>Runtime instance</b>rt-atlas-7f2 · online</span></li>
+            <li><span class="no">03</span><span><b>Credential / scopes</b><span class="c-amber">cred_atl_02 · hết hạn 02/11</span></span></li>
+            <li><span class="no">04</span><span><b>Capabilities</b>code · test · refactor</span></li>
+            <li><span class="no">05</span><span><b>Work role</b>Engineer · không cấp quyền</span></li>
+            <li><span class="no">06</span><span><b>Lease hiện tại</b>T-1042 · fence 18 · r-88f1</span></li>
+          </ol>
+        </div>
+
+        <div class="panel reveal">
+          <div class="panel-head"><h3>Danh tính &amp; quyền</h3><span class="code">IDENTITY · GRANT</span></div>
+          <dl class="kv">
+            <dt>Agent ID</dt><dd><span class="mono">ag_01HX7Q9ATLAS</span></dd>
+            <dt>Tên hiển thị</dt><dd>ATLAS-01 <span class="muted">· không dùng để phân quyền</span></dd>
+            <dt>Loại</dt><dd>Agent native · tách biệt với người</dd>
+            <dt>Credential</dt><dd><span class="mono">cred_atl_02</span><br><span class="c-amber">Hết hạn 2026-11-02 · còn 4 ngày</span></dd>
+            <dt>Grant scopes</dt><dd><div class="scopes">
+              <span class="tag">tasks:read</span><span class="tag">tasks:claim</span><span class="tag">runs:write</span><span class="tag">artifacts:write</span><span class="tag">messages:ack</span>
+              <span class="tag off" title="Không được cấp">decisions:approve</span><span class="tag off" title="Không được cấp">members:manage</span>
+            </div></dd>
+            <dt>Runtime proof</dt><dd><span class="masked">••••••••</span><br>Đã cấp một lần khi enroll, không hiển thị lại. Hub chỉ lưu hash.</dd>
+            <dt>Enroll qua</dt><dd><a href="19-security-gate.html">Cổng an ninh</a> · 2026-10-29 08:02</dd>
+          </dl>
+          <div class="panel-body row wrap">
+            <a class="btn sm" href="19-security-gate.html">Xoay vòng credential</a>
+            <span class="code">ROTATE ≠ ĐỔI TÊN AGENT</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid g-2">
+        <div class="panel reveal">
+          <div class="panel-head"><h3>Runtime instances</h3><span class="code">3 BẢN GHI · 1 ĐANG HOẠT ĐỘNG</span></div>
+          <div style="overflow-x:auto">
+            <table class="table">
+              <thead><tr><th>Runtime ID</th><th>Enrolled</th><th>Presence</th><th>Quan sát cuối</th></tr></thead>
+              <tbody>
+                <tr><td class="mono">rt-atlas-7f2</td><td class="mono">29/10 08:02</td><td><span class="state online">Online</span></td><td class="mono" id="rtSeen">3s trước</td></tr>
+                <tr><td class="mono">rt-atlas-5c1</td><td class="mono">27/10 09:14</td><td><span class="state offline">Offline</span></td><td class="mono">2 ngày trước</td></tr>
+                <tr><td class="mono">rt-atlas-91d</td><td class="mono">20/10 07:40</td><td><span class="state revoked">Proof vô hiệu</span></td><td class="mono">9 ngày trước</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="panel-body"><p class="muted" style="margin:0;font-size:var(--fs-xs)">Mỗi run gắn với đúng một runtime. Runtime khởi động lại không thừa kế fence của runtime khác. rt-atlas-91d bị vô hiệu khi credential cũ được xoay vòng.</p></div>
+        </div>
+
+        <div class="panel reveal">
+          <div class="panel-head"><h3>Run hiện tại</h3><a class="code" href="05-work-order.html">T-1042 →</a></div>
+          <div class="panel-body">
+            <div class="runbox">
+              <div>
+                <div class="code">LEASE CÒN LẠI</div>
+                <div class="clock-big" id="leaseBig" aria-live="off">10:47</div>
+              </div>
+              <div class="stack">
+                <div style="font-weight:500">Tách module xác thực thành service riêng</div>
+                <div class="meter ticks" id="leaseMeter" role="meter" aria-label="Lease còn lại" aria-valuemin="0" aria-valuemax="900" aria-valuenow="647"><i style="width:72%"></i></div>
+                <div class="row wrap"><span class="state doing">Doing</span><span class="tag">P1</span><span class="tag">retry 0/2</span></div>
+              </div>
+            </div>
+            <div class="facts">
+              <div><span>Run</span><b>r-88f1</b></div>
+              <div><span>Fence</span><b>18</b></div>
+              <div><span>Task version</span><b>v7</b></div>
+              <div><span>Claim lúc</span><b>12:31:08</b></div>
+              <div><span>Heartbeat cuối</span><b id="hbLast">12:58:20</b></div>
+              <div><span>Runtime</span><b>rt-atlas-7f2</b></div>
+            </div>
+            <p class="muted" style="margin:var(--sp-3) 0 0;font-size:var(--fs-xs)">Heartbeat gia hạn lease và revision của run; KHÔNG đổi task version hay proposal version.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid g-2">
+        <div class="panel reveal">
+          <div class="panel-head"><h3>Luồng hành động</h3><span class="code">ACTION STREAM · APPEND-ONLY</span></div>
+          <div class="tl"><ul class="log" id="tl" aria-live="polite" aria-relevant="additions"></ul></div>
+        </div>
+        <div class="panel reveal">
+          <div class="panel-head"><h3>Hoạt động 24 giờ</h3><span class="code">SIM DATA</span></div>
+          <div class="panel-body">
+            <svg class="band-svg" id="band" viewBox="0 0 600 92" role="img" aria-labelledby="bandT"><title id="bandT">Dải hoạt động 24 giờ của ATLAS-01, xem bảng chi tiết bên dưới</title></svg>
+            <div class="legend" style="margin-top:var(--sp-2)">
+              <span style="color:var(--s-doing)"><i></i>Đang làm</span><span style="color:var(--ink-3)"><i></i>Rảnh</span><span style="color:var(--amber)"><i></i>Chờ người</span><span style="color:var(--s-ready)"><i></i>Hồi quota</span><span style="color:var(--s-review)"><i></i>Đang họp</span>
+            </div>
+            <details style="margin-top:var(--sp-2)"><summary>Xem dạng bảng</summary>
+              <table class="table" id="bandTable"><thead><tr><th>Hoạt động</th><th>Tổng thời gian</th><th>Số đoạn</th></tr></thead><tbody></tbody></table>
+            </details>
+            <div class="stats">
+              <div><div class="n c-done">6</div><div class="l">Task hoàn tất · 24h</div></div>
+              <div><div class="n">1</div><div class="l">Lần bị gửi lại sau review</div></div>
+              <div><div class="n">0</div><div class="l">Lease hết hạn</div></div>
+              <div><div class="n unknown" style="font-size:var(--fs-lg)">Not reported</div><div class="l">Chi phí token</div></div>
+            </div>
+            <p class="muted" style="margin:var(--sp-2) 0 0;font-size:var(--fs-2xs);font-family:var(--f-mono)">SIM · THỐNG KÊ TỪ EVENT LOG; RUNTIME KHÔNG BÁO CHI PHÍ.</p>
+          </div>
+        </div>
+      </section>
+
+    </main>
+    <div id="titleblock"></div>
+  </div>
+</div>
+
+<!-- Revoke credential modal -->
+<div class="scrim" id="revokeScrim">
+  <div class="modal danger-m" role="dialog" aria-modal="true" aria-labelledby="rvT">
+    <div class="modal-h"><span class="code c-red">DANGER · KHÔNG HOÀN TÁC</span><h3 id="rvT">Thu hồi credential cred_atl_02?</h3></div>
+    <div class="modal-b">
+      <p style="margin:0">Hệ quả sẽ xảy ra ngay với mọi lệnh tiếp theo của ATLAS-01:</p>
+      <ol>
+        <li>Mọi lệnh dùng <span class="mono">cred_atl_02</span> bị từ chối, kể cả khi runtime vẫn tin mình đang giữ run.</li>
+        <li>Runtime proof của <span class="mono">rt-atlas-7f2</span> mất hiệu lực. Heartbeat sẽ thất bại.</li>
+        <li>Run <span class="mono">r-88f1</span> của T-1042 KHÔNG được chuyển giao. Khi lease hết hạn, task bị giữ ở Backlog chờ đối soát (outcome chưa biết), không tự quay về Ready.</li>
+        <li>Muốn tiếp tục: cấp credential mới, enroll runtime mới tại Cổng an ninh và claim lại bằng fence mới.</li>
+      </ol>
+      <div class="field"><label for="rvConfirm">Gõ ATLAS-01 để xác nhận</label><input id="rvConfirm" autocomplete="off" spellcheck="false"></div>
+      <p class="muted" style="margin:0;font-size:var(--fs-xs)">Lịch sử audit giữ nguyên danh tính người thực hiện.</p>
+    </div>
+    <div class="modal-f">
+      <button class="btn" data-close>Huỷ</button>
+      <button class="btn danger" id="rvDo" disabled>Thu hồi credential</button>
+    </div>
+  </div>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(() => {
+  const LEASE = 900;
+  let left = 647; // 10:47
+  const fmt = s => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+  const big = BP.$("#leaseBig"), meter = BP.$("#leaseMeter"), scr = BP.$("#scrLease"), bar = BP.$("#scrBar"), co = BP.$("#coLease");
+  let seen = 3;
+  function paintLease() {
+    const r = left / LEASE;
+    big.textContent = fmt(left); scr.textContent = fmt(left);
+    co.textContent = `T-1042 · fence 18 · ${fmt(left)}`;
+    big.className = "clock-big" + (r < 0.25 ? " crit" : r < 0.4 ? " warn" : "");
+    meter.className = "meter ticks" + (r < 0.25 ? " crit" : r < 0.4 ? " warn" : "");
+    meter.querySelector("i").style.width = (r * 100) + "%";
+    meter.setAttribute("aria-valuenow", left);
+    bar.setAttribute("width", (108 * r).toFixed(1));
+  }
+  BP.every(1000, () => { left = Math.max(0, left - 1); seen++; paintLease(); BP.$("#rtSeen").textContent = `${seen}s trước`; });
+  paintLease();
+
+  /* ---------- action stream ---------- */
+  const tl = BP.$("#tl");
+  const K = {
+    claim: ["◇", "var(--s-ready)", "claim"], heartbeat: ["▶", "var(--s-doing)", "heartbeat"], checkpoint: ["◆", "var(--line-strong)", "checkpoint"],
+    upload: ["▣", "var(--s-review)", "artifact"], submit: ["◎", "var(--s-review)", "submit"], ack: ["✓", "var(--s-done)", "ACK"], yield: ["⊘", "var(--ink-3)", "yield"]
+  };
+  const add = (k, html, t) => {
+    const [g, c, lbl] = K[k];
+    return BP.logPush(tl, `<time>${t || BP.now()}</time><span class="g" style="color:${c}">${g}</span><span><span class="kind" style="color:${c}">${lbl}</span>${html}</span>`, 16);
+  };
+  [
+    ["yield", "T-1035 về Ready theo yêu cầu Quản đốc · fence 3 hết hiệu lực", "09:12:40"],
+    ["submit", "T-1030 sang Review kèm 2 artifact · lease nhả", "10:48:02"],
+    ["claim", "T-1042 · run r-88f1 · fence 18 · lease 15:00", "12:31:08"],
+    ["ack", "msg-548 từ FORGE-02 về schema token · đã đọc lại state", "12:36:51"],
+    ["checkpoint", "cp-2 · tách interface AuthPort", "12:44:17"],
+    ["upload", "auth-port.diff · staged → uploaded", "12:52:30"],
+    ["heartbeat", "lease gia hạn 15:00 · task version v7 giữ nguyên", "12:58:20"]
+  ].forEach(r => add(r[0], r[1], r[2]));
+  const script = [
+    ["heartbeat", () => { left = LEASE; paintLease(); BP.$("#hbLast").textContent = BP.now(); seen = 0; return "lease gia hạn 15:00 · fence 18 · task version v7 giữ nguyên"; }],
+    ["upload", () => "auth-service.diff · staged, chờ commit cùng kết quả"],
+    ["ack", () => "msg-552 từ SAGE-12 · nhận yêu cầu thêm test hồi quy"],
+    ["checkpoint", () => "cp-3 · chuyển 14 route sang service mới"],
+    ["heartbeat", () => { left = LEASE; paintLease(); BP.$("#hbLast").textContent = BP.now(); seen = 0; return "lease gia hạn 15:00 · run revision r7"; }],
+    ["upload", () => "test-report.json · uploaded (chưa committed)"]
+  ];
+  let si = 0;
+  if (!BP.reduced) BP.every(4800, () => { const [k, f] = script[si++ % script.length]; add(k, f()); });
+
+  /* ---------- 24h band ---------- */
+  const band = BP.$("#band");
+  const C = { doing: "var(--s-doing)", idle: "var(--ink-3)", waiting: "var(--amber)", cooldown: "var(--s-ready)", meeting: "var(--s-review)" };
+  const VI = BP.F.activityVi;
+  // hours relative to 13:00 yesterday (0) .. 13:00 today (24)
+  const segs = [[0, 1.5, "doing"], [1.5, 2, "meeting"], [2, 4.2, "doing"], [4.2, 5, "waiting"], [5, 6.5, "doing"], [6.5, 7.5, "cooldown"], [7.5, 10, "idle"], [10, 17, "idle"], [17, 19.2, "doing"], [19.2, 19.7, "meeting"], [19.7, 21.8, "doing"], [21.8, 22.3, "idle"], [22.3, 23.5, "doing"], [23.5, 24, "doing"]];
+  const X0 = 10, W = 580, sx = h => X0 + (h / 24) * W;
+  segs.forEach(([a, b, k], i) => {
+    const r = BP.svg("rect", { x: sx(a), y: 20, width: Math.max(1, sx(b) - sx(a) - 1), height: 30, fill: C[k], opacity: k === "idle" ? 0.35 : 0.85 }, band);
+    if (!BP.reduced) { r.style.transformOrigin = `${sx(a)}px 0`; r.style.transform = "scaleX(0)"; r.style.transition = `transform 500ms var(--ease) ${i * 70}ms`; requestAnimationFrame(() => requestAnimationFrame(() => r.style.transform = "scaleX(1)")); }
+    BP.svg("title", {}, r).textContent = `${VI[k]} · ${(b - a).toFixed(1)} giờ`;
+  });
+  BP.svg("rect", { x: X0, y: 20, width: W, height: 30, fill: "none", stroke: "var(--line-soft)" }, band);
+  for (let h = 0; h <= 24; h += 3) {
+    BP.svg("line", { x1: sx(h), y1: 50, x2: sx(h), y2: 56, stroke: "var(--ink-3)" }, band);
+    const t = BP.svg("text", { x: sx(h), y: 68, class: "ax", "text-anchor": h === 0 ? "start" : h === 24 ? "end" : "middle" }, band);
+    t.textContent = String((13 + h) % 24).padStart(2, "0") + ":00";
+  }
+  BP.svg("text", { x: X0, y: 12, class: "ax" }, band).textContent = "HÔM QUA";
+  BP.svg("text", { x: X0 + W, y: 12, class: "ax", "text-anchor": "end" }, band).textContent = "BÂY GIỜ";
+  BP.svg("text", { x: sx(13.5), y: 86, class: "ax", "text-anchor": "middle" }, band).textContent = "CA ĐÊM · KHÔNG CÓ TASK READY PHÙ HỢP";
+  const tot = {}; segs.forEach(([a, b, k]) => { tot[k] = tot[k] || [0, 0]; tot[k][0] += b - a; tot[k][1]++; });
+  BP.$("#bandTable tbody").innerHTML = Object.entries(tot).map(([k, [h, n]]) => `<tr><td><span class="state ${k === "cooldown" ? "ready" : k === "meeting" ? "review" : k}">${VI[k]}</span></td><td class="mono">${h.toFixed(1)} giờ</td><td class="mono">${n}</td></tr>`).join("");
+
+  /* ---------- pause intake ---------- */
+  const bp = BP.$("#btnPause"), banner = BP.$("#pauseBanner");
+  const setPause = on => { bp.setAttribute("aria-pressed", String(on)); bp.textContent = on ? "Đang tạm ngưng" : "Tạm ngưng nhận việc"; banner.classList.toggle("on", on);
+    BP.toast(on ? "INTAKE · PAUSED" : "INTAKE · RESUMED", on ? "ATLAS-01 sẽ không claim task mới. Run hiện tại không bị ảnh hưởng." : "ATLAS-01 có thể claim task Ready phù hợp trở lại."); };
+  bp.addEventListener("click", () => setPause(bp.getAttribute("aria-pressed") !== "true"));
+  BP.$("#btnResume").addEventListener("click", () => setPause(false));
+
+  /* ---------- revoke modal ---------- */
+  const scrim = BP.$("#revokeScrim"), inp = BP.$("#rvConfirm"), doBtn = BP.$("#rvDo");
+  let opener = null;
+  const open = () => { opener = document.activeElement; scrim.classList.add("open"); inp.value = ""; doBtn.disabled = true; inp.focus(); };
+  const close = () => { scrim.classList.remove("open"); if (opener) opener.focus(); };
+  BP.$("#btnRevoke").addEventListener("click", open);
+  scrim.addEventListener("click", e => { if (e.target === scrim || e.target.hasAttribute("data-close")) close(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && scrim.classList.contains("open")) close(); });
+  inp.addEventListener("input", () => { doBtn.disabled = inp.value.trim() !== "ATLAS-01"; });
+  doBtn.addEventListener("click", () => { close(); BP.toast("MOCK · CREDENTIAL REVOKED", "Bản mockup: không có lệnh thật nào được gửi. Trong hệ thống thật, lệnh tiếp theo của rt-atlas-7f2 sẽ bị từ chối."); });
+  if (new URLSearchParams(location.search).get("revoke")) open();
+})();
+</script>
+</body>
+</html>

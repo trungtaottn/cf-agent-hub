@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Khởi công · CF Agent Factory</title>
+<link rel="stylesheet" href="assets/blueprint.css">
+<style>
+  .wz { display: grid; gap: var(--sp-4); grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr); align-items: start; }
+  .wz-draw { position: sticky; top: calc(var(--top-h) + var(--sp-4)); }
+  @media (max-width: 1180px) { .wz { grid-template-columns: minmax(0, 1fr); } .wz-draw { position: static; } }
+
+  .steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); border-bottom: 1px solid var(--line-soft); counter-reset: s; }
+  .steps li { min-width: 0; border-left: 1px solid var(--line-soft); }
+  .steps li:first-child { border-left: 0; }
+  .steps button { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; min-height: 60px; padding: var(--sp-2) var(--sp-3); border: 0; border-top: 3px solid transparent; background: transparent; text-align: left; cursor: pointer; color: var(--ink-3); }
+  .steps button:disabled { cursor: not-allowed; }
+  .steps .n { font-family: var(--f-mono); font-size: var(--fs-2xs); letter-spacing: 0.1em; }
+  .steps .l { font-family: var(--f-display); font-size: var(--fs-sm); font-weight: 600; line-height: 1.2; }
+  .steps .done button { color: var(--ink-2); border-top-color: var(--s-done); }
+  .steps .done .n::after { content: " ✓"; color: var(--s-done); }
+  .steps .done button:hover { background: var(--bp-700); }
+  .steps .current button { color: var(--ink); border-top-color: var(--s-ready); background: var(--bp-700); }
+  .steps .upcoming button { border-top-color: var(--line-soft); }
+  @media (max-width: 560px) { .steps { grid-template-columns: repeat(3, minmax(0, 1fr)); } .steps li:nth-child(4) { border-left: 0; } .steps li:nth-child(n+4) { border-top: 1px solid var(--line-soft); } }
+
+  .sbody { padding: var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-4); min-height: 420px; }
+  .shead .code { display: block; margin-bottom: 2px; }
+  .shead h3:focus { outline: none; }
+  .shead h3 { margin: 0; font-family: var(--f-display); font-size: var(--fs-xl); font-weight: 600; }
+  .shead p { margin: 4px 0 0; color: var(--ink-2); font-size: var(--fs-sm); max-width: 62ch; }
+  .f { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .f > label, .f > .lab { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); letter-spacing: 0.1em; text-transform: uppercase; }
+  .f input[type=text], .f select { min-height: 40px; padding: 0 var(--sp-3); background: var(--bp-950); color: var(--ink); border: 1px solid var(--line-soft); font: inherit; font-size: var(--fs-sm); border-radius: 0; width: 100%; }
+  .f input[type=text]:hover, .f select:hover { border-color: var(--line); }
+  .f input:focus-visible, .f select:focus-visible { outline: 2px solid var(--amber); outline-offset: 1px; }
+  .f [aria-invalid="true"] { border-color: var(--red); }
+  .f .hint { font-size: var(--fs-xs); color: var(--ink-3); }
+  .f .err { font-family: var(--f-mono); font-size: var(--fs-xs); color: var(--red); }
+  .f .err::before { content: "✕ "; }
+  .f .err:empty { display: none; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
+  @media (max-width: 640px) { .two { grid-template-columns: minmax(0, 1fr); } }
+
+  .themes { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--sp-2); }
+  .themes button { display: flex; flex-direction: column; gap: 6px; padding: 6px; min-height: 44px; border: 1px solid var(--line-soft); background: transparent; cursor: pointer; color: var(--ink-2); font-family: var(--f-mono); font-size: var(--fs-2xs); letter-spacing: 0.06em; text-align: left; }
+  .themes button[aria-pressed="true"] { border-color: var(--s-ready); color: var(--ink); box-shadow: inset 0 0 0 1px var(--s-ready); }
+  .themes button:hover { border-color: var(--line); }
+  .sw { display: block; height: 38px; position: relative; background-color: var(--sw0, var(--bp-850)); border: 1px solid var(--line-soft); }
+  .sw::before { content: ""; position: absolute; inset: 0; opacity: 0.25; background-image: linear-gradient(var(--sw1, var(--line)) 1px, transparent 1px), linear-gradient(90deg, var(--sw1, var(--line)) 1px, transparent 1px); background-size: 10px 10px; }
+  .sw i { position: absolute; left: 6px; right: 40%; top: 9px; height: 0; border-top: 2px solid var(--sw1, var(--ink)); }
+  .sw b { position: absolute; left: 6px; bottom: 6px; width: 22px; height: 10px; background: var(--sw2, var(--s-ready)); }
+  @media (max-width: 560px) { .themes { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+  .opts { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
+  .opt { position: relative; display: flex; flex-direction: column; gap: 4px; padding: var(--sp-3); border: 1px solid var(--line-soft); background: var(--bp-850); cursor: pointer; min-height: 44px; }
+  .opt:hover { border-color: var(--line); }
+  .opt input { position: absolute; opacity: 0; }
+  .opt:has(input:checked) { border-color: var(--s-ready); box-shadow: inset 0 0 0 1px var(--s-ready); }
+  .opt:has(input:focus-visible) { outline: 2px solid var(--amber); outline-offset: 2px; }
+  .opt b { font-family: var(--f-display); font-size: var(--fs-md); }
+  .opt span { font-size: var(--fs-xs); color: var(--ink-2); }
+  @media (max-width: 640px) { .opts { grid-template-columns: minmax(0, 1fr); } }
+  .chips { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+  .chip { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 0 0 var(--sp-3); border: 1px solid var(--line); font-size: var(--fs-sm); }
+  .chip.preset { border-style: dashed; color: var(--ink-2); }
+  .chip button { min-width: 32px; min-height: 32px; border: 0; border-left: 1px solid var(--line-soft); background: transparent; cursor: pointer; color: var(--ink-3); }
+  .chip button:hover { color: var(--red); background: var(--t-failed); }
+  .addrow { display: flex; gap: var(--sp-2); }
+  .addrow input { flex: 1; }
+
+  .agent-card { border: 1px solid var(--line-soft); background: var(--bp-850); }
+  .agent-card > header { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-2) var(--sp-3); border-bottom: 1px solid var(--line-soft); }
+  .agent-card > header .bot { width: 30px; height: 30px; font-size: 9px; }
+  .agent-card .in { padding: var(--sp-3); display: flex; flex-direction: column; gap: var(--sp-3); }
+  .scopes { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+  .scopes label { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 var(--sp-3); border: 1px solid var(--line-soft); font-family: var(--f-mono); font-size: var(--fs-xs); cursor: pointer; color: var(--ink-2); }
+  .scopes label:has(input:checked) { border-color: var(--s-doing); color: var(--ink); }
+  .scopes input { accent-color: var(--s-doing); width: 16px; height: 16px; }
+  .tog { display: flex; align-items: flex-start; gap: var(--sp-3); padding: var(--sp-3); border: 1px solid var(--line-soft); background: var(--bp-850); cursor: pointer; }
+  .tog input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--amber); }
+  .tog b { display: block; font-size: var(--fs-sm); }
+  .tog span { font-size: var(--fs-xs); color: var(--ink-2); }
+
+  .trial { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line-soft); }
+  .trial li { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: var(--sp-3); align-items: center; padding: var(--sp-3); border-top: 1px solid var(--grid-major); font-size: var(--fs-sm); }
+  .trial li:first-child { border-top: 0; }
+  .trial .i { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); }
+  .trial small { display: block; font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); }
+  .trial li.on { background: var(--bp-700); }
+  .trial li.pending .state { opacity: 0.35; }
+  .check { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line-soft); }
+  .check li { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: var(--sp-3); align-items: center; padding: var(--sp-3); border-top: 1px solid var(--grid-major); font-size: var(--fs-sm); }
+  .check li:first-child { border-top: 0; }
+  .check .g { font-family: var(--f-mono); color: var(--s-done); }
+  .check a { font-family: var(--f-mono); font-size: var(--fs-2xs); }
+  .big-cta { display: flex; gap: var(--sp-3); flex-wrap: wrap; }
+  .big-cta .btn { min-height: 48px; padding: 0 var(--sp-6); font-size: var(--fs-md); }
+
+  .snav { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; padding: var(--sp-3) var(--sp-4); border-top: 1px solid var(--line-soft); background: var(--bp-850); }
+  .snav .code { white-space: nowrap; }
+  .formerr { margin: 0; }
+
+  .bld-wrap { overflow-x: auto; }
+  #bld { max-height: 640px; min-width: 500px; }
+  #bld .sub { font-size: 10px; } #bld .lbl { font-size: 13px; }
+  #bld .tok { font-family: var(--f-mono); font-size: 9px; font-weight: 600; text-anchor: middle; dominant-baseline: central; }
+  #bld .ttl { font-family: var(--f-display); font-size: 18px; font-weight: 600; fill: var(--ink); letter-spacing: 0.04em; }
+  #bld .stamp-t { font-family: var(--f-display); font-size: 20px; font-weight: 700; letter-spacing: 0.16em; text-anchor: middle; dominant-baseline: central; }
+  #bld .layer { display: none; } #bld .layer.on { display: inline; }
+  #bld .ink { stroke-dasharray: 1; stroke-dashoffset: 1; }
+  #bld .fade { opacity: 0; }
+  #bld .layer.on .ink { animation: ink 1.2s var(--ease) forwards; }
+  #bld .layer.on .fade { animation: fadein 0.5s var(--ease) forwards; }
+  #bld .layer.still .ink { animation: none; stroke-dashoffset: 0; }
+  #bld .layer.still .fade { animation: none; opacity: 1; }
+  @keyframes ink { to { stroke-dashoffset: 0; } }
+  @keyframes fadein { to { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { #bld .ink { stroke-dashoffset: 0; } #bld .fade { opacity: 1; } }
+  .draw-foot { display: flex; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; padding: var(--sp-3) var(--sp-4); border-top: 1px solid var(--line-soft); }
+</style>
+</head>
+<body data-sheet="24" data-title="Khởi công">
+<div class="app paper">
+  <div id="rail"></div>
+  <div class="main">
+    <header id="topbar"></header>
+    <main class="content">
+
+      <section class="page-head reveal">
+        <div>
+          <div class="code">GROUND BREAKING · WORKSPACE MỚI · 6 BƯỚC</div>
+          <h2>Khởi công nhà máy mới</h2>
+          <p class="lede">Dựng một workspace từ con số không như xây một nhà máy: đổ móng, dựng phòng ban, tuyển agent, lắp cổng phê duyệt và trạm nghiệm thu, rồi chạy thử một phiếu việc từ Backlog tới Done trước khi khánh thành. Workspace mới bắt đầu trống, nội dung mẫu chỉ có khi bạn chủ động chọn.</p>
+        </div>
+        <div class="actions">
+          <button class="btn" type="button" id="btnSample">Điền dữ liệu mẫu</button>
+          <a class="btn" href="23-settings.html">Cấu hình nâng cao</a>
+        </div>
+      </section>
+
+      <section class="wz">
+        <div class="panel reveal" id="wizard">
+          <nav aria-label="Các bước khởi công"><ol class="steps" id="steps"></ol></nav>
+          <form id="form" novalidate>
+            <div class="sbody" id="sbody"></div>
+            <div class="snav">
+              <button class="btn" type="button" id="btnBack">Quay lại</button>
+              <span class="code" id="stepCount" aria-live="polite">BƯỚC 1/6</span>
+              <button class="btn primary" type="submit" id="btnNext">Tiếp tục</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="panel wz-draw reveal">
+          <div class="panel-head"><h3>Bản vẽ nhà máy</h3><span class="code" id="drawStage">GIAI ĐOẠN 1 · ĐỔ MÓNG</span></div>
+          <div class="bld-wrap"><svg id="bld" class="dwg" viewBox="0 0 640 540" role="img" aria-labelledby="bldT">
+            <title id="bldT">Bản vẽ mặt bằng nhà máy được vẽ dần theo từng bước khởi công: móng, tường phòng ban, bàn ghế máy tính, agent, cổng và băng chuyền.</title>
+            <defs>
+              <pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" style="stroke:var(--line-soft)"/></pattern>
+            </defs>
+            <g id="L0" class="layer"></g><g id="L1" class="layer"></g><g id="L2" class="layer"></g><g id="L3" class="layer"></g><g id="L4" class="layer"></g><g id="L5" class="layer"></g>
+          </svg></div>
+          <div class="draw-foot">
+            <span class="code" id="drawNote" aria-live="polite">MÓNG CHƯA ĐẶT TÊN</span>
+            <div class="legend"><span style="color:var(--line-strong)"><i></i>Kết cấu</span><span style="color:var(--amber)"><i></i>Cổng người duyệt</span><span style="color:var(--s-review)"><i></i>Nghiệm thu</span></div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+    <div id="titleblock"></div>
+  </div>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(() => {
+  const STEPS = [
+    { k: "Đặt móng", code: "STEP 01 · FOUNDATION", draw: "ĐỔ MÓNG" },
+    { k: "Dựng phòng ban", code: "STEP 02 · DEPARTMENTS", draw: "DỰNG TƯỜNG, KÊ BÀN" },
+    { k: "Tuyển agent", code: "STEP 03 · WORKFORCE", draw: "AGENT VÀO VỊ TRÍ" },
+    { k: "Lắp cổng", code: "STEP 04 · GATES", draw: "LẮP CỔNG" },
+    { k: "Chạy thử", code: "STEP 05 · DRY RUN", draw: "CHẠY BĂNG CHUYỀN" },
+    { k: "Khánh thành", code: "STEP 06 · OPENING", draw: "KHÁNH THÀNH" }
+  ];
+  const DEMO = ["Xưởng Kỹ thuật", "Phòng Nghiên cứu", "Studio Nội dung", "Trạm Kiểm định"];
+  const TZ = [["Asia/Ho_Chi_Minh", "Asia/Ho_Chi_Minh · UTC+07"], ["Asia/Singapore", "Asia/Singapore · UTC+08"], ["Asia/Tokyo", "Asia/Tokyo · UTC+09"], ["UTC", "UTC · UTC+00"], ["Europe/Berlin", "Europe/Berlin · UTC+01"], ["America/New_York", "America/New_York · UTC-05"]];
+  const THEMES = [["blueprint", "BLUEPRINT"], ["paper", "PAPER"], ["graphite", "GRAPHITE"], ["cad", "CAD"], ["sunset", "SUNSET"]].map(t => { const m = (BP.themes || []).find(x => x.id === t[0]); return m ? [t[0], t[1], m.vi, m.sw] : t; });
+  // Swatch colours come from the shared theme registry (BP.themes) as custom properties,
+  // so this page never hard-codes a colour. Without the registry it scopes real tokens.
+  const swatch = t => t[3]
+    ? `<span class="sw" aria-hidden="true" style="--sw0:${t[3][0]};--sw1:${t[3][1]};--sw2:${t[3][2]}"><i></i><b></b></span>`
+    : `<span class="sw" data-theme="${t[0]}" aria-hidden="true"><i></i><b></b></span>`;
+  const SCOPES = [["tasks:execute", "claim + nộp kết quả"], ["tasks:review", "nghiệm thu"], ["messages:send", "gửi tin"], ["artifacts:write", "tải artifact"]];
+  const HUMANS = [["hu-qd", "Quản đốc (Owner)"], ["hu-ha", "Hà (Reviewer)"]];
+
+  const st = {
+    step: 0, max: 0, errors: {},
+    ws: { name: "", id: "", idTouched: false, tz: "Asia/Ho_Chi_Minh" },
+    theme: document.documentElement.dataset.theme || "blueprint",
+    profile: "neutral", custom: [],
+    agents: [{ name: "", dept: "", scopes: ["tasks:execute", "artifacts:write"] }, { name: "", dept: "", scopes: ["tasks:review"] }],
+    gate: { external: true, destructive: true, expiry: "4h", approver: "hu-qd", executor: "", reviewer: "" },
+    trial: { stage: 0, running: false }
+  };
+  const depts = () => (st.profile === "demo" ? DEMO : []).concat(st.custom);
+  const slug = s => "ws-" + s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/gi, "d").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 28);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const codeOf = n => (n || "??").replace(/[^A-Z]/g, "").slice(0, 2) || "??";
+  const executors = () => st.agents.map((a, i) => ({ ...a, i })).filter(a => a.name && a.scopes.includes("tasks:execute"));
+  const reviewers = () => HUMANS.map(h => ({ id: h[0], label: h[1] })).concat(st.agents.map((a, i) => ({ id: "ag" + i, label: a.name + " (agent)", ok: a.name && a.scopes.includes("tasks:review") })).filter(r => r.ok));
+  const labelOf = id => { if (!id) return "chưa chọn"; if (id.startsWith("hu-")) return HUMANS.find(h => h[0] === id)[1].split(" (")[0]; return st.agents[+id.slice(2)].name; };
+
+  /* ---------- theme ---------- */
+  document.addEventListener("bp:theme", e => { st.theme = e.detail.theme; });
+  function applyTheme(name) {
+    st.theme = name;
+    if (typeof BP.setTheme === "function") BP.setTheme(name);
+    else if (name === "blueprint") document.documentElement.removeAttribute("data-theme");
+    else document.documentElement.setAttribute("data-theme", name);
+  }
+
+  /* ---------- validation ---------- */
+  function validate(step) {
+    const e = {};
+    if (step === 0) {
+      const n = st.ws.name.trim();
+      if (!n) e.name = "Nhập tên nhà máy.";
+      else if (n.length < 3 || n.length > 40) e.name = "Tên dài 3 đến 40 ký tự.";
+      if (!st.ws.id) e.id = "Nhập ID workspace.";
+      else if (!/^ws-[a-z0-9-]{3,28}$/.test(st.ws.id)) e.id = "ID dạng ws-ten-ngan: chữ thường không dấu, số, gạch nối, 3 đến 28 ký tự sau ws-.";
+      else if (st.ws.id === "ws-aurora") e.id = "ID ws-aurora đã tồn tại. ID là bất biến sau khi tạo, hãy chọn ID khác.";
+      if (!st.ws.tz) e.tz = "Chọn múi giờ.";
+    }
+    if (step === 1) {
+      if (!depts().length) e.dept = st.profile === "neutral" ? "Profile trung lập không có phòng ban nào. Thêm ít nhất một phòng ban để chạy thử, hoặc chọn delivery-demo." : "Cần ít nhất một phòng ban.";
+    }
+    if (step === 2) {
+      const names = st.agents.map(a => a.name.trim());
+      st.agents.forEach((a, i) => {
+        if (!a.name.trim()) e["an" + i] = "Đặt tên agent.";
+        else if (!/^[A-Z][A-Z0-9]{1,11}-\d{2}$/.test(a.name.trim())) e["an" + i] = "Dùng chữ IN HOA và số thứ tự 2 chữ số, ví dụ ATLAS-01.";
+        else if (names.indexOf(a.name.trim()) !== i) e["an" + i] = "Tên này đã dùng cho agent 1.";
+        if (!a.dept) e["ad" + i] = "Chọn phòng ban.";
+        if (!a.scopes.length) e["as" + i] = "Chọn ít nhất một scope.";
+      });
+      if (!e.an0 && !e.an1 && !st.agents.some(a => a.scopes.includes("tasks:execute"))) e.as0 = "Cần ít nhất một agent có tasks:execute để chạy thử.";
+    }
+    if (step === 3) {
+      if (!executors().length) e.exec = "Chưa có agent nào có tasks:execute. Quay lại bước Tuyển agent.";
+      else if (st.gate.executor === "") e.exec = "Chọn agent thực hiện phiếu chạy thử.";
+      if (!st.gate.reviewer) e.rev = "Chọn reviewer nghiệm thu.";
+      else if (st.gate.reviewer === "ag" + st.gate.executor) e.rev = "Reviewer phải khác agent thực hiện. Người nộp không được tự nghiệm thu.";
+      if (!st.gate.approver) e.appr = "Chọn người duyệt.";
+    }
+    if (step === 4 && st.trial.stage < 5) e.trial = st.trial.running ? "Đang chạy thử, chờ phiếu tới Done." : "Chạy thử chưa hoàn tất. Bấm Chạy thử và chờ phiếu tới Done.";
+    return e;
+  }
+
+  /* ---------- rendering ---------- */
+  const $ = s => BP.$(s);
+  const err = k => `<span class="err" id="e-${k}">${st.errors[k] || ""}</span>`;
+  const inv = k => st.errors[k] ? 'aria-invalid="true"' : "";
+  function renderSteps() {
+    $("#steps").innerHTML = STEPS.map((s, i) => {
+      const cls = i < st.step || (i <= st.max && i !== st.step) ? "done" : i === st.step ? "current" : "upcoming";
+      return `<li class="${cls}"><button type="button" data-go="${i}" ${cls === "upcoming" ? "disabled" : ""} ${cls === "current" ? 'aria-current="step"' : ""}><span class="n">${String(i + 1).padStart(2, "0")}</span><span class="l">${s.k}</span></button></li>`;
+    }).join("");
+  }
+  function head(i, p) { return `<div class="shead"><span class="code">${STEPS[i].code}</span><h3>${STEPS[i].k}</h3><p>${p}</p></div>`; }
+
+  const VIEWS = [
+    () => `${head(0, "Tên và ID định danh nhà máy. ID workspace là bất biến sau khi tạo; tên có thể đổi sau trong Cấu hình nhà máy.")}
+      <div class="f"><label for="wsName">Tên nhà máy</label><input type="text" id="wsName" value="${esc(st.ws.name)}" placeholder="VD: Nhà máy Bình Minh" autocomplete="off" ${inv("name")} aria-describedby="e-name">${err("name")}</div>
+      <div class="two">
+        <div class="f"><label for="wsId">ID workspace</label><input type="text" id="wsId" value="${esc(st.ws.id)}" placeholder="ws-binh-minh" autocomplete="off" spellcheck="false" ${inv("id")} aria-describedby="e-id h-id"><span class="hint" id="h-id">Tự sinh từ tên, có thể sửa trước khi tạo.</span>${err("id")}</div>
+        <div class="f"><label for="wsTz">Múi giờ</label><select id="wsTz" ${inv("tz")} aria-describedby="e-tz">${TZ.map(t => `<option value="${t[0]}" ${t[0] === st.ws.tz ? "selected" : ""}>${t[1]}</option>`).join("")}</select>${err("tz")}</div>
+      </div>
+      <div class="f"><span class="lab" id="thLab">Màu bản vẽ (theme toàn nhà máy)</span>
+        <div class="themes" role="group" aria-labelledby="thLab">${THEMES.map(t => `<button type="button" data-theme-pick="${t[0]}" aria-pressed="${st.theme === t[0]}" aria-label="Màu ${t[2] || t[1]}">${swatch(t)}${t[1]}</button>`).join("")}</div>
+        <span class="hint">Đổi ngay để xem trước. Màu trạng thái luôn đi kèm glyph và chữ, nên đọc được ở mọi theme.</span></div>`,
+
+    () => `${head(1, "Phòng ban là project và work role do profile trình bày. Nhãn phòng ban không cấp quyền gì; quyền nằm ở grant và scope.")}
+      <div class="opts" role="radiogroup" aria-label="Profile khởi đầu">
+        <label class="opt"><input type="radio" name="prof" value="neutral" ${st.profile === "neutral" ? "checked" : ""}><b>neutral · trống</b><span>Không có project, work role hay task mẫu. Bạn tự thêm từng phòng ban.</span></label>
+        <label class="opt"><input type="radio" name="prof" value="demo" ${st.profile === "demo" ? "checked" : ""}><b>delivery-demo</b><span>Nội dung ví dụ tuỳ chọn: 4 phòng ban mẫu. Không tạo sẵn task, người hay agent.</span></label>
+      </div>
+      <div class="f"><label for="newDept">Tự thêm phòng ban</label>
+        <div class="addrow"><input type="text" id="newDept" placeholder="VD: Phòng Pháp chế" autocomplete="off" ${inv("dept")} aria-describedby="e-dept"><button class="btn" type="button" id="btnAddDept">Thêm phòng ban</button></div>${err("dept")}</div>
+      <div class="f"><span class="lab">Danh sách phòng ban · ${depts().length}</span>
+        ${depts().length ? `<div class="chips">${(st.profile === "demo" ? DEMO : []).map(d => `<span class="chip preset">${d}<button type="button" disabled aria-label="Phòng ban mẫu, đổi profile để bỏ" title="Thuộc profile delivery-demo">·</button></span>`).join("")}${st.custom.map((d, i) => `<span class="chip">${esc(d)}<button type="button" data-rm="${i}" aria-label="Bỏ ${esc(d)}">✕</button></span>`).join("")}</div>`
+          : `<div class="empty">Chưa có phòng ban. Nhà máy trống là hợp lệ, nhưng cần ít nhất một phòng ban để chạy thử.</div>`}</div>`,
+
+    () => `${head(2, "Đăng ký hai agent với scope riêng. Đăng ký chỉ tạo bản ghi agent; runtime enroll sau ở Cổng an ninh và runtime_token chỉ hiện một lần.")}
+      ${st.agents.map((a, i) => `<div class="agent-card"><header><span class="bot" style="--c:${i ? "var(--s-review)" : "var(--s-doing)"}">${codeOf(a.name)}</span><b class="mono">AGENT ${i + 1}</b><span class="muted mono" style="font-size:var(--fs-2xs);margin-left:auto">MODEL: Not reported · RUNTIME: chưa enroll</span></header>
+        <div class="in"><div class="two">
+          <div class="f"><label for="an${i}">Tên agent</label><input type="text" id="an${i}" data-ag="${i}" data-k="name" value="${esc(a.name)}" placeholder="${i ? "SAGE-02" : "ATLAS-01"}" autocomplete="off" spellcheck="false" ${inv("an" + i)} aria-describedby="e-an${i}">${err("an" + i)}</div>
+          <div class="f"><label for="ad${i}">Phòng ban</label><select id="ad${i}" data-ag="${i}" data-k="dept" ${inv("ad" + i)} aria-describedby="e-ad${i}"><option value="">Chọn phòng ban</option>${depts().map(d => `<option ${d === a.dept ? "selected" : ""}>${esc(d)}</option>`).join("")}</select>${err("ad" + i)}</div>
+        </div>
+        <div class="f"><span class="lab" id="sl${i}">Scope</span><div class="scopes" role="group" aria-labelledby="sl${i}">${SCOPES.map(s => `<label><input type="checkbox" data-ag="${i}" data-scope="${s[0]}" ${a.scopes.includes(s[0]) ? "checked" : ""}>${s[0]} <span class="muted">· ${s[1]}</span></label>`).join("")}</div>${err("as" + i)}</div></div></div>`).join("")}`,
+
+    () => `${head(3, "Hành động rủi ro dừng ở cổng phê duyệt cho tới khi người có quyền quyết định. Kết quả nộp chỉ thành Done khi reviewer độc lập nghiệm thu.")}
+      <label class="tog"><input type="checkbox" id="gExt" ${st.gate.external ? "checked" : ""}><span><b>Hành động ra bên ngoài cần người duyệt</b><span>Gửi email, đăng bài, gọi connector ra ngoài. Duyệt không có nghĩa là đã thực thi.</span></span></label>
+      <label class="tog"><input type="checkbox" id="gDel" ${st.gate.destructive ? "checked" : ""}><span><b>Thao tác xoá không hoàn tác cần người duyệt</b><span>Đề xuất hết hạn vẫn ở Waiting, không tự duyệt hay tự từ chối.</span></span></label>
+      <div class="two">
+        <div class="f"><label for="gAppr">Người duyệt (chỉ con người)</label><select id="gAppr" ${inv("appr")}>${HUMANS.map(h => `<option value="${h[0]}" ${h[0] === st.gate.approver ? "selected" : ""}>${h[1]}</option>`).join("")}</select>${err("appr")}</div>
+        <div class="f"><label for="gExp">Hạn đề xuất</label><select id="gExp">${["2h", "4h", "8h", "24h"].map(x => `<option ${x === st.gate.expiry ? "selected" : ""}>${x}</option>`).join("")}</select></div>
+      </div>
+      <div class="two">
+        <div class="f"><label for="gExec">Agent thực hiện phiếu chạy thử</label><select id="gExec" ${inv("exec")} aria-describedby="e-exec"><option value="">Chọn agent</option>${executors().map(a => `<option value="${a.i}" ${String(a.i) === String(st.gate.executor) ? "selected" : ""}>${esc(a.name)}</option>`).join("")}</select>${err("exec")}</div>
+        <div class="f"><label for="gRev">Reviewer nghiệm thu</label><select id="gRev" ${inv("rev")} aria-describedby="e-rev h-rev"><option value="">Chọn reviewer</option>${reviewers().map(r => `<option value="${r.id}" ${r.id === st.gate.reviewer ? "selected" : ""}>${esc(r.label)}</option>`).join("")}</select><span class="hint" id="h-rev">Chỉ hiện người và agent có tasks:review.</span>${err("rev")}</div>
+      </div>`,
+
+    () => {
+      const ex = st.gate.executor !== "" ? st.agents[+st.gate.executor].name : "AGENT", rv = labelOf(st.gate.reviewer);
+      const rows = [["backlog", "Tạo phiếu T-0001 · synthetic", "Quản đốc · nhãn dry-run, có thể lưu trữ sau"], ["ready", "Lên lịch vào Ready", "tasks:schedule · task v2"], ["doing", `${ex} claim phiếu`, "fence 1 · lease 15 phút · run r-0001"], ["review", `${ex} nộp kết quả`, "1 artifact committed · lease giải phóng"], ["done", `${rv} nghiệm thu`, "reviewer khác người nộp · trạng thái cuối"]];
+      return `${head(4, "Một phiếu việc tổng hợp đi hết dây chuyền để chứng minh claim, lease, fence, nộp kết quả và nghiệm thu độc lập đều hoạt động. Không dùng task thật làm phép thử.")}
+      <ol class="trial" aria-label="Các bước chạy thử" id="trialList">${rows.map((r, i) => `<li class="${st.trial.stage > i ? "" : "pending"} ${st.trial.stage === i + 1 && st.trial.running ? "on" : ""}"><span class="i">${String(i + 1).padStart(2, "0")}</span><span>${esc(r[1])}<small>${esc(r[2])}</small></span>${BP.stateChip(r[0])}</li>`).join("")}</ol>
+      <div class="row wrap"><button class="btn" type="button" id="btnTrial" ${st.trial.running ? "disabled" : ""}>${st.trial.stage >= 5 ? "Chạy thử lại" : "Chạy thử"}</button><span class="muted" style="font-size:var(--fs-xs)" id="trialMsg" aria-live="polite">${st.trial.stage >= 5 ? "Phiếu T-0001 đã tới Done. Dây chuyền hoạt động." : "Chưa chạy."}</span></div>
+      <div class="f">${err("trial")}</div>`;
+    },
+
+    () => `${head(5, "Mọi hạng mục đã nghiệm thu. Nhà máy sẵn sàng nhận việc thật.")}
+      <ul class="check" aria-label="Checklist khánh thành">
+        <li><span class="g">✓</span><span>Móng: <b>${esc(st.ws.name)}</b> · <span class="mono">${esc(st.ws.id)}</span> · ${st.ws.tz}</span><a href="#" data-go="0">Sửa</a></li>
+        <li><span class="g">✓</span><span>${depts().length} phòng ban · profile ${st.profile === "demo" ? "delivery-demo" : "neutral"}</span><a href="#" data-go="1">Sửa</a></li>
+        <li><span class="g">✓</span><span>2 agent: ${st.agents.map(a => esc(a.name)).join(", ")} · runtime chưa enroll</span><a href="19-security-gate.html">Enroll</a></li>
+        <li><span class="g">✓</span><span>Cổng: duyệt bởi ${labelOf(st.gate.approver)}, hạn ${st.gate.expiry} · reviewer ${labelOf(st.gate.reviewer)}</span><a href="#" data-go="3">Sửa</a></li>
+        <li><span class="g">✓</span><span>Chạy thử T-0001: Backlog → Ready → Doing → Review → Done</span><a href="10-activity.html">Nhật ký</a></li>
+        <li><span class="g" style="color:var(--amber)">!</span><span>Việc còn lại cho con người: enroll runtime cho 2 agent, mời thành viên</span><a href="21-hr-teams.html">Mời</a></li>
+      </ul>
+      <div class="big-cta"><a class="btn primary" href="25-office-hq.html">Vào văn phòng</a><a class="btn" href="01-factory-floor.html">Vào sàn nhà máy</a></div>`
+  ];
+
+  function render(focusErr) {
+    renderSteps();
+    $("#sbody").innerHTML = VIEWS[st.step]();
+    $("#stepCount").textContent = `BƯỚC ${st.step + 1}/6 · ${STEPS[st.step].k.toUpperCase()}`;
+    $("#btnBack").disabled = st.step === 0;
+    $("#btnNext").style.display = st.step === 5 ? "none" : "";
+    $("#btnNext").textContent = st.step === 4 ? "Tiếp tục tới khánh thành" : "Tiếp tục";
+    bind();
+    if (focusErr) { const f = $("#sbody [aria-invalid=true]") || $("#sbody .err:not(:empty)"); if (f && f.focus) f.focus(); }
+  }
+
+  function bind() {
+    const on = (sel, ev, fn) => { const n = $(sel); if (n) n.addEventListener(ev, fn); };
+    on("#wsName", "input", e => { st.ws.name = e.target.value; if (!st.ws.idTouched) { st.ws.id = st.ws.name.trim() ? slug(st.ws.name) : ""; $("#wsId").value = st.ws.id; } clearErr("name"); live(); });
+    on("#wsId", "input", e => { st.ws.id = e.target.value.trim(); st.ws.idTouched = true; clearErr("id"); live(); });
+    on("#wsTz", "change", e => { st.ws.tz = e.target.value; live(); });
+    BP.$$("[data-theme-pick]").forEach(b => b.addEventListener("click", () => { applyTheme(b.dataset.themePick); BP.$$("[data-theme-pick]").forEach(x => x.setAttribute("aria-pressed", String(x === b))); }));
+    BP.$$("input[name=prof]").forEach(r => r.addEventListener("change", () => { st.profile = r.value; st.errors = {}; render(); redraw(1, true); }));
+    const add = () => { const n = $("#newDept"), v = n.value.trim(); if (!v) { st.errors.dept = "Nhập tên phòng ban trước khi thêm."; render(true); return; } if (depts().includes(v)) { st.errors.dept = "Phòng ban này đã có."; render(true); return; } st.custom.push(v); st.errors = {}; render(); redraw(1, true); $("#newDept").focus(); };
+    on("#btnAddDept", "click", add);
+    on("#newDept", "keydown", e => { if (e.key === "Enter") { e.preventDefault(); add(); } });
+    BP.$$("[data-rm]").forEach(b => b.addEventListener("click", () => { st.custom.splice(+b.dataset.rm, 1); render(); redraw(1, true); }));
+    BP.$$("[data-ag][data-k]").forEach(n => n.addEventListener(n.tagName === "SELECT" ? "change" : "input", () => {
+      const a = st.agents[+n.dataset.ag]; a[n.dataset.k] = n.dataset.k === "name" ? n.value.toUpperCase() : n.value;
+      if (n.dataset.k === "name") { const p = n.selectionStart; n.value = a.name; n.setSelectionRange(p, p); n.closest(".agent-card").querySelector(".bot").textContent = codeOf(a.name); }
+      clearErr((n.dataset.k === "name" ? "an" : "ad") + n.dataset.ag);
+    }));
+    BP.$$("[data-scope]").forEach(c => c.addEventListener("change", () => { const a = st.agents[+c.dataset.ag]; a.scopes = c.checked ? [...new Set([...a.scopes, c.dataset.scope])] : a.scopes.filter(s => s !== c.dataset.scope); clearErr("as" + c.dataset.ag); }));
+    on("#gExt", "change", e => st.gate.external = e.target.checked);
+    on("#gDel", "change", e => st.gate.destructive = e.target.checked);
+    on("#gAppr", "change", e => { st.gate.approver = e.target.value; redraw(3, true); });
+    on("#gExp", "change", e => { st.gate.expiry = e.target.value; redraw(3, true); });
+    on("#gExec", "change", e => { st.gate.executor = e.target.value; clearErr("exec"); clearErr("rev"); });
+    on("#gRev", "change", e => { st.gate.reviewer = e.target.value; clearErr("rev"); redraw(3, true); });
+    on("#btnTrial", "click", runTrial);
+    BP.$$("#sbody [data-go]").forEach(a => a.addEventListener("click", e => { e.preventDefault(); go(+a.dataset.go); }));
+  }
+  function clearErr(k) { if (!st.errors[k]) return; delete st.errors[k]; const e = $("#e-" + k); if (e) e.textContent = ""; const f = e && e.parentElement.querySelector("[aria-invalid]"); if (f) f.removeAttribute("aria-invalid"); }
+
+  function go(i) {
+    if (i > st.max || i === st.step) return;
+    st.errors = {}; st.step = i; render(); redraw(-1);
+    $("#steps [aria-current=step]").focus();
+  }
+  $("#steps").addEventListener("click", e => { const b = e.target.closest("button[data-go]"); if (b && !b.disabled) go(+b.dataset.go); });
+  $("#btnBack").addEventListener("click", () => { if (st.step > 0) go(st.step - 1); });
+  $("#form").addEventListener("submit", e => {
+    e.preventDefault();
+    const errs = validate(st.step);
+    st.errors = errs;
+    if (Object.keys(errs).length) { render(true); BP.toast("CHƯA QUA BƯỚC " + (st.step + 1), Object.values(errs)[0]); return; }
+    const firstVisit = st.step + 1 > st.max;
+    st.step++; st.max = Math.max(st.max, st.step);
+    if (st.step === 3 && st.gate.executor === "") { const ex = executors(); if (ex.length) st.gate.executor = String(ex[0].i); }
+    render(); redraw(firstVisit ? st.step : -1);
+    $("#sbody h3").setAttribute("tabindex", "-1"); $("#sbody h3").focus();
+  });
+
+  /* ---------- sample fill ---------- */
+  $("#btnSample").addEventListener("click", () => {
+    st.ws = { name: "Nhà máy Bình Minh", id: "ws-binh-minh", idTouched: true, tz: "Asia/Ho_Chi_Minh" };
+    st.profile = "neutral"; st.custom = ["Xưởng Kỹ thuật", "Trạm Kiểm định", "Phòng Dữ liệu"];
+    st.agents = [{ name: "ATLAS-01", dept: "Xưởng Kỹ thuật", scopes: ["tasks:execute", "artifacts:write"] }, { name: "SAGE-02", dept: "Trạm Kiểm định", scopes: ["tasks:review", "messages:send"] }];
+    st.gate.executor = "0"; st.gate.reviewer = "ag1";
+    st.errors = {}; render(); redraw(-1); live();
+    BP.toast("ĐÃ ĐIỀN MẪU", "Dữ liệu mẫu chỉ điền vào form, chưa tạo gì trên máy chủ.");
+  });
+
+  /* ---------- drawing ---------- */
+  const S = (t, a, p) => BP.svg(t, a, p);
+  const txt = (x, y, s, cls, p, extra = {}) => { const t = S("text", { x, y, class: cls, ...extra }, p); t.textContent = s; return t; };
+  const L = [0, 1, 2, 3, 4, 5].map(i => $("#L" + i));
+  let dl = 0; // stagger delay for current build
+  const ink = (tag, a, p, d = 0) => {
+    // dashed strokes keep their dash pattern, so they fade in instead of drawing in
+    const dashed = a["stroke-dasharray"] != null;
+    const e = S(tag, dashed ? { ...a, class: ((a.class || "") + " fade").trim() } : { ...a, pathLength: 1, class: ((a.class || "") + " ink").trim() }, p);
+    e.style.animationDelay = (dl + d) + "s"; return e;
+  };
+  const fade = (x, y, s, cls, p, d = 0, extra = {}) => { const t = txt(x, y, s, cls + " fade", p, extra); t.style.animationDelay = (dl + d) + "s"; return t; };
+  const X0 = 40, X1 = 600, Y0 = 70, Y1 = 430, RY = 210, CY0 = 262;
+  const rooms = () => { const d = depts(), n = Math.max(1, Math.min(4, d.length)), w = (X1 - X0) / n; return Array.from({ length: n }, (_, i) => ({ x: X0 + i * w, w, name: d[i] || "", more: i === n - 1 && d.length > 4 ? d.length - 4 : 0 })); };
+  const deskPos = (ri, k) => { const r = rooms()[Math.min(ri, rooms().length - 1)]; const cx = r.x + r.w / 2; return { x: cx + (k ? 22 : -22), y: 150 }; };
+
+  function build(i) {
+    const g = L[i]; g.innerHTML = ""; dl = 0;
+    if (i === 0) {
+      // axis bubbles
+      [[X0, "A"], [320, "B"], [X1, "C"]].forEach(([x, l], k) => { ink("circle", { cx: x, cy: 18, r: 9, class: "wall-thin" }, g, k * 0.1); fade(x, 21.5, l, "sub", g, 0.4, { "text-anchor": "middle" }); ink("line", { x1: x, y1: 27, x2: x, y2: 60, stroke: "var(--line-soft)", "stroke-dasharray": "4 4" }, g, 0.2); });
+      ink("rect", { x: X0 - 10, y: Y0 - 10, width: X1 - X0 + 20, height: Y1 - Y0 + 20, fill: "url(#hatch)", stroke: "var(--line)" }, g);
+      ink("rect", { x: X0, y: Y0, width: X1 - X0, height: Y1 - Y0, fill: "var(--bp-850)", stroke: "var(--line-strong)", "stroke-width": 2 }, g, 0.3);
+      // entrance gap on left wall
+      S("line", { x1: X0, y1: 226, x2: X0, y2: 254, stroke: "var(--bp-850)", "stroke-width": 4 }, g);
+      ink("path", { d: `M${X0} 226 A28 28 0 0 1 ${X0 + 28} 254`, class: "wall-thin", "stroke-dasharray": "2 3" }, g, 0.9);
+      fade(X0 + 34, 244, "LỐI VÀO", "sub", g, 1);
+      // dimensions
+      ink("path", { d: `M${X0} 50 H${X1} M${X0} 44 V56 M${X1} 44 V56`, class: "dimline" }, g, 0.6);
+      txt(320, 46, "", "sub fade", g, { "text-anchor": "middle", id: "dimTop" }).style.animationDelay = "0.9s";
+      ink("path", { d: `M20 ${Y0} V${Y1} M14 ${Y0} H26 M14 ${Y1} H26`, class: "dimline" }, g, 0.6);
+      fade(14, 250, "36.0 m", "sub", g, 0.9, { transform: "rotate(-90 14 250)", "text-anchor": "middle" });
+      txt(X0, 470, "", "ttl fade", g, { id: "wsTitle" }).style.animationDelay = "1s";
+      txt(X0, 490, "", "sub fade", g, { id: "wsSub" }).style.animationDelay = "1.1s";
+      // north arrow
+      ink("path", { d: "M600 462 l8 22 l-8 -6 l-8 6 z", stroke: "var(--line)", fill: "none" }, g, 1);
+      fade(600, 500, "N", "sub", g, 1.2, { "text-anchor": "middle" });
+      live();
+    }
+    if (i === 1) {
+      const R = rooms(), has = depts().length;
+      ink("path", { d: `M${X0} ${RY} H${X1}`, class: "wall" }, g);
+      ink("path", { d: `M${X0} ${CY0} H${X1}`, class: "wall-thin" }, g, 0.2);
+      R.forEach((r, k) => {
+        if (k) ink("line", { x1: r.x, y1: Y0, x2: r.x, y2: RY, class: "wall" }, g, 0.2 + k * 0.1);
+        const dx = r.x + r.w - 30;
+        S("line", { x1: dx - 12, y1: RY, x2: dx + 12, y2: RY, stroke: "var(--bp-850)", "stroke-width": 4 }, g);
+        ink("path", { d: `M${dx - 12} ${RY} A24 24 0 0 1 ${dx + 12} ${RY - 22}`, class: "wall-thin", "stroke-dasharray": "2 3" }, g, 0.8);
+        const maxc = Math.floor((r.w - 18) / 8);
+        const nm = has ? (r.name.length > maxc ? r.name.slice(0, maxc - 1) + "…" : r.name).toUpperCase() : "CHƯA CÓ PHÒNG BAN";
+        fade(r.x + 10, Y0 + 20, nm, "lbl", g, 0.7, has ? {} : { style: "fill:var(--ink-3)" });
+        fade(r.x + 10, Y0 + 34, has ? `PB-${String(k + 1).padStart(2, "0")}${r.more ? ` · +${r.more} PHÒNG KHÁC` : ""}` : "PROFILE TRUNG LẬP", "sub", g, 0.8);
+        if (!has) return;
+        // furniture: 2 desks + monitor + chair
+        [0, 1].forEach(j => { const p = deskPos(k, j);
+          ink("rect", { x: p.x - 16, y: p.y - 22, width: 32, height: 14, class: "wall-thin" }, g, 1 + j * 0.15);
+          ink("rect", { x: p.x - 7, y: p.y - 19, width: 14, height: 5, stroke: "var(--s-ready)", fill: "none" }, g, 1.3 + j * 0.15);
+          ink("rect", { x: p.x - 6, y: p.y - 2, width: 12, height: 9, class: "wall-thin" }, g, 1.4 + j * 0.15);
+        });
+      });
+      fade(320, 240, "HÀNH LANG", "sub", g, 0.6, { "text-anchor": "middle" });
+    }
+    if (i === 2) {
+      st.agents.forEach((a, k) => {
+        const ri = Math.max(0, depts().indexOf(a.dept)); const same = st.agents.findIndex(b => b.dept === a.dept) !== k;
+        const p = deskPos(Math.min(ri, 3), same ? 1 : 0);
+        const ag = S("g", { transform: `translate(${p.x} ${p.y + 3})` }, g);
+        S("polygon", { points: "-6,-11 6,-11 12,0 6,11 -6,11 -12,0", fill: "var(--bp-950)", stroke: k ? "var(--s-review)" : "var(--s-doing)", "stroke-width": 1.5 }, ag);
+        txt(0, 0.5, codeOf(a.name), "tok", ag, { style: `fill:${k ? "var(--s-review)" : "var(--s-doing)"}` });
+        txt(0, 22, a.name, "sub", ag, { "text-anchor": "middle" });
+        ag.dataset.tx = p.x; ag.dataset.ty = p.y + 3;
+        const rr = rooms()[Math.min(ri, 3, rooms().length - 1)]; ag.dataset.dx = rr.x + rr.w - 30;
+      });
+    }
+    if (i === 3) {
+      ink("rect", { x: 60, y: 286, width: 520, height: 124, fill: "none", stroke: "var(--line-soft)", "stroke-dasharray": "6 4" }, g);
+      fade(70, 302, "KHU DÂY CHUYỀN", "sub", g, 0.4);
+      gateSym(g, 268, "var(--amber)", "CỔNG PHÊ DUYỆT", `${labelOf(st.gate.approver).toUpperCase()} · HẠN ${st.gate.expiry}`, 0.3);
+      gateSym(g, 506, "var(--s-review)", "TRẠM QC", `REVIEWER ${labelOf(st.gate.reviewer).toUpperCase()}`, 0.7);
+    }
+    if (i === 4) {
+      ink("rect", { x: 70, y: 352, width: 500, height: 16, fill: "var(--bp-900)", stroke: "var(--line)" }, g);
+      for (let x = 84; x < 570; x += 28) ink("circle", { cx: x, cy: 360, r: 4, class: "wall-thin" }, g, 0.4 + (x - 84) / 1400);
+      S("line", { x1: 70, y1: 376, x2: 570, y2: 376, class: "flow", style: st.trial.stage ? "" : "opacity:0" }, g).id = "beltFlow";
+      STN.forEach((s, k) => { ink("line", { x1: s.x, y1: 344, x2: s.x, y2: 380, stroke: s.c, "stroke-dasharray": "3 3" }, g, 0.6 + k * 0.1); fade(s.x, 396, s.l, "sub", g, 0.8 + k * 0.1, { "text-anchor": "middle", style: `fill:${s.c}` }); });
+      const cr = S("g", { id: "crate", transform: `translate(${STN[0].x} 338)`, style: st.trial.stage ? "" : "opacity:0" }, g);
+      S("rect", { x: -18, y: -12, width: 36, height: 24, fill: "var(--t-ready)", stroke: "var(--s-ready)", "stroke-width": 1.25 }, cr);
+      txt(0, 0.5, "T-0001", "tok", cr, { style: "fill:var(--ink)" });
+      if (st.trial.stage) { const s = STN[Math.min(st.trial.stage, 5) - 1]; cr.setAttribute("transform", `translate(${s.x} 338)`); tintCrate(cr, s.c); }
+    }
+    if (i === 5) {
+      const sg = S("g", { transform: "translate(452 480) rotate(-6)" }, g);
+      ink("rect", { x: -98, y: -28, width: 196, height: 56, fill: "var(--bp-850)", stroke: "var(--s-done)", "stroke-width": 2.5 }, sg);
+      ink("rect", { x: -91, y: -21, width: 182, height: 42, fill: "none", stroke: "var(--s-done)" }, sg, 0.3);
+      fade(0, -4, "KHÁNH THÀNH", "stamp-t", sg, 0.6, { style: "fill:var(--s-done)" });
+      fade(0, 13, "", "sub", sg, 0.7, { "text-anchor": "middle", style: "fill:var(--s-done)" }).textContent = "REV R1 · CHẠY THỬ ĐẠT";
+      // ribbon across the entrance + flag
+      ink("path", { d: `M${X0} 226 Q${X0 + 9} 240 ${X0} 254`, stroke: "var(--amber)", fill: "none", "stroke-width": 2 }, g, 0.4);
+      ink("circle", { cx: X0 + 6, cy: 240, r: 3, stroke: "var(--amber)", fill: "none" }, g, 0.6);
+      ink("line", { x1: X0 + 18, y1: 256, x2: X0 + 18, y2: 216, stroke: "var(--line-strong)" }, g, 0.2);
+      ink("path", { d: `M${X0 + 18} 216 L${X0 + 32} 221 L${X0 + 18} 226`, stroke: "var(--s-done)", fill: "none", "stroke-width": 1.5 }, g, 0.5);
+    }
+  }
+  const STN = [{ x: 100, l: "BACKLOG", c: "var(--s-backlog)" }, { x: 200, l: "READY", c: "var(--s-ready)" }, { x: 340, l: "DOING", c: "var(--s-doing)" }, { x: 440, l: "REVIEW", c: "var(--s-review)" }, { x: 548, l: "DONE", c: "var(--s-done)" }];
+  function tintCrate(cr, c) { const r = cr.querySelector("rect"); r.style.stroke = c; }
+  function gateSym(g, x, c, l, sub, d) {
+    ink("rect", { x: x - 4, y: 330, width: 8, height: 8, fill: "var(--bp-950)", stroke: c }, g, d);
+    ink("rect", { x: x - 4, y: 382, width: 8, height: 8, fill: "var(--bp-950)", stroke: c }, g, d);
+    ink("line", { x1: x, y1: 338, x2: x + 16, y2: 352, stroke: c, "stroke-width": 2.5 }, g, d + 0.3);
+    ink("line", { x1: x, y1: 382, x2: x + 16, y2: 368, stroke: c, "stroke-width": 2.5 }, g, d + 0.3);
+    fade(x, 318, l, "lbl", g, d + 0.5, { "text-anchor": "middle", style: `fill:${c}` });
+    fade(x, 414, sub, "sub", g, d + 0.6, { "text-anchor": "middle" });
+  }
+
+  // redraw: animate = step index to animate (-1 = none). Layers up to current step visible.
+  async function redraw(animate, onlyLayer) {
+    if (onlyLayer) { if (animate <= st.step) { build(animate); L[animate].classList.add("on", "still"); } return; }
+    L.forEach((g, i) => {
+      const vis = i <= st.step;
+      g.classList.toggle("on", false);
+      if (!vis) { g.classList.remove("still"); return; }
+      build(i);
+      void g.getBoundingClientRect();
+      g.classList.add("on");
+      g.classList.toggle("still", i !== animate || BP.reduced);
+    });
+    $("#drawStage").textContent = `GIAI ĐOẠN ${st.step + 1} · ${STEPS[st.step].draw}`;
+    if (animate === 2 && !BP.reduced) walkIn();
+  }
+  async function walkIn() {
+    const ags = BP.$$("#L2 > g");
+    ags.forEach(a => a.setAttribute("transform", `translate(-20 236)`));
+    $("#drawNote").textContent = "AGENT ĐANG VÀO QUA LỐI VÀO";
+    await Promise.all(ags.map(async (a, k) => {
+      await BP.wait(k * 600);
+      const p = S("path", { d: `M-20 236 H${a.dataset.dx} V${a.dataset.ty} H${a.dataset.tx}` });
+      await BP.moveAlong(a, p, 2200);
+    }));
+    $("#drawNote").textContent = "2 AGENT ĐÃ VÀO BÀN · RUNTIME CHƯA ENROLL";
+  }
+
+  function live() {
+    const n = st.ws.name.trim(), id = st.ws.id || "ws-?";
+    const t = $("#wsTitle"), s = $("#wsSub"), d = $("#dimTop");
+    if (t) t.textContent = n ? n.toUpperCase() : "TÊN NHÀ MÁY";
+    if (s) s.textContent = `${id} · ${st.ws.tz} · MẶT BẰNG TẦNG 01`;
+    if (d) d.textContent = `56.0 m · ${id}`;
+    if (st.step === 0) $("#drawNote").textContent = n ? `MÓNG · ${id}` : "MÓNG CHƯA ĐẶT TÊN";
+  }
+
+  /* ---------- dry run ---------- */
+  async function runTrial() {
+    if (st.trial.running) return;
+    st.trial.running = true; st.trial.stage = 0; delete st.errors.trial; render();
+    const crate = () => st.step >= 4 ? BP.$("#crate") : null;
+    const flow = BP.$("#beltFlow"); if (flow) flow.style.opacity = 1;
+    const cr = crate(); if (cr) { cr.style.opacity = 1; cr.setAttribute("transform", `translate(${STN[0].x} 338)`); tintCrate(cr, STN[0].c); }
+    const msgs = ["Đã tạo T-0001 ở Backlog.", "Đã lên lịch, T-0001 ở Ready.", "Agent claim thành công, fence 1, lease 15 phút.", "Đã nộp kết quả, lease giải phóng, chờ nghiệm thu.", "Reviewer độc lập nghiệm thu, T-0001 Done."];
+    for (let k = 0; k < 5; k++) {
+      if (k) {
+        const c = crate();
+        if (c && !BP.reduced) await BP.moveAlong(c, S("path", { d: `M${STN[k - 1].x} 338 H${STN[k].x}` }), 900);
+        else if (c) c.setAttribute("transform", `translate(${STN[k].x} 338)`);
+      }
+      st.trial.stage = k + 1; const c2 = crate(); if (c2) tintCrate(c2, STN[k].c);
+      if (st.step === 4) { render(); $("#trialMsg").textContent = msgs[k]; }
+      if (!BP.reduced) await BP.wait(450);
+    }
+    st.trial.running = false;
+    if (st.step === 4) render();
+    $("#drawNote").textContent = "CHẠY THỬ ĐẠT · T-0001 DONE";
+    BP.toast("DRY RUN · DONE", "Phiếu T-0001 đi hết dây chuyền. Reviewer khác người nộp.");
+  }
+
+  render(); redraw(0);
+})();
+</script>
+</body>
+</html>

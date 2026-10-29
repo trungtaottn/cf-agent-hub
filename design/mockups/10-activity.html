@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nhật ký hoạt động · CF Agent Factory</title>
+<link rel="stylesheet" href="assets/blueprint.css">
+<style>
+  .hist svg { width: 100%; height: auto; }
+  .hist .bar { transition: height var(--dur) var(--ease), y var(--dur) var(--ease); }
+  .hist .ax { font-family: var(--f-mono); font-size: 10px; fill: var(--ink-3); }
+  .hist-head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; }
+
+  .filters { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) max-content; gap: var(--sp-3); align-items: end; padding: var(--sp-4); border-bottom: 1px solid var(--line-soft); }
+  .field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .field label { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); letter-spacing: 0.1em; text-transform: uppercase; }
+  .input, .select { min-height: 36px; padding: 0 var(--sp-3); background: var(--bp-850); color: var(--ink); border: 1px solid var(--line-soft); font: inherit; font-size: var(--fs-sm); border-radius: 0; width: 100%; }
+  .input:hover, .select:hover { border-color: var(--line); }
+  .input:focus-visible, .select:focus-visible { outline: 2px solid var(--amber); outline-offset: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: var(--sp-2); padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--line-soft); align-items: center; }
+  .chip { min-height: 30px; padding: 0 var(--sp-3); font-family: var(--f-mono); font-size: var(--fs-xs); color: var(--ink-3); background: transparent; border: 1px dashed var(--line-soft); cursor: pointer; letter-spacing: 0.04em; }
+  .chip:hover { color: var(--ink); border-color: var(--line); }
+  .chip[aria-pressed="true"] { color: var(--ink); border-style: solid; border-color: var(--line); background: var(--bp-700); }
+  .chip[aria-pressed="true"]::before { content: "■ "; color: var(--s-ready); }
+
+  .toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--line-soft); }
+  .newpill { display: none; }
+  .newpill.show { display: inline-flex; }
+  .stream-state { display: inline-flex; align-items: center; gap: 6px; font-family: var(--f-mono); font-size: var(--fs-2xs); letter-spacing: 0.1em; color: var(--s-doing); }
+  .stream-state::before { content: ""; width: 7px; height: 7px; background: currentColor; }
+  .stream-state.live::before { animation: blink 1.4s steps(2, jump-none) infinite; }
+  .stream-state.paused { color: var(--amber); }
+
+  .ev-wrap { overflow-x: auto; max-height: 640px; overflow-y: auto; }
+  .ev { min-width: 720px; }
+  .ev td:nth-child(4) { max-width: 220px; }
+  #fRange button { white-space: nowrap; }
+  .ev thead th { position: sticky; top: 0; background: var(--bp-800); z-index: 1; }
+  .ev td { padding: var(--sp-2) var(--sp-3); font-size: var(--fs-sm); }
+  .ev th { padding: var(--sp-2) var(--sp-3); }
+  .ev tbody tr { cursor: pointer; }
+  .ev tbody tr:focus-visible { outline: 2px solid var(--amber); outline-offset: -2px; }
+  .ev tbody tr[aria-selected="true"] td { background: var(--bp-600); }
+  .ev tbody tr.enter td { animation: row-in var(--dur-slow) var(--ease); }
+  @keyframes row-in { from { background: var(--bp-500); opacity: 0; } to { opacity: 1; } }
+  .actor { display: flex; align-items: center; gap: var(--sp-2); white-space: nowrap; }
+  .actor .bot, .actor .human-token, .actor .sys { width: 26px; height: 26px; font-size: 9px; }
+  .actor .sys { display: inline-grid; place-items: center; border: 1px dashed var(--line); color: var(--ink-2); font-family: var(--f-mono); }
+  .act { font-family: var(--f-mono); font-size: var(--fs-xs); letter-spacing: 0.04em; white-space: nowrap; }
+  .ver { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-2); white-space: nowrap; }
+  .ver b { color: var(--ink); font-weight: 500; }
+  .res { font-family: var(--f-mono); font-size: var(--fs-2xs); white-space: nowrap; }
+
+  .detail pre { margin: 0; padding: var(--sp-4); font-family: var(--f-mono); font-size: var(--fs-xs); line-height: 1.6; color: var(--ink-2); background: var(--bp-950); border-bottom: 1px solid var(--line-soft); overflow-x: auto; white-space: pre; }
+  .j-k { color: var(--s-ready); } .j-s { color: var(--s-doing); } .j-n { color: var(--s-review); } .j-b { color: var(--s-done); } .j-null { color: var(--ink-3); font-style: italic; }
+  .trace { list-style: none; margin: 0; padding: var(--sp-3) var(--sp-4) var(--sp-4); position: relative; }
+  .trace::before { content: ""; position: absolute; left: calc(var(--sp-4) + 6px); top: var(--sp-4); bottom: var(--sp-6); width: 1px; background: var(--line); }
+  .trace li { position: relative; display: grid; grid-template-columns: 14px 64px 1fr; gap: var(--sp-2); align-items: start; padding: 6px 0; font-size: var(--fs-xs); }
+  .trace li .node { width: 13px; height: 13px; margin-top: 2px; border: 1px solid var(--line); background: var(--bp-850); position: relative; z-index: 1; }
+  .trace li.cur .node { background: var(--s-ready); border-color: var(--s-ready); box-shadow: 0 0 0 3px var(--t-ready); }
+  .trace li.bad .node { border-color: var(--red); background: var(--t-failed); }
+  .trace li time { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); padding-top: 1px; }
+  .trace li.cur span:last-child { color: var(--ink); font-weight: 500; }
+  .trace li .draw-in { animation: reveal var(--dur-slow) var(--ease) both; }
+
+  .immut { display: grid; grid-template-columns: auto 1fr; gap: var(--sp-3); align-items: start; }
+  .immut svg { flex: none; }
+
+  @media (max-width: 1280px) { .filters { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 560px) { .filters { grid-template-columns: 1fr; } .ev-wrap { max-height: 520px; } }
+</style>
+</head>
+<body data-sheet="10" data-title="Nhật ký hoạt động">
+<div class="app paper">
+  <div id="rail"></div>
+  <div class="main">
+    <header id="topbar"></header>
+    <main class="content">
+
+      <section class="page-head reveal">
+        <div>
+          <div class="code">EVENT LOG · APPEND-ONLY · WS-AURORA · CURSOR ev-000412</div>
+          <h2>Nhật ký hoạt động</h2>
+          <p class="lede">Dòng sự kiện ghi cùng transaction với thay đổi trạng thái. Mỗi dòng cho biết ai làm gì, trên tài nguyên nào, và version sau khi commit (task_version, run_version, fence). Chọn một sự kiện để xem bản ghi gốc và dấu vết cùng task.</p>
+        </div>
+        <div class="actions">
+          <a class="btn" href="09-control-room.html">Mở phòng điều khiển</a>
+          <a class="btn" href="11-flow-motion.html">Xem luồng vận hành</a>
+        </div>
+      </section>
+
+      <section class="panel hist reveal" aria-label="Mật độ sự kiện theo phút">
+        <div class="panel-head hist-head">
+          <h3>Mật độ sự kiện · 60 phút gần nhất</h3>
+          <span class="legend">
+            <span style="color:var(--s-doing)"><i></i>Thực thi (claim, heartbeat, checkpoint, submit)</span>
+            <span style="color:var(--amber)"><i></i>Quyết định của người</span>
+            <span style="color:var(--s-ready)"><i></i>Thư · ACK</span>
+            <span style="color:var(--red)"><i></i>Bị từ chối</span>
+          </span>
+        </div>
+        <div class="panel-body">
+          <svg id="hist" viewBox="0 0 1000 130" role="img" aria-labelledby="histTitle">
+            <title id="histTitle">Biểu đồ cột mật độ sự kiện mỗi phút trong 60 phút gần nhất, cột ngoài cùng bên phải là phút hiện tại.</title>
+          </svg>
+          <p class="muted" id="histSum" style="margin:var(--sp-2) 0 0;font-size:var(--fs-xs)" aria-live="off"></p>
+        </div>
+      </section>
+
+      <section class="grid g-main-side">
+        <div class="panel reveal">
+          <div class="filters" role="search" aria-label="Lọc sự kiện">
+            <div class="field"><label for="q">Tìm kiếm</label><input class="input" id="q" type="search" placeholder="T-1042, r-88f1, ev-000398, fence 18" autocomplete="off"></div>
+            <div class="field"><label for="fActor">Actor</label><select class="select" id="fActor"><option value="">Tất cả actor</option></select></div>
+            <div class="field"><label for="fDept">Phòng ban</label><select class="select" id="fDept"><option value="">Tất cả phòng ban</option></select></div>
+            <div class="field"><label>Khoảng thời gian</label>
+              <div class="seg" role="group" aria-label="Khoảng thời gian" id="fRange">
+                <button aria-pressed="false" data-r="15">15 phút</button><button aria-pressed="true" data-r="60">1 giờ</button><button aria-pressed="false" data-r="1440">24 giờ</button>
+              </div>
+            </div>
+          </div>
+          <div class="chips" role="group" aria-label="Loại hành động" id="fActs"></div>
+          <div class="toolbar">
+            <div class="row wrap">
+              <span class="stream-state live" id="streamState" aria-live="polite">LUỒNG TRỰC TIẾP</span>
+              <span class="code" id="shown">-- sự kiện</span>
+              <button class="btn sm newpill" id="newPill" aria-live="polite">0 sự kiện mới · Hiện</button>
+            </div>
+            <button class="btn primary" id="pauseBtn" aria-pressed="false">
+              <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 2v8M9 2v8" stroke="currentColor" stroke-width="2"/></svg>
+              <span>Tạm dừng luồng</span>
+            </button>
+          </div>
+          <div class="ev-wrap">
+            <table class="table ev" aria-label="Danh sách sự kiện, mới nhất ở trên">
+              <thead><tr><th>Thời gian</th><th>Actor</th><th>Hành động</th><th>Tài nguyên</th><th>Version sau</th><th>Kết quả</th></tr></thead>
+              <tbody id="rows" aria-live="polite" aria-relevant="additions"></tbody>
+            </table>
+            <div class="empty" id="empty" hidden style="margin:var(--sp-4)">
+              Không có sự kiện khớp bộ lọc. Sự kiện vẫn còn nguyên trong log, chỉ đang bị ẩn.
+              <div style="margin-top:var(--sp-3)"><button class="btn sm" id="resetBtn">Xoá bộ lọc</button></div>
+            </div>
+          </div>
+        </div>
+
+        <aside class="stack">
+          <div class="panel detail reveal" aria-label="Chi tiết sự kiện">
+            <div class="panel-head"><h3>Bản ghi gốc</h3><span class="code" id="dId">ev-------</span></div>
+            <pre id="json" tabindex="0" aria-label="JSON của sự kiện đã chọn"></pre>
+            <div class="panel-head" style="border-top:0"><h3>Dấu vết cùng task</h3><span class="code" id="tTask">--</span></div>
+            <ol class="trace" id="trace" aria-label="Các sự kiện liên quan theo thứ tự thời gian"></ol>
+            <div class="panel-body" style="padding-top:0"><a class="btn sm" id="openTask" href="05-work-order.html">Mở phiếu công việc</a></div>
+          </div>
+          <div class="panel reveal">
+            <div class="panel-body immut">
+              <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><rect x="5" y="12" width="18" height="13" fill="none" style="stroke:var(--line-strong)"/><path d="M9 12V8a5 5 0 0 1 10 0v4" fill="none" style="stroke:var(--line-strong)"/><path d="M14 17v4" style="stroke:var(--s-ready)" stroke-width="2"/></svg>
+              <div class="stack" style="gap:var(--sp-2)">
+                <b style="font-family:var(--f-display)">Sự kiện là bất biến</b>
+                <span class="ink2" style="font-size:var(--fs-sm)">Không có nút sửa hay xoá. Sai sót được xử lý bằng một lệnh mới tạo sự kiện mới (ví dụ requeue, cancel), lịch sử cũ giữ nguyên để kiểm toán.</span>
+                <span class="note-red">Heartbeat chỉ đổi run_version. Nó không làm tăng task_version nên không vô hiệu quyết định đang chờ.</span>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+    </main>
+    <div id="titleblock"></div>
+  </div>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(() => {
+  const F = BP.F;
+  const el = (t, a, p) => BP.svg(t, a, p);
+  const ACTS = ["claim", "heartbeat", "checkpoint", "submit", "accept", "approve", "reject", "message", "ACK", "credential"];
+  const actColor = { claim: "var(--s-ready)", heartbeat: "var(--s-doing)", checkpoint: "var(--s-doing)", submit: "var(--s-review)", accept: "var(--s-done)", approve: "var(--amber)", reject: "var(--amber)", message: "var(--s-ready)", ACK: "var(--s-ready)", credential: "var(--ink-2)" };
+  const actVi = { claim: "claim", heartbeat: "heartbeat", checkpoint: "checkpoint", submit: "submit result", accept: "accept result", approve: "approve", reject: "reject", message: "message.post", ACK: "message.ack", credential: "credential" };
+  const humanById = id => F.humans.find(h => h.id === id);
+  const deptOfAgent = id => (BP.agent(id) || {}).dept;
+
+  /* ---------- seed events (oldest first) ---------- */
+  let seq = 380;
+  const now = Date.now();
+  const E = [];
+  function add(minAgo, o) {
+    const ev = { seq: ++seq, id: "ev-000" + seq, ts: now - minAgo * 60000 - Math.floor(Math.random() * 40000), result: "ok", ...o };
+    if (!ev.dept) ev.dept = ev.task ? (BP.task(ev.task) || {}).dept : deptOfAgent(ev.actor);
+    E.push(ev); return ev;
+  }
+  add(52, { actor: "hu-qd", kind: "human", action: "credential", res: "cr-forge-02", detail: "rotate · enroll runtime mới rt-forge-a19", dept: "vh" });
+  add(49, { actor: "atlas", kind: "agent", action: "claim", task: "T-1042", res: "run r-88f1", v: { task: 21, run: 1, fence: 18 } });
+  add(47, { actor: "forge", kind: "agent", action: "claim", task: "T-1047", res: "run r-31c0", v: { task: 9, run: 1, fence: 4 } });
+  add(46, { actor: "bolt", kind: "agent", action: "submit", task: "T-1036", res: "result rs-1036-2", v: { task: 14, run: 7, fence: 9 }, detail: "3 artifact committed" });
+  add(44, { actor: "atlas", kind: "agent", action: "heartbeat", task: "T-1042", res: "run r-88f1", v: { task: 21, run: 2, fence: 18 } });
+  add(41, { actor: "vega", kind: "agent", action: "checkpoint", task: "T-1039", res: "proposal v2", v: { task: 12, run: 4, fence: 7 }, detail: "request decision · run paused" });
+  add(39, { actor: "muse", kind: "agent", action: "submit", task: "T-1040", res: "result rs-1040-1", v: { task: 8, run: 3, fence: 3 } });
+  add(36, { actor: "atlas", kind: "agent", action: "heartbeat", task: "T-1042", res: "run r-88f1", v: { task: 21, run: 3, fence: 18 } });
+  add(34, { actor: "hu-ha", kind: "human", action: "accept", task: "T-1029", res: "result rs-1029-1", v: { task: 11, run: null, fence: 2 }, detail: "reviewer khác người nộp (LENS-06)" });
+  add(31, { actor: "orbit", kind: "agent", action: "checkpoint", task: "T-1053", res: "proposal v1", v: { task: 6, run: 2, fence: 2 }, detail: "xoá không hoàn tác · cần người" });
+  add(29, { actor: "forge", kind: "agent", action: "submit", task: "T-1047", res: "result rs-1047-1", v: { task: 9, run: 1, fence: 3 }, result: "409", detail: "STALE_FENCE · run cũ r-2b77 fence 3 < 4" });
+  add(27, { actor: "kite", kind: "agent", action: "claim", task: "T-1051", res: "run r-5a02", v: { task: 5, run: 1, fence: 2 } });
+  add(25, { actor: "muse", kind: "agent", action: "message", task: null, res: "thread #standup-nd", detail: "m-5521 · 3 người nhận", dept: "nd" });
+  add(24, { actor: "lens", kind: "agent", action: "ACK", task: null, res: "message m-5521", detail: "ACK không cấp quyền thực thi", dept: "qc" });
+  add(22, { actor: "atlas", kind: "agent", action: "checkpoint", task: "T-1042", res: "checkpoint cp-07", v: { task: 21, run: 5, fence: 18 }, detail: "artifact a-7731 committed" });
+  add(20, { actor: "hu-kn", kind: "human", action: "reject", task: "T-1027", res: "proposal v1", v: { task: 4, run: null, fence: 1 }, detail: "lý do: trùng phạm vi với profile mới" });
+  add(18, { actor: "nova", kind: "agent", action: "claim", task: "T-1044", res: "run r-c7d3", v: { task: 17, run: 1, fence: 11 } });
+  add(16, { actor: "forge", kind: "agent", action: "claim", task: "T-1055", res: "task T-1055", v: { task: 3, run: null, fence: 0 }, result: "409", detail: "CLAIM_CONFLICT · BOLT-10 thắng trước 40 ms" });
+  add(16, { actor: "bolt", kind: "agent", action: "claim", task: "T-1055", res: "run r-0f19", v: { task: 3, run: 1, fence: 1 }, detail: "yield sau 2 phút (mô phỏng)" });
+  add(13, { actor: "atlas", kind: "agent", action: "heartbeat", task: "T-1042", res: "run r-88f1", v: { task: 21, run: 6, fence: 18 } });
+  add(11, { actor: "hu-qd", kind: "human", action: "approve", task: "T-1031", res: "proposal v3", v: { task: 15, run: null, fence: 5 }, detail: "approval ≠ đã thực thi · cần claim mới" });
+  add(9, { actor: "sage", kind: "agent", action: "message", task: "T-1036", res: "thread #qc-1036", detail: "yêu cầu bổ sung log chạy test", dept: "qc" });
+  add(8, { actor: "bolt", kind: "agent", action: "ACK", task: "T-1036", res: "message m-5540", detail: "đã nhận yêu cầu", dept: "kt" });
+  add(6, { actor: "pixel", kind: "agent", action: "credential", task: null, res: "cr-pixel-08", result: "403", detail: "runtime proof không khớp · từ chối", dept: "nd" });
+  add(4, { actor: "atlas", kind: "agent", action: "heartbeat", task: "T-1042", res: "run r-88f1", v: { task: 21, run: 7, fence: 18 } });
+  add(2, { actor: "kite", kind: "agent", action: "heartbeat", task: "T-1051", res: "run r-5a02", v: { task: 5, run: 4, fence: 2 } });
+  add(1, { actor: "nova", kind: "agent", action: "checkpoint", task: "T-1044", res: "checkpoint cp-03", v: { task: 17, run: 5, fence: 11 } });
+  add(0, { actor: "atlas", kind: "agent", action: "heartbeat", task: "T-1042", res: "run r-88f1", v: { task: 21, run: 8, fence: 18 } });
+  E.sort((a, b) => a.ts - b.ts);
+
+  /* ---------- filters UI ---------- */
+  const fActor = BP.$("#fActor"), fDept = BP.$("#fDept"), q = BP.$("#q");
+  F.agents.forEach(a => fActor.insertAdjacentHTML("beforeend", `<option value="${a.id}">${a.name}</option>`));
+  F.humans.forEach(h => fActor.insertAdjacentHTML("beforeend", `<option value="${h.id}">${h.name} (người)</option>`));
+  F.departments.forEach(d => fDept.insertAdjacentHTML("beforeend", `<option value="${d.id}">${d.code} · ${d.name}</option>`));
+  const actsOn = new Set(ACTS);
+  BP.$("#fActs").innerHTML = `<span class="code" style="margin-right:var(--sp-1)">Hành động</span>` + ACTS.map(a => `<button class="chip" aria-pressed="true" data-a="${a}">${a}</button>`).join("");
+  BP.$$("#fActs .chip").forEach(c => c.addEventListener("click", () => {
+    const a = c.dataset.a; actsOn.has(a) ? actsOn.delete(a) : actsOn.add(a);
+    c.setAttribute("aria-pressed", String(actsOn.has(a))); render();
+  }));
+  let range = 60;
+  BP.$$("#fRange button").forEach(b => b.addEventListener("click", () => {
+    BP.$$("#fRange button").forEach(x => x.setAttribute("aria-pressed", String(x === b))); range = +b.dataset.r; render(); drawHist();
+  }));
+  [fActor, fDept].forEach(s => s.addEventListener("change", render));
+  q.addEventListener("input", render);
+  BP.$("#resetBtn").addEventListener("click", () => {
+    fActor.value = ""; fDept.value = ""; q.value = ""; ACTS.forEach(a => actsOn.add(a));
+    BP.$$("#fActs .chip").forEach(c => c.setAttribute("aria-pressed", "true")); render();
+  });
+
+  /* ---------- rendering ---------- */
+  const fmtT = ts => new Date(ts).toTimeString().slice(0, 8);
+  function actorHtml(ev) {
+    if (ev.kind === "human") { const h = humanById(ev.actor); return `<span class="actor"><span class="human-token" aria-hidden="true">${h.code}</span>${h.name}</span>`; }
+    const a = BP.agent(ev.actor); const c = a.presence === "stale" ? "var(--red)" : "var(--s-ready)";
+    return `<span class="actor"><span class="bot" style="--c:${c}" aria-hidden="true">${a.code}</span>${a.name}</span>`;
+  }
+  function verHtml(ev) {
+    if (!ev.v) return '<span class="ver muted">không đổi version</span>';
+    const p = [];
+    if (ev.v.task != null) p.push(`task <b>v${ev.v.task}</b>`);
+    if (ev.v.run != null) p.push(`run <b>v${ev.v.run}</b>`);
+    if (ev.v.fence != null) p.push(`fence <b>${ev.v.fence}</b>`);
+    return `<span class="ver">${p.join(" · ")}</span>`;
+  }
+  function resHtml(ev) {
+    if (ev.result === "409") return '<span class="state failed" title="Conflict">409</span>';
+    if (ev.result === "403") return '<span class="state failed" title="Denied">403</span>';
+    return ev.action === "message" ? '<span class="state done" title="Stored">201</span>' : '<span class="state done" title="Committed">OK</span>';
+  }
+  function match(ev) {
+    if (!actsOn.has(ev.action)) return false;
+    if (fActor.value && ev.actor !== fActor.value) return false;
+    if (fDept.value && ev.dept !== fDept.value) return false;
+    if (Date.now() - ev.ts > range * 60000) return false;
+    const s = q.value.trim().toLowerCase();
+    if (s) { const hay = `${ev.id} ${ev.task || ""} ${ev.res} ${ev.actor} ${ev.action} ${ev.detail || ""} ${ev.v ? "fence " + ev.v.fence : ""}`.toLowerCase(); if (!hay.includes(s)) return false; }
+    return true;
+  }
+  const rows = BP.$("#rows");
+  let selected = null;
+  function rowHtml(ev) {
+    return `<td class="mono ink2">${fmtT(ev.ts)}</td><td>${actorHtml(ev)}</td>
+      <td><span class="act" style="color:${ev.result !== "ok" ? "var(--red)" : actColor[ev.action]}">${actVi[ev.action]}</span></td>
+      <td><span class="mono">${ev.task ? ev.task + " · " : ""}${ev.res}</span>${ev.detail ? `<div class="muted" style="font-size:var(--fs-xs)">${ev.detail}</div>` : ""}</td>
+      <td>${verHtml(ev)}</td><td>${resHtml(ev)}</td>`;
+  }
+  function makeRow(ev, enter) {
+    const tr = document.createElement("tr");
+    tr.tabIndex = 0; tr.dataset.id = ev.id; tr.setAttribute("aria-selected", String(selected === ev.id));
+    if (enter) tr.className = "enter";
+    tr.innerHTML = rowHtml(ev);
+    return tr;
+  }
+  function render() {
+    const list = E.filter(match).slice().reverse();
+    rows.innerHTML = ""; list.forEach(ev => rows.appendChild(makeRow(ev)));
+    BP.$("#empty").hidden = list.length > 0;
+    BP.$("#shown").textContent = `${list.length} / ${E.length} sự kiện`;
+  }
+  rows.addEventListener("click", e => { const tr = e.target.closest("tr"); if (tr) select(tr.dataset.id); });
+  rows.addEventListener("keydown", e => {
+    const tr = e.target.closest("tr"); if (!tr) return;
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(tr.dataset.id); }
+    if (e.key === "ArrowDown" && tr.nextElementSibling) { e.preventDefault(); tr.nextElementSibling.focus(); }
+    if (e.key === "ArrowUp" && tr.previousElementSibling) { e.preventDefault(); tr.previousElementSibling.focus(); }
+  });
+
+  /* ---------- detail: JSON + trace ---------- */
+  function hl(obj, ind = 0) {
+    const pad = "  ".repeat(ind);
+    if (obj === null) return '<span class="j-null">null</span>';
+    if (typeof obj === "number") return `<span class="j-n">${obj}</span>`;
+    if (typeof obj === "boolean") return `<span class="j-b">${obj}</span>`;
+    if (typeof obj === "string") return `<span class="j-s">"${obj}"</span>`;
+    const keys = Object.keys(obj);
+    return "{\n" + keys.map((k, i) => `${pad}  <span class="j-k">"${k}"</span>: ${hl(obj[k], ind + 1)}${i < keys.length - 1 ? "," : ""}`).join("\n") + `\n${pad}}`;
+  }
+  function record(ev) {
+    return {
+      event_id: ev.id, seq: ev.seq, workspace_id: F.workspace.id,
+      occurred_at: new Date(ev.ts).toISOString().replace(/\.\d+Z/, "Z"),
+      actor: { kind: ev.kind, id: ev.actor },
+      type: ev.action === "message" ? "message.created" : ev.action === "ACK" ? "message.acked" : "task." + ev.action,
+      resource: ev.task ? { task_id: ev.task, ref: ev.res } : { ref: ev.res },
+      versions_after: ev.v ? { task_version: ev.v.task, run_version: ev.v.run, fence: ev.v.fence } : null,
+      outcome: ev.result === "ok" ? "committed" : ev.result === "409" ? "conflict" : "denied",
+      immutable: true
+    };
+  }
+  function select(id) {
+    selected = id;
+    BP.$$("#rows tr").forEach(tr => tr.setAttribute("aria-selected", String(tr.dataset.id === id)));
+    const ev = E.find(e => e.id === id); if (!ev) return;
+    BP.$("#dId").textContent = ev.id;
+    BP.$("#json").innerHTML = hl(record(ev));
+    const tr = BP.$("#trace");
+    if (!ev.task) {
+      BP.$("#tTask").textContent = "không gắn task";
+      tr.innerHTML = `<li><span class="node"></span><time>${fmtT(ev.ts)}</time><span>Sự kiện ${actVi[ev.action]} không thuộc task nào. Xem ${ev.res} trong <a href="17-mailroom.html">Phòng thư</a>.</span></li>`;
+      BP.$("#openTask").setAttribute("aria-disabled", "true");
+      return;
+    }
+    BP.$("#openTask").removeAttribute("aria-disabled");
+    BP.$("#tTask").textContent = ev.task;
+    const rel = E.filter(e => e.task === ev.task);
+    tr.innerHTML = rel.map((e, i) => `<li class="${e.id === id ? "cur" : ""} ${e.result !== "ok" ? "bad" : ""}"><span class="node"></span><time>${fmtT(e.ts)}</time><span class="draw-in" style="animation-delay:${i * 60}ms">${(e.kind === "human" ? humanById(e.actor).name : BP.agent(e.actor).name)} · ${actVi[e.action]}${e.v ? ` · fence ${e.v.fence}` : ""}${e.result !== "ok" ? ` · <span class="c-red">${e.result}</span>` : ""}</span></li>`).join("");
+  }
+
+  /* ---------- histogram ---------- */
+  const hist = BP.$("#hist"), HW = 1000, HH = 130, BOT = 112, N = 60, bw = HW / N;
+  const bins = Array.from({ length: N }, (_, i) => ({ exec: Math.round(6 + Math.random() * 10 + (i > 40 ? 4 : 0)), human: Math.random() < 0.2 ? 1 + Math.round(Math.random()) : 0, msg: Math.round(Math.random() * 4), bad: Math.random() < 0.12 ? 1 : 0 }));
+  E.forEach(ev => { const m = N - 1 - Math.floor((now - ev.ts) / 60000); if (m >= 0) bins[m][cat(ev)]++; });
+  function cat(ev) { return ev.result !== "ok" ? "bad" : ["approve", "reject", "accept"].includes(ev.action) && ev.kind === "human" ? "human" : ["message", "ACK", "credential"].includes(ev.action) ? "msg" : "exec"; }
+  const gGrid = el("g", {}, hist), gBars = el("g", {}, hist);
+  [0, 10, 20, 30].forEach(v => { const y = BOT - v * 3; el("line", { x1: 0, x2: HW, y1: y, y2: y, stroke: "var(--grid-major)" }, gGrid); });
+  for (let m = 0; m <= 60; m += 10) { const x = HW - m * bw - (m === 0 ? 0 : 0); const t = el("text", { x: Math.min(HW - 2, Math.max(2, x)), y: HH - 4, class: "ax", "text-anchor": m === 0 ? "end" : m === 60 ? "start" : "middle" }, gGrid); t.textContent = m === 0 ? "bây giờ" : `-${m} ph`; el("line", { x1: x, x2: x, y1: BOT, y2: BOT + 5, stroke: "var(--line)" }, gGrid); }
+  el("line", { x1: 0, x2: HW, y1: BOT, y2: BOT, stroke: "var(--line)" }, gGrid);
+  const rangeBox = el("rect", { y: 4, height: BOT - 4, fill: "none", stroke: "var(--s-ready)", "stroke-dasharray": "3 3" }, gGrid);
+  const rangeLbl = el("text", { y: 14, class: "ax", style: "fill:var(--s-ready)" }, gGrid);
+  const colors = { exec: "var(--s-doing)", human: "var(--amber)", msg: "var(--s-ready)", bad: "var(--red)" };
+  function drawHist() {
+    gBars.innerHTML = "";
+    bins.forEach((b, i) => {
+      let y = BOT; const inRange = (N - 1 - i) < range;
+      ["exec", "msg", "human", "bad"].forEach(k => {
+        if (!b[k]) return; const h = b[k] * 3;
+        el("rect", { x: i * bw + 2, y: y - h, width: bw - 4, height: h, fill: colors[k], opacity: inRange ? 0.9 : 0.3, class: "bar" }, gBars);
+        y -= h;
+      });
+    });
+    const w = Math.min(range, N) * bw;
+    rangeBox.setAttribute("x", HW - w + 1); rangeBox.setAttribute("width", w - 2);
+    rangeLbl.setAttribute("x", HW - w + 6); rangeLbl.textContent = range >= 60 ? (range === 60 ? "BỘ LỌC · 1 GIỜ" : "BỘ LỌC · 24 GIỜ (hiển thị 60 ph)") : "BỘ LỌC · 15 PHÚT";
+    const tot = bins.reduce((a, b) => a + b.exec + b.human + b.msg + b.bad, 0), bad = bins.reduce((a, b) => a + b.bad, 0);
+    BP.$("#histSum").textContent = `${tot} sự kiện trong 60 phút · ${bad} bị từ chối (409/403) · phút hiện tại: ${bins[N - 1].exec + bins[N - 1].human + bins[N - 1].msg + bins[N - 1].bad}`;
+  }
+  drawHist();
+  let minuteAcc = 0;
+  BP.every(1000, () => { if (++minuteAcc >= 60) { minuteAcc = 0; bins.shift(); bins.push({ exec: 0, human: 0, msg: 0, bad: 0 }); drawHist(); } });
+
+  /* ---------- live stream ---------- */
+  const runV = { "T-1042": 8, "T-1051": 4, "T-1044": 5, "T-1047": 3 };
+  const runs = { "T-1042": ["atlas", "r-88f1", 21, 18], "T-1051": ["kite", "r-5a02", 5, 2], "T-1044": ["nova", "r-c7d3", 17, 11], "T-1047": ["forge", "r-31c0", 9, 4] };
+  const GEN = [
+    () => { const t = BP.pick(Object.keys(runs)); const [a, r, tv, f] = runs[t]; return { actor: a, kind: "agent", action: "heartbeat", task: t, res: "run " + r, v: { task: tv, run: ++runV[t], fence: f } }; },
+    () => { const t = BP.pick(Object.keys(runs)); const [a, r, tv, f] = runs[t]; return { actor: a, kind: "agent", action: "heartbeat", task: t, res: "run " + r, v: { task: tv, run: ++runV[t], fence: f } }; },
+    () => { const t = BP.pick(["T-1042", "T-1044"]); const [a, , tv, f] = runs[t]; return { actor: a, kind: "agent", action: "checkpoint", task: t, res: "checkpoint cp-" + Math.floor(10 + Math.random() * 80), v: { task: tv, run: ++runV[t], fence: f }, detail: "artifact committed" }; },
+    () => ({ actor: BP.pick(["muse", "sage", "vega", "kite"]), kind: "agent", action: "message", task: null, res: "thread #ops-" + Math.floor(Math.random() * 90), detail: "m-" + Math.floor(5600 + Math.random() * 300) }),
+    () => ({ actor: BP.pick(["lens", "bolt", "atlas", "nova"]), kind: "agent", action: "ACK", task: null, res: "message m-" + Math.floor(5600 + Math.random() * 300), detail: "ACK ≠ claim" }),
+    () => ({ actor: "bolt", kind: "agent", action: "claim", task: "T-1056", res: "task T-1056", v: { task: 4, run: null, fence: 0 }, result: "409", detail: "WIP_LIMIT · KT-01 đã 4/4" })
+  ];
+  let paused = false, buffer = [];
+  const pill = BP.$("#newPill"), pauseBtn = BP.$("#pauseBtn"), st = BP.$("#streamState");
+  function insert(ev) {
+    E.push(ev);
+    const m = N - 1; bins[m][cat(ev)]++; drawHist();
+    if (!match(ev)) { BP.$("#shown").textContent = `${E.filter(match).length} / ${E.length} sự kiện`; return; }
+    rows.prepend(makeRow(ev, true));
+    while (rows.children.length > 80) rows.lastElementChild.remove();
+    BP.$("#empty").hidden = true;
+    BP.$("#shown").textContent = `${E.filter(match).length} / ${E.length} sự kiện`;
+    if (selected && E.find(e => e.id === selected)?.task === ev.task && ev.task) select(selected);
+  }
+  BP.every(2400, () => {
+    const o = BP.pick(GEN)();
+    const ev = { seq: ++seq, id: "ev-000" + seq, ts: Date.now(), result: "ok", ...o };
+    ev.dept = ev.task ? (BP.task(ev.task) || {}).dept : deptOfAgent(ev.actor);
+    if (paused) { buffer.push(ev); pill.textContent = `${buffer.length} sự kiện mới · Hiện`; pill.classList.add("show"); return; }
+    insert(ev);
+  });
+  function setPausedStream(p) {
+    paused = p;
+    pauseBtn.setAttribute("aria-pressed", String(p));
+    pauseBtn.querySelector("span").textContent = p ? "Tiếp tục luồng" : "Tạm dừng luồng";
+    pauseBtn.querySelector("svg").innerHTML = p ? '<path d="M3 2l7 4-7 4z" fill="currentColor"/>' : '<path d="M3 2v8M9 2v8" stroke="currentColor" stroke-width="2"/>';
+    st.className = "stream-state " + (p ? "paused" : "live");
+    st.textContent = p ? "ĐÃ TẠM DỪNG · ĐANG GOM" : "LUỒNG TRỰC TIẾP";
+    if (!p) flush();
+  }
+  function flush() { buffer.forEach(insert); buffer = []; pill.classList.remove("show"); }
+  pauseBtn.addEventListener("click", () => setPausedStream(!paused));
+  pill.addEventListener("click", () => { flush(); });
+
+  // Initial view: newest T-1042 event selected so the trace shows a full claim → heartbeat → checkpoint chain.
+  render();
+  select(E.filter(e => e.task === "T-1042").slice(-1)[0].id);
+})();
+</script>
+</body>
+</html>

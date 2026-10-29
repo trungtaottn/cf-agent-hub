@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phòng điều khiển · CF Agent Factory</title>
+<link rel="stylesheet" href="assets/blueprint.css">
+<style>
+  /* Wall display grid: 12 columns, reads from distance */
+  .wall { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--sp-4); }
+  .s12 { grid-column: span 12; } .s8 { grid-column: span 8; } .s7 { grid-column: span 7; }
+  .s5 { grid-column: span 5; } .s4 { grid-column: span 4; }
+  .screen-id { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); letter-spacing: 0.12em; }
+  /* .scan::after shares the pseudo-element with .panel::after ticks: strip the tick borders from the sweep band */
+  .panel.scan::after { border-width: 0; width: auto; bottom: auto; right: 0; }
+  .state.off { color: var(--ink-2); border-style: dashed; } .state.off::before { content: "⊘"; }
+  .agent-sum { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--line-soft); }
+  .agent-sum .kpi { border-left: 1px solid var(--line-soft); }
+  .agent-sum .kpi:first-child { border-left: 0; }
+  .panel-head .live { display: inline-flex; align-items: center; gap: 6px; font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--s-doing); letter-spacing: 0.1em; }
+  .panel-head .live::before { content: ""; width: 6px; height: 6px; background: var(--s-doing); animation: blink 1.4s steps(2, jump-none) infinite; }
+
+  /* Station strip */
+  .stations { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .stations a { display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-4); color: var(--ink); text-decoration: none; border-left: 1px solid var(--line-soft); min-height: 44px; }
+  .stations a:first-child { border-left: 0; }
+  .stations a:hover { background: var(--bp-700); text-decoration: none; }
+  .stations .big { font-family: var(--f-display); font-size: calc(var(--fs-3xl) * 1.6); font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
+  .stations .foot { font-size: var(--fs-xs); color: var(--ink-2); }
+  .stations .bar { height: 4px; background: var(--bp-950); border: 1px solid var(--line-soft); position: relative; }
+  .stations .bar i { position: absolute; inset: 0 auto 0 0; }
+  .bump { animation: bump var(--dur-slow) var(--ease); }
+  @keyframes bump { 0% { color: var(--ink); text-shadow: 0 0 12px var(--s-ready); } 100% { text-shadow: none; } }
+
+  /* Radar */
+  .radar-wrap { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .radar svg { width: 100%; max-width: 500px; margin: 0 auto; }
+  .radar .ring { fill: none; stroke: var(--line-soft); stroke-width: 1; }
+  .radar .ring.edge { stroke: var(--line); }
+  .radar .tick { stroke: var(--line-soft); stroke-width: 1; }
+  .radar .dot-lbl { font-family: var(--f-mono); font-size: 13px; font-weight: 600; fill: var(--ink); }
+  .radar .dot-sub { font-family: var(--f-mono); font-size: 11.5px; fill: var(--ink-2); }
+  .radar .sub { font-size: 11px; }
+  .run-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line-soft); }
+  .run-list li { display: grid; grid-template-columns: 40px 1fr 70px 60px; gap: var(--sp-2); align-items: center; padding: var(--sp-2) var(--sp-4); border-bottom: 1px solid var(--grid-major); font-size: var(--fs-sm); }
+  .run-list .bot { width: 30px; height: 30px; font-size: 9px; }
+  .run-list .secs { font-family: var(--f-mono); font-size: var(--fs-md); text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* Agent lamp board */
+  .agents { display: grid; grid-template-columns: repeat(auto-fill, minmax(178px, 1fr)); gap: 1px; background: var(--line-soft); }
+  .agent-tile { background: var(--bp-800); padding: var(--sp-3); display: flex; flex-direction: column; gap: var(--sp-2); min-width: 0; }
+  .agent-tile .nm { font-family: var(--f-display); font-weight: 600; font-size: var(--fs-md); letter-spacing: 0.04em; white-space: nowrap; }
+  .agent-tile .row.between { flex-wrap: wrap; gap: var(--sp-1) var(--sp-2); }
+  .agent-tile .act { font-size: var(--fs-xs); color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lamps { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; }
+  .lamp { font-family: var(--f-mono); font-size: 9px; font-weight: 600; text-align: center; padding: 3px 0; border: 1px solid var(--line-soft); color: var(--ink-3); background: var(--bp-950); letter-spacing: 0.04em; transition: background var(--dur-fast), color var(--dur-fast); }
+  .lamp.on { color: var(--bp-950); background: var(--s-doing); border-color: var(--s-doing); }
+  .lamp.blue { color: var(--bp-950); background: var(--s-ready); border-color: var(--s-ready); }
+  .lamp.amber { color: var(--bp-950); background: var(--amber); border-color: var(--amber); }
+  .lamp.red { color: var(--bp-950); background: var(--red); border-color: var(--red); }
+  .lamp.violet { color: var(--bp-950); background: var(--s-review); border-color: var(--s-review); }
+  .lamp.flash { animation: lampflash var(--dur-slow) var(--ease); }
+  @keyframes lampflash { 0% { background: var(--ink); color: var(--bp-950); } }
+
+  /* Queue */
+  .q { list-style: none; margin: 0; padding: 0; }
+  .q li { display: grid; grid-template-columns: auto 1fr auto; gap: var(--sp-3); align-items: center; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--grid-major); }
+  .q .t { font-size: var(--fs-sm); line-height: 1.35; }
+  .q .s { font-size: var(--fs-xs); color: var(--ink-2); }
+  .q .cd { font-family: var(--f-mono); font-size: var(--fs-lg); font-variant-numeric: tabular-nums; text-align: right; }
+  .q li.qh { display: block; margin: 0; padding: var(--sp-2) var(--sp-4); font-family: var(--f-mono); font-size: var(--fs-2xs); font-weight: 500; color: var(--ink-3); letter-spacing: 0.12em; border-bottom: 1px solid var(--line-soft); background: var(--bp-900); }
+
+  /* Outbox */
+  .ob { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-bottom: 1px solid var(--line-soft); }
+  .ob > div { padding: var(--sp-3) var(--sp-4); border-left: 1px solid var(--line-soft); border-top: 1px solid var(--line-soft); }
+  .ob > div:nth-child(odd) { border-left: 0; }
+  .ob > div:nth-child(-n+2) { border-top: 0; }
+  .ob .n { font-family: var(--f-display); font-size: calc(var(--fs-3xl) * 1.15); font-weight: 600; line-height: 1.05; font-variant-numeric: tabular-nums; }
+  .ladder { display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; padding: var(--sp-3) var(--sp-4) 0; }
+  .ladder span { font-family: var(--f-mono); font-size: 9.5px; color: var(--ink-3); text-align: center; border-top: 2px solid var(--line-soft); padding-top: 3px; }
+  .ladder span.hit { border-top-color: var(--s-ready); color: var(--ink); }
+  .ladder span.cur { border-top-color: var(--amber); color: var(--amber); }
+  .mini-log { max-height: 148px; overflow: hidden; }
+  .mini-log .log li { grid-template-columns: 62px 18px 1fr; font-size: var(--fs-xs); }
+
+  /* Readiness */
+  .ready-t td:first-child { font-weight: 500; }
+  .ready-t td { padding: var(--sp-2) var(--sp-4); }
+
+  /* Throughput chart */
+  .tp-head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--sp-4); flex-wrap: wrap; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--line-soft); }
+  .tp-kpis { display: flex; gap: var(--sp-6); flex-wrap: wrap; }
+  .tp-kpis .kpi { padding: 0; }
+  .tp svg { width: 100%; height: auto; }
+  .tp .gl { stroke: var(--grid-major); stroke-width: 1; }
+  .tp .ax { font-family: var(--f-mono); font-size: 10px; fill: var(--ink-3); }
+
+  /* Alerts */
+  .alerts li { grid-template-columns: 26px 1fr auto; }
+  .sev { font-family: var(--f-mono); font-size: var(--fs-md); text-align: center; }
+
+  /* Fullscreen wall mode (mock): hide rail + titleblock */
+  body.wall-mode .app { grid-template-columns: 1fr; }
+  body.wall-mode .rail, body.wall-mode .titleblock, body.wall-mode .page-head .lede { display: none; }
+  body.wall-mode .content { padding: var(--sp-4); gap: var(--sp-4); }
+  .wall-badge { display: none; }
+  body.wall-mode .wall-badge { display: inline-flex; }
+
+  @media (max-width: 1280px) {
+    .s8, .s7, .s5, .s4 { grid-column: span 6; }
+    .s12 { grid-column: span 12; }
+    .stations { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .stations a:nth-child(4) { border-left: 0; }
+    .stations a:nth-child(n+4) { border-top: 1px solid var(--line-soft); }
+  }
+  @media (max-width: 960px) {
+    .s8, .s7, .s5, .s4, .s12 { grid-column: span 12; }
+  }
+  @media (max-width: 560px) {
+    .stations { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .stations a:nth-child(odd) { border-left: 0; }
+    .stations a:nth-child(4) { border-left: 1px solid var(--line-soft); }
+    .stations a:nth-child(n+3) { border-top: 1px solid var(--line-soft); }
+    .stations .big { font-size: var(--fs-3xl); }
+    .run-list li { grid-template-columns: 34px 1fr 56px; }
+    .run-list li .fence { display: none; }
+    .agents { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+    .ready-t th:nth-child(3), .ready-t td:nth-child(3) { display: none; }
+    .agent-sum { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .agent-sum .kpi:nth-child(3) { border-left: 0; }
+    .agent-sum .kpi:nth-child(n+3) { border-top: 1px solid var(--line-soft); }
+  }
+</style>
+</head>
+<body data-sheet="09" data-title="Phòng điều khiển · Bảng trạng thái">
+<div class="app paper">
+  <div id="rail"></div>
+  <div class="main">
+    <header id="topbar"></header>
+    <main class="content">
+
+      <section class="page-head reveal">
+        <div>
+          <div class="code">CONTROL ROOM · WALL DISPLAY · WS-AURORA <span class="tag amber wall-badge">WALL MODE</span></div>
+          <h2>Bảng trạng thái nhà máy</h2>
+          <p class="lede">Màn hình treo tường cho ca trực: mỗi ô là một màn hình độc lập, đọc được từ xa. Số liệu ưu tiên sự thật từ Durable Object; ô nào chưa có số đo thì ghi "Not reported", không bao giờ ghi 0.</p>
+        </div>
+        <div class="actions">
+          <a class="btn" href="20-maintenance.html">Mở phòng bảo trì</a>
+          <button class="btn primary" id="wallBtn" aria-pressed="false">
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M1 5V1h4M9 1h4v4M13 9v4H9M5 13H1V9" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+            <span>Chế độ toàn màn hình</span>
+          </button>
+        </div>
+      </section>
+
+      <div class="wall">
+
+        <!-- SCREEN 01 · stations -->
+        <section class="panel scan s12 reveal" aria-label="Trạng thái 6 trạm">
+          <div class="panel-head"><h3>Trạng thái 6 trạm dây chuyền</h3><span class="screen-id">SCR-01 · STATIONS</span></div>
+          <div class="stations" id="stations"></div>
+        </section>
+
+        <!-- SCREEN 02 · lease radar -->
+        <section class="panel scan s5 reveal" aria-label="Lease radar">
+          <div class="panel-head"><h3>Lease radar</h3><span class="live">LIVE · 1 Hz</span></div>
+          <div class="radar-wrap">
+            <div class="radar panel-body">
+              <svg id="radar" class="dwg" viewBox="-60 0 560 440" role="img" aria-labelledby="radarTitle">
+                <title id="radarTitle">Radar lease: mỗi chấm là một run đang giữ lease. Khoảng cách tới tâm bằng số giây lease còn lại, tâm là hết hạn, vòng ngoài là 60 giây.</title>
+                <g id="rGrid"></g><g id="rSweep"></g><g id="rDots"></g>
+              </svg>
+            </div>
+            <ul class="run-list" id="runList" aria-label="Danh sách run và lease còn lại"></ul>
+            <p class="panel-body muted" style="margin:0;font-size:var(--fs-xs)">Lease mặc định 60 s, heartbeat khuyến nghị 20 s. Heartbeat chỉ gia hạn run_version, không đổi task_version. SAGE-12 đang kiểm định T-1036 nên không có lease thực thi.</p>
+          </div>
+        </section>
+
+        <!-- SCREEN 03 · agent board -->
+        <section class="panel scan s7 reveal" aria-label="Bảng agent">
+          <div class="panel-head"><h3>Agent board · 12 agent</h3><span class="screen-id">SCR-03 · PRESENCE ≠ OWNERSHIP</span></div>
+          <div class="agents" id="agents"></div>
+          <div class="agent-sum" aria-label="Tổng hợp presence và quyền sở hữu">
+            <div class="kpi"><span class="label">Online</span><span class="value c-doing" id="sumOn">10</span><span class="note">tín hiệu trong hạn</span></div>
+            <div class="kpi"><span class="label">Giữ run có lease</span><span class="value" id="sumRun">4</span><span class="note">quyền sở hữu task</span></div>
+            <div class="kpi"><span class="label">Stale · Offline</span><span class="value c-red" id="sumStale">1 · 1</span><span class="note">không giữ task nào</span></div>
+            <div class="kpi"><span class="label">Inbox chưa ACK</span><span class="value c-ready">7</span><span class="note">ACK không cấp quyền làm</span></div>
+          </div>
+          <div class="panel-body legend" aria-label="Chú giải đèn">
+            <span><b>PRS</b> presence</span><span><b>RUN</b> giữ run có lease</span><span><b>HB</b> heartbeat gần nhất</span><span><b>MSG</b> inbox chưa ACK</span><span><b>HMN</b> chờ người</span><span><b>CDN</b> hồi quota</span>
+          </div>
+        </section>
+
+        <!-- SCREEN 04 · decision + review queue -->
+        <section class="panel scan s4 reveal" aria-label="Hàng đợi quyết định và nghiệm thu">
+          <div class="panel-head"><h3>Hàng đợi người quyết</h3><span class="tag amber">4 MỤC</span></div>
+          <ul class="q" id="queue">
+            <li class="qh">CỔNG PHÊ DUYỆT · WAITING</li>
+            <li><span class="human-token" aria-hidden="true">!</span><div><div class="t">T-1039 · Gửi email tới 240 khách beta</div><div class="s">VEGA-03 · proposal v2 · hết hạn 16:30</div></div><div class="cd c-amber" data-exp="16:30">--:--</div></li>
+            <li><span class="human-token" aria-hidden="true">!</span><div><div class="t">T-1053 · Xoá 1.204 artifact staged</div><div class="s">ORBIT-05 · proposal v1 · không hoàn tác</div></div><div class="cd c-amber" data-exp="18:00">--:--</div></li>
+            <li class="qh">TRẠM NGHIỆM THU · REVIEW</li>
+            <li><span class="human-token" aria-hidden="true">HA</span><div><div class="t">T-1040 · Bản dịch HTTP API</div><div class="s">Nộp bởi MUSE-04 · reviewer Hà</div></div><a class="btn sm human" href="13-qc-review.html">Nghiệm thu</a></li>
+            <li><span class="bot" style="--c:var(--s-review)" aria-hidden="true">SG</span><div><div class="t">T-1036 · Test hồi quy claim</div><div class="s">Nộp bởi BOLT-10 · SAGE-12 kiểm định</div></div><span class="state review">Đang xét</span></li>
+          </ul>
+          <div class="panel-body"><a class="btn human" href="12-approval-gate.html" style="width:100%">Mở cổng phê duyệt</a></div>
+        </section>
+
+        <!-- SCREEN 05 · outbox -->
+        <section class="panel scan s4 reveal" aria-label="Outbox và delivery">
+          <div class="panel-head"><h3>Outbox · delivery</h3><span class="screen-id">SCR-05 · AT LEAST ONCE</span></div>
+          <div class="ob">
+            <div><span class="code">Pending</span><div class="n c-ready" id="obPending">7</div></div>
+            <div><span class="code">Retrying</span><div class="n c-amber" id="obRetry">2</div></div>
+            <div><span class="code">Delivered · 24h</span><div class="n c-done" id="obDelivered">1.284</div></div>
+            <div><span class="code">Dead-letter</span><div class="n c-red" id="obDead">1</div></div>
+          </div>
+          <div class="ladder" aria-label="Thang retry: 6 lần thử, trễ 5s, 30s, 120s, 600s, 3600s">
+            <span class="hit">#1 0s</span><span class="hit">#2 5s</span><span class="cur">#3 30s</span><span>#4 120s</span><span>#5 600s</span><span>#6 3600s</span>
+          </div>
+          <div class="mini-log"><ul class="log" id="obLog" aria-live="polite" aria-relevant="additions"></ul></div>
+          <p class="note-red" style="margin:var(--sp-3) var(--sp-4) var(--sp-4)">Delivered ≠ completed. HTTP 2xx chỉ xác nhận receiver nhận tại biên của nó, chưa phải ACK, chưa phải claim hay Done.</p>
+        </section>
+
+        <!-- SCREEN 06 · readiness -->
+        <section class="panel scan s4 reveal" aria-label="Readiness hệ thống">
+          <div class="panel-head"><h3>Readiness hệ thống</h3><span class="screen-id" id="readyAt">CHECK --:--:--</span></div>
+          <table class="table ready-t">
+            <thead><tr><th>Thành phần</th><th>Trạng thái</th><th>Ghi chú</th></tr></thead>
+            <tbody>
+              <tr><td>Durable Object</td><td><span class="state done">Sẵn sàng</span></td><td class="mono muted">ws-aurora · SQLite</td></tr>
+              <tr><td>Schema</td><td><span class="state done">Tương thích</span></td><td class="mono muted">rev 0.1 · R2</td></tr>
+              <tr><td>R2 artifact</td><td><span class="state done">Sẵn sàng</span></td><td class="mono muted">private · ẩn tên bucket</td></tr>
+              <tr><td>Auth · OIDC</td><td><span class="state done">Sẵn sàng</span></td><td class="mono muted">session + bearer</td></tr>
+              <tr><td>Dispatcher</td><td><span class="state doing">Đang chạy</span></td><td class="mono muted">batch 25 · lease 30 s</td></tr>
+              <tr><td>Staged cũ nhất</td><td><span class="state stale">7 ngày</span></td><td class="mono muted">1.204 chờ duyệt xoá</td></tr>
+              <tr><td>Độ trễ event cursor</td><td><span class="unknown">Not reported</span></td><td class="mono muted">chưa đo</td></tr>
+              <tr><td>Diễn tập khôi phục gần nhất</td><td><span class="unknown">Not reported</span></td><td class="mono muted"><a href="20-maintenance.html">ghi nhận</a></td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <!-- SCREEN 07 · throughput -->
+        <section class="panel scan s8 reveal tp" aria-label="Biểu đồ throughput">
+          <div class="panel-head"><h3>Throughput · chuyển trạng thái mỗi phút</h3><span class="live" id="tpLive">STREAMING</span></div>
+          <div class="tp-head">
+            <div class="tp-kpis">
+              <div class="kpi"><span class="label">Hiện tại</span><span class="value c-doing" id="tpNow">--<small> /phút</small></span></div>
+              <div class="kpi"><span class="label">Trung bình 60 s</span><span class="value" id="tpAvg">--</span></div>
+              <div class="kpi"><span class="label">Đỉnh 60 s</span><span class="value" id="tpPeak">--</span></div>
+              <div class="kpi"><span class="label">Lease hết hạn · ca</span><span class="value c-red" id="tpExp">0</span></div>
+            </div>
+            <button class="btn sm" id="tpPause" aria-pressed="false">Tạm dừng biểu đồ</button>
+          </div>
+          <div class="panel-body">
+            <svg id="tp" viewBox="0 0 800 220" role="img" aria-labelledby="tpTitle">
+              <title id="tpTitle">Đường throughput 60 giây gần nhất, cập nhật mỗi giây. Giá trị hiện tại ghi bằng chữ ở phía trên.</title>
+            </svg>
+          </div>
+        </section>
+
+        <!-- SCREEN 08 · alerts -->
+        <section class="panel scan s4 reveal" aria-label="Cảnh báo đang mở">
+          <div class="panel-head"><h3>Cảnh báo đang mở</h3><span class="tag red" id="alertCount">5</span></div>
+          <ul class="q alerts" id="alerts" aria-live="polite"></ul>
+        </section>
+
+      </div>
+    </main>
+    <div id="titleblock"></div>
+  </div>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(() => {
+  const F = BP.F;
+  const el = (t, a, p) => BP.svg(t, a, p);
+  const stColor = { backlog: "var(--s-backlog)", ready: "var(--s-ready)", doing: "var(--s-doing)", waiting: "var(--s-waiting)", review: "var(--s-review)", done: "var(--s-done)" };
+
+  /* ---------- SCR-01 stations ---------- */
+  const ORDER = ["backlog", "ready", "doing", "waiting", "review", "done"];
+  const count = s => F.tasks.filter(t => t.state === s).length;
+  const counts = Object.fromEntries(ORDER.map(s => [s, count(s)]));
+  const wipCap = F.departments.reduce((a, d) => a + d.wipLimit, 0);
+  const foot = {
+    backlog: "1 hold retry_exhausted", ready: "chờ claim nguyên tử", doing: () => `WIP ${counts.doing}/${wipCap} toàn nhà máy`,
+    waiting: "2 cần người quyết", review: "1 người · 1 SAGE-12", done: "hôm nay · đã nghiệm thu"
+  };
+  function renderStations() {
+    const max = Math.max(...ORDER.map(s => counts[s]), 1);
+    BP.$("#stations").innerHTML = ORDER.map((s, i) => `
+      <a href="04-mission-line.html" aria-label="${F.stateLabel[s]}: ${counts[s]} task">
+        <span class="code">ST-0${i + 1} · ${s.toUpperCase()}</span>
+        <span class="big" id="st-${s}" style="color:${stColor[s]}">${counts[s]}</span>
+        ${BP.stateChip(s, F.stateVi[s])}
+        <span class="bar"><i style="width:${counts[s] / max * 100}%;background:${stColor[s]}"></i></span>
+        <span class="foot">${typeof foot[s] === "function" ? foot[s]() : foot[s]}</span>
+      </a>`).join("");
+  }
+  renderStations();
+  function setCount(s, v) { counts[s] = v; renderStations(); const n = BP.$("#st-" + s); if (n) n.classList.add("bump"); }
+
+  /* ---------- SCR-02 lease radar ---------- */
+  const C = 220, RMAX = 180, LEASE = 60;
+  const gGrid = BP.$("#rGrid"), gSweep = BP.$("#rSweep"), gDots = BP.$("#rDots");
+  [15, 30, 45, 60].forEach(s => {
+    el("circle", { cx: C, cy: C, r: s / LEASE * RMAX, class: "ring" + (s === 60 ? " edge" : "") }, gGrid);
+    const t = el("text", { x: C + 4, y: C - s / LEASE * RMAX + 12, class: "sub" }, gGrid); t.textContent = s + " s";
+  });
+  el("line", { x1: C - RMAX - 10, y1: C, x2: C + RMAX + 10, y2: C, class: "tick" }, gGrid);
+  el("line", { x1: C, y1: C - RMAX - 10, x2: C, y2: C + RMAX + 10, class: "tick" }, gGrid);
+  for (let d = 0; d < 360; d += 10) {
+    const a = d * Math.PI / 180, r1 = RMAX, r2 = RMAX + (d % 30 === 0 ? 10 : 5);
+    el("line", { x1: C + r1 * Math.cos(a), y1: C + r1 * Math.sin(a), x2: C + r2 * Math.cos(a), y2: C + r2 * Math.sin(a), class: "tick" }, gGrid);
+  }
+  el("circle", { cx: C, cy: C, r: 8, fill: "var(--t-failed)", stroke: "var(--red)", "stroke-dasharray": "2 2" }, gGrid);
+  const ct = el("text", { x: C, y: C + 24, class: "sub", "text-anchor": "middle", style: "fill:var(--red)" }, gGrid); ct.textContent = "0 s · HẾT HẠN";
+  const lt = el("text", { x: 12, y: 18, class: "sub" }, gGrid); lt.textContent = "R = LEASE CÒN LẠI · VÒNG NGOÀI 60 s";
+  // sweep wedge
+  const sweep = el("g", {}, gSweep);
+  const wedgeA = 28 * Math.PI / 180;
+  el("path", { d: `M${C} ${C} L${C + RMAX} ${C} A${RMAX} ${RMAX} 0 0 0 ${C + RMAX * Math.cos(-wedgeA)} ${C + RMAX * Math.sin(-wedgeA)} Z`, fill: "var(--s-ready)", opacity: 0.12 }, sweep);
+  el("line", { x1: C, y1: C, x2: C + RMAX, y2: C, stroke: "var(--s-ready)", "stroke-width": 1.5 }, sweep);
+  let ang = 0, lastT = performance.now();
+  const spinSweep = now => { const dt = now - lastT; lastT = now; if (!BP.paused) ang = (ang + dt * 0.06) % 360; sweep.setAttribute("transform", `rotate(${ang.toFixed(1)} ${C} ${C})`); requestAnimationFrame(spinSweep); };
+  requestAnimationFrame(spinSweep);
+
+  const RUNS = [
+    { agent: "atlas", task: "T-1042", run: "r-88f1", fence: 18, deg: -40, left: 43, hbAt: 40 },
+    { agent: "kite", task: "T-1051", run: "r-5a02", fence: 2, deg: 50, left: 33, hbAt: 41 },
+    { agent: "nova", task: "T-1044", run: "r-c7d3", fence: 11, deg: 145, left: 53, hbAt: 39 },
+    { agent: "forge", task: "T-1047", run: "r-31c0", fence: 4, deg: 230, left: 19, hbAt: 40, lost: true }
+  ];
+  RUNS.forEach(r => {
+    const a = BP.agent(r.agent);
+    r.g = el("g", {}, gDots);
+    r.ring = el("circle", { r: 6, fill: "none", stroke: "var(--s-doing)" }, r.g);
+    r.dot = el("circle", { r: 5.5, fill: "var(--s-doing)", class: "agent-dot" }, r.g);
+    const right = Math.cos(r.deg * Math.PI / 180) >= 0;
+    r.lbl = el("text", { x: right ? 10 : -10, y: -2, class: "dot-lbl", "text-anchor": right ? "start" : "end" }, r.g); r.lbl.textContent = `${a.code} · ${r.task}`;
+    r.sub = el("text", { x: right ? 10 : -10, y: 12, class: "dot-sub", "text-anchor": right ? "start" : "end" }, r.g);
+  });
+  const runList = BP.$("#runList");
+  function drawRuns() {
+    RUNS.forEach(r => {
+      const rad = Math.max(0, r.left) / LEASE * RMAX, a = r.deg * Math.PI / 180;
+      r.g.setAttribute("transform", `translate(${(C + rad * Math.cos(a)).toFixed(1)} ${(C + rad * Math.sin(a)).toFixed(1)})`);
+      const crit = r.left < 15, col = r.expired ? "var(--red)" : crit ? "var(--red)" : "var(--s-doing)";
+      r.dot.style.fill = col; r.ring.style.stroke = col;
+      r.sub.textContent = r.expired ? "EXPIRED · HOLD" : `${Math.max(0, r.left)} s · fence ${r.fence}`;
+    });
+    runList.innerHTML = RUNS.map(r => {
+      const a = BP.agent(r.agent), crit = r.left < 15;
+      return `<li><span class="bot" style="--c:${r.expired || crit ? "var(--red)" : "var(--s-doing)"}" aria-hidden="true">${a.code}</span>
+        <span><b>${a.name}</b> <span class="mono muted">${r.task} · ${r.run}</span>${r.expired ? ' <span class="state stale">Hold</span>' : r.lost ? ' <span class="tag red">HB lỡ</span>' : ""}</span>
+        <span class="mono muted fence">fence ${r.fence}</span>
+        <span class="secs ${r.expired || crit ? "c-red" : ""}">${r.expired ? "0 s" : r.left + " s"}</span></li>`;
+    }).join("");
+  }
+  drawRuns();
+
+  /* ---------- SCR-03 agent board ---------- */
+  const actColor = { doing: "var(--s-doing)", idle: "var(--ink-3)", waiting: "var(--amber)", cooldown: "var(--s-ready)", meeting: "var(--s-review)" };
+  const inbox = { muse: 2, lens: 1, echo: 3, vega: 1 };
+  const LAMPS = ["PRS", "RUN", "HB", "MSG", "HMN", "CDN"];
+  function lampClass(a, k) {
+    if (k === "PRS") return a.presence === "online" ? "on" : a.presence === "stale" ? "red" : "";
+    if (k === "RUN") return RUNS.some(r => r.agent === a.id && !r.expired) ? "on" : "";
+    if (k === "HB") { const r = RUNS.find(r => r.agent === a.id); return r ? (r.lost ? "red" : "on") : ""; }
+    if (k === "MSG") return inbox[a.id] ? "blue" : "";
+    if (k === "HMN") return a.activity === "waiting" ? "amber" : "";
+    if (k === "CDN") return a.activity === "cooldown" ? "blue" : a.activity === "meeting" ? "violet" : "";
+  }
+  function renderAgents() {
+    BP.$("#agents").innerHTML = F.agents.map(a => {
+      const col = a.presence === "offline" ? "var(--s-cancelled)" : actColor[a.activity];
+      const pres = a.presence === "online" ? '<span class="state online">Online</span>' : a.presence === "stale" ? '<span class="state stale">Stale</span>' : '<span class="state off">Offline</span>';
+      return `<a class="agent-tile" href="08-agent-profile.html" style="color:inherit;text-decoration:none" aria-label="${a.name}, ${a.presence}, ${F.activityVi[a.activity]}">
+        <div class="row between"><span class="row" style="gap:var(--sp-2)"><span class="bot" style="--c:${col};width:30px;height:30px;font-size:9px" aria-hidden="true">${a.code}</span><span class="nm">${a.name}</span></span>${pres}</div>
+        <div class="act">${F.activityVi[a.activity]}${a.task ? " · " + a.task : ""}</div>
+        <div class="lamps" id="lamps-${a.id}">${LAMPS.map(k => `<span class="lamp ${lampClass(a, k)}" data-k="${k}">${k}</span>`).join("")}</div>
+      </a>`;
+    }).join("");
+    BP.$("#sumRun").textContent = RUNS.filter(r => !r.expired).length;
+  }
+  renderAgents();
+  function flashLamp(id, k) { const l = BP.$(`#lamps-${id} [data-k="${k}"]`); if (!l) return; l.classList.remove("flash"); void l.offsetWidth; l.classList.add("flash"); }
+
+  /* ---------- SCR-04 countdowns ---------- */
+  function fmt(s) { const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return `${h}:${String(m).padStart(2, "0")}:${String(x).padStart(2, "0")}`; }
+  function tickQueue() {
+    BP.$$("#queue [data-exp]").forEach(c => {
+      const [h, m] = c.dataset.exp.split(":").map(Number); const d = new Date(); const e = new Date(); e.setHours(h, m, 0, 0);
+      const s = Math.floor((e - d) / 1000);
+      c.innerHTML = s > 0 ? `còn ${fmt(s)}` : '<span class="state stale">Hết hạn · vẫn Waiting</span>';
+    });
+  }
+  tickQueue(); setInterval(tickQueue, 1000);
+
+  /* ---------- SCR-05 outbox ---------- */
+  const ob = { pending: 7, retry: 2, delivered: 1284, dead: 1 };
+  const obLog = BP.$("#obLog");
+  const fmtN = n => n.toLocaleString("vi-VN");
+  function renderOb() { BP.$("#obPending").textContent = ob.pending; BP.$("#obRetry").textContent = ob.retry; BP.$("#obDelivered").textContent = fmtN(ob.delivered); BP.$("#obDead").textContent = ob.dead; }
+  const pushOb = (g, c, html) => BP.logPush(obLog, `<time>${BP.now()}</time><span class="g" style="color:${c}">${g}</span><span>${html}</span>`, 8);
+  [["✕", "var(--red)", "ntf-19ab → hook ops-pager · 403 vĩnh viễn · dead-letter"], ["↻", "var(--amber)", "ntf-7c02 → rt-kite · timeout 10 s · attempt 3/6"], ["✓", "var(--s-done)", "ntf-7f21 → rt-atlas · 2xx · delivered, chưa ACK"]].forEach(r => pushOb(...r));
+  const dests = ["rt-atlas", "rt-nova", "rt-kite", "hook slack-ops", "rt-sage"];
+  let ntf = 0x7f30;
+  BP.every(2600, () => {
+    if (ob.pending > 0 && Math.random() > 0.25) {
+      ob.pending--; ob.delivered++;
+      pushOb("✓", "var(--s-done)", `ntf-${(ntf++).toString(16)} → ${BP.pick(dests)} · 2xx · delivered, chưa ACK`);
+    } else {
+      ob.pending++;
+      pushOb("◇", "var(--s-ready)", `ntf-${(ntf++).toString(16)} xếp hàng · event message.created`);
+    }
+    renderOb();
+  });
+
+  /* ---------- SCR-06 readiness clock ---------- */
+  const readyAt = BP.$("#readyAt"); const setReady = () => readyAt.textContent = "CHECK " + BP.now(); setReady(); BP.every(15000, setReady);
+
+  /* ---------- SCR-07 throughput ---------- */
+  const tp = BP.$("#tp"), W = 800, H = 220, PADL = 36, PADB = 22, N = 60, YMAX = 30;
+  [0, 10, 20, 30].forEach(v => {
+    const y = H - PADB - v / YMAX * (H - PADB - 10);
+    el("line", { x1: PADL, y1: y, x2: W, y2: y, class: "gl" }, tp);
+    const t = el("text", { x: PADL - 6, y: y + 3, class: "ax", "text-anchor": "end" }, tp); t.textContent = v;
+  });
+  [60, 45, 30, 15, 0].forEach((s, i) => { const t = el("text", { x: PADL + i * (W - PADL) / 4, y: H - 6, class: "ax", "text-anchor": i === 0 ? "start" : i === 4 ? "end" : "middle" }, tp); t.textContent = s === 0 ? "bây giờ" : `-${s} s`; });
+  const area = el("path", { fill: "var(--t-doing)" }, tp);
+  const line = el("path", { fill: "none", stroke: "var(--s-doing)", "stroke-width": 2 }, tp);
+  const avgL = el("line", { x1: PADL, x2: W, stroke: "var(--line)", "stroke-width": 1, "stroke-dasharray": "4 4" }, tp);
+  const head = el("circle", { r: 4, fill: "var(--s-doing)" }, tp);
+  const marks = el("g", {}, tp);
+  let data = Array.from({ length: N }, (_, i) => Math.round(12 + 5 * Math.sin(i / 7) + Math.random() * 4));
+  let expMarks = [];
+  const X = i => PADL + i / (N - 1) * (W - PADL), Y = v => H - PADB - Math.min(v, YMAX) / YMAX * (H - PADB - 10);
+  function drawTp() {
+    const pts = data.map((v, i) => `${X(i).toFixed(1)} ${Y(v).toFixed(1)}`);
+    line.setAttribute("d", "M" + pts.join(" L"));
+    area.setAttribute("d", `M${X(0)} ${H - PADB} L${pts.join(" L")} L${X(N - 1)} ${H - PADB} Z`);
+    const avg = data.reduce((a, b) => a + b, 0) / N;
+    avgL.setAttribute("y1", Y(avg)); avgL.setAttribute("y2", Y(avg));
+    head.setAttribute("cx", X(N - 1)); head.setAttribute("cy", Y(data[N - 1]));
+    marks.innerHTML = "";
+    expMarks.forEach(i => { if (i < 0) return; el("line", { x1: X(i), x2: X(i), y1: 10, y2: H - PADB, stroke: "var(--red)", "stroke-dasharray": "2 3" }, marks); const t = el("text", { x: X(i) + 4, y: 20, class: "ax", style: "fill:var(--red)" }, marks); t.textContent = "lease hết hạn"; });
+    BP.$("#tpNow").innerHTML = `${data[N - 1]}<small> /phút</small>`;
+    BP.$("#tpAvg").textContent = avg.toFixed(1);
+    BP.$("#tpPeak").textContent = Math.max(...data);
+  }
+  drawTp();
+  let tpPaused = false;
+  const tpBtn = BP.$("#tpPause");
+  tpBtn.addEventListener("click", () => {
+    tpPaused = !tpPaused; tpBtn.setAttribute("aria-pressed", String(tpPaused));
+    tpBtn.textContent = tpPaused ? "Tiếp tục biểu đồ" : "Tạm dừng biểu đồ";
+    BP.$("#tpLive").textContent = tpPaused ? "ĐÃ TẠM DỪNG" : "STREAMING";
+  });
+  let spike = 0;
+  BP.every(1000, () => {
+    if (tpPaused) return;
+    const last = data[N - 1];
+    let v = Math.round(Math.max(3, Math.min(28, last + (Math.random() - 0.5) * 5 + (14 - last) * 0.12)));
+    if (spike > 0) { v = Math.min(28, v + spike); spike = Math.max(0, spike - 3); }
+    data = data.slice(1).concat(v); expMarks = expMarks.map(i => i - 1).filter(i => i >= 0);
+    drawTp();
+  });
+
+  /* ---------- SCR-08 alerts ---------- */
+  const ALERTS = [
+    { sev: "✕", c: "var(--red)", t: "T-1033 hết lượt retry (2/2)", s: "Hold retry_exhausted · cần task thay thế", href: "05-work-order.html", act: "Mở phiếu" },
+    { sev: "✕", c: "var(--red)", t: "1 delivery dead-letter", s: "ntf-19ab → ops-pager · 403 · sửa receiver trước khi redrive", href: "17-mailroom.html", act: "Xem" },
+    { sev: "◌", c: "var(--red)", t: "PIXEL-08 tín hiệu cũ", s: "Presence stale 4 phút · không giữ task", href: "08-agent-profile.html", act: "Xem" },
+    { sev: "!", c: "var(--amber)", t: "T-1039 sắp hết hạn quyết định", s: "Hết hạn không tự duyệt, task vẫn Waiting", href: "12-approval-gate.html", act: "Quyết định", human: true },
+    { sev: "–", c: "var(--ink-3)", t: "ECHO-11 offline", s: "Không có run đang mở · không cần xử lý ngay", href: "07-workforce.html", act: "Xem" }
+  ];
+  const alertsEl = BP.$("#alerts");
+  function renderAlerts() {
+    alertsEl.innerHTML = ALERTS.map(a => `<li><span class="sev" style="color:${a.c}" aria-hidden="true">${a.sev}</span><div><div class="t">${a.t}</div><div class="s">${a.s}</div></div><a class="btn sm${a.human ? " human" : ""}" href="${a.href}">${a.act}</a></li>`).join("");
+    BP.$("#alertCount").textContent = ALERTS.length;
+  }
+  renderAlerts();
+
+  /* ---------- Lease simulation (1 Hz, pause-aware) ---------- */
+  let expCount = 0;
+  BP.every(1000, () => {
+    RUNS.forEach(r => {
+      if (r.expired) { r.holdLeft--; if (r.holdLeft <= 0) reclaim(r); return; }
+      r.left--;
+      if (!r.lost && r.left <= r.hbAt - 20 + Math.round(Math.random() * 2)) {
+        r.left = LEASE; flashLamp(r.agent, "HB");
+        const p = el("circle", { r: 6, fill: "none", stroke: "var(--s-doing)", class: "pulse" }, r.g); BP.wait(1800).then(() => p.remove());
+      }
+      if (r.left <= 0) expire(r);
+    });
+    drawRuns();
+  });
+  function expire(r) {
+    r.expired = true; r.left = 0; r.holdLeft = 9;
+    expCount++; BP.$("#tpExp").textContent = expCount; expMarks.push(N - 1); spike = 9;
+    setCount("doing", counts.doing - 1); setCount("backlog", counts.backlog + 1);
+    ALERTS.unshift({ sev: "✕", c: "var(--red)", t: `Lease hết hạn · ${r.task} · ${r.run}`, s: "Không có phân loại replay-safe → Backlog hold outcome_unknown", href: "05-work-order.html", act: "Đối soát" });
+    renderAlerts(); renderAgents();
+    BP.toast("LEASE EXPIRED · " + r.run, `${BP.agent(r.agent).name} lỡ heartbeat. Run cũ không thể submit hay gia hạn.`);
+  }
+  function reclaim(r) {
+    // simulated loop: operator creates reviewed replacement work, a fresh run claims with a higher fence
+    r.expired = false; r.lost = false; r.fence++; r.left = LEASE; r.run = "r-" + Math.random().toString(16).slice(2, 6);
+    ALERTS.shift(); renderAlerts();
+    setCount("backlog", counts.backlog - 1); setCount("doing", counts.doing + 1);
+    renderAgents();
+    BP.toast("CLAIM · fence " + r.fence, `${BP.agent(r.agent).name} claim lại (mô phỏng lặp) với run mới ${r.run}.`);
+    // the next cycle loses heartbeat again after ~30s so the incident is visible periodically
+    BP.wait(30000).then(() => { r.lost = true; renderAgents(); drawRuns(); });
+  }
+
+  /* ---------- Fullscreen wall mode (mock) ---------- */
+  const wb = BP.$("#wallBtn");
+  function setWall(on) {
+    document.body.classList.toggle("wall-mode", on);
+    wb.setAttribute("aria-pressed", String(on));
+    wb.querySelector("span").textContent = on ? "Thoát toàn màn hình" : "Chế độ toàn màn hình";
+  }
+  wb.addEventListener("click", () => setWall(!document.body.classList.contains("wall-mode")));
+  document.addEventListener("keydown", e => { if (e.key === "Escape") setWall(false); });
+})();
+</script>
+</body>
+</html>

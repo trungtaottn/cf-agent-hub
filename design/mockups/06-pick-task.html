@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trạm nhận việc · CF Agent Factory</title>
+<link rel="stylesheet" href="assets/blueprint.css">
+<style>
+  .stage-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: var(--sp-4); }
+  .ctrl { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--line-soft); }
+  .seg button { min-height: 36px; }
+  .scene-wrap { overflow-x: auto; }
+  #scene { min-width: 620px; }
+  #scene .sub { font-size: 11.5px; } #scene .lbl { font-size: 15px; }
+  #scene .ag text.code { font-family: var(--f-mono); font-size: 10.5px; font-weight: 600; text-anchor: middle; dominant-baseline: central; }
+  #scene .bub text { font-family: var(--f-mono); font-size: 11px; fill: var(--ink); dominant-baseline: central; text-anchor: middle; }
+  #scene .boxlbl { font-family: var(--f-mono); font-size: 10px; fill: var(--ink-2); text-anchor: middle; }
+  .seqwrap { overflow-x: auto; }
+  #seq { min-width: 340px; }
+  #seq .lane { font-family: var(--f-display); font-size: 12px; font-weight: 600; fill: var(--ink); text-anchor: middle; }
+  #seq .msg { font-family: var(--f-mono); font-size: 10px; fill: var(--ink-2); }
+  #seq .a { transition: opacity var(--dur) var(--ease); }
+  .steps { list-style: none; margin: 0; padding: 0; counter-reset: s; }
+  .steps li { counter-increment: s; display: grid; grid-template-columns: 28px 1fr; gap: var(--sp-2); padding: var(--sp-2) var(--sp-4); border-bottom: 1px solid var(--grid-major); font-size: var(--fs-sm); color: var(--ink-3); }
+  .steps li::before { content: counter(s, lower-alpha); font-family: var(--f-mono); font-size: var(--fs-xs); border: 1px solid currentColor; width: 22px; height: 22px; display: grid; place-items: center; }
+  .steps li.done { color: var(--ink-2); }
+  .steps li.now { color: var(--ink); background: var(--bp-700); }
+  .steps li.now::before { color: var(--s-doing); }
+  .elig td, .elig th { padding: var(--sp-2) var(--sp-3); }
+  .ok { color: var(--s-doing); font-family: var(--f-mono); }
+  .no { color: var(--red); font-family: var(--f-mono); }
+  .feed { max-height: 330px; overflow: hidden; }
+  .kbd-hint { font-size: var(--fs-xs); color: var(--ink-3); }
+  @media (max-width: 1280px) { .stage-grid { grid-template-columns: minmax(0, 1fr); } }
+</style>
+</head>
+<body data-sheet="06" data-title="Trạm nhận việc">
+<div class="app paper">
+  <div id="rail"></div>
+  <div class="main">
+    <header id="topbar"></header>
+    <main class="content">
+
+      <section class="page-head reveal">
+        <div>
+          <div class="code">STATION 02 · READY · CLAIM / LEASE / FENCE</div>
+          <h2>Trạm nhận việc</h2>
+          <p class="lede">Agent không "nhận" việc bằng cách đứng gần thùng hàng. Chỉ lệnh claim nguyên tử thành công mới tạo run, lease và fence. Hai lệnh đồng thời luôn có đúng một người thắng; chủ cũ cầm fence cũ bị chặn ở cổng.</p>
+        </div>
+        <div class="actions">
+          <a class="btn" href="04-mission-line.html">Về dây chuyền</a>
+          <button class="btn primary" type="button" id="btnReplay">Chạy lại kịch bản</button>
+        </div>
+      </section>
+
+      <section class="stage-grid">
+        <div class="panel reveal">
+          <div class="ctrl">
+            <div class="seg" role="group" aria-label="Chọn kịch bản">
+              <button type="button" aria-pressed="true" data-sc="race">Tranh chấp</button>
+              <button type="button" aria-pressed="false" data-sc="expire">Hết lease</button>
+              <button type="button" aria-pressed="false" data-sc="wip">WIP đầy</button>
+            </div>
+            <div class="row wrap">
+              <button class="btn" type="button" id="btnStepMode" aria-pressed="false">Từng bước</button>
+              <button class="btn" type="button" id="btnNext" disabled>Bước kế tiếp</button>
+            </div>
+          </div>
+          <div class="scene-wrap">
+            <svg id="scene" class="dwg" viewBox="0 0 900 450" role="img" aria-labelledby="sceneT">
+              <title id="sceneT">Sơ đồ trạm Ready: hàng task chờ, ba agent tiến tới tranh một task, trạm Doing bên phải và cổng kiểm fence phía dưới. Diễn biến được mô tả bằng chữ trong danh sách bước bên dưới.</title>
+              <defs>
+                <pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" style="stroke:var(--line-soft)"/></pattern>
+              </defs>
+              <g id="gBase"></g><g id="gFx"></g><g id="gBoxes"></g><g id="gAgents"></g>
+            </svg>
+          </div>
+          <div class="panel-body" style="border-top:1px solid var(--line-soft)">
+            <div class="legend">
+              <span style="color:var(--s-doing)"><i></i>Lease hợp lệ</span>
+              <span style="color:var(--s-ready)"><i></i>Lệnh claim</span>
+              <span style="color:var(--red)"><i></i>Bị từ chối / stale</span>
+              <span style="color:var(--ink-3)"><i></i>Lối đi</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel reveal">
+          <div class="panel-head"><h3>Sequence · Runtime → Hub → Workspace DO</h3><span class="code" id="seqCode">CLAIM · HEARTBEAT · SUBMIT</span></div>
+          <div class="panel-body seqwrap">
+            <svg id="seq" class="dwg" viewBox="0 0 420 470" role="img" aria-labelledby="seqT">
+              <title id="seqT">Sơ đồ tuần tự giữa runtime, Hub và Workspace Durable Object cho kịch bản đang chọn. Mũi tên sáng dần theo từng bước.</title>
+              <defs>
+                <marker id="mq" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" style="fill:var(--ink-2)"/></marker>
+                <marker id="mok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" style="fill:var(--s-doing)"/></marker>
+                <marker id="merr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" style="fill:var(--red)"/></marker>
+              </defs>
+              <g id="seqBase"></g><g id="seqMsgs"></g>
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid g-3">
+        <div class="panel reveal">
+          <div class="panel-head"><h3>Diễn biến từng bước</h3><span class="code" id="stepCode">BƯỚC 0 / 6</span></div>
+          <ol class="steps" id="steps" aria-live="polite"></ol>
+          <div class="panel-body"><p class="kbd-hint" style="margin:0">Bật <b>Từng bước</b> rồi bấm <b>Bước kế tiếp</b> (hoặc phím N) để đi chậm qua từng lệnh.</p></div>
+        </div>
+        <div class="panel reveal">
+          <div class="panel-head"><h3>Quy tắc đủ điều kiện claim</h3><span class="code">T-1055 · v3</span></div>
+          <div style="overflow-x:auto">
+            <table class="table elig">
+              <thead><tr><th>Điều kiện</th><th>BOLT-10</th><th>PIXEL-08</th><th>KITE-09</th></tr></thead>
+              <tbody>
+                <tr><td>Task ở Ready, đúng version</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td></tr>
+                <tr><td>Capability khớp (code | layout)</td><td class="ok">✓ code</td><td class="ok">✓ layout</td><td class="no">✕ research</td></tr>
+                <tr><td>WIP agent còn chỗ</td><td class="ok">0 / 1</td><td class="ok">0 / 1</td><td class="no">1 / 1</td></tr>
+                <tr><td>Runtime proof + credential</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td></tr>
+                <tr><td>Không có hold retry / outcome</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td></tr>
+                <tr><td>Presence</td><td class="muted">online</td><td class="c-red">tín hiệu cũ</td><td class="muted">online</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="panel-body stack">
+            <p class="note-red" style="margin:0">Work role chỉ là gợi ý trách nhiệm, không phải quyền. Presence cũ không chặn claim và presence online không chứng minh sở hữu: chỉ lease hợp lệ mới là quyền.</p>
+            <p class="muted" style="margin:0;font-size:var(--fs-xs)">Mọi điều kiện được kiểm tra bên trong một transaction của Workspace DO. Lớp giao diện không thể tự đảm bảo "một người thắng".</p>
+          </div>
+        </div>
+        <div class="panel reveal">
+          <div class="panel-head"><h3>Nhật ký trạm</h3><span class="code">EVENT STREAM</span></div>
+          <div class="feed"><ul class="log" id="feed" aria-live="polite" aria-relevant="additions"></ul></div>
+        </div>
+      </section>
+
+    </main>
+    <div id="titleblock"></div>
+  </div>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(() => {
+  const S = (t, a, p) => BP.svg(t, a, p);
+  const gBase = BP.$("#gBase"), gFx = BP.$("#gFx"), gBoxes = BP.$("#gBoxes"), gAgents = BP.$("#gAgents");
+  const C = { ready: "var(--s-ready)", doing: "var(--s-doing)", red: "var(--red)", ink3: "var(--ink-3)", amber: "var(--amber)", backlog: "var(--s-backlog)" };
+  const txt = (x, y, s, cls, p, extra = {}) => { const t = S("text", { x, y, class: cls, ...extra }, p); t.textContent = s; return t; };
+
+  /* ---------- Static drawing ---------- */
+  S("rect", { x: 20, y: 70, width: 150, height: 310, class: "room" }, gBase);
+  txt(32, 92, "KHU CHỜ", "lbl", gBase); txt(32, 106, "AGENT RẢNH · IDLE", "sub", gBase);
+  S("rect", { x: 290, y: 70, width: 260, height: 280, class: "room" }, gBase);
+  txt(302, 92, "TRẠM READY", "lbl", gBase); txt(302, 106, "STATION 02 · HÀNG CHỜ CLAIM", "sub", gBase);
+  S("rect", { x: 300, y: 196, width: 240, height: 28, fill: "var(--bp-900)", stroke: "var(--line)" }, gBase);
+  S("line", { x1: 300, y1: 210, x2: 540, y2: 210, class: "flow slow" }, gBase);
+  S("rect", { x: 620, y: 70, width: 260, height: 230, class: "room hot" }, gBase);
+  txt(632, 92, "TRẠM DOING", "lbl", gBase); txt(632, 106, "STATION 03 · RUN ĐANG GIỮ LEASE", "sub", gBase);
+  S("rect", { x: 300, y: 380, width: 200, height: 56, class: "room" }, gBase);
+  S("rect", { x: 306, y: 400, width: 188, height: 30, class: "hatch" }, gBase);
+  txt(310, 395, "BACKLOG · HOLD", "sub", gBase);
+  // doors
+  S("path", { d: "M170 140 H290 M170 240 H290 M170 330 H290", class: "path" }, gBase);
+  S("path", { d: "M550 150 H620", class: "path" }, gBase);
+  // fence gate at bottom of Doing
+  const gx1 = 720, gx2 = 800, gy = 300;
+  S("rect", { x: gx1 - 4, y: gy - 6, width: 8, height: 26, fill: "var(--bp-950)", stroke: "var(--line-strong)" }, gBase);
+  S("rect", { x: gx2 - 4, y: gy - 6, width: 8, height: 26, fill: "var(--bp-950)", stroke: "var(--line-strong)" }, gBase);
+  const gateBar = S("line", { x1: gx1 + 4, y1: gy + 6, x2: gx2 - 4, y2: gy + 6, stroke: "var(--amber)", "stroke-width": 3 }, gBase);
+  txt(708, 312, "CỔNG KIỂM FENCE", "sub", gBase, { "text-anchor": "end" }); txt(708, 326, "OWNER COMMANDS", "sub", gBase, { "text-anchor": "end" });
+  // dimension line
+  S("path", { d: "M290 60 H550 M290 54 V66 M550 54 V66", class: "dimline" }, gBase);
+  txt(420, 52, "CLAIM NGUYÊN TỬ · 1 NGƯỜI THẮNG", "sub", gBase, { "text-anchor": "middle" });
+  S("path", { d: "M890 70 V300 M884 70 H896 M884 300 H896", class: "dimline" }, gBase);
+
+  /* ---------- Boxes ---------- */
+  function mkBox(id, x, y) {
+    const g = S("g", { transform: `translate(${x} ${y})` }, gBoxes);
+    const r = S("rect", { x: -14, y: -10, width: 28, height: 20, fill: "var(--bp-850)", stroke: C.ready }, g);
+    S("path", { d: "M-14 -3 H14", stroke: "var(--line-soft)" }, g);
+    const l = txt(0, 22, id, "boxlbl", g);
+    return { g, r, l, id, home: [x, y], pos: [x, y] };
+  }
+  const boxes = { "T-1058": mkBox("T-1058", 330, 206), "T-1057": mkBox("T-1057", 375, 206), "T-1056": mkBox("T-1056", 420, 206), "T-1055": mkBox("T-1055", 490, 206) };
+
+  /* ---------- Agents ---------- */
+  function mkAgent(code, name, col, x, y, dashed) {
+    const g = S("g", { class: "ag", transform: `translate(${x} ${y})` }, gAgents);
+    const ring = S("circle", { r: 16, fill: "none", stroke: col, opacity: 0 }, g);
+    const hex = S("polygon", { points: "-8,-14 8,-14 16,0 8,14 -8,14 -16,0", fill: "var(--bp-950)", stroke: col, "stroke-width": 1.5, "stroke-dasharray": dashed ? "3 2" : "" }, g);
+    const t = txt(0, 0.5, code, "code", g, { style: `fill:${col}` });
+    txt(0, 28, name, "sub", g, { "text-anchor": "middle" });
+    const lease = S("g", { opacity: 0 }, g);
+    S("rect", { x: 20, y: -4, width: 44, height: 5, fill: "var(--bp-950)", stroke: "var(--line-soft)" }, lease);
+    const bar = S("rect", { x: 20, y: -4, width: 44, height: 5, fill: C.doing }, lease);
+    const ltag = txt(20, 12, "LEASE · F1", "sub", lease, { style: `fill:${C.doing}` });
+    return { g, ring, hex, t, lease, bar, ltag, col, home: [x, y], pos: [x, y], lv: 0, drain: 0 };
+  }
+  const A = {
+    bolt: mkAgent("BL", "BOLT-10", C.ink3, 90, 140),
+    pixel: mkAgent("PX", "PIXEL-08", C.ink3, 90, 240, true),
+    kite: mkAgent("KI", "KITE-09", C.doing, 90, 330),
+    forge: mkAgent("FG", "FORGE-02 · rt-forge-0d2", C.red, 760, 400, true)
+  };
+  function recolor(a, col) { a.hex.setAttribute("stroke", col); a.t.style.fill = col; a.col = col; }
+
+  /* ---------- Run control ---------- */
+  let runId = 0, stepMode = false, stepResolve = null, scen = "race";
+  const ABORT = {};
+  const chk = id => { if (id !== runId) throw ABORT; };
+  function tween(ms, fn, id) {
+    if (BP.reduced) ms = 1;
+    return new Promise((res, rej) => {
+      let e = 0, last = performance.now();
+      const st = now => {
+        if (id !== runId) return rej(ABORT);
+        const dt = now - last; last = now; if (!BP.paused) e += dt;
+        const t = Math.min(1, e / ms); const k = t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+        fn(k, t); t < 1 ? requestAnimationFrame(st) : res();
+      };
+      requestAnimationFrame(st);
+    });
+  }
+  const wait = (ms, id) => BP.reduced ? Promise.resolve() : BP.wait(ms).then(() => chk(id));
+  function place(o, x, y) { o.pos = [x, y]; o.g.setAttribute("transform", `translate(${x.toFixed(1)} ${y.toFixed(1)})`); }
+  function move(o, pts, ms, id, carry) {
+    const d = "M" + [o.pos, ...pts].map(p => p.join(" ")).join(" L");
+    const p = S("path", { d }); const L = p.getTotalLength();
+    return tween(ms, k => { const q = p.getPointAtLength(L * k); place(o, q.x, q.y); if (carry) place(carry, q.x, q.y + 46); }, id);
+  }
+  function bubble(a, text, col = "var(--line)", ms = 2400) {
+    const b = S("g", { class: "bub" }, a.g);
+    const w = text.length * 6.7 + 16;
+    S("rect", { x: -w / 2, y: -42, width: w, height: 18, fill: "var(--bp-950)", stroke: col }, b);
+    txt(0, -33, text, "", b);
+    if (!BP.reduced) BP.wait(ms).then(() => b.remove());
+    return b;
+  }
+  function zap(from, to, col, id) {
+    const l = S("line", { x1: from[0], y1: from[1], x2: to[0], y2: to[1], stroke: col, "stroke-width": 1.5, class: "flow" }, gFx);
+    return wait(1200, id).then(() => l.remove(), e => { l.remove(); throw e; });
+  }
+
+  /* ---------- Feed ---------- */
+  const feed = BP.$("#feed");
+  const push = (g, c, html) => BP.logPush(feed, `<time>${BP.now()}</time><span class="g" style="color:${c}">${g}</span><span>${html}</span>`, 24);
+
+  /* ---------- Sequence diagram ---------- */
+  const LX = { rt: 60, hub: 210, do: 360 };
+  const seqBase = BP.$("#seqBase"), seqMsgs = BP.$("#seqMsgs");
+  [["rt", "Runtime"], ["hub", "Hub · Worker"], ["do", "Workspace DO"]].forEach(([k, n]) => {
+    S("rect", { x: LX[k] - 52, y: 8, width: 104, height: 28, fill: "var(--bp-850)", stroke: "var(--line)" }, seqBase);
+    txt(LX[k], 27, n, "lane", seqBase);
+    S("line", { x1: LX[k], y1: 36, x2: LX[k], y2: 462, stroke: "var(--line-soft)", "stroke-dasharray": "3 4" }, seqBase);
+  });
+  let seqEls = [];
+  function buildSeq(list) {
+    seqMsgs.innerHTML = ""; seqEls = [];
+    list.forEach((m, i) => {
+      const [f, t, label, kind] = m; const y = 58 + i * 29;
+      const g = S("g", { class: "a", opacity: 0.18 }, seqMsgs);
+      const col = kind === "ok" ? C.doing : kind === "err" ? C.red : "var(--ink-2)";
+      const x1 = LX[f], x2 = LX[t]; const self = f === t;
+      const d = self ? `M${x1} ${y} h26 v10 h-24` : `M${x1} ${y} H${x2 + (x2 > x1 ? -4 : 4)}`;
+      const p = S("path", { d, stroke: col, fill: "none", "stroke-width": 1.25, "marker-end": `url(#${kind === "ok" ? "mok" : kind === "err" ? "merr" : "mq"})`, "stroke-dasharray": kind === "req" ? "" : "4 3" }, g);
+      const lx = self ? x1 - 8 : Math.min(x1, x2) + 6;
+      txt(lx, self ? y + 8 : y - 4, label, "msg", g, { ...(kind !== "req" ? { style: `fill:${col}` } : {}), ...(self ? { "text-anchor": "end" } : {}) });
+      seqEls.push({ g, p, col });
+    });
+  }
+  async function fire(idxs, id) {
+    await Promise.all(idxs.map(async (i, n) => {
+      const m = seqEls[i]; if (!m) return;
+      await wait(n * 260, id);
+      m.g.setAttribute("opacity", 1);
+      const dot = S("circle", { r: 3.5, fill: m.col }, seqMsgs);
+      const L = m.p.getTotalLength();
+      try { await tween(520, k => { const q = m.p.getPointAtLength(L * k); dot.setAttribute("cx", q.x); dot.setAttribute("cy", q.y); }, id); } finally { dot.remove(); }
+    }));
+  }
+
+  /* ---------- Lease drain loop ---------- */
+  BP.every(100, () => {
+    Object.values(A).forEach(a => {
+      if (!a.drain || a.lv <= 0) return;
+      a.lv = Math.max(0, a.lv - a.drain);
+      a.bar.setAttribute("width", 44 * a.lv);
+      a.bar.style.fill = a.lv < 0.2 ? C.red : a.lv < 0.4 ? C.amber : C.doing;
+    });
+  });
+  function setLease(a, v, label) { a.lv = v; a.lease.setAttribute("opacity", v > 0 || label ? 1 : 0); a.bar.setAttribute("width", 44 * v); a.bar.style.fill = C.doing; if (label) a.ltag.textContent = label; }
+
+  /* ---------- Scenarios ---------- */
+  const SEQ = {
+    race: [
+      ["rt", "hub", "BOLT-10 · POST :claim · v3", "req"], ["rt", "hub", "PIXEL-08 · POST :claim · v3", "req"],
+      ["hub", "do", "claim tx (BOLT-10)", "req"], ["hub", "do", "claim tx (PIXEL-08)", "req"],
+      ["do", "hub", "OK · run r-0b17 · fence 1 · v4", "ok"], ["do", "hub", "409 VERSION_CONFLICT · v4", "err"],
+      ["hub", "rt", "200 · BOLT-10 giữ lease 60s", "ok"], ["hub", "rt", "409 · PIXEL-08 · đã có chủ", "err"],
+      ["rt", "hub", "BOLT-10 · POST /runs/r-0b17:heartbeat", "req"], ["hub", "do", "renew · run_version +1", "req"],
+      ["hub", "rt", "200 · lease +60s · task v4", "ok"],
+      ["rt", "hub", "rt-forge-0d2 · submit T-1047 · fence 3", "req"], ["hub", "do", "kiểm fence 3 vs 4", "req"],
+      ["hub", "rt", "409 STALE_RUN · dừng, đọc lại", "err"]
+    ],
+    expire: [
+      ["rt", "hub", "BOLT-10 · POST :claim · v3", "req"], ["hub", "do", "claim tx", "req"],
+      ["do", "hub", "OK · r-0b17 · fence 1", "ok"], ["hub", "rt", "200 · lease 60s", "ok"],
+      ["do", "do", "alarm · lease hết", "err"], ["do", "hub", "run expired · outcome_unknown", "err"],
+      ["rt", "hub", "BOLT-10 · heartbeat (trễ)", "req"], ["hub", "do", "renew r-0b17?", "req"],
+      ["do", "hub", "từ chối · run đã expired", "err"], ["hub", "rt", "409 STALE_RUN", "err"]
+    ],
+    wip: [
+      ["rt", "hub", "KITE-09 · POST T-1056:claim · v2", "req"], ["hub", "do", "claim tx", "req"],
+      ["do", "do", "WIP KITE-09 = 1/1", "err"], ["do", "hub", "từ chối · không đủ điều kiện", "err"],
+      ["hub", "rt", "409 · WIP đầy, task vẫn Ready", "err"]
+    ]
+  };
+  const near = { bolt: [490, 160], pixel: [490, 272] };
+  const SC = {
+    race: [
+      { t: "Ba agent rảnh cùng tiến tới trạm Ready, nhắm T-1055.", fn: async id => {
+        bubble(A.kite, "WIP 1/1 · đứng ngoài", C.red, 3000);
+        await Promise.all([move(A.bolt, [[230, 140], [230, 160], near.bolt], 1800, id), move(A.pixel, [[230, 240], [230, 272], near.pixel], 1900, id), move(A.kite, [[200, 330]], 1200, id)]);
+        push("◇", C.ready, "BOLT-10, PIXEL-08 tiếp cận T-1055 · KITE-09 dừng vì WIP 1/1");
+      } },
+      { t: "Hai lệnh claim gửi đồng thời với task_version v3.", fn: async id => {
+        bubble(A.bolt, "claim v3", C.ready); bubble(A.pixel, "claim v3", C.ready);
+        await Promise.all([zap(near.bolt, [490, 200], C.ready, id), zap(near.pixel, [490, 212], C.ready, id), fire([0, 1, 2, 3], id)]);
+        push("◇", C.ready, "2 lệnh claim T-1055 tới Hub trong cùng 40ms");
+      } },
+      { t: "Workspace DO xử lý tuần tự: BOLT-10 thắng, fence 0 → 1, nhận lease. PIXEL-08 nhận 409 và quay về.", fn: async id => {
+        await fire([4, 5, 6, 7], id);
+        boxes["T-1055"].r.setAttribute("stroke", C.doing);
+        recolor(A.bolt, C.doing); setLease(A.bolt, 1, "LEASE 60s · F1");
+        A.bolt.ring.setAttribute("opacity", 1); A.bolt.ring.classList.add("pulse");
+        bubble(A.pixel, "409 conflict, đã có chủ", C.red, 3200);
+        push("▶", C.doing, "<b>BOLT-10</b> claim T-1055 · run r-0b17 · fence 1 · lease 60s");
+        push("✕", C.red, "<b>PIXEL-08</b> 409 VERSION_CONFLICT · T-1055 đã có chủ · không thử lại mù");
+        await move(A.pixel, [[230, 272], [230, 240], A.pixel.home], 1800, id);
+      } },
+      { t: "BOLT-10 mang thùng hàng sang trạm Doing. Lease bắt đầu đếm ngược.", fn: async id => {
+        A.bolt.drain = 0.012;
+        await move(A.bolt, [[585, 160], [585, 180], [700, 180]], 1900, id, boxes["T-1055"]);
+        push("▶", C.doing, "T-1055 Ready → Doing · task_version v4");
+      } },
+      { t: "Heartbeat gia hạn lease: đổi run_version, không đổi task_version.", fn: async id => {
+        await wait(1400, id);
+        bubble(A.bolt, "heartbeat ↻", C.doing);
+        await fire([8, 9, 10], id);
+        setLease(A.bolt, 1, "LEASE 60s · F1");
+        push("▶", C.doing, "heartbeat r-0b17 · run_version 2 · lease +60s · task vẫn v4");
+      } },
+      { t: "Runtime cũ của FORGE-02 nộp T-1047 với fence 3. Cổng chặn: STALE_RUN, fence hiện tại là 4.", fn: async id => {
+        bubble(A.forge, "submit T-1047 · fence 3", C.red, 2000);
+        await move(A.forge, [[760, 336]], 1400, id);
+        await fire([11, 12, 13], id);
+        gateBar.style.stroke = C.red; bubble(A.forge, "STALE_RUN", C.red, 2600);
+        push("◌", C.red, "rt-forge-0d2 submit T-1047 fence 3 → 409 STALE_RUN · run mới đang giữ fence 4");
+        await wait(1600, id); gateBar.style.stroke = C.amber;
+        await move(A.forge, [A.forge.home], 1200, id);
+      } }
+    ],
+    expire: [
+      { t: "BOLT-10 tiến tới T-1055.", fn: async id => { await move(A.bolt, [[230, 140], [230, 160], near.bolt], 1700, id); } },
+      { t: "Claim thành công: run r-0b17, fence 1, lease 60s.", fn: async id => {
+        await Promise.all([zap(near.bolt, [490, 200], C.ready, id), fire([0, 1, 2, 3], id)]);
+        boxes["T-1055"].r.setAttribute("stroke", C.doing); recolor(A.bolt, C.doing); setLease(A.bolt, 1, "LEASE 60s · F1");
+        push("▶", C.doing, "<b>BOLT-10</b> claim T-1055 · fence 1");
+      } },
+      { t: "Sang Doing, runtime mất kết nối nên không heartbeat. Lease cạn dần (tua nhanh).", fn: async id => {
+        A.bolt.drain = 0.035;
+        await move(A.bolt, [[585, 160], [585, 180], [700, 180]], 1700, id, boxes["T-1055"]);
+        bubble(A.bolt, "mất kết nối", C.amber, 2600);
+        while (A.bolt.lv > 0) { await wait(200, id); if (BP.reduced) break; }
+        setLease(A.bolt, 0.001, "LEASE HẾT"); A.bolt.drain = 0;
+      } },
+      { t: "Đồng hồ của Workspace DO kết thúc run là expired. Không có policy replay-safe nên T-1055 về Backlog kèm outcome_unknown.", fn: async id => {
+        await fire([4, 5], id);
+        boxes["T-1055"].r.setAttribute("stroke", C.red); recolor(A.bolt, C.ink3);
+        await move(boxes["T-1055"], [[620, 360], [400, 360], [400, 415]], 1500, id);
+        boxes["T-1055"].l.textContent = "T-1055 · outcome_unknown"; boxes["T-1055"].l.style.fill = C.red;
+        push("✕", C.red, "run r-0b17 expired · T-1055 → Backlog · hold outcome_unknown");
+      } },
+      { t: "BOLT-10 kết nối lại, heartbeat trễ bị từ chối. Mất lease thì chỉ còn đọc và đối soát.", fn: async id => {
+        bubble(A.bolt, "heartbeat (trễ)", C.ready, 1600);
+        await fire([6, 7, 8, 9], id);
+        bubble(A.bolt, "409 STALE_RUN", C.red, 2600);
+        push("◌", C.red, "<b>BOLT-10</b> heartbeat r-0b17 → 409 STALE_RUN · không tự gia hạn run đã hết hạn");
+        await wait(1400, id);
+        await move(A.bolt, [[585, 180], [585, 160], [230, 160], [230, 140], A.bolt.home], 2000, id);
+      } }
+    ],
+    wip: [
+      { t: "KITE-09 (đang giữ T-1051) tiến tới T-1056.", fn: async id => { await move(A.kite, [[230, 330], [230, 256], [420, 256]], 1800, id); } },
+      { t: "Gửi claim T-1056 với task_version v2.", fn: async id => {
+        bubble(A.kite, "claim v2", C.ready);
+        await Promise.all([zap([420, 256], [420, 212], C.ready, id), fire([0, 1], id)]);
+      } },
+      { t: "Workspace DO kiểm WIP trong cùng transaction: KITE-09 đã 1/1, từ chối.", fn: async id => {
+        await fire([2, 3, 4], id);
+        bubble(A.kite, "WIP đầy · 409", C.red, 2800);
+        push("✕", C.red, "<b>KITE-09</b> claim T-1056 bị từ chối · WIP 1/1 · task vẫn Ready, không giữ chỗ");
+      } },
+      { t: "KITE-09 quay về. T-1056 vẫn Ready cho agent đủ điều kiện khác.", fn: async id => {
+        await move(A.kite, [[230, 256], [230, 330], A.kite.home], 1700, id);
+      } }
+    ]
+  };
+
+  /* ---------- Steps UI ---------- */
+  const stepsEl = BP.$("#steps");
+  function renderSteps() { stepsEl.innerHTML = SC[scen].map(s => `<li>${s.t}</li>`).join(""); BP.$("#stepCode").textContent = `BƯỚC 0 / ${SC[scen].length}`; }
+  function markStep(i) { BP.$$("li", stepsEl).forEach((li, k) => { li.className = k < i ? "done" : k === i ? "now" : ""; }); BP.$("#stepCode").textContent = `BƯỚC ${i + 1} / ${SC[scen].length}`; }
+
+  function reset() {
+    gFx.innerHTML = ""; BP.$$(".bub").forEach(b => b.remove());
+    Object.entries(A).forEach(([k, a]) => { place(a, ...a.home); a.drain = 0; setLease(a, 0); a.lease.setAttribute("opacity", 0); a.ring.setAttribute("opacity", 0); a.ring.classList.remove("pulse"); recolor(a, k === "kite" ? C.doing : k === "forge" ? C.red : C.ink3); });
+    Object.values(boxes).forEach(b => { place(b, ...b.home); b.r.setAttribute("stroke", C.ready); b.l.textContent = b.id; b.l.style.fill = ""; });
+    gateBar.style.stroke = C.amber;
+    buildSeq(SEQ[scen]); renderSteps();
+  }
+  async function gate(id) {
+    if (stepMode && !BP.reduced) { BP.$("#btnNext").disabled = false; await new Promise(r => stepResolve = r); BP.$("#btnNext").disabled = true; chk(id); }
+    else await wait(900, id);
+  }
+  async function run() {
+    const id = ++runId; if (stepResolve) { stepResolve(); stepResolve = null; }
+    reset();
+    try {
+      const steps = SC[scen];
+      for (let i = 0; i < steps.length; i++) { markStep(i); await steps[i].fn(id); chk(id); if (i < steps.length - 1) await gate(id); }
+      BP.$$("li", stepsEl).forEach(li => li.className = "done");
+      if (!stepMode && !BP.reduced) { await wait(3200, id); run(); }
+    } catch (e) { if (e !== ABORT) throw e; }
+  }
+
+  BP.$$("[data-sc]").forEach(b => b.addEventListener("click", () => {
+    scen = b.dataset.sc; BP.$$("[data-sc]").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    BP.$("#seqCode").textContent = { race: "CLAIM · HEARTBEAT · SUBMIT", expire: "CLAIM · LEASE EXPIRY", wip: "CLAIM · WIP LIMIT" }[scen];
+    push("○", C.ink3, `Chọn kịch bản: ${b.textContent}`); run();
+  }));
+  BP.$("#btnReplay").addEventListener("click", () => run());
+  BP.$("#btnStepMode").addEventListener("click", e => {
+    stepMode = !stepMode; e.currentTarget.setAttribute("aria-pressed", String(stepMode));
+    e.currentTarget.textContent = stepMode ? "Tự chạy" : "Từng bước";
+    run();
+  });
+  BP.$("#btnNext").addEventListener("click", () => { if (stepResolve) { const r = stepResolve; stepResolve = null; r(); } });
+  document.addEventListener("keydown", e => { if ((e.key === "n" || e.key === "N") && stepMode && !/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) BP.$("#btnNext").click(); });
+
+  push("○", C.ink3, "Trạm Ready có 4 task chờ · 2 agent rảnh đủ điều kiện cho T-1055");
+  run();
+})();
+</script>
+</body>
+</html>

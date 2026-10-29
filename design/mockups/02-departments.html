@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phòng ban · CF Agent Factory</title>
+<link rel="stylesheet" href="assets/blueprint.css">
+<style>
+  .info-strip { display: flex; gap: var(--sp-3); align-items: flex-start; padding: var(--sp-3) var(--sp-4); border: 1px dashed var(--line); background: var(--bp-900); font-family: var(--f-mono); font-size: var(--fs-xs); color: var(--ink-2); }
+  .info-strip b { color: var(--ink); font-weight: 600; }
+  .plan-wrap { overflow-x: auto; }
+  .plan { min-width: 760px; }
+  .plan .room-hit { cursor: pointer; }
+  .plan .room-hit:hover .room, .plan .room-hit:focus .room { fill: var(--bp-700); }
+  .plan .room-hit:focus { outline: none; }
+  .plan .room-hit:focus .room { stroke: var(--amber); stroke-width: 2; }
+  .plan .hx text { font-family: var(--f-mono); font-size: 8px; font-weight: 600; text-anchor: middle; dominant-baseline: central; }
+  .plan .wip { font-family: var(--f-mono); font-size: 10px; fill: var(--ink-2); }
+  .plan .cnt { font-family: var(--f-display); font-size: 22px; font-weight: 600; fill: var(--ink); }
+  .plan-tools { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-3); flex-wrap: wrap; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--line-soft); }
+
+  .dgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: var(--sp-4); }
+  .dcard { display: flex; flex-direction: column; }
+  .dcard .top { display: grid; grid-template-columns: 6px 1fr auto; gap: var(--sp-3); padding: var(--sp-4); border-bottom: 1px solid var(--line-soft); }
+  .dcard .swatch { background: var(--c); }
+  .dcard h3 { margin: 2px 0 0; font-family: var(--f-display); font-size: var(--fs-lg); font-weight: 600; }
+  .dcard h3 a { color: var(--ink); }
+  .dcard .desc { margin: 4px 0 0; font-size: var(--fs-xs); color: var(--ink-2); line-height: 1.45; }
+  .dcard .mid { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--line-soft); }
+  .dcard .mid > div { padding: var(--sp-3) var(--sp-4); display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .dcard .mid > div + div { border-left: 1px solid var(--line-soft); }
+  .k { font-family: var(--f-mono); font-size: 10px; color: var(--ink-3); letter-spacing: 0.12em; text-transform: uppercase; }
+  .lead { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); }
+  .lead .human-token { width: 28px; height: 28px; font-size: 9px; }
+  .bots { display: flex; gap: 4px; flex-wrap: wrap; }
+  .bots .bot { width: 28px; height: 28px; font-size: 9px; }
+  .dcard .body { padding: var(--sp-3) var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-3); }
+  .stackbar { display: flex; height: 20px; border: 1px solid var(--line-soft); background: var(--bp-950); }
+  .stackbar span { display: grid; place-items: center; font-family: var(--f-mono); font-size: 10px; font-weight: 600; color: var(--bp-950); min-width: 0; overflow: hidden; }
+  .stackbar span + span { border-left: 1px solid var(--bp-950); }
+  .counts { display: flex; flex-wrap: wrap; gap: 4px 10px; font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-2); }
+  .dcard .foot { margin-top: auto; display: grid; grid-template-columns: 1fr 1fr auto; gap: var(--sp-3); align-items: center; padding: var(--sp-3) var(--sp-4); border-top: 1px solid var(--line-soft); }
+  .foot .n { font-family: var(--f-display); font-size: var(--fs-xl); font-weight: 600; line-height: 1; }
+  .dcard.archived { border-style: dashed; background: transparent; }
+  .dcard.archived .top, .dcard.archived .body { opacity: 0.85; }
+
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label, .field .lab { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); letter-spacing: 0.08em; text-transform: uppercase; }
+  .field input { min-height: 40px; padding: 0 var(--sp-3); background: var(--bp-850); color: var(--ink); border: 1px solid var(--line-soft); font-family: var(--f-body); font-size: var(--fs-sm); border-radius: 0; }
+  .field input[aria-invalid="true"] { border-color: var(--red); }
+  .field .err { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--red); min-height: 14px; }
+  .field .hint { font-size: var(--fs-2xs); color: var(--ink-3); }
+  .opts { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+  .opt { position: relative; }
+  .opt input { position: absolute; opacity: 0; pointer-events: none; }
+  .opt span { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 var(--sp-3); border: 1px solid var(--line-soft); font-family: var(--f-mono); font-size: var(--fs-xs); color: var(--ink-2); cursor: pointer; }
+  .opt input:checked + span { border-color: var(--ink); color: var(--ink); background: var(--bp-600); }
+  .opt input:focus-visible + span { outline: 2px solid var(--amber); outline-offset: 2px; }
+  .opt .sw { width: 14px; height: 14px; background: var(--c); }
+  .modal-h { padding: var(--sp-4); border-bottom: 1px solid var(--line-soft); }
+  .modal-h h3 { margin: 4px 0 0; font-family: var(--f-display); font-size: var(--fs-xl); }
+  .modal-b { padding: var(--sp-4); display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3) var(--sp-4); }
+  .modal-b .full { grid-column: 1 / -1; }
+  .modal-f { padding: var(--sp-3) var(--sp-4); border-top: 1px solid var(--line-soft); display: flex; justify-content: flex-end; gap: var(--sp-2); flex-wrap: wrap; }
+  .table-wrap { overflow-x: auto; }
+  @media (max-width: 560px) {
+    .dgrid { grid-template-columns: minmax(0, 1fr); }
+    .modal-b { grid-template-columns: minmax(0, 1fr); }
+    .dcard .foot { grid-template-columns: 1fr 1fr; }
+    .dcard .foot .btn { grid-column: 1 / -1; }
+  }
+</style>
+</head>
+<body data-sheet="02" data-title="Phòng ban">
+<div class="app paper">
+  <div id="rail"></div>
+  <div class="main">
+    <header id="topbar"></header>
+    <main class="content">
+
+      <section class="page-head reveal">
+        <div>
+          <div class="code">DEPARTMENT INDEX · 6 HOẠT ĐỘNG · 1 LƯU TRỮ · PROFILE DELIVERY-DEMO</div>
+          <h2>Phòng ban</h2>
+          <p class="lede">Mỗi phòng ban gom một dự án với các work role liên quan. Xem nhanh tải WIP, hàng chờ Ready và những việc đang chờ con người ở từng phòng.</p>
+        </div>
+        <div class="actions">
+          <a class="btn" href="01-factory-floor.html">Mở sàn nhà máy</a>
+          <button class="btn primary" id="btnAdd">
+            <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.5"/></svg>
+            Thêm phòng ban
+          </button>
+        </div>
+      </section>
+
+      <div class="info-strip reveal" role="note">
+        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="flex:none;margin-top:1px"><rect x="1" y="1" width="14" height="14" fill="none" stroke="currentColor"/><path d="M8 7v5M8 4v1.5" stroke="currentColor" stroke-width="1.5"/></svg>
+        <span><b>PHÒNG BAN = PROJECT + WORK ROLE</b> do profile workspace cấu hình. Phòng ban KHÔNG cấp quyền: agent ở Trạm Kiểm định không tự có quyền nghiệm thu, trưởng nhóm không tự quản lý thành viên. Quyền đến từ grant của từng credential và membership.</span>
+      </div>
+
+      <section class="grid g-4 reveal" aria-label="Tóm tắt phòng ban">
+        <div class="panel kpi"><span class="label">Phòng ban hoạt động</span><span class="value" data-count="6">6</span><span class="note">+1 đã lưu trữ, giữ lịch sử</span></div>
+        <div class="panel kpi"><span class="label">Tổng WIP</span><span class="value c-doing"><span data-count="10">10</span><small style="margin-left:6px">/ 17</small></span><span class="note">Không phòng nào chạm giới hạn</span></div>
+        <div class="panel kpi"><span class="label">Ready chờ nhận</span><span class="value c-ready" data-count="4">4</span><span class="note">ND-03 có 2, nhiều nhất</span></div>
+        <div class="panel kpi"><span class="label">Chờ con người</span><span class="value c-amber" data-count="3">3</span><span class="note">2 quyết định, 1 nghiệm thu của Hà</span></div>
+      </section>
+
+      <section class="panel reveal" aria-label="Mặt bằng thu nhỏ">
+        <div class="plan-tools">
+          <div class="legend">
+            <span style="color:var(--s-ready)"><i></i>Chuyển giao giữa phòng</span>
+            <span style="color:var(--s-review)"><i></i>Sang nghiệm thu</span>
+            <span style="color:var(--s-done)"><i></i>Ra dây chuyền chính</span>
+          </div>
+          <span class="code">CHUYỂN GIAO HÔM NAY · <b id="handoffs" style="color:var(--ink)">14</b> · SIM</span>
+        </div>
+        <div class="plan-wrap">
+          <svg id="plan" class="dwg plan" viewBox="0 0 1200 330" role="img" aria-labelledby="planT">
+            <title id="planT">Mặt bằng thu nhỏ 6 phòng ban. Luồng chuyển giao: Nghiên cứu sang Kỹ thuật sang Kiểm định; Nội dung sang Kiểm định; Dữ liệu sang Vận hành; Kiểm định ra dây chuyền chính. Xem bảng chuyển giao bên dưới.</title>
+            <defs><pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" style="stroke:var(--line-soft)"/></pattern></defs>
+            <g id="gWalls"></g><g id="gRooms"></g><g id="gFlows"></g><g id="gPk"></g>
+          </svg>
+        </div>
+        <details style="padding:0 var(--sp-4) var(--sp-3)">
+          <summary class="code" style="cursor:pointer;min-height:36px;display:flex;align-items:center">Bảng chuyển giao (thay thế sơ đồ)</summary>
+          <div class="table-wrap"><table class="table">
+            <thead><tr><th>Từ</th><th>Đến</th><th>Loại</th><th>Hôm nay</th><th>Ví dụ</th></tr></thead>
+            <tbody>
+              <tr><td>NC-02 Nghiên cứu</td><td>KT-01 Kỹ thuật</td><td>Kết quả khảo sát thành task mới</td><td class="mono">4</td><td class="mono">T-1051 → đề xuất queue</td></tr>
+              <tr><td>KT-01 Kỹ thuật</td><td>QC-06 Kiểm định</td><td>Nộp kết quả sang Review</td><td class="mono">5</td><td class="mono">T-1036</td></tr>
+              <tr><td>ND-03 Nội dung</td><td>QC-06 Kiểm định</td><td>Nộp kết quả sang Review</td><td class="mono">2</td><td class="mono">T-1040</td></tr>
+              <tr><td>DL-04 Dữ liệu</td><td>VH-05 Vận hành</td><td>Báo cáo cho runbook</td><td class="mono">1</td><td class="mono">T-1044</td></tr>
+              <tr><td>QC-06 Kiểm định</td><td>Dây chuyền chính</td><td>Nghiệm thu, chuyển Done</td><td class="mono">2</td><td class="mono">T-1029</td></tr>
+            </tbody>
+          </table></div>
+        </details>
+      </section>
+
+      <section aria-label="Danh sách phòng ban">
+        <div class="row between wrap" style="margin-bottom:var(--sp-3)">
+          <div class="dim" style="flex:1;min-width:200px">DANH SÁCH CHI TIẾT · 7 BẢN GHI</div>
+        </div>
+        <div class="dgrid" id="dgrid"></div>
+      </section>
+
+    </main>
+    <div id="titleblock"></div>
+  </div>
+</div>
+
+<!-- Add department modal -->
+<div class="scrim" id="addScrim">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="addT">
+    <div class="modal-h"><span class="code">PROFILE CHANGE · PREVIEW TRƯỚC KHI ÁP DỤNG</span><h3 id="addT">Thêm phòng ban</h3></div>
+    <form class="modal-b" id="addForm" novalidate>
+      <div class="field"><label for="dName">Tên phòng ban</label><input id="dName" placeholder="vd: Phòng Hỗ trợ khách hàng" required><span class="err" id="eName"></span></div>
+      <div class="field"><label for="dCode">Mã</label><input id="dCode" placeholder="vd: HT-07" required style="font-family:var(--f-mono)"><span class="err" id="eCode"></span></div>
+      <div class="field full"><span class="lab" id="lRoles">Work roles (không cấp quyền)</span>
+        <div class="opts" role="group" aria-labelledby="lRoles">
+          <label class="opt"><input type="checkbox" checked><span>role_engineer</span></label>
+          <label class="opt"><input type="checkbox"><span>role_research</span></label>
+          <label class="opt"><input type="checkbox"><span>role_writer</span></label>
+          <label class="opt"><input type="checkbox"><span>role_reviewer</span></label>
+          <label class="opt"><input type="checkbox"><span>role_operator</span></label>
+        </div>
+        <span class="hint">Nhãn role_reviewer chỉ mô tả trách nhiệm; quyền nghiệm thu phải cấp riêng trong grant.</span>
+      </div>
+      <div class="field"><label for="dWip">WIP limit</label><input id="dWip" type="number" min="1" max="12" value="3" style="font-family:var(--f-mono)"><span class="err" id="eWip"></span></div>
+      <div class="field"><span class="lab" id="lColor">Màu nhận diện (token)</span>
+        <div class="opts" role="radiogroup" aria-labelledby="lColor">
+          <label class="opt"><input type="radio" name="col" checked><span><i class="sw" style="--c:var(--s-ready)"></i>--s-ready</span></label>
+          <label class="opt"><input type="radio" name="col"><span><i class="sw" style="--c:var(--s-doing)"></i>--s-doing</span></label>
+          <label class="opt"><input type="radio" name="col"><span><i class="sw" style="--c:var(--s-review)"></i>--s-review</span></label>
+          <label class="opt"><input type="radio" name="col"><span><i class="sw" style="--c:var(--s-done)"></i>--s-done</span></label>
+        </div>
+      </div>
+      <p class="full muted" style="margin:0;font-size:var(--fs-xs)">Màu amber và coral được giữ cho cảnh báo cần người và lỗi, không chọn được cho phòng ban. Thay đổi đi qua bước preview của profile, ghi audit, không ảnh hưởng task hiện có.</p>
+    </form>
+    <div class="modal-f">
+      <button class="btn" data-close>Huỷ</button>
+      <button class="btn primary" id="addDo">Xem trước thay đổi</button>
+    </div>
+  </div>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(() => {
+  const F = BP.F;
+  const el = (t, a, p) => BP.svg(t, a, p);
+  const actColor = { doing: "var(--s-doing)", idle: "var(--ink-3)", waiting: "var(--amber)", cooldown: "var(--s-ready)", meeting: "var(--s-review)" };
+  const agentCol = a => a.presence === "offline" ? "var(--s-cancelled)" : a.presence === "stale" ? "var(--red)" : actColor[a.activity];
+  const META = {
+    kt: { lead: "hu-qd", desc: "Viết, refactor và kiểm thử mã cho các service của nhà máy. Nhận việc từ Nghiên cứu, nộp sang Kiểm định.", roles: "role_engineer" },
+    nc: { lead: "hu-kn", desc: "Khảo sát thư viện, tổng hợp tài liệu, đề xuất phương án. Kết quả thường thành task mới cho Kỹ thuật.", roles: "role_research" },
+    nd: { lead: "hu-ha", desc: "Viết, dịch tài liệu và dựng hình minh hoạ. Mọi bản phát hành cần nghiệm thu độc lập.", roles: "role_writer" },
+    dl: { lead: "hu-kn", desc: "Truy vấn, ETL và báo cáo chỉ số vận hành như tỉ lệ lease hết hạn, outbox backlog.", roles: "role_analyst" },
+    vh: { lead: "hu-qd", desc: "Triển khai, giám sát, dọn dẹp. Các thao tác không hoàn tác luôn qua cổng phê duyệt.", roles: "role_operator" },
+    qc: { lead: "hu-ha", desc: "Nghiệm thu kết quả của phòng khác. Reviewer luôn khác người nộp, kể cả khác runtime.", roles: "role_reviewer" }
+  };
+  const ST = ["backlog", "ready", "doing", "waiting", "review", "done"];
+  const stC = { backlog: "var(--s-backlog)", ready: "var(--s-ready)", doing: "var(--s-doing)", waiting: "var(--s-waiting)", review: "var(--s-review)", done: "var(--s-done)" };
+  const stG = { backlog: "○", ready: "◇", doing: "▶", waiting: "❚❚", review: "◎", done: "✓" };
+
+  /* ---------- mini floor plan ---------- */
+  const gW = BP.$("#gWalls"), gR = BP.$("#gRooms"), gF = BP.$("#gFlows"), gP = BP.$("#gPk");
+  const ROOMS = {
+    nc: { x: 30, y: 30, w: 270, h: 112, row: "top" }, kt: { x: 320, y: 30, w: 320, h: 112, row: "top" }, qc: { x: 660, y: 30, w: 270, h: 112, row: "top" },
+    nd: { x: 30, y: 196, w: 270, h: 112, row: "bot" }, dl: { x: 320, y: 196, w: 320, h: 112, row: "bot" }, vh: { x: 660, y: 196, w: 270, h: 112, row: "bot" }
+  };
+  el("rect", { x: 20, y: 20, width: 1160, height: 298, class: "wall" }, gW);
+  el("rect", { x: 30, y: 148, width: 900, height: 42, fill: "var(--bp-900)", stroke: "var(--line-soft)" }, gW);
+  el("text", { x: 40, y: 172, class: "sub" }, gW).textContent = "HÀNH LANG CHUYỂN GIAO";
+  // main line block
+  const ml = el("a", { href: "04-mission-line.html", class: "room-hit", "aria-label": "Dây chuyền chính, mở dây chuyền nhiệm vụ" }, gR);
+  el("rect", { x: 950, y: 30, width: 220, height: 278, class: "room" }, ml);
+  el("rect", { x: 958, y: 70, width: 204, height: 230, class: "hatch" }, ml);
+  el("text", { x: 962, y: 52, class: "lbl" }, ml).textContent = "DÂY CHUYỀN CHÍNH";
+  el("text", { x: 962, y: 66, class: "sub" }, ml).textContent = "SHEET 04 · BACKLOG → DONE";
+  const cnt = el("text", { x: 1060, y: 200, class: "cnt", "text-anchor": "middle" }, ml); cnt.id = "mlCount"; cnt.textContent = "2";
+  el("text", { x: 1060, y: 218, class: "sub", "text-anchor": "middle" }, ml).textContent = "DONE HÔM NAY";
+
+  F.departments.forEach(d => {
+    const r = ROOMS[d.id]; const m = META[d.id];
+    const a = el("a", { href: "03-department-detail.html", class: "room-hit", "aria-label": `${d.name} ${d.code}, WIP ${d.wip} trên ${d.wipLimit}, mở chi tiết` }, gR);
+    el("rect", { x: r.x, y: r.y, width: r.w, height: r.h, class: "room" + (d.id === "kt" ? " hot" : "") }, a);
+    el("rect", { x: r.x, y: r.y, width: 4, height: r.h, fill: `var(${d.color})` }, a);
+    el("text", { x: r.x + 14, y: r.y + 20, class: "lbl" }, a).textContent = d.name.toUpperCase();
+    el("text", { x: r.x + 14, y: r.y + 34, class: "sub" }, a).textContent = `${d.code} · TN ${F.humans.find(h => h.id === m.lead).name.toUpperCase()}`;
+    d.agents.forEach((id, i) => {
+      const ag = BP.agent(id); const c = agentCol(ag);
+      const g = el("g", { class: "hx", transform: `translate(${r.x + 28 + i * 34} ${r.y + 62})` }, a);
+      el("polygon", { points: "-6,-11 6,-11 12,0 6,11 -6,11 -12,0", fill: "var(--bp-950)", stroke: c, "stroke-width": 1.4, "stroke-dasharray": ag.presence === "stale" ? "3 2" : "" }, g);
+      el("text", { fill: c, style: `fill:${c}` }, g).textContent = ag.code;
+    });
+    const ratio = d.wip / d.wipLimit;
+    el("text", { x: r.x + 14, y: r.y + 96, class: "wip" }, a).textContent = `WIP ${d.wip}/${d.wipLimit}`;
+    el("rect", { x: r.x + 74, y: r.y + 89, width: r.w - 92, height: 6, fill: "var(--bp-950)", stroke: "var(--line-soft)" }, a);
+    el("rect", { x: r.x + 74, y: r.y + 89, width: (r.w - 92) * ratio, height: 6, fill: ratio >= 1 ? "var(--red)" : ratio >= .75 ? "var(--amber)" : "var(--s-doing)" }, a);
+    // door
+    const dx = r.x + r.w - 40, dy = r.row === "top" ? r.y + r.h : r.y;
+    el("line", { x1: dx - 12, y1: dy, x2: dx + 12, y2: dy, stroke: "var(--bp-850)", "stroke-width": 3 }, gW);
+    el("path", { d: r.row === "top" ? `M${dx - 12} ${dy} A24 24 0 0 1 ${dx + 12} ${dy - 22}` : `M${dx - 12} ${dy} A24 24 0 0 0 ${dx + 12} ${dy + 22}`, class: "wall-thin", "stroke-dasharray": "2 3" }, gW);
+  });
+  const door = id => { const r = ROOMS[id]; return { x: r.x + r.w - 40, y: r.row === "top" ? r.y + r.h : r.y }; };
+  const FLOWS = [
+    { from: "nc", to: "kt", lane: 158, cls: "", label: "NC → KT" },
+    { from: "kt", to: "qc", lane: 164, cls: "violet", label: "KT → QC" },
+    { from: "nd", to: "qc", lane: 176, cls: "violet", label: "ND → QC", toX: 760 },
+    { from: "dl", to: "vh", lane: 182, cls: "", label: "DL → VH" },
+    { from: "qc", to: "ml", lane: 170, cls: "lime", label: "QC → DONE" }
+  ];
+  const paths = FLOWS.map(f => {
+    const a = door(f.from);
+    let d;
+    if (f.to === "ml") d = `M${a.x} ${a.y} V${f.lane} H950`;
+    else { const b = door(f.to); const bx = f.toX || b.x - 20; d = `M${a.x} ${a.y} V${f.lane} H${bx} V${b.y}`; }
+    el("path", { d, class: "flow slow " + f.cls }, gF);
+    return el("path", { d, fill: "none" }, gF);
+  });
+
+  // packets travelling along handoff paths (pause-aware)
+  let handoffs = 14, done = 2;
+  const hEl = BP.$("#handoffs");
+  async function runPacket(i, p, delay) {
+    const f = FLOWS[i];
+    const col = f.cls === "violet" ? "var(--s-review)" : f.cls === "lime" ? "var(--s-done)" : "var(--s-ready)";
+    const g = el("g", { opacity: 0 }, gP);
+    el("rect", { x: -6, y: -5, width: 12, height: 10, fill: "var(--bp-850)", stroke: col, "stroke-width": 1.3 }, g);
+    el("line", { x1: -6, y1: -1, x2: 6, y2: -1, stroke: col, "stroke-width": .8 }, g);
+    await BP.wait(delay);
+    while (true) {
+      g.setAttribute("opacity", 1);
+      await BP.moveAlong(g, p, 3200 + p.getTotalLength() * 4);
+      g.setAttribute("opacity", 0);
+      handoffs++; hEl.textContent = handoffs;
+      if (f.to === "ml") { done++; BP.$("#mlCount").textContent = done; }
+      await BP.wait(BP.rand(3000, 7000));
+    }
+  }
+  if (!BP.reduced) paths.forEach((p, i) => runPacket(i, p, i * 1300));
+
+  /* ---------- KPI count-up ---------- */
+  if (!BP.reduced) BP.$$("[data-count]").forEach(n => {
+    const to = +n.dataset.count; let v = 0; n.textContent = "0";
+    const step = () => { v++; n.textContent = v; if (v < to) BP.wait(90).then(step); };
+    BP.wait(300).then(step);
+  });
+
+  /* ---------- department cards ---------- */
+  const grid = BP.$("#dgrid");
+  const cards = F.departments.map(d => {
+    const m = META[d.id]; const lead = F.humans.find(h => h.id === m.lead);
+    const tasks = F.tasks.filter(t => t.dept === d.id);
+    const c = {}; ST.forEach(s => c[s] = tasks.filter(t => t.state === s).length);
+    const total = ST.reduce((n, s) => n + c[s], 0) || 1;
+    const human = tasks.filter(t => t.state === "waiting" || (t.state === "review" && (t.reviewer || "").startsWith("hu-"))).length;
+    const flag = tasks.filter(t => t.flag).length;
+    const ratio = d.wip / d.wipLimit;
+    const extra = d.agents.map(BP.agent).filter(a => a.presence !== "online").map(a => `<span class="tag ${a.presence === "stale" ? "red" : ""}">${a.name} · ${a.presence === "stale" ? "tín hiệu cũ" : "offline"}</span>`).join("");
+    return `<article class="panel dcard reveal" style="--c:var(${d.color})">
+      <div class="top"><span class="swatch" aria-hidden="true"></span>
+        <div><span class="code">${d.code} · ${d.en}</span><h3><a href="03-department-detail.html">${d.name}</a></h3><p class="desc">${m.desc}</p></div>
+        <span class="tag">${m.roles}</span></div>
+      <div class="mid">
+        <div><span class="k">Trưởng nhóm (người)</span><span class="lead"><span class="human-token" aria-hidden="true">${lead.code}</span>${lead.name}</span></div>
+        <div><span class="k">Agent thuộc phòng · ${d.agents.length}</span><span class="bots">${d.agents.map(id => { const a = BP.agent(id); return `<a class="bot" href="08-agent-profile.html" style="--c:${agentCol(a)}" title="${a.name} · ${a.presence === "online" ? F.activityVi[a.activity] : a.presence}">${a.code}</a>`; }).join("")}</span></div>
+      </div>
+      <div class="body">
+        <div class="stack" style="gap:6px">
+          <div class="row between"><span class="k">WIP / WIP limit</span><span class="mono" style="font-size:var(--fs-xs)">${d.wip} / ${d.wipLimit}</span></div>
+          <div class="meter ticks ${ratio >= 1 ? "crit" : ratio >= .75 ? "warn" : ""}" role="meter" aria-label="WIP ${d.wip} trên ${d.wipLimit}" aria-valuenow="${d.wip}" aria-valuemin="0" aria-valuemax="${d.wipLimit}"><i style="width:${ratio * 100}%"></i></div>
+        </div>
+        <div class="stack" style="gap:6px">
+          <span class="k">Task theo trạng thái · ${tasks.length}</span>
+          <div class="stackbar" role="img" aria-label="${ST.map(s => `${F.stateLabel[s]} ${c[s]}`).join(", ")}">${ST.filter(s => c[s]).map(s => `<span style="flex:${c[s]};background:${stC[s]}" title="${F.stateLabel[s]} ${c[s]}">${c[s]}</span>`).join("")}</div>
+          <div class="counts">${ST.map(s => `<span style="color:${c[s] ? stC[s] : "var(--ink-3)"}">${stG[s]} ${F.stateLabel[s]} ${c[s]}</span>`).join("")}</div>
+        </div>
+        ${extra || flag ? `<div class="row wrap" style="gap:4px">${extra}${flag ? `<span class="tag red">${flag} task hết lượt retry</span>` : ""}</div>` : ""}
+      </div>
+      <div class="foot">
+        <div><div class="k">Hàng chờ Ready</div><div class="n c-ready">${c.ready}</div></div>
+        <div><div class="k">Chờ người</div><div class="n ${human ? "c-amber" : "muted"}">${human}</div></div>
+        <a class="btn sm" href="03-department-detail.html">Mở phòng</a>
+      </div>
+    </article>`;
+  });
+  cards.push(`<article class="panel dcard archived" style="--c:var(--s-cancelled)">
+      <div class="top"><span class="swatch" aria-hidden="true"></span>
+        <div><span class="code">HT-07 · Support</span><h3>Phòng Hỗ trợ</h3><p class="desc">Lưu trữ từ R1. Không chọn được cho task mới; 12 task cũ vẫn giữ tham chiếu và lịch sử audit.</p></div>
+        <span class="state cancelled">Lưu trữ</span></div>
+      <div class="body"><div class="empty" style="padding:var(--sp-4)">Không có agent, không có WIP. Khôi phục cần một thay đổi profile mới có preview.</div></div>
+      <div class="foot"><div><div class="k">Task lịch sử</div><div class="n muted">12</div></div><div><div class="k">Chờ người</div><div class="n muted">0</div></div><button class="btn sm" disabled title="Cần quyền sửa profile">Khôi phục</button></div>
+    </article>`);
+  grid.innerHTML = cards.join("");
+
+  /* ---------- add modal ---------- */
+  const scrim = BP.$("#addScrim"); let opener;
+  const open = () => { opener = document.activeElement; scrim.classList.add("open"); BP.$("#dName").focus(); };
+  const close = () => { scrim.classList.remove("open"); opener && opener.focus(); };
+  BP.$("#btnAdd").addEventListener("click", open);
+  scrim.addEventListener("click", e => { if (e.target === scrim || e.target.hasAttribute("data-close")) close(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && scrim.classList.contains("open")) close(); });
+  const codes = F.departments.map(d => d.code.toUpperCase()).concat("HT-07");
+  const setErr = (inp, eId, msg) => { inp.setAttribute("aria-invalid", msg ? "true" : "false"); BP.$(eId).textContent = msg; };
+  const vCode = () => { const v = BP.$("#dCode").value.trim().toUpperCase(); const m = !v ? "Cần nhập mã" : !/^[A-Z]{2}-\d{2}$/.test(v) ? "Định dạng AA-00, vd HT-08" : codes.includes(v) ? `${v} đã tồn tại (kể cả phòng lưu trữ)` : ""; setErr(BP.$("#dCode"), "#eCode", m); return !m; };
+  BP.$("#dCode").addEventListener("input", vCode);
+  BP.$("#addDo").addEventListener("click", () => {
+    const okN = !!BP.$("#dName").value.trim(); setErr(BP.$("#dName"), "#eName", okN ? "" : "Cần nhập tên phòng ban");
+    const w = +BP.$("#dWip").value; const okW = w >= 1 && w <= 12; setErr(BP.$("#dWip"), "#eWip", okW ? "" : "Từ 1 đến 12");
+    if (vCode() && okN && okW) { close(); BP.toast("PROFILE PREVIEW · MOCK", `Bản xem trước: thêm project + work role cho ${BP.$("#dName").value.trim()}. Chưa áp dụng, chưa cấp quyền nào.`); }
+  });
+  if (new URLSearchParams(location.search).get("add")) open();
+})();
+</script>
+</body>
+</html>

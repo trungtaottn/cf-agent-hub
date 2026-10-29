@@ -1,0 +1,652 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tòa văn phòng · CF Agent Factory</title>
+<link rel="stylesheet" href="assets/blueprint.css">
+<style>
+  .hq { display: block; }
+  .bottom3 { grid-template-columns: 280px minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+  @media (max-width: 1280px) { .bottom3 { grid-template-columns: 280px minmax(0, 1fr); } .bottom3 > :last-child { grid-column: 1 / -1; } }
+  @media (max-width: 760px) { .bottom3 { grid-template-columns: minmax(0, 1fr); } }
+  .section-view svg { width: 100%; height: auto; }
+  .floor-btn { cursor: pointer; }
+  .floor-btn:focus { outline: none; }
+  .floor-btn .slab { fill: var(--bp-800); stroke: var(--line); stroke-width: 1.25; transition: fill var(--dur-fast); }
+  .floor-btn:hover .slab { fill: var(--bp-700); }
+  .floor-btn[aria-pressed="true"] .slab { fill: var(--bp-600); stroke: var(--line-strong); stroke-width: 2; }
+  .floor-btn:focus-visible .slab { stroke: var(--amber); stroke-width: 2; }
+  .plan-tools { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--line-soft); }
+  .plan-scroll { overflow-x: auto; }
+  .plan-scroll svg { min-width: 760px; width: 100%; height: auto; }
+  /* furniture */
+  .f-floor { fill: var(--bp-800); }
+  .f-wall { fill: none; stroke: var(--line-strong); stroke-width: 3; }
+  .f-iwall { fill: none; stroke: var(--line); stroke-width: 1.5; }
+  .f-obj { fill: var(--bp-850); stroke: var(--line); stroke-width: 1; }
+  .f-soft { fill: none; stroke: var(--line-soft); stroke-width: 1; }
+  .f-glass { fill: none; stroke: var(--s-ready); stroke-width: 1; stroke-dasharray: 4 2; opacity: .8; }
+  .f-win { fill: var(--bp-800); stroke: var(--s-ready); stroke-width: 1; }
+  .f-plant { fill: var(--t-done); stroke: var(--s-done); stroke-width: 1; }
+  .f-hatch { fill: url(#ofHatch); stroke: var(--line-soft); }
+  .f-screen { fill: var(--bp-950); stroke: var(--line); stroke-width: .75; }
+  .f-screen.on { fill: var(--t-doing); stroke: var(--s-doing); }
+  .f-screen.wait { fill: var(--t-waiting); stroke: var(--s-waiting); }
+  .f-screen.review { fill: var(--t-review); stroke: var(--s-review); }
+  .f-screen.off { fill: var(--bp-950); stroke: var(--line-soft); }
+  .f-screen.flick { animation: flick 1.8s steps(3) infinite; }
+  @keyframes flick { 0% { opacity: 1; } 33% { opacity: .72; } 66% { opacity: .92; } }
+  .led { animation: blink 1.1s steps(2, jump-none) infinite; }
+  .led:nth-of-type(3n) { animation-duration: .7s; } .led:nth-of-type(4n) { animation-duration: 1.6s; }
+  .room-name { font-family: var(--f-display); font-size: 12.5px; font-weight: 600; letter-spacing: .06em; fill: var(--ink); }
+  .room-sub { font-family: var(--f-mono); font-size: 9px; letter-spacing: .08em; fill: var(--ink-3); }
+  .tiny { font-family: var(--f-mono); font-size: 7.5px; fill: var(--ink-3); letter-spacing: .04em; }
+  .note-tag { font-family: var(--f-mono); font-size: 7.5px; fill: var(--amber); }
+  /* people */
+  .p-lbl { font-family: var(--f-mono); font-size: 9px; font-weight: 600; fill: var(--ink); text-anchor: middle; paint-order: stroke; stroke: var(--bp-800); stroke-width: 3px; }
+  .arm { transform-box: fill-box; transform-origin: center; }
+  .typing .arm { animation: type .32s steps(2, jump-none) infinite; }
+  .typing .arm.r { animation-delay: .16s; }
+  @keyframes type { 50% { transform: translateY(-2px); } }
+  .walking .body { animation: stride .42s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
+  @keyframes stride { from { transform: scaleX(1); } to { transform: scaleX(.86); } }
+  .zz { font-family: var(--f-mono); font-size: 9px; fill: var(--ink-3); animation: zz 2.4s linear infinite; }
+  @keyframes zz { from { transform: translate(0, 0); opacity: 1; } to { transform: translate(8px, -14px); opacity: 0; } }
+  .bubble rect { fill: var(--bp-950); stroke: var(--line); }
+  .bubble text { font-family: var(--f-mono); font-size: 8.5px; fill: var(--ink); }
+  .bubble.amber rect { stroke: var(--amber); } .bubble.amber text { fill: var(--amber); }
+  .who li { display: grid; grid-template-columns: 34px 1fr auto; gap: var(--sp-3); align-items: center; padding: var(--sp-2) var(--sp-4); border-bottom: 1px solid var(--grid-major); font-size: var(--fs-sm); }
+  .who ul { list-style: none; margin: 0; padding: 0; }
+  .who .s { font-size: var(--fs-xs); color: var(--ink-2); }
+  .feed { max-height: 300px; overflow: hidden; }
+  .floor-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--line-soft); }
+  .floor-kpis div { padding: var(--sp-3) var(--sp-4); border-left: 1px solid var(--line-soft); }
+  .floor-kpis div:first-child { border-left: 0; }
+  .floor-kpis b { display: block; font-family: var(--f-display); font-size: var(--fs-xl); font-weight: 600; }
+  @media (max-width: 760px) { .section-view svg { max-width: 320px; margin: 0 auto; } }
+  @media (max-width: 560px) { .floor-kpis { grid-template-columns: 1fr 1fr; } .floor-kpis div:nth-child(3) { border-left: 0; } }
+</style>
+</head>
+<body data-sheet="25" data-title="Tòa văn phòng Aurora">
+<div class="app paper">
+  <div id="rail"></div>
+  <div class="main">
+    <header id="topbar"></header>
+    <main class="content">
+
+      <section class="page-head reveal">
+        <div>
+          <div class="code">BUILDING · 4 TẦNG · MẶT CẮT A-A + MẶT BẰNG</div>
+          <h2>Văn phòng nơi agent làm việc như người</h2>
+          <p class="lede">Mỗi agent có bàn, máy tính và ghế riêng. Họ đứng dậy lấy việc ở bảng Ready, đi thang máy lên cổng phê duyệt, họp, uống cà phê khi hồi quota. Chọn tầng ở mặt cắt bên trái, đổi màu ở thanh trên cùng.</p>
+        </div>
+        <div class="actions">
+          <div class="seg" role="group" aria-label="Kiểu hiển thị agent">
+            <button aria-pressed="true" data-avatar="person">Hình người</button>
+            <button aria-pressed="false" data-avatar="robot">Ký hiệu robot</button>
+          </div>
+          <a class="btn primary" href="26-workstation.html">Xem bàn ATLAS-01</a>
+        </div>
+      </section>
+
+      <section class="hq">
+        <!-- FLOOR PLAN -->
+        <div class="stack">
+          <div class="panel reveal">
+            <div class="plan-tools">
+              <div>
+                <div class="code" id="planCode">LEVEL 02 · OPEN OFFICE</div>
+                <h3 style="margin:2px 0 0;font-family:var(--f-display);font-size:var(--fs-lg)" id="planTitle">Tầng 2 · Khu làm việc mở</h3>
+              </div>
+              <div class="seg" role="tablist" aria-label="Chọn tầng" id="floorTabs">
+                <button role="tab" data-floor="1" aria-selected="false">T1 Sảnh</button>
+                <button role="tab" data-floor="2" aria-selected="true">T2 Làm việc</button>
+                <button role="tab" data-floor="3" aria-selected="false">T3 Quản lý</button>
+                <button role="tab" data-floor="4" aria-selected="false">T4 Sân thượng</button>
+              </div>
+            </div>
+            <div class="plan-scroll">
+              <svg id="plan" class="dwg" viewBox="0 0 1100 660" role="img" aria-labelledby="planDesc">
+                <title id="planDesc">Mặt bằng tầng đang chọn với bàn làm việc, máy tính, phòng họp và người đang làm việc.</title>
+                <defs>
+                  <pattern id="ofHatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" style="stroke:var(--line-soft)"/></pattern>
+                  <pattern id="deck" width="14" height="14" patternUnits="userSpaceOnUse"><path d="M0 0H14M0 7H14" style="stroke:var(--grid-major)"/></pattern>
+                </defs>
+                <g id="gFurn"></g>
+                <g id="gPeople"></g>
+                <g id="gFx"></g>
+              </svg>
+            </div>
+            <div class="floor-kpis" id="floorKpis"></div>
+          </div>
+
+          <div class="grid bottom3">
+        <!-- SECTION VIEW -->
+        <div class="panel section-view reveal">
+          <div class="panel-head"><h3>Mặt cắt A-A</h3><span class="code">CHỌN TẦNG</span></div>
+          <div class="panel-body">
+            <svg id="section" class="dwg" viewBox="0 0 300 540" role="group" aria-label="Mặt cắt tòa nhà, chọn tầng">
+              <defs>
+                <pattern id="secHatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="7" style="stroke:var(--line-soft)"/></pattern>
+              </defs>
+              <g id="secFloors"></g>
+              <g id="secStatic"></g>
+            </svg>
+            <div class="legend" style="margin-top:var(--sp-3)">
+              <span style="color:var(--s-doing)">● Agent đang làm</span>
+              <span style="color:var(--amber)">● Con người</span>
+              <span style="color:var(--ink-3)">○ Rảnh / vắng</span>
+            </div>
+          </div>
+        </div>
+
+            <div class="panel who reveal">
+              <div class="panel-head"><h3>Ai đang ở tầng này</h3><span class="code" id="whoCount"></span></div>
+              <ul id="whoList"></ul>
+            </div>
+            <div class="panel reveal">
+              <div class="panel-head"><h3>Hoạt động văn phòng</h3><span class="code">LIVE · SIM</span></div>
+              <div class="feed"><ul class="log" id="feed" aria-live="polite"></ul></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel reveal">
+        <div class="panel-head"><h3>Danh bạ toàn tòa</h3><span class="code">BẢNG THAY THẾ CHO SƠ ĐỒ</span></div>
+        <div class="panel-body tight" style="overflow-x:auto">
+          <table class="table" id="directory">
+            <thead><tr><th>Tên</th><th>Loại</th><th>Tầng · vị trí</th><th>Hoạt động</th><th>Task</th><th>Tín hiệu</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <p class="note-red">Vị trí trong văn phòng chỉ là cách trình bày. Ngồi ở bàn không có nghĩa là đang giữ task, quyền làm việc vẫn do claim, lease và fence quyết định.</p>
+
+    </main>
+    <div id="titleblock"></div>
+  </div>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(() => {
+  const F = BP.F, S = BP.svg;
+  const gF = BP.$("#gFurn"), gP = BP.$("#gPeople"), gX = BP.$("#gFx");
+  const AISLE = 330;
+  let avatar = "person";
+  let gen = 0;               // floor generation; scenes stop when it changes
+  let current = 2;
+
+  const deptColor = id => `var(${(BP.dept(id) || {}).color || "--line"})`;
+  const actColor = { doing: "var(--s-doing)", idle: "var(--ink-3)", waiting: "var(--amber)", cooldown: "var(--s-ready)", meeting: "var(--s-review)" };
+
+  /* ---------------- People registry ---------------- */
+  const HUM = { "hu-qd": { code: "QĐ", name: "Quản đốc", role: "Owner" }, "hu-ha": { code: "HA", name: "Hà", role: "Reviewer" }, "hu-kn": { code: "KN", name: "Khánh", role: "Member" } };
+  const WHERE = {
+    atlas: [2, "Bàn KT-1", "Đang gõ code T-1042"], forge: [2, "Bàn KT-2", "Migrate schema T-1047"], bolt: [2, "Bàn KT-5", "Rảnh, sắp lấy việc"],
+    kite: [2, "Bàn NC-2", "Khảo sát thư viện T-1051"], nova: [2, "Bàn DL-1", "Dựng báo cáo T-1044"], "hu-kn": [2, "Bàn ND-3", "Viết đặc tả"],
+    vega: [3, "Trước cửa phòng Quản đốc", "Chờ duyệt đề xuất T-1039"], muse: [3, "Phòng họp lớn", "Standup nội dung"], lens: [3, "Phòng họp lớn", "Standup nội dung"],
+    sage: [3, "Bàn kiểm định 1", "Nghiệm thu T-1036"], "hu-ha": [3, "Bàn kiểm định 2", "Nghiệm thu T-1040"], "hu-qd": [3, "Phòng Quản đốc", "Xem đề xuất"],
+    orbit: [4, "Quầy cà phê", "Hồi quota 06:40"], pixel: [4, "Sofa", "Tín hiệu cũ, lần cuối 14:02"], echo: [1, "Phòng server", "Offline"]
+  };
+
+  /* ---------------- Drawing helpers ---------------- */
+  const rect = (x, y, w, h, cls, p = gF, extra = {}) => S("rect", { x, y, width: w, height: h, class: cls, ...extra }, p);
+  const line = (x1, y1, x2, y2, cls, p = gF) => S("line", { x1, y1, x2, y2, class: cls }, p);
+  const text = (x, y, t, cls, p = gF, extra = {}) => { const e = S("text", { x, y, class: cls, ...extra }, p); e.textContent = t; return e; };
+  function shell() {
+    rect(30, 30, 1040, 600, "f-floor");
+    rect(30, 30, 1040, 600, "f-wall");
+    for (let x = 70; x < 1040; x += 90) { rect(x, 27, 56, 6, "f-win"); rect(x, 627, 56, 6, "f-win"); }
+    for (let y = 70; y < 600; y += 90) { if (y > 220 && y < 440) continue; rect(1067, y, 6, 56, "f-win"); }
+    // core: elevator + stairs + WC
+    rect(40, 250, 60, 70, "f-obj"); line(40, 250, 100, 320, "f-soft"); line(100, 250, 40, 320, "f-soft"); text(48, 340, "THANG MÁY", "tiny");
+    rect(40, 350, 120, 80, "f-hatch"); for (let i = 0; i < 9; i++) line(40 + i * 13, 350, 40 + i * 13, 430, "f-soft"); text(48, 446, "CẦU THANG", "tiny");
+    rect(110, 250, 50, 70, "f-obj"); text(117, 290, "WC", "tiny");
+    // elevator door gap
+    S("line", { x1: 100, y1: 270, x2: 100, y2: 300, style: "stroke:var(--s-ready);stroke-width:3" }, gF);
+    // columns
+    [[200, 300], [460, 300], [720, 300], [980, 300], [200, 360], [460, 360], [720, 360], [980, 360]].forEach(([x, y]) => rect(x - 6, y - 6, 12, 12, "f-hatch"));
+    // north arrow + scale
+    S("path", { d: "M1030 58 l8 22 l-8 -6 l-8 6 z", class: "f-obj" }, gF); text(1026, 52, "N", "tiny");
+    S("path", { d: "M900 650 H1000 M900 646 V654 M950 648 V652 M1000 646 V654", class: "dimline" }, gF); text(1006, 653, "5 m", "tiny");
+  }
+  function room(x, y, w, h, name, sub, doors = []) {
+    rect(x, y, w, h, "f-iwall");
+    doors.forEach(([dx, dy, len, vert]) => {
+      S("line", vert ? { x1: dx, y1: dy, x2: dx, y2: dy + len, style: "stroke:var(--bp-800);stroke-width:4" } : { x1: dx, y1: dy, x2: dx + len, y2: dy, style: "stroke:var(--bp-800);stroke-width:4" }, gF);
+      S("path", { d: vert ? `M${dx} ${dy} A${len} ${len} 0 0 1 ${dx + len} ${dy + len}` : `M${dx} ${dy} A${len} ${len} 0 0 0 ${dx + len} ${dy - len}`, class: "f-soft", "stroke-dasharray": "2 2" }, gF);
+    });
+    text(x + 10, y + 18, name, "room-name"); if (sub) text(x + 10, y + 31, sub, "room-sub");
+  }
+  // desk with monitor at top edge; person sits below facing up
+  function desk(x, y, opts = {}) {
+    const w = opts.w || 64, h = 30;
+    const g = S("g", {}, gF);
+    rect(x, y, w, h, "f-obj", g);
+    const scr = rect(x + w / 2 - 15, y + 3, 30, 5, `f-screen ${opts.screen || "off"}${opts.screen && opts.screen !== "off" ? " flick" : ""}`, g);
+    rect(x + w / 2 - 11, y + 16, 22, 5, "f-soft", g);
+    S("circle", { cx: x + w / 2 + 17, cy: y + 19, r: 2, class: "f-soft" }, g);
+    if (opts.cup) S("circle", { cx: x + 8, cy: y + 10, r: 3, class: "f-soft" }, g);
+    if (opts.lamp) S("circle", { cx: x + w - 8, cy: y + 9, r: 3.5, class: "f-obj" }, g);
+    S("path", { d: `M${x + w / 2 - 9} ${y + h + 6} h18 v14 h-18 z`, class: "f-soft" }, g); // chair
+    if (opts.tag) text(x + 2, y + h + 34, opts.tag, opts.tagCls || "tiny", g);
+    return { seat: { x: x + w / 2, y: y + h + 13 }, screen: scr };
+  }
+  function plant(x, y, r = 8) { S("circle", { cx: x, cy: y, r, class: "f-plant" }, gF); S("path", { d: `M${x - r + 2} ${y} h${2 * r - 4} M${x} ${y - r + 2} v${2 * r - 4}`, class: "f-soft" }, gF); }
+  function sofa(x, y, w, vert) { vert ? (rect(x, y, 22, w, "f-obj"), rect(x, y, 7, w, "f-soft")) : (rect(x, y, w, 22, "f-obj"), rect(x, y, w, 7, "f-soft")); }
+  function roundTable(cx, cy, r, chairs) { S("circle", { cx, cy, r, class: "f-obj" }, gF); for (let i = 0; i < chairs; i++) { const a = i / chairs * Math.PI * 2; S("circle", { cx: cx + Math.cos(a) * (r + 12), cy: cy + Math.sin(a) * (r + 12), r: 6, class: "f-soft" }, gF); } }
+  function longTable(x, y, w, h, n) { rect(x, y, w, h, "f-obj"); for (let i = 0; i < n; i++) { const cx = x + (i + .5) * (w / n); S("rect", { x: cx - 7, y: y - 16, width: 14, height: 11, class: "f-soft" }, gF); S("rect", { x: cx - 7, y: y + h + 5, width: 14, height: 11, class: "f-soft" }, gF); } }
+  function whiteboard(x, y, w, label) { rect(x, y, w, 6, "f-obj"); text(x, y - 3, label || "WHITEBOARD", "tiny"); }
+  function rack(x, y, n) { for (let i = 0; i < n; i++) { rect(x + i * 26, y, 22, 54, "f-obj"); for (let j = 0; j < 5; j++) S("circle", { cx: x + i * 26 + 6 + (j % 2) * 10, cy: y + 8 + j * 9, r: 1.6, class: "led", style: `fill:${j === 3 && i === 1 ? "var(--red)" : "var(--s-doing)"}` }, gF); } }
+  function shelf(x, y, w, h, label) { rect(x, y, w, h, "f-hatch"); text(x + 4, y + h + 11, label, "tiny"); }
+
+  /* ---------------- Person glyph ---------------- */
+  const people = {};
+  function person(id, pos, opts = {}) {
+    const isHuman = id.startsWith("hu-");
+    const a = isHuman ? null : BP.agent(id);
+    const h = isHuman ? HUM[id] : null;
+    const code = isHuman ? h.code : a.code;
+    const name = isHuman ? h.name : a.name;
+    const stale = a && a.presence === "stale";
+    const col = isHuman ? "var(--amber)" : (opts.color || deptColor(a.dept));
+    const ring = isHuman ? "var(--amber)" : actColor[opts.act || a.activity];
+    const g = S("g", { class: `person${opts.typing ? " typing" : ""}`, transform: `translate(${pos.x} ${pos.y})`, tabindex: 0, role: "img", "aria-label": `${name}, ${opts.label || ""}` }, gP);
+    const inner = S("g", { transform: `rotate(${opts.facing || 0})` }, g);
+    if (avatar === "robot" && !isHuman) {
+      S("polygon", { points: "-7,-12 7,-12 13,0 7,12 -7,12 -13,0", fill: "var(--bp-950)", stroke: ring, "stroke-width": 1.5, "stroke-dasharray": stale ? "3 2" : "" }, inner);
+      const t = S("text", { y: 3, class: "tiny", "text-anchor": "middle", style: `fill:${ring};font-weight:600` }, inner); t.textContent = code;
+    } else {
+      const body = S("g", { class: "body" }, inner);
+      S("ellipse", { cx: 0, cy: 2, rx: 12, ry: 7, fill: "var(--bp-900)", stroke: col, "stroke-width": 1.5, "stroke-dasharray": stale ? "3 2" : "" }, body);
+      if (opts.typing || opts.arms) {
+        S("rect", { x: -10, y: -9, width: 3, height: 8, class: "arm l", fill: col }, body);
+        S("rect", { x: 7, y: -9, width: 3, height: 8, class: "arm r", fill: col }, body);
+      }
+      S("circle", { cx: 0, cy: 0, r: 6, fill: isHuman ? "var(--bp-950)" : col, stroke: isHuman ? "var(--amber)" : "var(--bp-950)", "stroke-width": 1.5, "stroke-dasharray": stale ? "2 2" : "" }, inner);
+      if (!isHuman) S("line", { x1: 0, y1: -6, x2: 0, y2: -10, stroke: col, "stroke-width": 1 }, inner); // antenna = agent
+      S("circle", { cx: 0, cy: 0, r: 15, fill: "none", stroke: ring, "stroke-width": .75, "stroke-dasharray": "2 3", opacity: .9 }, inner);
+    }
+    const lbl = S("text", { y: 26, class: "p-lbl" }, g); lbl.textContent = isHuman ? name : a.name;
+    if (opts.zz) { const z = S("text", { x: 8, y: -12, class: "zz" }, g); z.textContent = "z z"; }
+    people[id] = { g, pos: { ...pos }, home: { ...pos }, isHuman, opts };
+    return people[id];
+  }
+  function bubble(id, msg, ms = 2600, amber) {
+    const P = people[id]; if (!P) return;
+    const b = S("g", { class: `bubble${amber ? " amber" : ""}` }, P.g);
+    const w = msg.length * 5.2 + 14;
+    S("rect", { x: -w / 2, y: -42, width: w, height: 16 }, b);
+    S("path", { d: "M-4 -26 L0 -20 L4 -26", class: "f-obj" }, b);
+    const t = S("text", { y: -31, "text-anchor": "middle" }, b); t.textContent = msg;
+    BP.wait(ms).then(() => b.remove());
+  }
+  async function walk(id, to, ms = 2600, viaY = AISLE) {
+    const P = people[id]; if (!P) return;
+    const p = S("path", { d: `M${P.pos.x} ${P.pos.y} V${viaY} H${to.x} V${to.y}` });
+    P.g.classList.add("walking"); P.g.classList.remove("typing");
+    await BP.moveAlong(P.g, p, ms);
+    P.g.classList.remove("walking"); P.pos = { ...to };
+  }
+  const feed = BP.$("#feed");
+  const log = (glyph, color, html) => BP.logPush(feed, `<time>${BP.now()}</time><span class="g" style="color:${color}">${glyph}</span><span>${html}</span>`, 18);
+
+  /* ---------------- FLOORS ---------------- */
+  const FLOORS = {
+    1: { code: "LEVEL 01 · LOBBY", title: "Tầng 1 · Sảnh, an ninh, kho", draw: drawF1, scenes: scenesF1 },
+    2: { code: "LEVEL 02 · OPEN OFFICE", title: "Tầng 2 · Khu làm việc mở", draw: drawF2, scenes: scenesF2 },
+    3: { code: "LEVEL 03 · MANAGEMENT + QC", title: "Tầng 3 · Quản lý, phê duyệt, kiểm định", draw: drawF3, scenes: scenesF3 },
+    4: { code: "LEVEL 04 · ROOFTOP", title: "Tầng 4 · Pantry, giải trí, sân thượng", draw: drawF4, scenes: scenesF4 }
+  };
+  const desks = {};
+
+  function drawF2() {
+    shell();
+    room(180, 40, 400, 260, "XƯỞNG KỸ THUẬT", "KT-01 · 3 AGENT · WIP 3/4", [[520, 300, 30]]);
+    room(600, 40, 220, 260, "PHÒNG NGHIÊN CỨU", "NC-02", [[760, 300, 30]]);
+    room(840, 40, 220, 260, "PHÒNG DỮ LIỆU", "DL-04", [[1000, 300, 30]]);
+    room(180, 360, 300, 260, "STUDIO NỘI DUNG", "ND-03");
+    whiteboard(400, 50, 150, "SPRINT BOARD KT");
+    // KT desks: 2 rows x 3
+    const kt = [[210, 80], [300, 80], [390, 80], [210, 190], [300, 190], [390, 190]];
+    kt.forEach(([x, y], i) => { desks["kt" + i] = desk(x, y, { screen: i === 0 || i === 1 ? "on" : "off", cup: i === 0, lamp: i === 1, tag: i === 2 ? "trống" : (i > 3 ? "trống" : "") }); });
+    rect(490, 70, 70, 150, "f-obj"); text(498, 86, "TỦ TÀI LIỆU", "tiny"); plant(560, 280); plant(196, 280);
+    // NC
+    desks.nc0 = desk(620, 80, { screen: "wait", tag: "VEGA · đang ở T3", tagCls: "note-tag" });
+    desks.nc1 = desk(720, 80, { screen: "on" });
+    desks.nc2 = desk(620, 190, { tag: "trống" }); desks.nc3 = desk(720, 190, { tag: "trống" });
+    plant(806, 280);
+    // DL
+    desks.dl0 = desk(860, 80, { screen: "on", w: 70 }); desks.dl1 = desk(950, 80, { w: 70, tag: "trống" });
+    rect(1050, 90, 8, 150, "f-screen on flick"); text(984, 260, "TƯỜNG DASHBOARD", "tiny");
+    roundTable(910, 230, 18, 4);
+    // ND
+    desks.nd0 = desk(200, 400, { screen: "off", tag: "MUSE · họp ở T3", tagCls: "note-tag" });
+    desks.nd1 = desk(290, 400, { screen: "off", tag: "PIXEL · tín hiệu cũ", tagCls: "note-tag" });
+    desks.nd2 = desk(380, 400, { screen: "on", lamp: true });
+    desks.nd3 = desk(200, 510); desks.nd4 = desk(290, 510); sofa(380, 520, 80);
+    // copy / ready board area
+    room(500, 360, 160, 260, "KHU BẢNG VIỆC", "READY BOARD · IN ẤN", [[548, 360, 24], [598, 360, 24]]);
+    rect(510, 420, 140, 40, "f-obj"); text(514, 416, "BẢNG READY", "tiny");
+    const cards = S("g", { id: "readyCards" }, gF);
+    ["T-1055", "T-1056", "T-1057", "T-1058"].forEach((t, i) => { const c = S("rect", { x: 516 + i * 33, y: 430, width: 28, height: 20, fill: "var(--t-ready)", stroke: "var(--s-ready)", "data-t": t }, cards); const tt = S("title", {}, c); tt.textContent = t; });
+    rect(520, 520, 50, 32, "f-obj"); text(524, 564, "MÁY IN", "tiny"); rect(600, 560, 26, 26, "f-obj"); S("circle", { cx: 613, cy: 573, r: 8, class: "f-glass" }, gF); text(594, 600, "NƯỚC", "tiny");
+    // phone booths
+    [0, 1, 2].forEach(i => { rect(680, 380 + i * 78, 70, 66, "f-glass"); S("rect", { x: 695, y: 400 + i * 78, width: 40, height: 14, class: "f-soft" }, gF); });
+    text(680, 374, "BUỒNG GỌI", "tiny");
+    // huddle
+    room(770, 360, 290, 260, "GÓC TRAO ĐỔI", "HUDDLE · ĐỨNG");
+    sofa(790, 560, 120); sofa(1030, 420, 120, true); rect(860, 470, 80, 40, "f-obj"); whiteboard(800, 424, 160, "GHI CHÚ NHANH");
+    plant(1040, 600); plant(790, 400);
+  }
+  function peopleF2() {
+    person("atlas", desks.kt0.seat, { typing: true, label: "đang làm T-1042" });
+    person("forge", desks.kt1.seat, { typing: true, label: "đang làm T-1047" });
+    person("bolt", desks.kt3.seat, { arms: true, label: "rảnh" });
+    person("kite", desks.nc1.seat, { typing: true, label: "đang làm T-1051" });
+    person("nova", desks.dl0.seat, { typing: true, label: "đang làm T-1044" });
+    person("hu-kn", desks.nd2.seat, { typing: true, label: "con người, đang viết đặc tả" });
+  }
+  function scenesF2(my) {
+    return [
+      async () => {
+        bubble("bolt", "đi lấy việc"); await BP.wait(900); if (my !== gen) return;
+        await walk("bolt", { x: 560, y: 460 }, 2600); if (my !== gen) return;
+        const card = BP.$('#readyCards [data-t="T-1055"]');
+        bubble("bolt", "claim T-1055"); card && card.setAttribute("style", "fill:var(--t-doing);stroke:var(--s-doing)");
+        log("◇", "var(--s-ready)", "<b>BOLT-10</b> claim T-1055 ở bảng Ready · fence 1 · lease 15:00");
+        await BP.wait(1200); card && (card.style.opacity = 0);
+        await walk("bolt", people.bolt.home, 2600); if (my !== gen) return;
+        desks.kt3.screen.setAttribute("class", "f-screen on flick"); people.bolt.g.classList.add("typing");
+        await BP.wait(5000); if (my !== gen) return;
+        // reset for loop
+        log("⊘", "var(--s-cancelled)", "Mô phỏng lặp: T-1055 trả về Ready");
+        desks.kt3.screen.setAttribute("class", "f-screen off"); people.bolt.g.classList.remove("typing");
+        if (card) { card.style.opacity = 1; card.setAttribute("style", "fill:var(--t-ready);stroke:var(--s-ready)"); }
+      },
+      async () => {
+        bubble("kite", "in báo cáo khảo sát"); await BP.wait(700); if (my !== gen) return;
+        await walk("kite", { x: 560, y: 590 }, 3000); if (my !== gen) return;
+        log("▤", "var(--ink-2)", "<b>KITE-09</b> tải artifact <span class='mono'>survey-queues.md</span> lên kho (staged)");
+        await BP.wait(1600);
+        await walk("kite", people.kite.home, 3000); if (my !== gen) return;
+        people.kite.g.classList.add("typing");
+      },
+      async () => {
+        bubble("forge", "heartbeat ↻ lease"); log("▶", "var(--s-doing)", "<b>FORGE-02</b> gia hạn lease run <span class='mono'>r-31c0</span>, task_version không đổi");
+        await BP.wait(1800); if (my !== gen) return;
+        await walk("nova", { x: 613, y: 545 }, 3000); if (my !== gen) return;
+        bubble("nova", "nghỉ 1 phút"); bubble("hu-kn", "báo cáo xong chưa?", 2200, true);
+        await BP.wait(2400); if (my !== gen) return;
+        await walk("nova", people.nova.home, 3000); people.nova.g.classList.add("typing");
+      }
+    ];
+  }
+
+  function drawF3() {
+    shell();
+    room(180, 40, 360, 260, "PHÒNG HỌP LỚN", "THREAD #standup-nd · 10:00", [[480, 300, 30]]);
+    longTable(240, 130, 240, 60, 5); rect(200, 140, 8, 50, "f-screen review flick"); text(212, 210, "MÀN CHIẾU", "tiny");
+    room(560, 40, 240, 260, "PHÒNG QUẢN ĐỐC", "CỔNG PHÊ DUYỆT · 2 CHỜ", [[600, 300, 30]]);
+    S("rect", { x: 560, y: 40, width: 240, height: 260, fill: "none", stroke: "var(--amber)", "stroke-width": 1.5, "stroke-dasharray": "6 4" }, gF);
+    desks.qd = desk(640, 100, { w: 90, screen: "wait", lamp: true }); S("rect", { x: 655, y: 170, width: 16, height: 12, class: "f-soft" }, gF); S("rect", { x: 700, y: 170, width: 16, height: 12, class: "f-soft" }, gF);
+    sofa(760, 80, 100, true); plant(580, 280); shelf(580, 200, 40, 50, "HỒ SƠ");
+    room(820, 40, 240, 260, "PHÒNG ĐIỀU KHIỂN", "STATUS WALL", [[880, 300, 30]]);
+    for (let i = 0; i < 4; i++) rect(840 + i * 52, 80, 46, 26, "f-screen on flick"); text(840, 120, "WALL DISPLAY 4 MÀN", "tiny");
+    S("path", { d: "M860 200 Q940 150 1020 200", class: "f-obj", fill: "none", "stroke-width": 8 }, gF); text(900, 236, "BÀN ĐIỀU PHỐI · TRỐNG", "tiny");
+    room(180, 360, 460, 260, "TRẠM KIỂM ĐỊNH", "QC-06 · NGHIỆM THU ĐỘC LẬP");
+    desks.qc0 = desk(220, 410, { w: 90, screen: "review", lamp: true }); desks.qc1 = desk(340, 410, { w: 90, screen: "review" });
+    rect(470, 400, 150, 40, "f-obj"); text(476, 396, "MÁY QUÉT QC", "tiny"); S("line", { x1: 480, y1: 420, x2: 610, y2: 420, class: "flow violet" }, gF);
+    rect(220, 530, 210, 60, "f-hatch"); text(224, 604, "TỦ LƯU BẰNG CHỨNG (COMMITTED)", "tiny");
+    room(660, 360, 400, 260, "THƯ VIỆN KỸ NĂNG", "TÀI LIỆU CAPABILITY · ĐÀO TẠO");
+    shelf(680, 400, 360, 28, "KỆ RUNBOOK · ADR · SPEC"); roundTable(760, 520, 24, 5); roundTable(940, 520, 24, 5); plant(1040, 600);
+  }
+  function peopleF3() {
+    person("muse", { x: 300, y: 112 }, { facing: 180, act: "meeting", label: "đang họp" });
+    person("lens", { x: 396, y: 210 }, { act: "meeting", label: "đang họp" });
+    person("hu-qd", desks.qd.seat, { typing: true, label: "con người, quản đốc" });
+    person("vega", { x: 615, y: 330 }, { act: "waiting", label: "chờ duyệt T-1039" });
+    person("sage", desks.qc0.seat, { typing: true, act: "doing", label: "nghiệm thu T-1036" });
+    person("hu-ha", desks.qc1.seat, { typing: true, label: "con người, reviewer" });
+  }
+  function scenesF3(my) {
+    return [
+      async () => {
+        bubble("muse", "mục 1: nhãn trạng thái"); await BP.wait(2400); if (my !== gen) return;
+        bubble("lens", "đã ACK, tạo task mới?"); await BP.wait(2400); if (my !== gen) return;
+        log("✎", "var(--s-review)", "Phòng họp tạo <b>T-1062</b> vào Backlog (tin nhắn không tự đổi trạng thái task)");
+      },
+      async () => {
+        bubble("vega", "đề xuất v2 · gửi 240 email", 3000, true);
+        log("❚❚", "var(--amber)", "<b>VEGA-03</b> đứng chờ ở Cổng phê duyệt, task vẫn Waiting");
+        await BP.wait(1800); if (my !== gen) return;
+        bubble("hu-qd", "đang đọc đề xuất v2", 2600, true); await BP.wait(3000);
+      },
+      async () => {
+        bubble("sage", "tiêu chí 4/5 đạt"); await BP.wait(2200); if (my !== gen) return;
+        bubble("hu-ha", "nghiệm thu T-1040", 2400, true);
+        log("✓", "var(--s-done)", "<b>Hà</b> nghiệm thu T-1040, khác người nộp MUSE-04 · Done");
+        await BP.wait(2600);
+      }
+    ];
+  }
+
+  function drawF1() {
+    shell();
+    // entrance on south wall
+    S("line", { x1: 520, y1: 630, x2: 600, y2: 630, style: "stroke:var(--bp-800);stroke-width:5" }, gF); text(526, 648, "LỐI VÀO CHÍNH", "tiny");
+    room(420, 380, 280, 240, "SẢNH · CỔNG AN NINH", "RUNTIME ENROLL · KIỂM CREDENTIAL");
+    S("path", { d: "M470 470 Q560 430 650 470", class: "f-obj", fill: "none", "stroke-width": 10 }, gF); text(520, 500, "QUẦY LỄ TÂN", "tiny");
+    [500, 545, 590].forEach(x => { rect(x, 540, 6, 30, "f-obj"); S("line", { x1: x + 6, y1: 555, x2: x + 30, y2: 555, class: "f-soft" }, gF); });
+    text(500, 584, "CỔNG XOAY", "tiny"); plant(440, 600); plant(680, 600);
+    room(180, 380, 220, 240, "PHÒNG THƯ", "OUTBOX · ACK · RETRY");
+    for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) rect(200 + i * 34, 420 + j * 24, 28, 18, "f-obj");
+    text(200, 504, "NGĂN THƯ THEO AGENT", "tiny"); rect(200, 540, 110, 26, "f-obj"); S("line", { x1: 205, y1: 553, x2: 305, y2: 553, class: "flow" }, gF); text(200, 580, "BĂNG PHÂN LOẠI", "tiny");
+    room(720, 380, 340, 240, "KHO ARTIFACT", "STAGED · UPLOADED · COMMITTED");
+    shelf(740, 420, 300, 22, "KỆ COMMITTED"); shelf(740, 480, 300, 22, "KỆ UPLOADED"); shelf(740, 540, 200, 22, "KỆ STAGED");
+    S("g", { id: "forklift" }, gF);
+    room(180, 40, 420, 260, "BẾN KẾT NỐI", "HTTP · CLI · MCP · A2A (KẾ HOẠCH)");
+    ["HTTP", "CLI", "MCP", "A2A"].forEach((n, i) => { rect(200 + i * 98, 40, 80, 10, "f-obj"); text(206 + i * 98, 64, n, "tiny"); });
+    S("line", { x1: 200, y1: 150, x2: 580, y2: 150, class: "flow" }, gF); text(200, 170, "BĂNG CHUYỀN LỆNH DOMAIN CHUNG", "tiny");
+    room(620, 40, 440, 260, "PHÒNG SERVER · VẬN HÀNH", "VH-05 · DURABLE OBJECT · R2");
+    rack(650, 80, 8); desks.vh0 = desk(660, 200, { screen: "off", tag: "ECHO-11 offline", tagCls: "note-tag" }); desks.vh1 = desk(760, 200, { screen: "on", tag: "trống" });
+    text(880, 230, "1 ĐÈN ĐỎ: RETRY OUTBOX", "tiny");
+  }
+  function peopleF1() {
+    person("visitor", { x: 560, y: 650 }, {});
+  }
+  function scenesF1(my) {
+    return [
+      async () => {
+        const P = people.visitor; if (!P) return;
+        P.g.style.opacity = 1; P.pos = { x: 560, y: 650 }; P.g.setAttribute("transform", "translate(560 650)");
+        await walk("visitor", { x: 560, y: 520 }, 2200, 650); if (my !== gen) return;
+        bubble("visitor", "quét credential"); await BP.wait(1500); if (my !== gen) return;
+        bubble("visitor", "runtime proof · chỉ hiện 1 lần", 2600);
+        log("◇", "var(--s-ready)", "Runtime <span class='mono'>rt-new-5e1</span> enroll cho agent mới, proof chỉ hiển thị một lần");
+        await BP.wait(2200); if (my !== gen) return;
+        await walk("visitor", { x: 112, y: 285 }, 3800, AISLE); if (my !== gen) return;
+        log("↑", "var(--ink-2)", "Runtime mới lên thang máy, chưa có task cho tới khi claim");
+        P.g.style.opacity = 0; await BP.wait(1600);
+      },
+      async () => {
+        log("✉", "var(--s-ready)", "Phòng thư giao 3 thông báo, 1 thư chuyển sang hàng thử lại (lần 2, thử lúc 13:05)");
+        await BP.wait(3200);
+      }
+    ];
+  }
+  // a visitor runtime agent (not in data roster)
+  const VISITOR = { id: "visitor", code: "NW", name: "AGENT MỚI", dept: "vh", presence: "online", activity: "idle" };
+
+  function drawF4() {
+    shell();
+    room(180, 40, 360, 260, "PANTRY", "CÀ PHÊ · NƯỚC · ĂN NHẸ", [[480, 300, 30]]);
+    rect(200, 60, 320, 30, "f-obj"); text(206, 104, "QUẦY BẾP", "tiny");
+    rect(210, 64, 26, 22, "f-obj"); text(206, 56, "MÁY CÀ PHÊ", "tiny"); rect(470, 64, 40, 22, "f-obj"); text(470, 56, "TỦ LẠNH", "tiny");
+    rect(260, 170, 180, 30, "f-obj"); [270, 310, 350, 390, 430].forEach(x => S("circle", { cx: x, cy: 214, r: 7, class: "f-soft" }, gF)); text(262, 164, "BÀN BAR", "tiny");
+    room(560, 40, 260, 260, "KHU GIẢI TRÍ", "IDLE · HỒI QUOTA", [[620, 300, 30]]);
+    sofa(580, 220, 140); sofa(780, 80, 140, true); rect(620, 140, 60, 40, "f-obj"); text(622, 134, "BÀN TRÀ", "tiny");
+    rect(720, 60, 40, 40, "f-obj"); for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) if ((i + j) % 2) rect(720 + i * 10, 60 + j * 10, 10, 10, "f-soft"); text(716, 112, "BÀN CỜ", "tiny");
+    room(840, 40, 220, 260, "GÓC NẠP NĂNG LƯỢNG", "MASSAGE · ĐỌC SÁCH", [[886, 300, 30]]);
+    rect(880, 90, 40, 70, "f-obj"); text(870, 176, "GHẾ MASSAGE", "tiny"); shelf(960, 70, 80, 120, "KỆ SÁCH");
+    S("circle", { cx: 1000, cy: 250, r: 16, class: "f-obj" }, gF); S("circle", { cx: 1000, cy: 250, r: 6, class: "f-soft" }, gF); text(978, 280, "PHI TIÊU", "tiny");
+    // terrace
+    rect(180, 360, 880, 260, "f-obj", gF, { style: "fill:url(#deck)" }); text(190, 380, "SÂN THƯỢNG", "room-name"); text(190, 393, "SỰ KIỆN · SINH NHẬT AGENT · BBQ CUỐI TUẦN", "room-sub");
+    S("rect", { x: 180, y: 360, width: 880, height: 260, fill: "none", stroke: "var(--s-ready)", "stroke-dasharray": "8 4" }, gF);
+    for (let i = 0; i < 9; i++) plant(220 + i * 100, 600, 10);
+    roundTable(360, 480, 26, 6); roundTable(560, 480, 26, 6); roundTable(760, 480, 26, 6);
+    rect(900, 430, 120, 70, "f-obj"); text(904, 516, "SÂN KHẤU MINI", "tiny");
+  }
+  function peopleF4() {
+    person("orbit", { x: 224, y: 112 }, { act: "cooldown", label: "hồi quota" });
+    person("pixel", { x: 660, y: 238 }, { act: "idle", zz: true, label: "tín hiệu cũ" });
+  }
+  let quota = 0.35;
+  function scenesF4(my) {
+    return [
+      async () => {
+        bubble("orbit", "nạp cà phê · hồi quota"); log("☕", "var(--s-ready)", "<b>ORBIT-05</b> hồi quota, nhận việc lại sau 06:40");
+        await BP.wait(2200); if (my !== gen) return;
+        await walk("orbit", { x: 900, y: 186 }, 3600); if (my !== gen) return;
+        bubble("orbit", "ghế massage"); await BP.wait(2600); if (my !== gen) return;
+        await walk("orbit", { x: 224, y: 112 }, 3600);
+      },
+      async () => {
+        bubble("pixel", "lần cuối thấy 14:02", 2600);
+        log("◌", "var(--red)", "<b>PIXEL-08</b> tín hiệu cũ, không gọi là Online, không giữ task");
+        await BP.wait(3000);
+      }
+    ];
+  }
+
+  /* ---------------- Floor switching ---------------- */
+  const PEOPLE_FN = { 1: peopleF1, 2: peopleF2, 3: peopleF3, 4: peopleF4 };
+  function showFloor(n) {
+    gen++; current = n;
+    gF.innerHTML = ""; gP.innerHTML = ""; gX.innerHTML = "";
+    for (const k in people) delete people[k];
+    for (const k in desks) delete desks[k];
+    const fl = FLOORS[n];
+    fl.draw(); PEOPLE_FN[n]();
+    BP.$("#planCode").textContent = fl.code; BP.$("#planTitle").textContent = fl.title;
+    BP.$$("#floorTabs [data-floor]").forEach(b => b.setAttribute("aria-selected", String(+b.dataset.floor === n)));
+    BP.$$(".floor-btn").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.floor === n)));
+    renderWho(n);
+    const my = gen;
+    if (!BP.reduced) (async () => {
+      const scenes = fl.scenes(my); let i = 0;
+      await BP.wait(800);
+      while (my === gen) { await scenes[i % scenes.length](); await BP.wait(1400); i++; }
+    })();
+  }
+  // patch BP.agent so the visitor renders
+  const _agent = BP.agent; BP.agent = id => id === "visitor" ? VISITOR : _agent(id);
+
+  /* ---------------- Who / KPIs / directory ---------------- */
+  const allIds = [...F.agents.map(a => a.id), "hu-qd", "hu-ha", "hu-kn"];
+  function info(id) {
+    const isH = id.startsWith("hu-"); const a = isH ? null : BP.agent(id);
+    const w = WHERE[id] || [0, "Không có mặt", "Offline"];
+    return { id, isH, a, code: isH ? HUM[id].code : a.code, name: isH ? HUM[id].name : a.name, floor: w[0], spot: w[1], act: w[2],
+      task: a && a.task ? a.task : "", presence: isH ? "Phiên hợp lệ" : a.presence === "online" ? "Có tín hiệu" : a.presence === "stale" ? "Tín hiệu cũ 14:02" : "Offline" };
+  }
+  function token(i) {
+    if (i.isH) return `<span class="human-token">${i.code}</span>`;
+    const c = i.a.presence === "offline" ? "var(--s-cancelled)" : actColor[i.a.activity];
+    return `<span class="bot" style="--c:${c}">${i.code}</span>`;
+  }
+  function renderWho(n) {
+    const list = allIds.map(info).filter(i => i.floor === n);
+    BP.$("#whoCount").textContent = `${list.length} NGƯỜI`;
+    BP.$("#whoList").innerHTML = list.length ? list.map(i => `<li>${token(i)}<div><div>${i.name} <span class="muted mono">· ${i.spot}</span></div><div class="s">${i.act}</div></div>${i.task ? `<a class="tag" href="05-work-order.html">${i.task}</a>` : `<span class="tag">${i.isH ? "người" : "không task"}</span>`}</li>`).join("")
+      : `<li style="display:block"><div class="empty">Không có ai ở tầng này</div></li>`;
+    const doing = list.filter(i => i.a && i.a.activity === "doing").length;
+    const humans = list.filter(i => i.isH).length;
+    const KP = {
+      1: [["Bàn", "2"], ["Agent có mặt", "0"], ["Runtime chờ enroll", "1"], ["Đèn đỏ server", "1"]],
+      2: [["Bàn làm việc", "24"], ["Đang làm", String(doing)], ["Bàn trống", "14"], ["Con người", String(humans)]],
+      3: [["Phòng", "5"], ["Chờ quyết định", "2"], ["Đang nghiệm thu", "2"], ["Đang họp", "2"]],
+      4: [["Chỗ ngồi", "48"], ["Hồi quota", "1"], ["Tín hiệu cũ", "1"], ["Sự kiện hôm nay", "1"]]
+    }[n];
+    BP.$("#floorKpis").innerHTML = KP.map(([l, v]) => `<div><span class="code">${l}</span><b>${v}</b></div>`).join("");
+  }
+  BP.$("#directory tbody").innerHTML = allIds.map(info).map(i => `<tr>
+    <td><span class="row">${token(i)}<span>${i.name}</span></span></td>
+    <td class="ink2">${i.isH ? "Con người" : "Agent"}</td>
+    <td class="mono">${i.floor ? "T" + i.floor : "Không có mặt"} · ${i.spot}</td>
+    <td>${i.act}</td>
+    <td class="mono">${i.task || '<span class="muted">Không</span>'}</td>
+    <td>${i.presence === "Offline" ? '<span class="state cancelled">Offline</span>' : i.presence.startsWith("Tín hiệu cũ") ? '<span class="state stale">Tín hiệu cũ</span>' : '<span class="state online">' + i.presence + "</span>"}</td>
+  </tr>`).join("");
+
+  /* ---------------- Section view ---------------- */
+  const secF = BP.$("#secFloors"), secS = BP.$("#secStatic");
+  const LV = { 4: 70, 3: 170, 2: 270, 1: 370 }; const H = 90, X0 = 30, W = 240;
+  const NAMES = { 4: ["T4", "SÂN THƯỢNG · PANTRY"], 3: ["T3", "QUẢN LÝ · QC"], 2: ["T2", "KHU LÀM VIỆC MỞ"], 1: ["T1", "SẢNH · KHO · SERVER"] };
+  [4, 3, 2, 1].forEach(n => {
+    const y = LV[n];
+    const g = S("g", { class: "floor-btn", "data-floor": n, role: "button", tabindex: 0, "aria-pressed": "false", "aria-label": `Tầng ${n}: ${NAMES[n][1]}` }, secF);
+    S("rect", { x: X0, y, width: W, height: H, class: "slab" }, g);
+    S("line", { x1: X0, y1: y + H, x2: X0 + W, y2: y + H, stroke: "var(--line-strong)", "stroke-width": 3 }, g);
+    for (let wx = X0 + 12; wx < X0 + 160; wx += 34) S("rect", { x: wx, y: y + 18, width: 22, height: 26, fill: "none", stroke: "var(--s-ready)", "stroke-width": .75 }, g);
+    const t1 = S("text", { x: X0 + 10, y: y + 62, class: "lbl" }, g); t1.textContent = NAMES[n][0];
+    const t2 = S("text", { x: X0 + 10, y: y + 78, class: "sub" }, g); t2.textContent = NAMES[n][1];
+    // people dots
+    const here = allIds.map(info).filter(i => i.floor === n);
+    here.forEach((i, k) => S("circle", { cx: X0 + 46 + k * 11, cy: y + 60, r: 3.5, fill: i.isH ? "var(--amber)" : (i.a.activity === "doing" ? "var(--s-doing)" : "none"), stroke: i.isH ? "var(--amber)" : (i.a.activity === "doing" ? "var(--s-doing)" : "var(--ink-3)") }, g));
+    g.addEventListener("click", () => showFloor(n));
+    g.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); showFloor(n); } });
+  });
+  // roof, antenna, ground, foundation
+  S("path", { d: `M${X0 - 6} 70 H${X0 + W + 6}`, stroke: "var(--line-strong)", "stroke-width": 4 }, secS);
+  S("path", { d: `M${X0} 50 V70 M${X0 + W} 50 V70 M${X0} 54 H${X0 + 150}`, stroke: "var(--line)", "stroke-width": 1, fill: "none" }, secS);
+  S("path", { d: "M240 70 V24 M232 32 H248 M234 40 H246", stroke: "var(--line)", fill: "none" }, secS);
+  S("circle", { cx: 240, cy: 22, r: 3, fill: "var(--amber)", class: "blink" }, secS);
+  for (let i = 0; i < 4; i++) S("circle", { cx: 60 + i * 30, cy: 62, r: 6, fill: "var(--t-done)", stroke: "var(--s-done)" }, secS);
+  S("rect", { x: 10, y: 460, width: 280, height: 34, fill: "url(#secHatch)", stroke: "var(--line-soft)" }, secS);
+  S("line", { x1: 0, y1: 460, x2: 300, y2: 460, stroke: "var(--line-strong)", "stroke-width": 2 }, secS);
+  const gl = S("text", { x: 14, y: 512, class: "sub" }, secS); gl.textContent = "±0.00 · MÓNG BĂNG · R2 STORAGE";
+  // elevator shaft + car
+  S("rect", { x: 220, y: 70, width: 34, height: 390, fill: "none", stroke: "var(--line)", "stroke-dasharray": "4 3" }, secS);
+  const et = S("text", { x: 214, y: 530, class: "sub" }, secS); et.textContent = "THANG MÁY";
+  const car = S("g", {}, secS);
+  S("rect", { x: -13, y: -18, width: 26, height: 36, fill: "var(--bp-950)", stroke: "var(--s-ready)", "stroke-width": 1.5 }, car);
+  const rider = S("circle", { cx: 0, cy: 2, r: 4, fill: "var(--s-doing)" }, car);
+  const shaft = S("path", { d: "M237 415 V115" });
+  // dimension
+  S("path", { d: "M280 70 V460 M274 70 H286 M274 460 H286", class: "dimline" }, secS);
+  const dm = S("text", { x: 292, y: 270, class: "sub", transform: "rotate(90 292 270)", "text-anchor": "middle" }, secS); dm.textContent = "16.0 m";
+  car.setAttribute("transform", "translate(237 315)");
+  if (!BP.reduced) (async () => {
+    const stops = [{ y: 415, l: "T1" }, { y: 315, l: "T2" }, { y: 215, l: "T3" }, { y: 115, l: "T4" }];
+    let at = 1;
+    while (true) {
+      let to; do { to = Math.floor(Math.random() * 4); } while (to === at);
+      rider.style.opacity = Math.random() > .4 ? 1 : 0;
+      const p = S("path", { d: `M237 ${stops[at].y} V${stops[to].y}` });
+      await BP.moveAlong(car, p, 900 * Math.abs(to - at) + 400);
+      at = to; await BP.wait(1600);
+    }
+  })();
+
+  /* ---------------- Controls ---------------- */
+  BP.$$("#floorTabs [data-floor]").forEach(b => b.addEventListener("click", () => showFloor(+b.dataset.floor)));
+  BP.$$("[data-avatar]").forEach(b => b.addEventListener("click", () => {
+    avatar = b.dataset.avatar;
+    BP.$$("[data-avatar]").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    showFloor(current);
+  }));
+  [["▶", "var(--s-doing)", "<b>ATLAS-01</b> chạy test, tiến độ T-1042 khoảng 70% (checkpoint lúc 12:40)"],
+   ["❚❚", "var(--amber)", "<b>VEGA-03</b> lên tầng 3 chờ Quản đốc duyệt đề xuất v2"],
+   ["☕", "var(--s-ready)", "<b>ORBIT-05</b> lên sân thượng hồi quota"]].reverse().forEach(r => log(...r));
+  const q = new URLSearchParams(location.search).get("floor");
+  showFloor(q ? +q : 2);
+})();
+</script>
+</body>
+</html>

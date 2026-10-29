@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phòng thư · CF Agent Factory</title>
+<link rel="stylesheet" href="assets/blueprint.css">
+<style>
+  .mr-scroll { overflow-x: auto; }
+  .mr-scroll svg { min-width: 760px; }
+  #mail .sub { font-size: 11px; }
+  #mail .lbl { font-size: 14px; }
+  .cub-t { font-family: var(--f-mono); font-size: 11px; font-weight: 600; text-anchor: middle; }
+  .cub-s { font-family: var(--f-mono); font-size: 9.5px; text-anchor: middle; fill: var(--ink-3); }
+  .retry-t { font-family: var(--f-mono); font-size: 12px; fill: var(--amber); }
+  .ticker { display: flex; gap: var(--sp-4); align-items: center; padding: var(--sp-2) var(--sp-4); border-top: 1px solid var(--line-soft); font-family: var(--f-mono); font-size: var(--fs-xs); color: var(--ink-2); min-height: 40px; overflow: hidden; white-space: nowrap; }
+  .ticker b { color: var(--ink); font-weight: 500; }
+
+  .truth { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px dashed var(--amber); background: var(--t-waiting); }
+  .truth > div { padding: var(--sp-3) var(--sp-4); display: flex; flex-direction: column; gap: 2px; position: relative; }
+  .truth > div + div { border-left: 1px dashed var(--amber); }
+  .truth > div + div::before { content: "≠"; position: absolute; left: -12px; top: 50%; transform: translateY(-50%); width: 22px; height: 22px; display: grid; place-items: center; background: var(--bp-950); border: 1px solid var(--amber); color: var(--amber); font-family: var(--f-mono); font-size: var(--fs-sm); }
+  .truth .k { font-family: var(--f-mono); font-size: var(--fs-2xs); letter-spacing: 0.1em; color: var(--amber); }
+  .truth .v { font-family: var(--f-display); font-size: var(--fs-lg); font-weight: 600; }
+  .truth .d { font-size: var(--fs-xs); color: var(--ink-2); }
+  .truth-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; margin-bottom: var(--sp-2); }
+  .truth-head h3 { margin: 0; font-family: var(--f-display); font-size: var(--fs-xl); color: var(--amber); }
+
+  .inbox { display: grid; grid-template-columns: 300px minmax(0, 1fr) 340px; border: 1px solid var(--line-soft); background: var(--bp-800); min-height: 640px; }
+  .inbox > section { min-width: 0; display: flex; flex-direction: column; }
+  .inbox > section + section { border-left: 1px solid var(--line-soft); }
+  .col-head { padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--line-soft); display: flex; flex-direction: column; gap: var(--sp-2); }
+  .col-head h3 { margin: 0; font-family: var(--f-display); font-size: var(--fs-md); font-weight: 600; }
+  .filters { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line-soft); }
+  .filters button { min-height: 36px; border: 0; background: transparent; color: var(--ink-2); font-family: var(--f-mono); font-size: var(--fs-xs); cursor: pointer; border-bottom: 1px solid var(--line-soft); }
+  .filters button:nth-child(odd) { border-right: 1px solid var(--line-soft); }
+  .filters button:nth-child(n+3) { border-bottom: 0; }
+  .filters button[aria-pressed="true"] { background: var(--bp-600); color: var(--ink); }
+  .tlist { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1; }
+  .tlist button { width: 100%; text-align: left; display: grid; grid-template-columns: 1fr auto; gap: 2px var(--sp-2); padding: var(--sp-3) var(--sp-4); border: 0; border-bottom: 1px solid var(--grid-major); border-left: 2px solid transparent; background: transparent; cursor: pointer; color: var(--ink); }
+  .tlist button:hover { background: var(--bp-700); }
+  .tlist button[aria-current="true"] { background: var(--bp-700); border-left-color: var(--s-ready); }
+  .tlist .sj { font-size: var(--fs-sm); font-weight: 500; line-height: 1.35; }
+  .tlist .tm { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); }
+  .tlist .pv { grid-column: 1 / -1; font-size: var(--fs-xs); color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tlist .bd { grid-column: 1 / -1; display: flex; gap: 4px; flex-wrap: wrap; margin-top: 2px; }
+
+  .th-head { padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--line-soft); }
+  .th-head h3 { margin: 2px 0 var(--sp-2); font-family: var(--f-display); font-size: var(--fs-lg); font-weight: 600; }
+  .th-head .parts { display: flex; gap: var(--sp-2); flex-wrap: wrap; align-items: center; font-size: var(--fs-xs); color: var(--ink-2); }
+  .msgs { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1; max-height: 640px; }
+  .msgs > li { padding: var(--sp-4); border-bottom: 1px solid var(--grid-major); display: grid; grid-template-columns: 34px 1fr; gap: var(--sp-3); }
+  .msgs > li.enter { animation: log-in var(--dur-slow) var(--ease); }
+  .msgs .bot, .msgs .human-token { width: 34px; height: 34px; font-size: 10px; }
+  .m-hd { display: flex; gap: var(--sp-2); align-items: baseline; flex-wrap: wrap; }
+  .m-hd b { font-size: var(--fs-sm); }
+  .m-hd .mono { color: var(--ink-3); font-size: var(--fs-2xs); }
+  .m-bd { margin: var(--sp-1) 0 var(--sp-2); font-size: var(--fs-sm); }
+  .refs { display: flex; gap: var(--sp-2); flex-wrap: wrap; margin-bottom: var(--sp-2); }
+  .chip { display: inline-flex; align-items: center; gap: 6px; min-height: 26px; padding: 0 8px; border: 1px solid var(--line); font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink); text-decoration: none; background: var(--bp-850); }
+  .chip:hover { background: var(--bp-700); text-decoration: none; }
+  .chip svg { flex: none; }
+  .rcpt { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 4px; }
+  .rc { display: flex; align-items: center; gap: 6px; font-family: var(--f-mono); font-size: var(--fs-2xs); padding: 4px 6px; border: 1px solid var(--grid-major); background: var(--bp-850); color: var(--ink-2); }
+  .rc .g { width: 12px; text-align: center; }
+  .rc.ack { color: var(--s-done); border-color: var(--t-done); }
+  .rc.deliv { color: var(--s-ready); }
+  .rc.noack { color: var(--amber); border-style: dashed; }
+  .rc.fail { color: var(--red); border-color: var(--red); }
+  .actor-note { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); }
+  .final-page { margin: var(--sp-4); padding: var(--sp-3); border: 1px dashed var(--line); text-align: center; font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-2); letter-spacing: 0.06em; }
+  .final-page b { color: var(--ink); font-weight: 500; }
+  .older { margin: var(--sp-3) var(--sp-4) 0; }
+
+  .compose { padding: var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-3); }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); letter-spacing: 0.1em; text-transform: uppercase; }
+  .field select, .field textarea, .field input { font: inherit; font-size: var(--fs-sm); color: var(--ink); background: var(--bp-900); border: 1px solid var(--line-soft); padding: var(--sp-2) var(--sp-3); min-height: 38px; border-radius: 0; }
+  .field select:focus-visible, .field textarea:focus-visible { outline: 2px solid var(--amber); outline-offset: 1px; }
+  .field textarea { min-height: 110px; resize: vertical; }
+  .field .hint { font-size: var(--fs-xs); color: var(--ink-3); }
+  .field.err select { border-color: var(--red); }
+  .err-box { border: 1px solid var(--red); background: var(--t-failed); padding: var(--sp-3); font-size: var(--fs-sm); display: none; }
+  .err-box.show { display: block; }
+  .err-box .code { color: var(--red); display: block; margin-bottom: 2px; }
+  .ok-box { border: 1px solid var(--s-done); background: var(--t-done); padding: var(--sp-3); font-size: var(--fs-sm); display: none; }
+  .ok-box.show { display: block; }
+
+  .tbl-scroll { overflow-x: auto; }
+  .retry-tbl { min-width: 640px; }
+
+  @media (max-width: 1280px) {
+    .inbox { grid-template-columns: 280px minmax(0, 1fr); }
+    .inbox > section.composer { grid-column: 1 / -1; border-left: 0; border-top: 1px solid var(--line-soft); }
+  }
+  @media (max-width: 960px) {
+    .inbox { grid-template-columns: minmax(0, 1fr); }
+    .inbox > section + section { border-left: 0; border-top: 1px solid var(--line-soft); }
+    .tlist { max-height: 360px; }
+    .truth { grid-template-columns: minmax(0, 1fr); }
+    .truth > div + div { border-left: 0; border-top: 1px dashed var(--amber); }
+    .truth > div + div::before { left: 50%; top: -12px; transform: translateX(-50%); }
+  }
+</style>
+</head>
+<body data-sheet="17" data-title="Phòng thư">
+<div class="app paper">
+  <div id="rail"></div>
+  <div class="main">
+    <header id="topbar"></header>
+    <main class="content">
+
+      <section class="page-head reveal">
+        <div>
+          <div class="code">ROOM P-03 · PHÒNG THƯ · MESSAGE / THREAD / DELIVERY / ACK</div>
+          <h2>Phòng thư</h2>
+          <p class="lede">Mọi tin nhắn được lưu bền trước, sau đó outbox mới giao tới runtime. Mỗi người nhận có trạng thái riêng. Tin nhắn không bao giờ làm thay đổi trạng thái task, kể cả khi đã ACK.</p>
+        </div>
+        <div class="actions">
+          <a class="btn" href="20-maintenance.html">Xem outbox ở Phòng bảo trì</a>
+          <a class="btn" href="14-meeting-room.html">Mở Phòng họp</a>
+        </div>
+      </section>
+
+      <section class="panel reveal" aria-label="Băng chuyền phân loại thư">
+        <div class="panel-head"><h3>Băng chuyền phân loại thư</h3><span class="code">OUTBOX → PHÂN LOẠI → NGĂN AGENT · AT-LEAST-ONCE</span></div>
+        <div class="mr-scroll">
+          <svg id="mail" class="dwg" viewBox="0 0 1200 330" role="img" aria-labelledby="mailTitle mailDesc">
+            <title id="mailTitle">Mặt bằng phòng thư</title>
+            <desc id="mailDesc">Phong bì chạy từ Outbox qua băng chuyền tới máy phân loại rồi vào ngăn của từng agent. Thư giao thất bại rơi vào ngăn Thử lại kèm số lần thử và giờ thử tiếp. Bảng Hàng đợi thử lại phía dưới là phiên bản văn bản.</desc>
+            <defs>
+              <pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                <line x1="0" y1="0" x2="0" y2="8" style="stroke:var(--line-soft)" stroke-width="1"/>
+              </pattern>
+            </defs>
+            <g id="gS"></g><g id="gRoutes"></g><g id="gEnv"></g>
+          </svg>
+        </div>
+        <div class="ticker" id="ticker" aria-live="polite"><span class="code">GIAO GẦN NHẤT</span><span id="tickText">Đang chờ lượt dispatch kế tiếp (tối đa 25 thông báo / batch).</span></div>
+      </section>
+
+      <section class="reveal" aria-label="Ba sự thật tách biệt">
+        <div class="truth-head"><h3>Đã giao ≠ đã đọc ≠ đã hoàn tất</h3><span class="code">BA BẢN GHI KHÁC NHAU · KHÔNG SUY RA NHAU</span></div>
+        <div class="truth">
+          <div><span class="k">01 · DELIVERED</span><span class="v">Đã giao</span><span class="d">Endpoint của runtime trả 2xx. Chỉ chứng minh bên nhận đã nhận request ở biên của nó.</span></div>
+          <div><span class="k">02 · ACK</span><span class="v">Đã đọc / ACK</span><span class="d">Người nhận đã xác thực và ghi nhận tin. ACK không cấp quyền làm task, phải claim riêng.</span></div>
+          <div><span class="k">03 · DONE</span><span class="v">Đã hoàn tất</span><span class="d">Chỉ khi reviewer độc lập nghiệm thu kết quả của task. Không tin nhắn nào làm được việc này.</span></div>
+        </div>
+      </section>
+
+      <section class="grid g-4 reveal" aria-label="Chỉ số giao thư">
+        <div class="panel kpi"><span class="label">Outbox đến hạn</span><span class="value" id="kDue">3</span><span class="note">Batch tối đa 25 · lease 30s</span></div>
+        <div class="panel kpi"><span class="label">Đã giao hôm nay</span><span class="value c-ready" id="kDeliv">1.284</span><span class="note">Receiver trả 2xx</span></div>
+        <div class="panel kpi"><span class="label">ACK hôm nay</span><span class="value c-done">1.102</span><span class="note">182 tin đã giao nhưng chưa ACK</span></div>
+        <div class="panel kpi"><span class="label">Đang thử lại</span><span class="value c-red" id="kRetry">2</span><span class="note">Không xoá tin, không huỷ task</span></div>
+      </section>
+
+      <section class="inbox reveal" aria-label="Hộp thư">
+        <section aria-label="Danh sách thread">
+          <div class="col-head">
+            <h3>Thread</h3>
+            <div class="filters" role="group" aria-label="Lọc thread" id="filters">
+              <button type="button" aria-pressed="true" data-f="mine">Của tôi</button>
+              <button type="button" aria-pressed="false" data-f="unack">Chưa ACK</button>
+              <button type="button" aria-pressed="false" data-f="task">Đề cập task</button>
+              <button type="button" aria-pressed="false" data-f="sys">Hệ thống</button>
+            </div>
+          </div>
+          <ul class="tlist" id="tlist"></ul>
+        </section>
+
+        <section aria-label="Nội dung thread">
+          <div class="th-head" id="thHead"></div>
+          <ul class="msgs" id="msgs" aria-live="polite" aria-relevant="additions"></ul>
+        </section>
+
+        <section class="composer" aria-label="Soạn tin">
+          <div class="col-head"><h3>Soạn tin trong thread này</h3><span class="code" id="cmpThread">THR-0431</span></div>
+          <form class="compose" id="cmp" novalidate>
+            <div class="field" id="fTo">
+              <label for="to">Người nhận</label>
+              <select id="to" aria-describedby="toHint">
+                <option value="atlas">ATLAS-01 · KT-01</option>
+                <option value="forge">FORGE-02 · KT-01</option>
+                <option value="hu-qd">Quản đốc (bạn)</option>
+                <option value="mercury">MERCURY-13 · minh hoạ người nhận không tồn tại</option>
+              </select>
+              <span class="hint" id="toHint">Thành phần thread cố định khi tạo. Trả lời chỉ gửi được cho tập con, muốn thêm người hãy tạo thread mới.</span>
+            </div>
+            <div class="field">
+              <label for="ref">Tham chiếu task</label>
+              <select id="ref">
+                <option value="">Không tham chiếu</option>
+                <option value="T-1047" selected>T-1047 · Migrate bảng runs sang schema v3</option>
+                <option value="T-1042">T-1042 · Tách module xác thực</option>
+              </select>
+              <span class="hint">Tham chiếu task/artifact là tính năng R2. Ở R1 server trả 400 INVALID_REQUEST kèm details.feature.</span>
+            </div>
+            <div class="field">
+              <label for="body">Nội dung</label>
+              <textarea id="body">Đã xem log khoá bảng runs. Cứ chạy batch nhỏ, nếu retry 2/2 thất bại thì dừng và báo lại, đừng tự mở lại task.</textarea>
+            </div>
+            <div class="err-box" id="errBox" role="alert"><span class="code">404 NOT_FOUND · RECIPIENT</span>Người nhận <b>MERCURY-13</b> không tồn tại trong workspace ws-aurora. Không có tin nhắn, inbox hay outbox nào được tạo. Kiểm tra lại ID, không dùng tên hiển thị để tra cứu.</div>
+            <div class="ok-box" id="okBox" role="status"></div>
+            <div class="row between wrap">
+              <span class="code">IDEMPOTENCY-KEY TỰ SINH</span>
+              <button class="btn primary" type="submit" id="btnSend">
+                <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M1 7l12-5-4 11-2.5-4.5z" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>
+                Gửi
+              </button>
+            </div>
+          </form>
+        </section>
+      </section>
+
+      <section class="grid g-main-side">
+        <div class="panel reveal">
+          <div class="panel-head"><h3>Hàng đợi thử lại</h3><span class="code">OUTBOX · RETRY · SIM DATA</span></div>
+          <div class="tbl-scroll">
+            <table class="table retry-tbl">
+              <thead><tr><th>Delivery</th><th>Người nhận</th><th>Lần thử</th><th>Thử tiếp</th><th>Lỗi gần nhất</th><th>Phân loại</th></tr></thead>
+              <tbody id="retryBody"></tbody>
+            </table>
+          </div>
+          <p class="code" style="margin:0;padding:var(--sp-3) var(--sp-4)">Restart worker không đặt lại số lần thử hay giờ đến hạn. Hết lượt thử không xoá tin nhắn, không trả lease, không huỷ task. Đường phục hồi R1 là poll inbox.</p>
+        </div>
+        <div class="panel reveal">
+          <div class="panel-head"><h3>Minh hoạ lỗi gửi</h3><span class="code">ERROR STATES</span></div>
+          <div class="panel-body stack">
+            <div class="err-box show"><span class="code">404 NOT_FOUND · NGƯỜI NHẬN KHÔNG TỒN TẠI</span>Tham chiếu tới agent MERCURY-13 không có trong workspace. Lệnh bị từ chối trước khi ghi, không tạo tin.</div>
+            <div class="err-box show"><span class="code">400 INVALID_REQUEST · THÊM NGƯỜI VÀO THREAD</span>Thread THR-0431 có thành phần cố định. Reply không thể thêm LENS-06. Tạo thread mới để mời thêm người.</div>
+            <div class="err-box show"><span class="code">403 FORBIDDEN · TIN CỦA NGƯỜI KHÁC</span>Không thể ACK tin gửi cho ATLAS-01. ACK chỉ do đúng người nhận ghi.</div>
+            <div class="note-red">Gửi thất bại ở bước giao (receiver timeout) khác lỗi lệnh ở trên: tin đã được lưu, chỉ việc giao đang được thử lại.</div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+    <div id="titleblock"></div>
+  </div>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(() => {
+  const F = BP.F;
+  const el = (t, a, p) => BP.svg(t, a, p);
+  const gS = BP.$("#gS"), gR = BP.$("#gRoutes"), gE = BP.$("#gEnv");
+  const txt = (x, y, s, cls, extra) => { const t = el("text", { x, y, class: cls || "sub", ...(extra || {}) }, gS); t.textContent = s; return t; };
+
+  /* ---------- Mailroom drawing ---------- */
+  el("rect", { x: 20, y: 24, width: 1160, height: 290, class: "room" }, gS);
+  el("rect", { x: 20, y: 24, width: 1160, height: 290, class: "wall" }, gS);
+  el("path", { d: "M20 12 H1180 M20 6 V18 M1180 6 V18", class: "dimline" }, gS);
+  txt(600, 9, "PHÒNG THƯ P-03 · 14.5 m", "sub", { "text-anchor": "middle" });
+  // outbox
+  el("rect", { x: 50, y: 110, width: 120, height: 92, class: "room" }, gS);
+  el("rect", { x: 58, y: 168, width: 104, height: 28, class: "hatch" }, gS);
+  txt(60, 130, "OUTBOX", "lbl");
+  txt(60, 146, "LƯU BỀN TRƯỚC,"); txt(60, 160, "RỒI MỚI GIAO");
+  // conveyor
+  el("rect", { x: 170, y: 144, width: 360, height: 24, fill: "var(--bp-900)", stroke: "var(--line)" }, gS);
+  el("line", { x1: 170, y1: 150, x2: 530, y2: 150, class: "flow slow" }, gS);
+  for (let x = 190; x < 530; x += 30) el("circle", { cx: x, cy: 162, r: 3, class: "wall-thin" }, gS);
+  txt(180, 190, "BĂNG CHUYỀN · 25 / BATCH · TIMEOUT 10s");
+  // sorter
+  el("rect", { x: 530, y: 96, width: 130, height: 120, class: "room hot" }, gS);
+  el("path", { d: "M545 196 L595 116 L645 196", class: "wall-thin", "stroke-dasharray": "3 3" }, gS);
+  txt(542, 116, "PHÂN LOẠI", "lbl");
+  txt(542, 196, "EGRESS POLICY"); txt(542, 209, "DEDUPE THEO ID");
+  // retry bin
+  el("rect", { x: 540, y: 240, width: 110, height: 60, class: "room", style: "stroke:var(--amber)" }, gS);
+  txt(550, 260, "THỬ LẠI", "lbl", { style: "fill:var(--amber)" });
+  const retryCount = txt(550, 290, "2 THƯ CHỜ", "sub", { style: "fill:var(--amber)" });
+  el("path", { d: "M595 216 V240", class: "wall-thin", "stroke-dasharray": "3 3" }, gS);
+  el("path", { d: "M650 270 H690", class: "leader" }, gS);
+  const rt1 = el("text", { x: 696, y: 266, class: "retry-t" }, gS);
+  const rt2 = el("text", { x: 696, y: 284, class: "sub", style: "fill:var(--ink-2)" }, gS);
+  // cubbies
+  const CUB = F.agents.map((a, i) => ({ a, col: i % 6, row: Math.floor(i / 6) }));
+  const CX0 = 740, CY0 = 46, CW = 70, CH = 82;
+  const cub = {};
+  CUB.forEach(({ a, col, row }) => {
+    const x = CX0 + col * CW, y = CY0 + row * (CH + 14);
+    const bad = a.presence === "offline", stale = a.presence === "stale";
+    const r = el("rect", { x, y, width: CW - 6, height: CH, class: "room", style: bad || stale ? "stroke:var(--red);stroke-dasharray:4 3" : "" }, gS);
+    el("line", { x1: x + 6, y1: y + CH - 18, x2: x + CW - 12, y2: y + CH - 18, class: "wall-thin" }, gS);
+    const t = el("text", { x: x + (CW - 6) / 2, y: y + 22, class: "cub-t", style: `fill:${bad || stale ? "var(--red)" : "var(--ink)"}` }, gS); t.textContent = a.name;
+    const s = el("text", { x: x + (CW - 6) / 2, y: y + 38, class: "cub-s" }, gS); s.textContent = bad ? "OFFLINE" : stale ? "CŨ 14:02" : "INBOX";
+    const n = el("text", { x: x + (CW - 6) / 2, y: y + CH - 4, class: "cub-s", style: "fill:var(--ink-2)" }, gS); n.textContent = "0 mới";
+    cub[a.id] = { x: x + (CW - 6) / 2, y: y + 56, r, n, cnt: 0, a };
+  });
+  txt(CX0, 40, "NGĂN AGENT · TIN VẪN NẰM TRONG INBOX DÙ GIAO PUSH THẤT BẠI", "sub");
+
+  /* ---------- Envelope motion ---------- */
+  function envelope(color) {
+    const g = el("g", { transform: "translate(110 172)" }, gE);
+    el("rect", { x: -10, y: -7, width: 20, height: 14, fill: "var(--bp-950)", stroke: color }, g);
+    el("path", { d: "M-10 -7 L0 1 L10 -7", fill: "none", stroke: color }, g);
+    return g;
+  }
+  const tick = BP.$("#tickText");
+  let nid = 7301, delivered = 1284, retryN = 2, attempt = 3, nextIn = 42;
+  const fmt = s => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+  function nextAt(sec) { const d = new Date(Date.now() + sec * 1000); return d.toTimeString().slice(0, 8); }
+  function renderRetry() {
+    rt1.textContent = `N-7291 → ECHO-11 · lần ${attempt}/8`;
+    rt2.textContent = `thử tiếp ${nextAt(nextIn)} · còn ${fmt(nextIn)} · receiver timeout`;
+    retryCount.textContent = `${retryN} THƯ CHỜ`;
+    BP.$("#kRetry").textContent = retryN;
+  }
+  renderRetry();
+  BP.every(1000, () => { nextIn = Math.max(0, nextIn - 1); renderRetry(); });
+
+  const good = F.agents.filter(a => a.presence !== "offline");
+  let k = 0;
+  async function sendOne() {
+    k++;
+    const fail = k % 5 === 0;
+    const target = fail ? BP.agent("echo") : good[(k * 7) % good.length];
+    const id = "N-" + (nid++);
+    const g = envelope(fail ? "var(--red)" : "var(--s-ready)");
+    const c = cub[target.id];
+    const p1 = el("path", { d: "M110 172 V156 H595 V150" });
+    await BP.moveAlong(g, p1, 2000, { linear: true });
+    if (fail) {
+      const p2 = el("path", { d: "M595 150 V270" });
+      await BP.moveAlong(g, p2, 900);
+      attempt = Math.min(8, attempt + 1); nextIn = 30 + attempt * 15; renderRetry();
+      tick.innerHTML = `<b>${id}</b> → ECHO-11 · receiver không phản hồi · vào ngăn Thử lại, lần ${attempt}/8, thử tiếp ${nextAt(nextIn)}. Tin vẫn nằm trong inbox.`;
+      await BP.wait(1200); g.remove();
+      if (attempt >= 8) { attempt = 3; }
+      return;
+    }
+    const p2 = el("path", { d: `M595 150 H700 V${c.y} H${c.x}` });
+    const route = el("path", { d: `M595 150 H700 V${c.y} H${c.x}`, class: "flow", opacity: 0.6 }, gR);
+    await BP.moveAlong(g, p2, 1500);
+    route.remove(); g.remove();
+    c.cnt++; c.n.textContent = `${c.cnt} mới`;
+    c.r.style.fill = "var(--bp-600)"; BP.wait(500).then(() => { c.r.style.fill = ""; });
+    delivered++; BP.$("#kDeliv").textContent = delivered.toLocaleString("vi-VN");
+    const st = target.presence === "stale" ? "đã lưu inbox, push không xác nhận · chưa ACK" : "2xx · đã giao · chưa ACK";
+    tick.innerHTML = `<b>${id}</b> → ${target.name} · ${st}`;
+  }
+  async function loop() { while (true) { await sendOne(); await BP.wait(900); } }
+  if (!BP.reduced) loop();
+  else { CUB.slice(0, 4).forEach(({ a }) => { cub[a.id].n.textContent = "2 mới"; }); }
+
+  /* ---------- Threads data ---------- */
+  const H = id => F.humans.find(h => h.id === id);
+  const who = id => { if (id === "sys") return { name: "Hệ thống", code: "SYS", sys: true }; const a = BP.agent(id); if (a) return { name: a.name, code: a.code, a }; const h = H(id); return { name: h.name, code: h.code, human: true }; };
+  const token = id => { const w = who(id);
+    if (w.sys) return `<span class="bot" style="--c:var(--ink-3)" aria-hidden="true">SYS</span>`;
+    if (w.human) return `<span class="human-token" aria-hidden="true">${w.code}</span>`;
+    const c = w.a.presence === "offline" ? "var(--s-cancelled)" : w.a.presence === "stale" ? "var(--red)" : "var(--s-ready)";
+    return `<span class="bot" style="--c:${c}" aria-hidden="true">${w.code}</span>`; };
+  const ICON = {
+    task: '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="1.5" y="2.5" width="9" height="7" fill="none" stroke="currentColor"/><path d="M1.5 5h9" stroke="currentColor"/></svg>',
+    art: '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 1.5h5l2 2v7h-7z M7.5 1.5v2h2" fill="none" stroke="currentColor"/></svg>'
+  };
+  const refChip = r => r.k === "task"
+    ? `<a class="chip" href="05-work-order.html">${ICON.task}${r.id}</a>`
+    : `<a class="chip" href="18-warehouse.html">${ICON.art}${r.id}${r.note ? ` · ${r.note}` : ""}</a>`;
+  const RC = {
+    ack: (n, t) => `<span class="rc ack"><span class="g">✓</span>${n} · ACK ${t}</span>`,
+    deliv: (n, t) => `<span class="rc deliv"><span class="g">◇</span>${n} · đã giao ${t}</span>`,
+    noack: (n, t) => `<span class="rc noack"><span class="g">◌</span>${n} · chưa ACK${t ? " · " + t : ""}</span>`,
+    fail: (n, t) => `<span class="rc fail"><span class="g">✕</span>${n} · thất bại · ${t}</span>`
+  };
+  const THREADS = [
+    { id: "THR-0431", subj: "T-1047 retry 1/2 · khoá bảng runs", time: "14:22", f: ["mine", "task", "unack"], parts: ["forge", "atlas", "hu-qd"],
+      msgs: [
+        { from: "forge", t: "14:05:12", mid: "M-88120", body: "Run r-31c0 gặp lỗi khoá bảng runs khi migrate. Đã fail có kiểm soát, retry còn 1/2.", refs: [{ k: "task", id: "T-1047" }], rc: { atlas: ["ack", "14:05"], "hu-qd": ["ack", "14:07"] } },
+        { from: "atlas", t: "14:09:40", mid: "M-88134", body: "Bảng runs đang có index rebuild từ T-1042. Đề xuất chạy batch 500 dòng sau 14:20.", refs: [{ k: "task", id: "T-1042" }, { k: "art", id: "A-5521", note: "lock-trace.txt" }], rc: { forge: ["ack", "14:10"], "hu-qd": ["deliv", "14:09"] } },
+        { from: "forge", t: "14:22:03", mid: "M-88171", body: "Đã claim lại, fence 4, lease 15:00. Đang chạy batch nhỏ.", refs: [{ k: "task", id: "T-1047" }], rc: { atlas: ["deliv", "14:22"], "hu-qd": ["noack", ""] } }
+      ] },
+    { id: "THR-0428", subj: "Đề xuất v2 · T-1039 cần Khánh quyết", time: "13:48", f: ["task", "unack"], parts: ["vega", "hu-kn", "hu-qd"],
+      msgs: [
+        { from: "vega", t: "13:41:00", mid: "M-87990", body: "Checkpoint T-1039: danh sách 240 email đã lọc trùng. Đề xuất v2 chờ quyết định, hết hạn 16:30.", refs: [{ k: "task", id: "T-1039" }, { k: "art", id: "A-5490", note: "recipients-v2.csv" }], rc: { "hu-kn": ["noack", "đã giao 13:41"], "hu-qd": ["ack", "13:44"] } },
+        { from: "hu-qd", t: "13:48:22", mid: "M-87996", body: "Khánh xem giúp ở Cổng phê duyệt. ACK tin này không phải là phê duyệt.", refs: [], rc: { vega: ["ack", "13:48"], "hu-kn": ["noack", ""] } }
+      ] },
+    { id: "THR-0418", subj: "Review sự cố INC-0927", time: "14:00", f: ["mine", "unack"], parts: ["hu-qd", "hu-ha", "orbit", "echo"],
+      msgs: [
+        { from: "hu-qd", t: "14:00:10", mid: "M-88001", body: "Mở review sự cố 11:40. Agenda và kết quả xem ở Phòng họp.", refs: [], rc: { "hu-ha": ["ack", "14:00"], orbit: ["ack", "14:00"], echo: ["fail", "thử lại 3/8"] } },
+        { from: "orbit", t: "14:02:31", mid: "M-88009", body: "Outbox dồn 312 thông báo trong 6 phút, không mất tin. Inbox polling vẫn hoạt động.", refs: [{ k: "art", id: "A-5533", note: "outbox-0927.json" }], rc: { "hu-qd": ["ack", "14:03"], "hu-ha": ["deliv", "14:02"], echo: ["fail", "thử lại 3/8"] } }
+      ] },
+    { id: "THR-0425", subj: "Báo cáo lease tuần 43 đã commit", time: "12:15", f: ["task"], parts: ["nova", "hu-ha"],
+      msgs: [
+        { from: "nova", t: "12:15:47", mid: "M-87810", body: "Artifact đã commit, digest khớp. Kết quả T-1044 sẽ nộp sau khi thêm biểu đồ.", refs: [{ k: "task", id: "T-1044" }, { k: "art", id: "A-5508", note: "lease-w43.csv" }], rc: { "hu-ha": ["ack", "12:20"] } }
+      ] },
+    { id: "SYS-0092", subj: "Wake-up · T-1055 ở Ready", time: "14:31", f: ["sys"], parts: ["sys", "bolt", "pixel"],
+      msgs: [
+        { from: "sys", t: "14:31:00", mid: "N-7288", body: "Thông báo: T-1055 đang Ready và khớp capability. Thông báo không phải claim, đọc lại trạng thái task trước khi hành động.", refs: [{ k: "task", id: "T-1055" }], rc: { bolt: ["deliv", "14:31"], pixel: ["noack", "tín hiệu cũ"] } }
+      ] },
+    { id: "SYS-0090", subj: "Outbox · giao tới ECHO-11 đang thử lại", time: "13:55", f: ["sys", "unack"], parts: ["sys", "hu-qd"],
+      msgs: [
+        { from: "sys", t: "13:55:12", mid: "N-7291", body: "Delivery N-7291 tới ECHO-11 timeout 10s. Thử lại theo lịch đã lưu, jitter giữ nguyên qua restart.", refs: [], rc: { "hu-qd": ["noack", ""] } }
+      ] }
+  ];
+
+  /* ---------- Thread list + filter ---------- */
+  let filter = "mine", current = "THR-0431";
+  function unackOf(t) { return t.msgs.reduce((n, m) => n + Object.values(m.rc).filter(r => r[0] !== "ack").length, 0); }
+  function renderList() {
+    const list = THREADS.filter(t => t.f.includes(filter));
+    BP.$("#tlist").innerHTML = list.length ? list.map(t => {
+      const last = t.msgs[t.msgs.length - 1], u = unackOf(t), hasFail = t.msgs.some(m => Object.values(m.rc).some(r => r[0] === "fail"));
+      return `<li><button type="button" data-id="${t.id}" ${t.id === current ? 'aria-current="true"' : ""}>
+        <span class="sj">${t.subj}</span><span class="tm">${t.time}</span>
+        <span class="pv">${who(last.from).name}: ${last.body}</span>
+        <span class="bd"><span class="tag">${t.id}</span>${u ? `<span class="tag amber">${u} chưa ACK</span>` : ""}${hasFail ? '<span class="tag red">giao thất bại</span>' : ""}</span>
+      </button></li>`; }).join("") : '<li class="empty" style="margin:var(--sp-4)">Không có thread nào khớp bộ lọc.</li>';
+    BP.$$("#tlist button").forEach(b => b.addEventListener("click", () => { current = b.dataset.id; renderList(); renderThread(); }));
+  }
+  BP.$$("#filters button").forEach(b => b.addEventListener("click", () => {
+    BP.$$("#filters button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    filter = b.dataset.f; const l = THREADS.filter(t => t.f.includes(filter)); if (l.length && !l.find(t => t.id === current)) current = l[0].id;
+    renderList(); renderThread();
+  }));
+
+  function msgHTML(m) {
+    const w = who(m.from);
+    const rcs = Object.entries(m.rc).map(([id, [s, t]]) => RC[s](who(id).name, t)).join("");
+    return `${token(m.from)}<div>
+      <div class="m-hd"><b>${w.name}</b><span class="mono">${m.t}</span><span class="mono">${m.mid}</span><span class="actor-note">actor bất biến</span></div>
+      <div class="m-bd">${m.body}</div>
+      ${m.refs.length ? `<div class="refs">${m.refs.map(refChip).join("")}</div>` : ""}
+      <div class="rcpt" aria-label="Trạng thái từng người nhận">${rcs}</div></div>`;
+  }
+  function renderThread() {
+    const t = THREADS.find(x => x.id === current);
+    BP.$("#thHead").innerHTML = `<span class="code">${t.id} · ${t.msgs.length} TIN · THÀNH PHẦN CỐ ĐỊNH</span>
+      <h3>${t.subj}</h3>
+      <div class="parts">${t.parts.map(p => `<span class="row" style="gap:4px">${token(p).replace('class="bot"', 'class="bot" style="width:24px;height:24px;font-size:8.5px;--c:var(--s-ready)"').replace('class="human-token"', 'class="human-token" style="width:24px;height:24px;font-size:8.5px"')}${who(p).name}</span>`).join("")}</div>`;
+    const older = t.id === "THR-0431" ? `<li style="display:block;padding:0;border:0"><button class="btn sm older" type="button" id="btnOlder">Tải 6 tin cũ hơn · trang 1</button></li>` : "";
+    BP.$("#msgs").innerHTML = older + t.msgs.map(m => `<li>${msgHTML(m)}</li>`).join("") +
+      `<li style="display:block;padding:0;border:0"><div class="final-page">TRANG CUỐI THREAD · <b>has_more: false</b> · <b>next_cursor: null</b><br>Đã đọc hết lịch sử được phép xem trong lần duyệt này. Tin mới sau mốc này cần duyệt lại.</div></li>`;
+    const ob = BP.$("#btnOlder");
+    if (ob) ob.addEventListener("click", () => { ob.textContent = "Đã tải trang 1 · 6 tin cũ hơn nằm phía trên (mock)"; ob.disabled = true; });
+    BP.$("#cmpThread").textContent = t.id;
+    const sel = BP.$("#to"); const opts = t.parts.filter(p => p !== "sys" && p !== "hu-qd");
+    sel.innerHTML = opts.map(p => `<option value="${p}">${who(p).name}</option>`).join("") + '<option value="mercury">MERCURY-13 · minh hoạ người nhận không tồn tại</option>';
+    BP.$("#errBox").classList.remove("show"); BP.$("#okBox").classList.remove("show"); BP.$("#fTo").classList.remove("err");
+  }
+
+  /* ---------- Composer ---------- */
+  BP.$("#cmp").addEventListener("submit", async e => {
+    e.preventDefault();
+    const to = BP.$("#to").value, ref = BP.$("#ref").value, body = BP.$("#body").value.trim();
+    const err = BP.$("#errBox"), ok = BP.$("#okBox");
+    err.classList.remove("show"); ok.classList.remove("show"); BP.$("#fTo").classList.remove("err");
+    if (to === "mercury") { err.classList.add("show"); BP.$("#fTo").classList.add("err"); BP.$("#to").focus(); return; }
+    if (!body) { err.innerHTML = '<span class="code">400 INVALID_REQUEST · BODY</span>Nội dung trống. Không có gì được lưu.'; err.classList.add("show"); return; }
+    const t = THREADS.find(x => x.id === current);
+    const now = BP.now();
+    const m = { from: "hu-qd", t: now, mid: "M-" + (88200 + Math.floor(Math.random() * 90)), body, refs: ref ? [{ k: "task", id: ref }] : [], rc: { [to]: ["noack", "chờ giao"] } };
+    t.msgs.push(m);
+    const li = document.createElement("li"); li.className = "enter"; li.innerHTML = msgHTML(m);
+    const final = BP.$("#msgs").lastElementChild; BP.$("#msgs").insertBefore(li, final);
+    li.scrollIntoView({ block: "nearest" });
+    ok.innerHTML = `<span class="code c-done">201 · COMMITTED</span>Tin ${m.mid} đã lưu vào thread và inbox của ${who(to).name}. Outbox sẽ giao. Trạng thái task ${ref || ""} không đổi.`;
+    ok.classList.add("show");
+    const btn = BP.$("#btnSend"); btn.disabled = true;
+    const p = presenceOfId(to);
+    await BP.wait(1400);
+    const rcEl = li.querySelector(".rcpt");
+    if (p === "offline") rcEl.innerHTML = RC.fail(who(to).name, "thử lại 1/8");
+    else { rcEl.innerHTML = RC.deliv(who(to).name, now.slice(0, 5)); await BP.wait(2200); if (!who(to).human) rcEl.innerHTML = RC.ack(who(to).name, BP.now().slice(0, 5)); }
+    btn.disabled = false; renderList();
+  });
+  function presenceOfId(id) { const a = BP.agent(id); return a ? a.presence : "online"; }
+
+  /* ---------- Retry table ---------- */
+  BP.$("#retryBody").innerHTML = [
+    ["N-7291", "ECHO-11", "3 / 8", "14:36:20", "timeout 10s", '<span class="tag amber">Tạm thời</span>'],
+    ["N-7276", "PIXEL-08", "5 / 8", "14:41:05", "connection reset", '<span class="tag amber">Tạm thời</span>'],
+    ["N-7102", "rt-legacy-01", "1 / 8", "Không thử lại", "403 destination policy", '<span class="tag red">Vĩnh viễn · cần sửa cấu hình</span>'],
+    ["N-7055", "KITE-09", "8 / 8", "Đã hết lượt", "timeout 10s", '<span class="state failed">Hết lượt</span>']
+  ].map(r => `<tr><td class="mono">${r[0]}</td><td>${r[1]}</td><td class="mono">${r[2]}</td><td class="mono">${r[3]}</td><td class="ink2">${r[4]}</td><td>${r[5]}</td></tr>`).join("");
+
+  renderList(); renderThread();
+})();
+</script>
+</body>
+</html>

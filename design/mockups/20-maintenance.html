@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phòng bảo trì · CF Agent Factory</title>
+<link rel="stylesheet" href="assets/blueprint.css">
+<style>
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .panel-head { flex-wrap: wrap; }
+  .gauges { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .gauge { display: flex; flex-direction: column; align-items: center; gap: var(--sp-2); padding: var(--sp-4) var(--sp-3); border-left: 1px solid var(--line-soft); text-align: center; }
+  .gauge:first-child { border-left: 0; }
+  .gauge svg { width: 100%; max-width: 150px; }
+  .gauge .nm { font-family: var(--f-display); font-weight: 600; font-size: var(--fs-sm); }
+  .gauge .v { font-family: var(--f-mono); font-size: var(--fs-xs); color: var(--ink-2); }
+  .gauge .t { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); }
+  .needle { transform-box: view-box; transform-origin: 60px 60px; transition: transform var(--dur-slow) var(--ease); }
+  .state.ok { color: var(--s-doing); background: var(--t-doing); } .state.ok::before { content: "●"; }
+  .state.warn { color: var(--amber); background: var(--t-waiting); } .state.warn::before { content: "▲"; }
+  .state.dead { color: var(--red); background: var(--t-failed); } .state.dead::before { content: "✕"; }
+  .state.retrying { color: var(--s-ready); background: var(--t-ready); } .state.retrying::before { content: "↻"; }
+  .state.pending { color: var(--ink-2); } .state.pending::before { content: "○"; }
+  .state.unknown-st { color: var(--ink-2); border-style: dashed; } .state.unknown-st::before { content: "?"; }
+  .tscroll { overflow-x: auto; position: relative; }
+  .tscroll .table { min-width: 720px; }
+  .tscroll .table.compact { min-width: 480px; }
+  .table td.mono { white-space: nowrap; }
+  .lamp { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--red); vertical-align: middle; margin-right: 6px; }
+  .holds { display: grid; gap: var(--sp-3); padding: var(--sp-4); }
+  .hold { border: 1px dashed var(--amber); background: var(--bp-850); padding: var(--sp-3) var(--sp-4); display: grid; grid-template-columns: 1fr auto; gap: var(--sp-2) var(--sp-4); align-items: start; }
+  .hold .t { font-size: var(--fs-sm); font-weight: 500; }
+  .hold .s { font-size: var(--fs-xs); color: var(--ink-2); }
+  .hold .facts { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px; }
+  .hold.done-r { border-style: solid; border-color: var(--line-soft); }
+  .recon { grid-column: 1 / -1; display: none; flex-direction: column; gap: var(--sp-2); border-top: 1px solid var(--line-soft); padding-top: var(--sp-3); }
+  .hold.open .recon { display: flex; }
+  .chk { display: flex; gap: var(--sp-2); align-items: flex-start; font-size: var(--fs-sm); min-height: 32px; cursor: pointer; }
+  .chk input { width: 16px; height: 16px; margin-top: 3px; accent-color: var(--amber); }
+  .bk-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-bottom: 1px solid var(--line-soft); }
+  .bk-grid > div { padding: var(--sp-3) var(--sp-4); border-left: 1px solid var(--line-soft); display: flex; flex-direction: column; gap: 2px; }
+  .bk-grid > div:first-child { border-left: 0; }
+  .bk-grid .label { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); letter-spacing: 0.1em; text-transform: uppercase; }
+  .bk-grid b { font-family: var(--f-mono); font-weight: 500; font-size: var(--fs-sm); }
+  .job { display: grid; grid-template-columns: 56px 1fr; gap: var(--sp-3); align-items: center; padding: var(--sp-4); }
+  .job .meter { height: 10px; }
+  .job .meter > i { background: var(--s-ready); }
+  .gear-on .spin, .gear-on.spin { animation-play-state: running; }
+  .gear { transform-box: fill-box; transform-origin: center; }
+  .gear.run { animation: spin 6s linear infinite; }
+  .gear.run.rev { animation-direction: reverse; animation-duration: 4s; }
+  .sched { list-style: none; margin: 0; padding: 0; }
+  .sched li { display: grid; grid-template-columns: 1fr auto; gap: var(--sp-2); padding: var(--sp-2) var(--sp-4); border-top: 1px solid var(--grid-major); font-size: var(--fs-sm); }
+  .feedlog { max-height: 360px; overflow: auto; }
+  /* runbook modal */
+  .modal .panel-head { position: sticky; top: 0; background: var(--bp-800); z-index: 1; }
+  .rsteps { list-style: none; margin: 0; padding: 0; }
+  .rsteps li { display: grid; grid-template-columns: 34px 1fr auto; gap: var(--sp-3); align-items: start; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--grid-major); }
+  .rsteps .no { width: 28px; height: 28px; display: grid; place-items: center; border: 1px solid var(--line-soft); font-family: var(--f-mono); font-size: var(--fs-xs); color: var(--ink-3); }
+  .rsteps li.done .no { border-color: var(--s-done); color: var(--s-done); background: var(--t-done); }
+  .rsteps li.current { background: var(--bp-700); }
+  .rsteps li.current .no { border-color: var(--s-ready); color: var(--s-ready); }
+  .rsteps li.human .no { border-color: var(--amber); color: var(--amber); }
+  .rsteps .t { font-weight: 500; font-size: var(--fs-sm); }
+  .rsteps .s { font-size: var(--fs-xs); color: var(--ink-2); }
+  .rsteps .meter { margin-top: var(--sp-2); }
+  .mfoot { display: flex; justify-content: space-between; gap: var(--sp-2); padding: var(--sp-3) var(--sp-4); border-top: 1px solid var(--line-soft); flex-wrap: wrap; }
+  @media (max-width: 1280px) { .gauges { grid-template-columns: repeat(3, minmax(0, 1fr)); } .gauge:nth-child(4) { border-left: 0; } .gauge:nth-child(n+4) { border-top: 1px solid var(--line-soft); } }
+  @media (max-width: 560px) { .gauges { grid-template-columns: repeat(2, minmax(0, 1fr)); } .gauge { border-left: 0 !important; border-top: 1px solid var(--line-soft); } .bk-grid { grid-template-columns: 1fr; } .bk-grid > div { border-left: 0; border-top: 1px solid var(--line-soft); } .hold { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body data-sheet="20" data-title="Phòng bảo trì · Readiness & Recovery">
+<div class="app paper">
+  <div id="rail"></div>
+  <div class="main">
+    <header id="topbar"></header>
+    <main class="content">
+
+      <section class="page-head reveal">
+        <div>
+          <div class="code">PLANT ROOM · MAINTENANCE · F07 / F40 / F41 · SPECIFIED</div>
+          <h2>Phòng bảo trì</h2>
+          <p class="lede">Đồng hồ readiness theo từng phụ thuộc, hàng đợi outbox và retry, các task bị giữ vì kết quả bên ngoài không chắc chắn, backup và diễn tập khôi phục. Số nào chưa đo được ghi “Not reported”, không bao giờ ghi 0.</p>
+        </div>
+        <div class="actions">
+          <button class="btn" type="button" id="diagBtn">Xuất chẩn đoán (đã redact)</button>
+          <button class="btn primary" type="button" id="drillBtn">Chạy diễn tập khôi phục</button>
+        </div>
+      </section>
+
+      <section class="panel reveal" aria-label="Readiness">
+        <div class="panel-head">
+          <h3>Readiness theo phụ thuộc</h3>
+          <span class="code">RELEASE r2.0-rc3 · ENV staging · WS-AURORA · SCHEMA v7 · KIỂM TRA <span id="chkTime">--:--:--</span></span>
+        </div>
+        <div class="gauges" id="gauges"></div>
+        <div class="panel-body" style="border-top:1px solid var(--line-soft)">
+          <p class="muted" style="margin:0;font-size:var(--fs-xs)">Liveness công khai chỉ trả trạng thái tối thiểu. Chi tiết readiness chỉ dành cho người có quyền <span class="mono">operations:read</span>, không lộ tên bucket hay object ID nội bộ. Kim đồng hồ là độ trễ probe gần nhất trên thang 0 đến 500 ms.</p>
+        </div>
+      </section>
+
+        <div class="panel reveal" aria-label="Outbox và retry">
+          <div class="panel-head">
+            <h3>Hàng đợi outbox &amp; retry</h3>
+            <span class="row" style="gap:8px"><span class="tag">Pending 2</span><span class="tag">Retrying 2</span><span class="tag red"><span class="lamp blink" aria-hidden="true"></span>Dead-letter 1</span></span>
+          </div>
+          <div class="tscroll">
+            <table class="table">
+              <thead><tr><th>Delivery</th><th>Sự kiện</th><th>Đích</th><th>Lần thử</th><th>Lần kế tiếp</th><th>Lỗi gần nhất</th><th>Trạng thái</th><th><span class="sr">Thao tác</span></th></tr></thead>
+              <tbody id="outBody"></tbody>
+            </table>
+          </div>
+          <div class="panel-body">
+            <div class="note-red">HTTP 2xx chỉ nghĩa là đích đã nhận gói tin, không phải ACK, không phải task hoàn tất. Redrive giữ nguyên event ID để bên nhận khử trùng lặp và được ghi audit.</div>
+          </div>
+        </div>
+
+      <section class="grid g-2">
+        <div class="panel reveal" aria-label="Uncertainty hold">
+          <div class="panel-head"><h3>Uncertainty hold</h3><span class="state waiting">2 cần đối soát</span></div>
+          <div class="holds" id="holds"></div>
+          <div class="panel-body" style="padding-top:0"><p class="muted" style="margin:0;font-size:var(--fs-xs)">Không có lệnh xoá hold. Sau khi đối soát hệ thống bên ngoài, tạo task thay thế đã được review. Task bị giữ vẫn ở Backlog để kiểm toán.</p></div>
+        </div>
+
+        <div class="panel reveal" aria-label="Backup và khôi phục">
+          <div class="panel-head"><h3>Backup &amp; khôi phục</h3><span class="code">QUIESCE · MANIFEST KÝ</span></div>
+          <div class="bk-grid">
+            <div><span class="label">Lịch backup</span><b>Hằng ngày 02:00</b><span class="muted" style="font-size:var(--fs-xs)">Chặn ghi mới trong lúc chụp</span></div>
+            <div><span class="label">Bản gần nhất</span><b>bk-20261029-0200</b><span class="state ok" style="align-self:start">Đã xác minh</span></div>
+            <div><span class="label">Diễn tập gần nhất</span><b class="c-amber">18 ngày trước</b><span class="muted" style="font-size:var(--fs-xs)">Chính sách khuyến nghị: 14 ngày</span></div>
+          </div>
+          <div class="job" aria-live="polite">
+            <svg viewBox="0 0 56 56" width="56" height="56" aria-hidden="true" id="gearSvg"></svg>
+            <div class="stack" style="gap:6px">
+              <div class="row between"><b style="font-size:var(--fs-sm)" id="jobName">Backup ad-hoc bk-20261029-1300</b><span class="mono" id="jobPct">0%</span></div>
+              <div class="meter ticks"><i id="jobBar" style="width:0%"></i></div>
+              <span class="muted" style="font-size:var(--fs-xs)" id="jobStep">Đang lập capture barrier…</span>
+            </div>
+          </div>
+          <ul class="sched">
+            <li><span>Artifact trong bản gần nhất</span><span class="mono">1.284 · 2,41 GB</span></li>
+            <li><span>Checksum DB của bản gần nhất</span><span class="mono">sha256:9c1e…a07b</span></li>
+            <li><span>RPO / RTO đã đo</span><span class="unknown">Not reported</span></li>
+            <li><span>Upload đang dở khi chụp (không tính là khôi phục được)</span><span class="mono">3</span></li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="grid g-2">
+        <div class="panel reveal" aria-label="Đối soát artifact">
+          <div class="panel-head"><h3>Đối soát artifact</h3><span class="code">R2 ↔ METADATA · SWEEP 12:30</span></div>
+          <div class="tscroll">
+            <table class="table compact">
+              <thead><tr><th>Object · Kích thước</th><th>Lý do</th><th>Tuổi</th><th><span class="sr">Thao tác</span></th></tr></thead>
+              <tbody>
+                <tr><td><span class="mono">ws-aurora/a/7f/…e21</span><br><span class="muted mono">14,2 MB</span></td><td>Byte đến muộn sau tombstone <span class="mono">expired</span></td><td class="mono">2 giờ</td><td><button class="btn sm" type="button" data-sweep>Đưa vào sweep</button></td></tr>
+                <tr><td><span class="mono">ws-aurora/a/1c/…9b0</span><br><span class="muted mono">820 KB</span></td><td>Intent staged quá hạn, chưa commit</td><td class="mono">7 ngày</td><td><button class="btn sm" type="button" data-sweep>Đưa vào sweep</button></td></tr>
+                <tr><td><span class="mono">ws-aurora/a/c3/…04d</span><br><span class="muted mono">3,1 MB</span></td><td>Intent staged quá hạn, chưa commit</td><td class="mono">9 ngày</td><td><button class="btn sm" type="button" data-sweep>Đưa vào sweep</button></td></tr>
+                <tr style="background:var(--t-failed)"><td><span class="mono c-red">art-0912 (committed)</span><br><span class="unknown">Not reported</span></td><td class="c-red">Thiếu byte của artifact đã commit: sự cố toàn vẹn, không phải orphan</td><td class="mono">12:30</td><td><a class="btn sm danger" href="18-warehouse.html">Mở sự cố</a></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="panel-body"><p class="muted" style="margin:0;font-size:var(--fs-xs)">Cleaner đánh dấu tombstone <span class="mono">expired</span> trong cùng giao dịch trước khi xoá byte. Cleaner tự dừng nếu không đọc được metadata ổn định.</p></div>
+        </div>
+
+        <div class="panel reveal" aria-label="Nhật ký sự cố và bảo trì">
+          <div class="panel-head">
+            <h3>Nhật ký sự cố &amp; bảo trì</h3>
+            <div class="seg" role="group" aria-label="Lọc nhật ký" id="logFilter">
+              <button aria-pressed="true" data-f="all">Tất cả</button><button aria-pressed="false" data-f="inc">Sự cố</button><button aria-pressed="false" data-f="mt">Bảo trì</button>
+            </div>
+          </div>
+          <div class="feedlog"><ul class="log" id="mlog" aria-live="polite" aria-relevant="additions"></ul></div>
+        </div>
+      </section>
+
+      <!-- Runbook modal -->
+      <div class="scrim" id="scrim" aria-hidden="true">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="rbTitle">
+          <div class="panel-head"><h3 id="rbTitle">Runbook R1 · Diễn tập khôi phục</h3><button class="btn sm" type="button" id="rbClose" aria-label="Đóng runbook">Đóng</button></div>
+          <div class="panel-body" style="padding-bottom:0"><p class="muted" style="margin:0;font-size:var(--fs-sm)">Khôi phục vào workspace tạm cô lập: không route công khai, delivery tắt, không gắn credential runtime production. Không bao giờ ghi đè production ở lần thử đầu.</p></div>
+          <ol class="rsteps" id="rsteps"></ol>
+          <div class="mfoot">
+            <span class="code" id="rbStatus" aria-live="polite">SẴN SÀNG · bk-20261029-0200</span>
+            <div class="row"><button class="btn" type="button" id="rbAbort">Huỷ diễn tập</button><button class="btn primary" type="button" id="rbNext">Bắt đầu bước 1</button></div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+    <div id="titleblock"></div>
+  </div>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(() => {
+  const el = (t, a, p) => BP.svg(t, a, p);
+  BP.$("#chkTime").textContent = BP.now();
+
+  /* ---------- Gauges ---------- */
+  const G = [
+    { nm: "Liveness", v: 8, st: "ok", lab: "OK", note: "8 ms", t: "public · minimal" },
+    { nm: "Readiness", v: 46, st: "ok", lab: "Ready", note: "46 ms", t: "human-only" },
+    { nm: "Durable Object", v: 22, st: "ok", lab: "OK", note: "SQL 22 ms", t: "schema v7 khớp" },
+    { nm: "R2", v: 138, st: "warn", lab: "Chậm", note: "138 ms · 1 thiếu byte", t: "head probe" },
+    { nm: "Auth provider", v: 84, st: "ok", lab: "OK", note: "JWKS 84 ms", t: "OIDC issuer pin" },
+    { nm: "Secret binding", v: null, st: "unknown-st", lab: "Not reported", note: "Probe chưa cấu hình", t: "signing_key_ref" }
+  ];
+  const gWrap = BP.$("#gauges");
+  const arc = (a0, a1, r) => { const p = a => [60 + r * Math.cos(Math.PI * (1 - a)), 60 - r * Math.sin(Math.PI * (1 - a))]; const [x0, y0] = p(a0), [x1, y1] = p(a1); return `M${x0.toFixed(1)} ${y0.toFixed(1)} A${r} ${r} 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)}`; };
+  const needles = [];
+  G.forEach(g => {
+    const d = BP.h(`<div class="gauge"><svg class="dwg" viewBox="0 0 120 74" role="img" aria-label="${g.nm}: ${g.lab}, ${g.note}"></svg><span class="nm">${g.nm}</span><span class="state ${g.st}">${g.lab}</span><span class="v">${g.v == null ? '<span class="unknown">Not reported</span>' : g.note}</span><span class="t">${g.t}</span></div>`);
+    gWrap.appendChild(d);
+    const s = d.querySelector("svg");
+    el("path", { d: arc(0, 0.6, 46), class: "wall-thin", "stroke-width": 3, style: "stroke:var(--s-doing)" }, s);
+    el("path", { d: arc(0.6, 0.85, 46), class: "wall-thin", "stroke-width": 3, style: "stroke:var(--amber)" }, s);
+    el("path", { d: arc(0.85, 1, 46), class: "wall-thin", "stroke-width": 3, style: "stroke:var(--red)" }, s);
+    el("path", { d: arc(0, 1, 38), class: "dimline" }, s);
+    for (let i = 0; i <= 10; i++) { const a = Math.PI * (1 - i / 10), r1 = 38, r2 = i % 5 ? 34 : 30; el("line", { x1: 60 + r1 * Math.cos(a), y1: 60 - r1 * Math.sin(a), x2: 60 + r2 * Math.cos(a), y2: 60 - r2 * Math.sin(a), class: "dimline" }, s); }
+    const t0 = el("text", { x: 12, y: 72, class: "sub", "text-anchor": "middle" }, s); t0.textContent = "0";
+    const t1 = el("text", { x: 108, y: 72, class: "sub", "text-anchor": "middle" }, s); t1.textContent = "500";
+    if (g.v == null) {
+      el("line", { x1: 60, y1: 60, x2: 60, y2: 22, stroke: "var(--ink-3)", "stroke-width": 1, "stroke-dasharray": "2 3" }, s);
+      const q = el("text", { x: 60, y: 50, class: "num", "text-anchor": "middle" }, s); q.textContent = "?";
+    } else {
+      const n = el("g", { class: "needle" }, s);
+      el("line", { x1: 60, y1: 60, x2: 18, y2: 60, stroke: g.st === "warn" ? "var(--amber)" : "var(--ink)", "stroke-width": 1.5 }, n);
+      needles.push({ n, v: g.v });
+      n.style.transform = "rotate(0deg)";
+    }
+    el("circle", { cx: 60, cy: 60, r: 3.5, fill: "var(--bp-950)", stroke: "var(--line-strong)" }, s);
+  });
+  const setNeedles = jitter => needles.forEach(o => { const v = Math.max(1, o.v + (jitter ? BP.rand(-6, 6) : 0)); o.n.style.transform = `rotate(${(Math.min(v, 500) / 500) * 180}deg)`; });
+  requestAnimationFrame(() => setNeedles(false));
+  if (!BP.reduced) BP.every(4000, () => { setNeedles(true); BP.$("#chkTime").textContent = BP.now(); });
+
+  /* ---------- Outbox ---------- */
+  const OUT = [
+    { id: "dl-55a1", ev: "task.review_requested · T-1036", dest: "hooks.aurora.example/qc", att: "1/5", next: null, err: "Not reported", st: "pending" },
+    { id: "dl-55a4", ev: "message.created · #standup-nc", dest: "hooks.aurora.example/chat", att: "0/5", next: null, err: "Not reported", st: "pending" },
+    { id: "dl-5590", ev: "approval.requested · T-1039", dest: "hooks.aurora.example/approve", att: "3/5", next: 42, err: "timeout", st: "retrying" },
+    { id: "dl-5588", ev: "task.done · T-1029", dest: "hooks.aurora.example/report", att: "2/5", next: 95, err: "http_503", st: "retrying" },
+    { id: "dl-5571", ev: "task.failed · T-1033", dest: "hooks.legacy.example/ops", att: "5/5", next: null, err: "http_410 gone", st: "dead" }
+  ];
+  const stLab = { pending: "Pending", retrying: "Retrying", dead: "Dead-letter" };
+  const outBody = BP.$("#outBody");
+  function renderOut() {
+    outBody.innerHTML = OUT.map(o => `<tr ${o.st === "dead" ? 'style="background:var(--t-failed)"' : ""}>
+      <td class="mono">${o.id}</td><td>${o.ev}</td><td class="mono" style="font-size:var(--fs-2xs)">${o.dest}</td><td class="mono">${o.att}</td>
+      <td class="mono">${o.st === "retrying" ? `<span data-cd="${o.id}">${o.next}s</span> <span class="muted">backoff</span>` : o.st === "dead" ? '<span class="c-red">Hết lượt</span>' : "Ngay khi đến lượt"}</td>
+      <td class="mono">${o.err === "Not reported" ? '<span class="unknown">Not reported</span>' : o.err}</td>
+      <td><span class="state ${o.st}">${o.st === "dead" ? '<span class="lamp blink" aria-hidden="true" style="width:7px;height:7px;margin-right:0"></span>' : ""}${stLab[o.st]}</span></td>
+      <td><button class="btn sm ${o.st === "dead" ? "danger" : ""}" type="button" data-retry="${o.id}" ${o.st === "pending" ? "disabled" : ""}>Thử lại</button></td></tr>`).join("");
+  }
+  renderOut();
+  outBody.addEventListener("click", e => {
+    const b = e.target.closest("[data-retry]"); if (!b) return;
+    const o = OUT.find(x => x.id === b.dataset.retry);
+    if (o.st === "dead") { BP.toast("REDRIVE CẦN AUDIT", `${o.id}: sửa đích nhận trước (http_410). Redrive giữ nguyên event ID. Mock: đã ghi yêu cầu redrive.`); mpush("mt", "↻", "var(--s-ready)", `<b>Quản đốc</b> yêu cầu redrive ${o.id} · lý do: đích đã đổi URL`); }
+    else { o.next = 1; BP.toast("ĐÃ XẾP LẠI", `${o.id} sẽ thử ở lượt kế tiếp, vẫn trong ngân sách ${o.att}.`); }
+  });
+  if (!BP.reduced) BP.every(1000, () => {
+    OUT.filter(o => o.st === "retrying").forEach(o => {
+      o.next--;
+      if (o.next <= 0) {
+        const [a, m] = o.att.split("/").map(Number);
+        if (a + 1 >= m) { o.att = `${m}/${m}`; o.next = 60; }
+        else { o.att = `${a + 1}/${m}`; o.next = Math.min(240, 30 * Math.pow(2, a)); mpush("mt", "↻", "var(--s-ready)", `Outbox <span class="mono">${o.id}</span> thử lần ${a + 1} · ${o.err} · backoff ${o.next}s`); }
+        renderOut();
+      } else { const s = outBody.querySelector(`[data-cd="${o.id}"]`); if (s) s.textContent = o.next + "s"; }
+    });
+  });
+
+  /* ---------- Holds ---------- */
+  const HOLDS = [
+    { id: "T-1046", title: "Đồng bộ nhãn sang tracker bên ngoài", why: "outcome_unknown", who: "FORGE-02", detail: "Lease hết hạn 11:52 khi đang ghi sang hệ thống ngoài. Không có biên nhận. Có thể đã ghi một phần.", facts: ["run r-2e77", "fence 3", "retry 0/2 còn ngân sách"] },
+    { id: "T-1033", title: "Sửa lỗi heartbeat gia hạn run đã hết hạn", why: "retry_exhausted", who: "ATLAS-01", detail: "Hết 2/2 lượt retry. Lần cuối thất bại có thể đã đẩy nhánh lên remote.", facts: ["run r-1d02", "fence 6", "retry 2/2"] }
+  ];
+  BP.$("#holds").innerHTML = HOLDS.map((h, i) => `<div class="hold" data-h="${i}">
+      <div><div class="code">${h.id} · ${h.who}</div><div class="t">${h.title}</div><div class="s">${h.detail}</div></div>
+      <button class="btn sm human" type="button" data-recon="${i}" aria-expanded="false">Đối soát</button>
+      <div class="facts"><span class="tag amber">${h.why}</span>${h.facts.map(f => `<span class="tag">${f}</span>`).join("")}<span class="state backlog">Backlog hold</span></div>
+      <div class="recon">
+        <label class="chk"><input type="checkbox">Đã kiểm tra hệ thống bên ngoài và ghi bằng chứng (ID bản ghi, thời điểm)</label>
+        <label class="chk"><input type="checkbox">Đã xác định hiệu ứng không thể đảo ngược nào đã xảy ra</label>
+        <label class="chk"><input type="checkbox">Task thay thế sẽ qua review trước khi vào Ready</label>
+        <div class="row wrap"><button class="btn sm" type="button" data-save="${i}" disabled>Ghi kết quả đối soát</button><span class="muted" style="font-size:var(--fs-xs)">Không mở khoá task cũ.</span></div>
+      </div></div>`).join("");
+  const holdsEl = BP.$("#holds");
+  holdsEl.addEventListener("click", e => {
+    const r = e.target.closest("[data-recon]");
+    if (r) { const h = r.closest(".hold"); const open = h.classList.toggle("open"); r.setAttribute("aria-expanded", String(open)); return; }
+    const s = e.target.closest("[data-save]");
+    if (s) { const h = s.closest(".hold"); const H = HOLDS[+s.dataset.save]; h.classList.remove("open"); h.classList.add("done-r");
+      h.querySelector("[data-recon]").outerHTML = '<span class="state done">Đã đối soát</span>';
+      mpush("inc", "✓", "var(--s-done)", `<b>Quản đốc</b> ghi đối soát ${H.id} · hold giữ nguyên, tạo task thay thế chờ review`);
+      BP.toast("ĐÃ GHI ĐỐI SOÁT", `${H.id} vẫn ở Backlog hold. Bước tiếp: tạo task thay thế qua review.`); }
+  });
+  holdsEl.addEventListener("change", e => { const h = e.target.closest(".hold"); const all = BP.$$("input", h).every(i => i.checked); h.querySelector("[data-save]").disabled = !all; });
+
+  /* ---------- Backup job + gear ---------- */
+  function gearPath(cx, cy, r, teeth, depth) {
+    let d = ""; const n = teeth * 2;
+    for (let i = 0; i < n; i++) {
+      const a0 = (i / n) * Math.PI * 2, a1 = ((i + 1) / n) * Math.PI * 2, rr = i % 2 ? r - depth : r;
+      const p = a => `${(cx + rr * Math.cos(a)).toFixed(1)} ${(cy + rr * Math.sin(a)).toFixed(1)}`;
+      d += (i ? "L" : "M") + p(a0) + "L" + p(a1);
+    }
+    return d + "Z";
+  }
+  const gs = BP.$("#gearSvg");
+  const g1 = el("path", { d: gearPath(22, 22, 18, 10, 4), class: "gear", fill: "none", stroke: "var(--s-ready)", "stroke-width": 1.25 }, gs);
+  el("circle", { cx: 22, cy: 22, r: 5, fill: "none", stroke: "var(--s-ready)" }, gs);
+  const g2 = el("path", { d: gearPath(42, 42, 11, 7, 3), class: "gear rev", fill: "none", stroke: "var(--line)", "stroke-width": 1.25 }, gs);
+  el("circle", { cx: 42, cy: 42, r: 3, fill: "none", stroke: "var(--line)" }, gs);
+  const gearRun = on => [g1, g2].forEach(g => g.classList.toggle("run", on));
+  const STEPS = [[0, "Đang lập capture barrier…"], [12, "Chụp snapshot DB tại checkpoint…"], [35, "Sao chép 1.284 artifact đã commit…"], [80, "Xác minh byte và checksum…"], [92, "Ký manifest…"], [100, "Hoàn tất · manifest đã xác minh"]];
+  let pct = 0;
+  const job = () => {
+    if (pct >= 100) return;
+    pct = Math.min(100, pct + BP.rand(0.6, 1.6));
+    BP.$("#jobBar").style.width = pct + "%"; BP.$("#jobPct").textContent = Math.floor(pct) + "%";
+    const s = STEPS.filter(x => pct >= x[0]).pop(); BP.$("#jobStep").textContent = s[1];
+    if (pct >= 100) { gearRun(false); mpush("mt", "✓", "var(--s-done)", "Backup <span class='mono'>bk-20261029-1300</span> hoàn tất · manifest ký · thời gian thực tế ghi nhận, không phải SLO");
+      BP.wait(6000).then(() => { pct = 0; gearRun(true); }); }
+  };
+  if (BP.reduced) { pct = 64; BP.$("#jobBar").style.width = "64%"; BP.$("#jobPct").textContent = "64%"; BP.$("#jobStep").textContent = STEPS[2][1]; }
+  else { gearRun(true); BP.every(400, job); }
+
+  /* ---------- Maintenance log ---------- */
+  const mlog = BP.$("#mlog"); let filter = "all";
+  function mpush(kind, g, c, html, time) {
+    const li = BP.logPush(mlog, `<time>${time || BP.now()}</time><span class="g" style="color:${c}">${g}</span><span><span class="tag" style="margin-right:6px">${kind === "inc" ? "SỰ CỐ" : "BẢO TRÌ"}</span>${html}</span>`, 30);
+    li.dataset.k = kind; li.hidden = filter !== "all" && filter !== kind;
+  }
+  [
+    ["mt", "✓", "var(--s-done)", "Backup lịch <span class='mono'>bk-20261029-0200</span> hoàn tất · 1.284 artifact · manifest ký", "02:41:10"],
+    ["inc", "✕", "var(--red)", "Thu hồi <span class='mono'>cred-echo-07</span> trước khi thay thế (ngăn chặn sự cố) · delivery liên quan tạm dừng", "27/10 09:14"],
+    ["mt", "↻", "var(--s-ready)", "Cleaner đánh dấu 12 intent <span class='mono'>expired</span> · xoá byte sau tombstone", "11:30:02"],
+    ["inc", "▲", "var(--amber)", "T-1046 vào Backlog hold <span class='mono'>outcome_unknown</span> · lease hết hạn khi ghi ra ngoài", "11:52:31"],
+    ["inc", "✕", "var(--red)", "Phát hiện thiếu byte của <span class='mono'>art-0912</span> đã commit · mở sự cố toàn vẹn", "12:30:44"],
+    ["mt", "✕", "var(--red)", "Outbox <span class='mono'>dl-5571</span> chuyển dead-letter sau 5/5 lần · http_410", "12:36:18"]
+  ].forEach(r => mpush(...r));
+  BP.$$("#logFilter button").forEach(b => b.addEventListener("click", () => {
+    BP.$$("#logFilter button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    filter = b.dataset.f; BP.$$("#mlog li").forEach(li => li.hidden = filter !== "all" && li.dataset.k !== filter);
+  }));
+  BP.$$("[data-sweep]").forEach(b => b.addEventListener("click", () => { b.disabled = true; b.textContent = "Đã xếp sweep"; mpush("mt", "↻", "var(--s-ready)", "Object orphan được xếp vào sweep kế tiếp (sau khi kiểm tra không có tham chiếu committed)"); }));
+  BP.$("#diagBtn").addEventListener("click", () => BP.toast("CHẨN ĐOÁN ĐÃ REDACT", "Gói chẩn đoán không chứa token, cookie, header ủy quyền hay tên bucket. Mock: chưa tải file."));
+
+  /* ---------- Runbook R1 ---------- */
+  const RB = [
+    { t: "Export", s: "Chặn mutation và upload mới, dừng dispatch, lập capture barrier bền vững, chụp DB + copy artifact." },
+    { t: "Verify manifest", s: "Xác thực chữ ký manifest, đối chiếu byte count và checksum từng artifact, schema tương thích." },
+    { t: "Restore vào workspace tạm", s: "Worker + namespace + bucket cô lập, delivery tắt, áp lại sổ thu hồi hiện hành, vô hiệu run cũ, nâng fence epoch." },
+    { t: "So sánh", s: "Quan hệ và bất biến task đúng, runtime cũ bị từ chối, một task mẫu tới Review và được nghiệm thu độc lập." },
+    { t: "Phát hành biên nhận", s: "Người ký biên nhận khôi phục: manifest, người xác minh, kết quả, hiệu ứng chưa giải quyết. Không tự cutover.", human: true }
+  ];
+  const rsteps = BP.$("#rsteps"); let rb = 0, running = false;
+  const renderRb = () => {
+    rsteps.innerHTML = RB.map((x, i) => `<li class="${i < rb ? "done" : i === rb ? "current" : ""} ${x.human ? "human" : ""}">
+      <span class="no">${i < rb ? "✓" : "0" + (i + 1)}</span>
+      <div><div class="t">${x.t}</div><div class="s">${x.s}</div>${i === rb && running ? '<div class="meter"><i id="rbBar" style="width:0%"></i></div>' : ""}</div>
+      ${i < rb ? '<span class="state done">Xong</span>' : i === rb ? (x.human ? '<span class="state waiting">Cần người</span>' : '<span class="state ready">Kế tiếp</span>') : '<span class="state backlog">Chờ</span>'}</li>`).join("");
+    const nx = BP.$("#rbNext");
+    if (rb >= RB.length) { nx.textContent = "Đóng runbook"; BP.$("#rbStatus").textContent = "HOÀN TẤT · BIÊN NHẬN rc-20261029-01"; }
+    else nx.textContent = RB[rb].human ? "Ký biên nhận" : `Chạy bước ${rb + 1}`;
+    nx.disabled = running;
+  };
+  const scrim = BP.$("#scrim");
+  const openRb = () => { scrim.classList.add("open"); scrim.setAttribute("aria-hidden", "false"); renderRb(); BP.$("#rbNext").focus(); };
+  const closeRb = () => { scrim.classList.remove("open"); scrim.setAttribute("aria-hidden", "true"); BP.$("#drillBtn").focus(); };
+  BP.$("#drillBtn").addEventListener("click", openRb);
+  BP.$("#rbClose").addEventListener("click", closeRb);
+  BP.$("#rbAbort").addEventListener("click", () => { rb = 0; running = false; BP.$("#rbStatus").textContent = "ĐÃ HUỶ · KHÔNG ẢNH HƯỞNG PRODUCTION"; renderRb(); });
+  scrim.addEventListener("click", e => { if (e.target === scrim) closeRb(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && scrim.classList.contains("open")) closeRb(); });
+  BP.$("#rbNext").addEventListener("click", async () => {
+    if (rb >= RB.length) { closeRb(); return; }
+    if (RB[rb].human) { rb++; renderRb(); mpush("mt", "✓", "var(--s-done)", "<b>Quản đốc</b> ký biên nhận diễn tập khôi phục <span class='mono'>rc-20261029-01</span> · không cutover"); return; }
+    running = true; renderRb(); BP.$("#rbStatus").textContent = `ĐANG CHẠY · ${RB[rb].t.toUpperCase()}`;
+    const bar = BP.$("#rbBar");
+    for (let p = 0; p <= 100; p += 5) { if (bar) bar.style.width = p + "%"; await BP.wait(BP.reduced ? 0 : 70); }
+    running = false; rb++; renderRb(); BP.$("#rbStatus").textContent = rb < RB.length ? `XONG BƯỚC ${rb}/${RB.length}` : "";
+  });
+})();
+</script>
+</body>
+</html>

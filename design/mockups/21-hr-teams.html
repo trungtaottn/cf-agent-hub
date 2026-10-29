@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nhân sự &amp; Thành viên · CF Agent Factory</title>
+<link rel="stylesheet" href="assets/blueprint.css">
+<style>
+  .info-strip { display: flex; gap: var(--sp-3); align-items: flex-start; padding: var(--sp-3) var(--sp-4); border: 1px dashed var(--line); background: var(--bp-900); font-family: var(--f-mono); font-size: var(--fs-xs); color: var(--ink-2); }
+  .info-strip b { color: var(--ink); font-weight: 600; }
+  .table-wrap { overflow-x: auto; }
+  .table td { font-size: var(--fs-xs); }
+  .who { display: flex; align-items: center; gap: var(--sp-3); white-space: nowrap; }
+  .who b { display: block; font-family: var(--f-display); font-size: var(--fs-md); font-weight: 600; }
+  .who small { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); }
+  .grants { display: flex; flex-wrap: wrap; gap: 4px; max-width: 320px; }
+  .row-actions { display: flex; gap: var(--sp-2); justify-content: flex-end; }
+  .state.expired { color: var(--red); border-style: dashed; } .state.expired::before { content: "◌"; }
+  .state.pending { color: var(--s-ready); } .state.pending::before { content: "◇"; }
+  .state.revoked { color: var(--ink-3); border-style: dotted; } .state.revoked::before { content: "⊘"; }
+
+  .org-wrap { overflow-x: auto; }
+  .org { min-width: 720px; }
+  .org .node-h circle { fill: var(--bp-900); stroke: var(--amber); stroke-width: 1.4; }
+  .org .node-h text, .org .node-a text { font-family: var(--f-mono); font-size: 10px; font-weight: 600; text-anchor: middle; dominant-baseline: central; }
+  .org .node-d rect { fill: var(--bp-800); stroke: var(--line); }
+  .org .hit { cursor: pointer; }
+  .org .hit:focus { outline: none; }
+  .org .hit:focus circle, .org .hit:focus rect { stroke-width: 2.4; }
+  .org .link { fill: none; stroke: var(--line-soft); stroke-width: 1; }
+  .org .link.lead { stroke: var(--amber); stroke-dasharray: 4 6; animation: dash 2.4s linear infinite; opacity: 0.8; }
+  .org .link.member { stroke: var(--s-ready); stroke-dasharray: 3 7; animation: dash 3s linear infinite; opacity: 0.7; }
+  .org.focusing .link, .org.focusing .nd { opacity: 0.15; transition: opacity var(--dur); }
+  .org.focusing .on { opacity: 1 !important; }
+  .org .colhd { font-family: var(--f-mono); font-size: 10px; fill: var(--ink-3); letter-spacing: 0.14em; }
+
+  .stepper { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); position: relative; }
+  .stepper li { position: relative; padding: var(--sp-4) var(--sp-4) var(--sp-4) var(--sp-4); border-left: 1px solid var(--line-soft); display: flex; flex-direction: column; gap: var(--sp-2); transition: background var(--dur); }
+  .stepper li:first-child { border-left: 0; }
+  .stepper .num { width: 32px; height: 32px; display: grid; place-items: center; border: 1px solid var(--line); font-family: var(--f-mono); font-size: var(--fs-sm); color: var(--ink-2); background: var(--bp-900); transition: all var(--dur); }
+  .stepper h4 { margin: 0; font-family: var(--f-display); font-size: var(--fs-md); font-weight: 600; }
+  .stepper p { margin: 0; font-size: var(--fs-xs); color: var(--ink-2); line-height: 1.45; }
+  .stepper .guard { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); border-top: 1px dashed var(--line-soft); padding-top: var(--sp-2); margin-top: auto; }
+  .stepper li.active { background: var(--bp-700); }
+  .stepper li.active .num { border-color: var(--s-ready); color: var(--bp-950); background: var(--s-ready); }
+  .stepper li.done .num { border-color: var(--s-done); color: var(--s-done); }
+  .stepper li.done .num::after { content: "✓"; }
+  .stepper li.done .num span { display: none; }
+  .track { height: 3px; background: var(--bp-950); border-top: 1px solid var(--line-soft); position: relative; }
+  .track i { position: absolute; left: 0; top: -1px; bottom: 0; width: 0; background: var(--s-ready); transition: width 600ms var(--ease); }
+
+  .denied { display: grid; place-items: center; text-align: center; padding: var(--sp-8) var(--sp-4); border: 1px dashed var(--red); background: var(--t-failed); gap: var(--sp-3); }
+  .denied h4 { margin: 0; font-family: var(--f-display); font-size: var(--fs-lg); }
+  .denied p { margin: 0; max-width: 46ch; font-size: var(--fs-sm); color: var(--ink-2); }
+  .sec-list { list-style: none; margin: 0; padding: 0; }
+  .sec-list li { display: flex; justify-content: space-between; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--grid-major); font-size: var(--fs-sm); }
+  [hidden] { display: none !important; }
+
+  .modal-h { padding: var(--sp-4); border-bottom: 1px solid var(--line-soft); }
+  .modal-h h3 { margin: 4px 0 0; font-family: var(--f-display); font-size: var(--fs-xl); }
+  .modal-b { padding: var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-3); font-size: var(--fs-sm); color: var(--ink-2); }
+  .modal-b ol { margin: 0; padding-left: 1.2em; display: grid; gap: var(--sp-2); }
+  .modal-f { padding: var(--sp-3) var(--sp-4); border-top: 1px solid var(--line-soft); display: flex; justify-content: flex-end; gap: var(--sp-2); flex-wrap: wrap; }
+  .modal.danger-m { border-color: var(--red); }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); letter-spacing: 0.08em; text-transform: uppercase; }
+  .field input, .field select { min-height: 40px; padding: 0 var(--sp-3); background: var(--bp-850); color: var(--ink); border: 1px solid var(--line-soft); border-radius: 0; font-family: var(--f-body); font-size: var(--fs-sm); }
+  .field .err { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--red); min-height: 14px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
+  @media (max-width: 960px) { .stepper { grid-template-columns: 1fr 1fr; } .stepper li:nth-child(3) { border-left: 0; } .stepper li:nth-child(n+3) { border-top: 1px solid var(--line-soft); } }
+  @media (max-width: 560px) { .stepper { grid-template-columns: 1fr; } .stepper li { border-left: 0; border-top: 1px solid var(--line-soft); } .two { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body data-sheet="21" data-title="Nhân sự &amp; Thành viên">
+<div class="app paper">
+  <div id="rail"></div>
+  <div class="main">
+    <header id="topbar"></header>
+    <main class="content">
+
+      <section class="page-head reveal">
+        <div>
+          <div class="code">PERSONNEL · MEMBERSHIP · WS-AURORA · R4 DESIGN</div>
+          <h2>Nhân sự &amp; Thành viên</h2>
+          <p class="lede">Người tham gia nhà máy, quyền lệnh của từng người và lời mời đang chờ. Danh tính người được xác minh qua issuer và subject; email chỉ là gợi ý để mời, không bao giờ đủ để cấp quyền.</p>
+        </div>
+        <div class="actions">
+          <a class="btn" href="02-departments.html">Phòng ban</a>
+          <button class="btn primary" id="btnInvite">
+            <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.5"/></svg>
+            Mời thành viên
+          </button>
+        </div>
+      </section>
+
+      <div class="info-strip reveal" role="note">
+        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="flex:none;margin-top:1px"><rect x="1" y="1" width="14" height="14" fill="none" stroke="currentColor" stroke-dasharray="2 2"/><path d="M8 4v5M8 11v1.5" stroke="currentColor" stroke-width="1.5"/></svg>
+        <span><b>SPECIFIED · CHƯA PHÁT HÀNH.</b> Cộng tác nhóm là release gate R4. Màn hình này là thiết kế cho hành vi đã đặc tả, chưa có endpoint mời thật. Workspace do operator cấp sẵn; mời người không tạo workspace mới.</span>
+      </div>
+
+      <section class="grid g-4 reveal" aria-label="Tóm tắt nhân sự">
+        <div class="panel kpi"><span class="label">Thành viên người</span><span class="value">3</span><span class="note">1 Owner, 1 Reviewer, 1 Member</span></div>
+        <div class="panel kpi"><span class="label">Phiên hoạt động</span><span class="value c-doing">2<small style="margin-left:6px">/ 3</small></span><span class="note">Khánh: phiên hết hạn 40 phút trước</span></div>
+        <div class="panel kpi"><span class="label">Lời mời đang chờ</span><span class="value c-ready">1</span><span class="note">+1 đã hết hạn, không tạo membership</span></div>
+        <div class="panel kpi"><span class="label">Quyết định có người duyệt</span><span class="value c-amber">2<small style="margin-left:6px">/ 2</small></span><span class="note">Mỗi đề xuất chờ đều có người hợp lệ</span></div>
+      </section>
+
+      <section class="panel reveal" aria-label="Thành viên">
+        <div class="panel-head"><h3>Thành viên</h3><span class="code">MEMBERSHIP · WS-AURORA</span></div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Người</th><th>Danh tính xác minh</th><th>Vai trò</th><th>Phạm vi lệnh (grant)</th><th>Phiên</th><th><span class="muted">Thao tác</span></th></tr></thead>
+            <tbody>
+              <tr>
+                <td><div class="who"><span class="human-token">QĐ</span><div><b>Quản đốc</b><small>hu-qd</small></div></div></td>
+                <td class="mono">oidc · access.aurora<br><span class="muted">sub …a71f</span></td>
+                <td>Owner · Operator</td>
+                <td><div class="grants"><span class="tag">members:manage</span><span class="tag">security:admin</span><span class="tag">profile:edit</span><span class="tag">decisions:approve</span><span class="tag">reviews:accept</span></div></td>
+                <td><span class="state online">Hoạt động</span><br><span class="muted mono" id="sQd">vừa xong</span></td>
+                <td><div class="row-actions"><button class="btn sm" disabled title="Admin cuối cùng, không thể tự hạ quyền">Đổi quyền</button></div><div class="muted" style="font-size:var(--fs-2xs);text-align:right;margin-top:4px">Admin cuối · có guard</div></td>
+              </tr>
+              <tr>
+                <td><div class="who"><span class="human-token">HA</span><div><b>Hà</b><small>hu-ha</small></div></div></td>
+                <td class="mono">oidc · access.aurora<br><span class="muted">sub …0c3e</span></td>
+                <td>Reviewer</td>
+                <td><div class="grants"><span class="tag">reviews:accept</span><span class="tag">tasks:read</span><span class="tag">messages:write</span></div></td>
+                <td><span class="state online">Hoạt động</span><br><span class="muted mono">6 phút trước</span></td>
+                <td><div class="row-actions"><button class="btn sm">Đổi quyền</button><button class="btn sm danger" data-revoke="Hà">Thu hồi</button></div></td>
+              </tr>
+              <tr>
+                <td><div class="who"><span class="human-token">KN</span><div><b>Khánh</b><small>hu-kn</small></div></div></td>
+                <td class="mono">oidc · access.aurora<br><span class="muted">sub …9b40</span></td>
+                <td>Member · Decision</td>
+                <td><div class="grants"><span class="tag">decisions:approve</span><span class="tag">tasks:write</span><span class="tag">tasks:read</span></div></td>
+                <td><span class="state stale">Phiên hết hạn</span><br><span class="muted mono">40 phút trước</span></td>
+                <td><div class="row-actions"><button class="btn sm">Đổi quyền</button><button class="btn sm danger" data-revoke="Khánh">Thu hồi</button></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="panel-body"><p class="muted" style="margin:0;font-size:var(--fs-xs)">Vai trò "Reviewer" hay "trưởng nhóm" chỉ là nhãn. Quyền thực tế là cột grant. Agent là loại participant riêng với credential riêng, xem <a href="07-workforce.html">Đội ngũ Agent</a>.</p></div>
+      </section>
+
+      <section class="grid g-main-side">
+        <div class="panel reveal">
+          <div class="panel-head"><h3>Sơ đồ tổ chức</h3><span class="code">NGƯỜI ↔ PHÒNG BAN ↔ AGENT</span></div>
+          <div class="org-wrap">
+            <svg id="org" class="dwg org" viewBox="0 0 860 470" role="img" aria-labelledby="orgT">
+              <title id="orgT">Sơ đồ tổ chức: Quản đốc phụ trách Kỹ thuật và Vận hành; Hà phụ trách Nội dung và Kiểm định; Khánh phụ trách Nghiên cứu và Dữ liệu. Mỗi phòng nối tới các agent của phòng. Bấm một người để làm nổi nhánh.</title>
+              <g id="gLinks"></g><g id="gNodes"></g>
+            </svg>
+          </div>
+          <div class="panel-body row between wrap" style="border-top:1px solid var(--line-soft)">
+            <div class="legend"><span style="color:var(--amber)"><i></i>Trưởng nhóm (người)</span><span style="color:var(--s-ready)"><i></i>Agent thuộc phòng</span></div>
+            <span class="code">ĐƯỜNG NỐI = TRÁCH NHIỆM, KHÔNG PHẢI QUYỀN</span>
+          </div>
+        </div>
+
+        <div class="panel reveal">
+          <div class="panel-head"><h3>Lời mời</h3><span class="code">BOUNDED · ONE-TIME</span></div>
+          <ul class="sec-list">
+            <li><div><div class="mono" style="color:var(--ink)">linh.tran@aurora.vn</div><div class="muted" style="font-size:var(--fs-xs)">Reviewer · reviews:accept, tasks:read<br>Mời bởi Quản đốc · hết hạn 31/10 17:00</div></div><div class="stack" style="align-items:flex-end;gap:6px"><span class="state pending">Chờ</span><button class="btn sm">Thu hồi lời mời</button></div></li>
+            <li><div><div class="mono" style="color:var(--ink)">ops@vendor-x.io</div><div class="muted" style="font-size:var(--fs-xs)">Member · tasks:read<br>Hết hạn 27/10 · không tạo membership</div></div><div class="stack" style="align-items:flex-end;gap:6px"><span class="state expired">Hết hạn</span><button class="btn sm">Gửi lại</button></div></li>
+            <li><div><div class="mono" style="color:var(--ink)">qa.contract@aurora.vn</div><div class="muted" style="font-size:var(--fs-xs)">Reviewer · đã thu hồi 25/10 bởi Quản đốc</div></div><div class="stack" style="align-items:flex-end;gap:6px"><span class="state revoked">Đã thu hồi</span></div></li>
+          </ul>
+          <div class="panel-body"><p class="muted" style="margin:0;font-size:var(--fs-xs)">Nếu grant đề nghị không còn được phép tại thời điểm chấp nhận, lời mời thất bại thay vì cấp một tập quyền bị thay đổi ngầm.</p></div>
+        </div>
+      </section>
+
+      <section class="panel reveal" aria-label="Quy trình mời">
+        <div class="panel-head"><h3>Quy trình mời</h3><span class="code" id="stepCode">BƯỚC 1 / 4</span></div>
+        <div class="track" aria-hidden="true"><i id="trackBar"></i></div>
+        <ol class="stepper" id="stepper">
+          <li><span class="num"><span>1</span></span><h4>Gửi lời mời</h4><p>Admin có grant members:manage chọn workspace hiện có và một tập grant được phép. Lời mời có hạn và chỉ dùng được một lần.</p><span class="guard">AUDIT · KHÔNG LỘ TOKEN TRONG LOG / REFERRER</span></li>
+          <li><span class="num"><span>2</span></span><h4>Xác minh danh tính</h4><p>Người nhận đăng nhập qua Access/OIDC. Hệ thống gắn issuer + subject đã xác minh, không dựa vào việc email trùng khớp.</p><span class="guard">EMAIL KHỚP ≠ CÙNG NGƯỜI</span></li>
+          <li><span class="num"><span>3</span></span><h4>Gán vai trò</h4><p>Trước khi chấp nhận, màn hình hiển thị workspace, người mời, quyền được đề nghị và hạn. Grant không còn hợp lệ thì dừng.</p><span class="guard">KHÔNG ĐỔI QUYỀN NGẦM</span></li>
+          <li><span class="num"><span>4</span></span><h4>Kích hoạt</h4><p>Chấp nhận tiêu thụ lời mời và tạo membership trong cùng một giao dịch. Thử lại không tạo membership trùng.</p><span class="guard">ATOMIC · IDEMPOTENT</span></li>
+        </ol>
+      </section>
+
+      <section class="grid g-2">
+        <div class="panel reveal">
+          <div class="panel-head"><h3>Xem trước theo vai trò</h3>
+            <div class="seg" role="group" aria-label="Xem như">
+              <button aria-pressed="false" data-as="owner">Quản đốc · Owner</button>
+              <button aria-pressed="true" data-as="member">Khánh · Member</button>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="code" style="margin-bottom:var(--sp-3)">ĐƯỜNG DẪN: 23-settings.html#security</div>
+            <div id="asOwner" hidden>
+              <ul class="sec-list" style="border:1px solid var(--line-soft)">
+                <li><span>Credential agent sắp hết hạn</span><span class="c-amber mono">1 · ATLAS-01</span></li>
+                <li><span>Runtime đã enroll</span><span class="mono">10 hoạt động</span></li>
+                <li><span>Chính sách egress callback</span><span class="mono">allowlist · 3 host</span></li>
+                <li><span>Phiên người</span><span class="mono">2 hoạt động</span></li>
+              </ul>
+              <div class="row" style="margin-top:var(--sp-3)"><a class="btn sm" href="19-security-gate.html">Mở Cổng an ninh</a></div>
+            </div>
+            <div id="asMember" class="denied" role="alert">
+              <svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true"><rect x="10" y="20" width="24" height="18" fill="none" style="stroke:var(--red)" stroke-width="1.5"/><path d="M15 20v-5a7 7 0 0 1 14 0v5" fill="none" style="stroke:var(--red)" stroke-width="1.5"/><path d="M22 27v4" style="stroke:var(--red)" stroke-width="2"/></svg>
+              <span class="code c-red">403 · PERMISSION DENIED</span>
+              <h4>Bạn không có quyền xem Cài đặt bảo mật</h4>
+              <p>Membership của Khánh tại ws-aurora không có grant <span class="mono">security:read</span>. Việc có membership ở workspace khác hay tên hiển thị trùng không mở được trang này.</p>
+              <div class="row wrap" style="justify-content:center"><button class="btn sm" id="reqAccess">Yêu cầu quyền từ Owner</button><a class="btn sm" href="01-factory-floor.html">Về sàn nhà máy</a></div>
+            </div>
+          </div>
+        </div>
+        <div class="panel reveal">
+          <div class="panel-head"><h3>Nhật ký thành viên</h3><span class="code">AUDIT · APPEND-ONLY</span></div>
+          <ul class="log" id="audit" aria-live="polite" aria-relevant="additions"></ul>
+        </div>
+      </section>
+
+    </main>
+    <div id="titleblock"></div>
+  </div>
+</div>
+
+<!-- Revoke modal -->
+<div class="scrim" id="rvScrim">
+  <div class="modal danger-m" role="dialog" aria-modal="true" aria-labelledby="rvT">
+    <div class="modal-h"><span class="code c-red">THU HỒI QUYỀN · ÁP DỤNG CHO LỆNH TIẾP THEO</span><h3 id="rvT">Thu hồi quyền của <span id="rvName">Hà</span>?</h3></div>
+    <div class="modal-b">
+      <ol>
+        <li>Phiên hiện tại bị thu hồi. Tab trình duyệt cũ còn mở cũng không giữ được quyền, nút đã hiển thị sẽ bị từ chối khi bấm.</li>
+        <li id="rvPending">Có <b style="color:var(--ink)">1 nghiệm thu đang chờ</b> của Hà: T-1040 (bản dịch tài liệu HTTP API, MUSE-04 nộp). Việc này cần một reviewer khác.</li>
+        <li>Lịch sử audit giữ nguyên danh tính người này. Không có quyết định nào được tạo thay hay đánh dấu Done.</li>
+      </ol>
+      <div class="field" id="rvReassign"><label for="rvTo">Chuyển việc chờ cho</label>
+        <select id="rvTo"><option value="">Chọn reviewer hợp lệ</option><option>Quản đốc · reviews:accept · khác người nộp</option><option disabled>SAGE-12 · agent không nghiệm thu được việc cần người</option></select>
+        <span class="err" id="rvErr"></span>
+      </div>
+    </div>
+    <div class="modal-f">
+      <button class="btn" data-close>Huỷ</button>
+      <button class="btn danger" id="rvDo">Thu hồi quyền</button>
+    </div>
+  </div>
+</div>
+
+<!-- Invite modal -->
+<div class="scrim" id="invScrim">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="invT">
+    <div class="modal-h"><span class="code">BƯỚC 1 / 4 · GỬI LỜI MỜI</span><h3 id="invT">Mời thành viên vào Nhà máy Aurora</h3></div>
+    <div class="modal-b">
+      <div class="field"><label>Workspace</label><input value="ws-aurora · Nhà máy Aurora" readonly style="color:var(--ink-2)"></div>
+      <div class="field"><label for="invEmail">Email người nhận (gợi ý mời)</label><input id="invEmail" type="email" placeholder="ten@congty.vn" autocomplete="off"><span class="err" id="invErr"></span></div>
+      <div class="two">
+        <div class="field"><label for="invRole">Tập quyền đề nghị</label>
+          <select id="invRole"><option value="r">Reviewer · reviews:accept, tasks:read</option><option value="m">Member · tasks:read, tasks:write</option><option value="d">Member · Decision · decisions:approve</option></select></div>
+        <div class="field"><label for="invExp">Hiệu lực</label><select id="invExp"><option>24 giờ</option><option selected>72 giờ</option><option>7 ngày</option></select></div>
+      </div>
+      <p class="muted" style="margin:0;font-size:var(--fs-xs)">Người nhận phải đăng nhập qua Access/OIDC. Email trùng khớp không đủ để gộp danh tính hay cấp quyền.</p>
+    </div>
+    <div class="modal-f"><button class="btn" data-close>Huỷ</button><button class="btn primary" id="invDo">Gửi lời mời</button></div>
+  </div>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(() => {
+  const F = BP.F;
+  const el = (t, a, p) => BP.svg(t, a, p);
+
+  /* ---------- org chart ---------- */
+  const gL = BP.$("#gLinks"), gN = BP.$("#gNodes"), org = BP.$("#org");
+  const leadOf = { kt: "hu-qd", vh: "hu-qd", nd: "hu-ha", qc: "hu-ha", nc: "hu-kn", dl: "hu-kn" };
+  const deptOrder = ["kt", "vh", "nd", "qc", "nc", "dl"];
+  const H = {}; const Dp = {}; const Ag = {};
+  [["NGƯỜI", 70], ["PHÒNG BAN", 360], ["AGENT", 680]].forEach(([t, x]) => { const s = el("text", { x, y: 24, class: "colhd", "text-anchor": "middle" }, gN); s.textContent = t; });
+  el("path", { d: "M20 34 H840", class: "dimline" }, gN);
+  F.humans.forEach((h, i) => { H[h.id] = { x: 70, y: 100 + i * 140, h }; });
+  deptOrder.forEach((id, i) => { Dp[id] = { x: 360, y: 64 + i * 68, d: BP.dept(id) }; });
+  let ai = 0; deptOrder.forEach(id => BP.dept(id).agents.forEach(a => { Ag[a] = { x: 680, y: 56 + ai * 35.5, a: BP.agent(a), dept: id }; ai++; }));
+  const curve = (x1, y1, x2, y2) => `M${x1} ${y1} C${(x1 + x2) / 2} ${y1} ${(x1 + x2) / 2} ${y2} ${x2} ${y2}`;
+  deptOrder.forEach(id => {
+    const h = H[leadOf[id]], d = Dp[id];
+    el("path", { d: curve(h.x + 22, h.y, d.x - 90, d.y), class: "link lead", "data-h": leadOf[id], "data-d": id }, gL);
+    BP.dept(id).agents.forEach(a => { const g = Ag[a]; el("path", { d: curve(d.x + 90, d.y, g.x - 16, g.y), class: "link member", "data-h": leadOf[id], "data-d": id }, gL); });
+  });
+  F.humans.forEach(h => {
+    const p = H[h.id];
+    const g = el("g", { class: "node-h hit nd", tabindex: 0, role: "button", "aria-label": `${h.name}, làm nổi các phòng ban phụ trách`, "data-h": h.id, transform: `translate(${p.x} ${p.y})` }, gN);
+    el("circle", { r: 22 }, g);
+    const t = el("text", { style: "fill:var(--amber)" }, g); t.textContent = h.code;
+    const n = el("text", { y: 38, class: "lbl", style: "font-size:12px;text-anchor:middle" }, g); n.textContent = h.name;
+    const r = el("text", { y: 52, class: "sub", style: "text-anchor:middle" }, g); r.textContent = h.role.toUpperCase();
+  });
+  deptOrder.forEach(id => {
+    const p = Dp[id], d = p.d;
+    const g = el("a", { href: "03-department-detail.html", class: "node-d hit nd", "data-h": leadOf[id], "data-d": id, "aria-label": `${d.name}, mở chi tiết` }, gN);
+    el("rect", { x: p.x - 90, y: p.y - 22, width: 180, height: 44 }, g);
+    el("rect", { x: p.x - 90, y: p.y - 22, width: 4, height: 44, fill: `var(${d.color})` }, g);
+    const t = el("text", { x: p.x - 78, y: p.y - 4, class: "lbl", style: "font-size:12px" }, g); t.textContent = d.name.toUpperCase();
+    const s = el("text", { x: p.x - 78, y: p.y + 12, class: "sub" }, g); s.textContent = `${d.code} · ${d.agents.length} AGENT`;
+  });
+  const actColor = { doing: "var(--s-doing)", idle: "var(--ink-3)", waiting: "var(--amber)", cooldown: "var(--s-ready)", meeting: "var(--s-review)" };
+  Object.values(Ag).forEach(p => {
+    const a = p.a; const c = a.presence === "offline" ? "var(--s-cancelled)" : a.presence === "stale" ? "var(--red)" : actColor[a.activity];
+    const g = el("a", { href: "08-agent-profile.html", class: "node-a hit nd", "data-h": leadOf[p.dept], "data-d": p.dept, transform: `translate(${p.x} ${p.y})`, "aria-label": `${a.name}` }, gN);
+    el("polygon", { points: "-8,-13 8,-13 16,0 8,13 -8,13 -16,0", fill: "var(--bp-950)", stroke: c, "stroke-width": 1.4, "stroke-dasharray": a.presence === "stale" ? "3 2" : "" }, g);
+    const t = el("text", { style: `fill:${c};font-size:9px` }, g); t.textContent = a.code;
+    const n = el("text", { x: 24, y: 1, class: "sub", style: "text-anchor:start;dominant-baseline:central;font-size:10px;fill:var(--ink-2)" }, g); n.textContent = a.name;
+  });
+  function focus(hid) {
+    if (!hid) { org.classList.remove("focusing"); BP.$$(".on", org).forEach(e => e.classList.remove("on")); return; }
+    org.classList.add("focusing");
+    BP.$$("[data-h]", org).forEach(e => e.classList.toggle("on", e.dataset.h === hid));
+  }
+  let focused = null;
+  BP.$$(".node-h", org).forEach(n => {
+    const go = () => { focused = focused === n.dataset.h ? null : n.dataset.h; focus(focused); };
+    n.addEventListener("click", go);
+    n.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
+  });
+
+  /* ---------- stepper motion ---------- */
+  const steps = BP.$$("#stepper li"); let si = 0;
+  const paintStep = () => {
+    steps.forEach((s, i) => { s.classList.toggle("active", i === si); s.classList.toggle("done", i < si); });
+    BP.$("#trackBar").style.width = ((si + 1) / steps.length * 100) + "%";
+    BP.$("#stepCode").textContent = `BƯỚC ${si + 1} / 4 · MINH HOẠ`;
+  };
+  paintStep();
+  if (!BP.reduced) BP.every(2600, () => { si = (si + 1) % steps.length; paintStep(); }); else { si = 3; paintStep(); }
+
+  /* ---------- role preview ---------- */
+  BP.$$(".seg [data-as]").forEach(b => b.addEventListener("click", () => {
+    BP.$$(".seg [data-as]").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    BP.$("#asOwner").hidden = b.dataset.as !== "owner"; BP.$("#asMember").hidden = b.dataset.as !== "member";
+  }));
+  BP.$("#reqAccess").addEventListener("click", () => BP.toast("MOCK · ACCESS REQUEST", "Đã gửi yêu cầu tới Quản đốc. Quyền chỉ có hiệu lực khi Owner cấp grant, không tự động."));
+
+  /* ---------- audit feed ---------- */
+  const audit = BP.$("#audit");
+  const push = (g, c, h, t) => BP.logPush(audit, `<time>${t || BP.now()}</time><span class="g" style="color:${c}">${g}</span><span>${h}</span>`, 10);
+  [["⊘", "var(--ink-3)", "<b>Quản đốc</b> thu hồi lời mời qa.contract@aurora.vn", "25/10"], ["◌", "var(--red)", "Lời mời ops@vendor-x.io hết hạn · không tạo membership", "27/10"], ["✓", "var(--s-done)", "<b>Hà</b> chấp nhận lời mời · gắn issuer + subject …0c3e", "28/10"], ["◇", "var(--s-ready)", "<b>Quản đốc</b> mời linh.tran@aurora.vn · Reviewer · hạn 72 giờ", "28/10"], ["●", "var(--s-doing)", "<b>Hà</b> mở phiên mới từ trình duyệt đã xác minh", "08:40"]].forEach(r => push(...r));
+
+  /* ---------- modals ---------- */
+  function wire(scrimId) {
+    const s = BP.$(scrimId); let opener;
+    const open = () => { opener = document.activeElement; s.classList.add("open"); const f = s.querySelector("input:not([readonly]), select, button"); f && f.focus(); };
+    const close = () => { s.classList.remove("open"); opener && opener.focus(); };
+    s.addEventListener("click", e => { if (e.target === s || e.target.hasAttribute("data-close")) close(); });
+    document.addEventListener("keydown", e => { if (e.key === "Escape" && s.classList.contains("open")) close(); });
+    return { open, close };
+  }
+  const rv = wire("#rvScrim"), inv = wire("#invScrim");
+  let rvWho = "Hà";
+  BP.$$("[data-revoke]").forEach(b => b.addEventListener("click", () => {
+    rvWho = b.dataset.revoke; BP.$("#rvName").textContent = rvWho;
+    const hasPending = rvWho === "Hà";
+    BP.$("#rvPending").innerHTML = hasPending ? 'Có <b style="color:var(--ink)">1 nghiệm thu đang chờ</b> của Hà: T-1040 (bản dịch tài liệu HTTP API, MUSE-04 nộp). Việc này cần một reviewer khác.'
+      : 'Khánh có quyền quyết định cho <b style="color:var(--ink)">2 đề xuất đang chờ</b> (T-1039, T-1053). Quản đốc vẫn là người quyết định hợp lệ nên không đề xuất nào bị bỏ trống.';
+    BP.$("#rvReassign").hidden = !hasPending; BP.$("#rvErr").textContent = "";
+    rv.open();
+  }));
+  BP.$("#rvDo").addEventListener("click", () => {
+    if (rvWho === "Hà" && !BP.$("#rvTo").value) { BP.$("#rvErr").textContent = "Chọn reviewer cho T-1040 trước khi thu hồi"; BP.$("#rvTo").focus(); return; }
+    rv.close();
+    push("⊘", "var(--red)", `<b>Quản đốc</b> thu hồi membership của ${rvWho} (mô phỏng) · phiên bị huỷ ở lệnh kế tiếp`);
+    BP.toast("MOCK · MEMBERSHIP REVOKED", `Bản mockup: không có lệnh thật. ${rvWho === "Hà" ? "T-1040 được chuyển cho Quản đốc, lịch sử đề xuất giữ nguyên." : ""}`);
+  });
+  BP.$("#btnInvite").addEventListener("click", inv.open);
+  BP.$("#invDo").addEventListener("click", () => {
+    const v = BP.$("#invEmail").value.trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) { BP.$("#invErr").textContent = "Email chưa hợp lệ"; BP.$("#invEmail").setAttribute("aria-invalid", "true"); BP.$("#invEmail").focus(); return; }
+    BP.$("#invErr").textContent = ""; inv.close();
+    push("◇", "var(--s-ready)", `<b>Quản đốc</b> mời ${v} · ${BP.$("#invRole").selectedOptions[0].text.split(" · ")[0]} · hạn ${BP.$("#invExp").value}`);
+    BP.toast("MOCK · INVITATION", "Lời mời mô phỏng đã tạo. Người nhận vẫn phải xác minh danh tính qua OIDC.");
+  });
+  const q = new URLSearchParams(location.search);
+  if (q.get("revoke")) BP.$("[data-revoke]").click();
+  if (q.get("invite")) inv.open();
+})();
+</script>
+</body>
+</html>

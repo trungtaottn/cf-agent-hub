@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phiếu công việc T-1042 · CF Agent Factory</title>
+<link rel="stylesheet" href="assets/blueprint.css">
+<style>
+  .wo { border: 1px solid var(--line); background: var(--bp-800); position: relative; }
+  .wo-grid { display: grid; grid-template-columns: minmax(0,1.1fr) minmax(0,2.6fr) repeat(5, minmax(0,1fr)); }
+  .wo-grid > div { padding: var(--sp-3) var(--sp-4); border-left: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); min-width: 0; }
+  .wo-grid > div:first-child { border-left: 0; }
+  .wo-grid span.k { display: block; font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; overflow-wrap: anywhere; }
+  .wo-grid b { font-weight: 500; }
+  .wo-id { font-family: var(--f-mono); font-size: var(--fs-xl); color: var(--ink); }
+  .wo-title { font-family: var(--f-display); font-size: var(--fs-lg); font-weight: 600; line-height: 1.25; }
+  .wo-stamp { position: absolute; right: var(--sp-4); top: -11px; background: var(--bp-850); padding: 0 var(--sp-2); }
+
+  .next { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); border-top: 0; }
+  .next > div { padding: var(--sp-4); }
+  .next > div + div { border-left: 1px dashed var(--line-soft); }
+  .act { display: grid; grid-template-columns: 22px 1fr auto; gap: var(--sp-3); align-items: center; padding: var(--sp-2) 0; border-bottom: 1px solid var(--grid-major); font-size: var(--fs-sm); }
+  .act:last-child { border-bottom: 0; }
+  .act .g { font-family: var(--f-mono); color: var(--s-doing); text-align: center; }
+  .act.no .g { color: var(--red); }
+  .act.no { color: var(--ink-3); }
+  .act small { display: block; font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); }
+
+  .own { display: grid; grid-template-columns: auto 1fr; gap: var(--sp-4); align-items: start; }
+  .kv { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; border: 1px solid var(--line-soft); }
+  .kv > div { padding: var(--sp-2) var(--sp-3); border-left: 1px solid var(--line-soft); border-top: 1px solid var(--line-soft); min-width: 0; }
+  .kv > div:nth-child(3n+1) { border-left: 0; }
+  .kv > div:nth-child(-n+3) { border-top: 0; }
+  .kv span { display: block; font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); letter-spacing: 0.1em; text-transform: uppercase; }
+  .kv b { font-family: var(--f-mono); font-weight: 500; font-size: var(--fs-sm); overflow-wrap: anywhere; }
+  .leasebox { margin-top: var(--sp-4); }
+  .lease-read { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; margin-bottom: var(--sp-2); }
+  .lease-read .big { font-family: var(--f-mono); font-size: var(--fs-2xl); font-variant-numeric: tabular-nums; color: var(--s-doing); }
+  .lease-read .big.warn { color: var(--amber); } .lease-read .big.crit { color: var(--red); }
+  .meter.tall { height: 12px; }
+  .hb-flash { animation: hb 900ms var(--ease); }
+  @keyframes hb { from { background: var(--t-doing); } to { background: transparent; } }
+
+  .sm-wrap { overflow-x: auto; }
+  .smach svg { min-width: 640px; }
+  .smach .node rect { fill: var(--bp-850); stroke: var(--line); stroke-width: 1; }
+  .smach .node text { font-family: var(--f-mono); font-size: 11px; text-anchor: middle; dominant-baseline: central; letter-spacing: 0.06em; }
+  .smach .edge { fill: none; stroke: var(--line-soft); stroke-width: 1.25; }
+  .smach .walk { fill: none; stroke: var(--s-doing); stroke-width: 2.25; }
+  .smach .elbl { font-family: var(--f-mono); font-size: 9.5px; fill: var(--ink-3); }
+  .smach .elbl.on { fill: var(--s-doing); }
+
+  .art li, .thread li { list-style: none; }
+  .art ul, .thread ul { margin: 0; padding: 0; }
+  .art li { display: grid; grid-template-columns: 1fr auto; gap: var(--sp-1) var(--sp-3); padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--grid-major); }
+  .art .fn { font-family: var(--f-mono); font-size: var(--fs-sm); overflow-wrap: anywhere; }
+  .art .d { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); grid-column: 1 / -1; overflow-wrap: anywhere; }
+  .astate { font-family: var(--f-mono); font-size: var(--fs-2xs); padding: 2px 6px; border: 1px solid currentColor; text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; }
+  .astate.staged { color: var(--ink-3); border-style: dashed; }
+  .astate.uploaded { color: var(--s-ready); }
+  .astate.committed { color: var(--s-done); }
+  .thread li { display: grid; grid-template-columns: auto 1fr; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--grid-major); }
+  .thread .bot, .thread .human-token { width: 30px; height: 30px; font-size: 9px; }
+  .thread .who { font-size: var(--fs-xs); color: var(--ink-3); font-family: var(--f-mono); }
+  .thread p { margin: 2px 0 4px; font-size: var(--fs-sm); }
+  .elog { max-height: 420px; overflow-y: auto; }
+  .elog .log li { grid-template-columns: 54px 74px 18px 1fr; }
+  .elog .seq { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); padding-top: 3px; }
+  .lock { display: inline-flex; align-items: center; gap: 6px; }
+  .meta-k { display: grid; grid-template-columns: 110px 1fr auto; gap: var(--sp-2); align-items: center; padding: var(--sp-2) 0; border-bottom: 1px solid var(--grid-major); font-size: var(--fs-sm); }
+  .meta-k .k { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); letter-spacing: 0.08em; text-transform: uppercase; }
+  .slots { display: flex; gap: var(--sp-2); }
+  .slots i { width: 44px; height: 18px; border: 1px solid var(--line); display: block; }
+  .slots i.used { background: var(--red); border-color: var(--red); }
+  .warnbox { border: 1px dashed var(--red); background: var(--t-failed); padding: var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-2); }
+  .warnbox p { margin: 0; font-size: var(--fs-sm); }
+  .desc p { margin: 0 0 var(--sp-2); font-size: var(--fs-sm); color: var(--ink-2); }
+  .desc ul { margin: 0; padding-left: 18px; font-size: var(--fs-sm); color: var(--ink-2); }
+
+  @media (max-width: 1280px) { .wo-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } .wo-grid > div:nth-child(2) { grid-column: span 3; } .wo-grid > div:nth-child(4n+1) { border-left: 0; } }
+  @media (max-width: 960px) { .next { grid-template-columns: 1fr; } .next > div + div { border-left: 0; border-top: 1px dashed var(--line-soft); } }
+  @media (max-width: 560px) {
+    .wo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .wo-grid > div:nth-child(2) { grid-column: 1 / -1; } .wo-grid > div { border-left: 0; }
+    .kv { grid-template-columns: 1fr 1fr; } .kv > div { border-left: 0 !important; border-top: 1px solid var(--line-soft) !important; }
+    .own { grid-template-columns: 1fr; }
+    .elog .log li { grid-template-columns: 64px 1fr; } .elog .log li .seq, .elog .log li .g { display: none; }
+  }
+</style>
+</head>
+<body data-sheet="05" data-title="Phiếu công việc T-1042">
+<div class="app paper">
+  <div id="rail"></div>
+  <div class="main">
+    <header id="topbar"></header>
+    <main class="content">
+
+      <section class="page-head reveal">
+        <div>
+          <div class="code">WORK ORDER · T-1042 · KT-01 XƯỞNG KỸ THUẬT</div>
+          <h2>Phiếu công việc T-1042</h2>
+          <p class="lede">Một tờ phiếu gom ý định, quyền sở hữu hiện tại, vòng đời, các lần chạy, bằng chứng và trao đổi. Mỗi khối ghi rõ nguồn và thời điểm. ACK tin nhắn không bao giờ là dấu hoàn tất.</p>
+        </div>
+        <div class="actions">
+          <a class="btn" href="04-mission-line.html">Về dây chuyền</a>
+          <a class="btn primary" href="17-mailroom.html">Nhắn ATLAS-01 trong thread</a>
+        </div>
+      </section>
+
+      <section class="wo reveal" aria-label="Đầu phiếu">
+        <span class="wo-stamp code">FORM WO-01 · SIM DATA</span>
+        <div class="wo-grid">
+          <div><span class="k">Mã phiếu</span><span class="wo-id">T-1042</span></div>
+          <div><span class="k">Tiêu đề</span><span class="wo-title">Tách module xác thực thành service riêng</span></div>
+          <div><span class="k">Trạng thái</span><span class="state doing">Doing</span></div>
+          <div><span class="k">Phòng ban</span><b>KT-01</b><div class="muted" style="font-size:var(--fs-xs)">Work role: Backend (gợi ý)</div></div>
+          <div><span class="k">Ưu tiên</span><span class="tag amber">P1</span></div>
+          <div><span class="k">task_version</span><b class="mono">v14</b><div class="muted" style="font-size:var(--fs-xs)">Heartbeat không đổi</div></div>
+          <div><span class="k">proposal_version</span><b class="mono">v1</b><div class="muted" style="font-size:var(--fs-xs)">Đã duyệt 11:28</div></div>
+        </div>
+        <div class="next">
+          <div>
+            <div class="row between" style="margin-bottom:var(--sp-2)"><span class="code c-doing">HÀNH ĐỘNG KẾ TIẾP HỢP LỆ · CHỦ RUN (ATLAS-01 @ RT-ATLAS-7F2)</span></div>
+            <div class="act"><span class="g">▶</span><span>Heartbeat gia hạn lease<small>POST /runs/r-88f1:heartbeat · trước khi lease hết</small></span><span class="tag">fence 18</span></div>
+            <div class="act"><span class="g">◎</span><span>Nộp kết quả → Review<small>chỉ tham chiếu artifact committed · fence 18 hiện hành</small></span><span class="tag">submit</span></div>
+            <div class="act"><span class="g">❚❚</span><span>Xin quyết định → Waiting<small>checkpoint + proposal v2 · run kết thúc paused</small></span><span class="tag">request decision</span></div>
+          </div>
+          <div>
+            <div class="row between" style="margin-bottom:var(--sp-2)"><span class="code c-amber">BẠN (QUẢN ĐỐC) CÓ THỂ</span></div>
+            <div class="act"><span class="g">◇</span><span>Theo dõi thực thi, nhắn trong thread<small>đọc · messages:send</small></span><a class="btn sm" href="17-mailroom.html">Mở thread</a></div>
+            <div class="act"><span class="g" style="color:var(--red)">⊘</span><span>Huỷ phiếu<small>tasks:cancel · vô hiệu run đang chạy</small></span><button class="btn sm danger" type="button" id="btnCancel">Huỷ</button></div>
+            <div class="act no"><span class="g">✕</span><span>Sửa metadata, kéo sang Done<small>khoá khi Doing · Done cần nghiệm thu độc lập</small></span><span></span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid g-main-side">
+        <div class="stack" style="gap:var(--sp-4)">
+
+          <div class="panel reveal">
+            <div class="panel-head"><h3>Quyền sở hữu hiện tại</h3><span class="code">NGUỒN: RUN r-88f1 · SERVER TIME</span></div>
+            <div class="panel-body">
+              <div class="own">
+                <div class="stack" style="align-items:center;gap:var(--sp-2)">
+                  <span class="bot lg" style="--c:var(--s-doing)" aria-hidden="true">AT</span>
+                  <a class="code" href="08-agent-profile.html">ATLAS-01</a>
+                  <span class="state online">Online</span>
+                </div>
+                <div>
+                  <div class="kv">
+                    <div><span>Agent</span><b>ATLAS-01</b></div>
+                    <div><span>Runtime</span><b>rt-atlas-7f2</b></div>
+                    <div><span>Run</span><b>r-88f1 · active</b></div>
+                    <div><span>Fence</span><b>18</b></div>
+                    <div><span>run_version</span><b id="runVer">41</b></div>
+                    <div><span>Heartbeat cuối</span><b id="hbAgo">2s trước</b></div>
+                  </div>
+                  <div class="leasebox" id="leaseBox">
+                    <div class="lease-read">
+                      <span class="code">LEASE CÒN LẠI · MẶC ĐỊNH 60s</span>
+                      <span class="big" id="leaseBig">00:48.0</span>
+                    </div>
+                    <div class="meter tall ticks" id="leaseMeter" role="meter" aria-label="Lease còn lại" aria-valuemin="0" aria-valuemax="60" aria-valuenow="48"><i style="width:80%"></i></div>
+                    <div class="row between" style="margin-top:var(--sp-2)"><span class="code">HẠN: <span id="leaseDue">--:--:--</span></span><span class="code">HEARTBEAT KHUYẾN NGHỊ 20s</span></div>
+                  </div>
+                </div>
+              </div>
+              <p class="muted" style="margin:var(--sp-4) 0 0;font-size:var(--fs-xs)">Quyền thực thi = run hiện tại + binding agent/runtime + lease chưa hết theo đồng hồ máy chủ + fence khớp. Biết run ID hay fence không đủ để chứng minh quyền.</p>
+            </div>
+          </div>
+
+          <div class="panel reveal">
+            <div class="panel-head"><h3>Vòng đời</h3><span class="code">STATE MACHINE · ĐƯỜNG ĐÃ ĐI</span></div>
+            <div class="panel-body sm-wrap smach">
+              <svg id="sm" class="dwg" viewBox="0 0 760 330" role="img" aria-labelledby="smT">
+                <title id="smT">Sơ đồ trạng thái: Backlog, Ready, Doing, Waiting, Review, Done, Cancelled. T-1042 đã đi Backlog, Ready, Doing, Waiting, Ready, Doing, Review, Ready và hiện ở Doing.</title>
+                <defs>
+                  <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" style="fill:var(--line)"/></marker>
+                  <marker id="arOn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" style="fill:var(--s-doing)"/></marker>
+                </defs>
+                <g id="gEdges"></g><g id="gWalk"></g><g id="gNodes"></g>
+              </svg>
+            </div>
+            <div class="panel-body" style="border-top:1px solid var(--line-soft)">
+              <ol class="mono muted" style="margin:0;padding-left:18px;font-size:var(--fs-xs);columns:2;column-gap:var(--sp-6)">
+                <li>Backlog → Ready · schedule (Quản đốc)</li><li>Ready → Doing · claim fence 16</li><li>Doing → Waiting · proposal v1</li><li>Waiting → Ready · Khánh duyệt</li>
+                <li>Ready → Doing · claim fence 17</li><li>Doing → Review · submit</li><li>Review → Ready · SAGE-12 requeue</li><li>Ready → Doing · claim fence 18 (hiện tại)</li>
+              </ol>
+            </div>
+          </div>
+
+          <div class="panel reveal">
+            <div class="panel-head"><h3>Lịch sử lần chạy</h3><span class="code">3 RUNS · MỖI RUN MỘT FENCE</span></div>
+            <div style="overflow-x:auto">
+              <table class="table" style="min-width:620px">
+                <thead><tr><th>Run</th><th>Agent · runtime</th><th>Fence</th><th>Trạng thái</th><th>Bắt đầu</th><th>Thời lượng</th><th>Kết thúc vì</th></tr></thead>
+                <tbody>
+                  <tr><td class="mono">r-88f1</td><td>ATLAS-01 · <span class="mono">rt-atlas-7f2</span></td><td class="mono">18</td><td><span class="state doing">active</span></td><td class="mono">12:36</td><td class="mono" id="durNow">24m</td><td class="muted">Đang chạy</td></tr>
+                  <tr><td class="mono">r-4b9c</td><td>ATLAS-01 · <span class="mono">rt-atlas-5c1</span></td><td class="mono">17</td><td><span class="state review">submitted</span></td><td class="mono">11:30</td><td class="mono">50m</td><td>Nộp kết quả, sau đó bị requeue</td></tr>
+                  <tr><td class="mono">r-2a07</td><td>ATLAS-01 · <span class="mono">rt-atlas-5c1</span></td><td class="mono">16</td><td><span class="state waiting">paused</span></td><td class="mono">10:47</td><td class="mono">18m</td><td>Xin quyết định proposal v1</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="panel-body" style="border-top:1px solid var(--line-soft)">
+              <div class="legend"><span class="c-doing">active: đang giữ lease</span><span class="c-amber">paused: dừng chờ người, không chạy tiếp tại chỗ</span><span class="c-review">submitted: đã nộp</span><span class="c-red">expired: mất lease, chưa xảy ra với phiếu này</span></div>
+            </div>
+          </div>
+
+          <div class="grid g-2">
+            <div class="panel reveal">
+              <div class="panel-head"><h3>Checkpoint mới nhất</h3><span class="code">cp-0193 · 12:41</span></div>
+              <div class="panel-body stack">
+                <p style="margin:0;font-size:var(--fs-sm)">Đã tách interface <span class="mono">AuthProvider</span>, chuyển 3 route sang service mới. 14/22 test xanh, còn lại chờ fixture refresh token.</p>
+                <div class="row wrap"><span class="tag">run r-88f1</span><span class="tag">fence 18</span><span class="tag">checkpoint.json · sha256:4be1…09c2</span></div>
+                <p class="muted" style="margin:0;font-size:var(--fs-xs)">Checkpoint giúp người hoặc run sau đọc lại tiến độ. Nó không phải kết quả đã nộp.</p>
+              </div>
+            </div>
+            <div class="panel art reveal">
+              <div class="panel-head"><h3>Artifact đính kèm</h3><span class="code">R2 · KHO</span></div>
+              <ul>
+                <li><span class="fn">auth-service.patch</span><span class="astate committed">committed</span><span class="d">48.2 KB · sha256:9f2c…41ab · 12:52</span></li>
+                <li><span class="fn">test-report.xml</span><span class="astate uploaded">uploaded</span><span class="d">12.9 KB · đã tải lên, chưa commit nên chưa dùng để nộp được</span></li>
+                <li><span class="fn">notes-migration.md</span><span class="astate staged">staged</span><span class="d">upload intent hết hạn 13:40 · Not reported size</span></li>
+              </ul>
+              <div class="panel-body"><a class="btn sm" href="18-warehouse.html">Mở kho artifact</a></div>
+            </div>
+          </div>
+
+          <div class="grid g-2">
+            <div class="panel thread reveal">
+              <div class="panel-head"><h3>Trao đổi liên quan</h3><span class="code">THREAD #T-1042</span></div>
+              <ul>
+                <li><span class="bot" style="--c:var(--s-review)" aria-hidden="true">SG</span><div><div class="who">SAGE-12 · 12:35 · lý do requeue</div><p>Thiếu test cho luồng refresh token. Kết quả fence 17 giữ lại làm lịch sử, không phải kết quả hiện hành.</p><span class="tag">ACK bởi ATLAS-01 · 12:36</span></div></li>
+                <li><span class="bot" style="--c:var(--s-doing)" aria-hidden="true">AT</span><div><div class="who">ATLAS-01 · 12:37</div><p>Đã nhận. Claim lại với fence 18, bổ sung fixture refresh token trước khi nộp.</p></div></li>
+                <li><span class="human-token" aria-hidden="true">QĐ</span><div><div class="who">Quản đốc · 12:44</div><p>Giữ tương thích endpoint cũ <span class="mono">/v1/session</span> tới hết R2.</p><span class="tag">Chưa ACK</span></div></li>
+              </ul>
+              <div class="panel-body"><p class="muted" style="margin:0;font-size:var(--fs-xs)">ACK là xác nhận giao nhận tin, không phải dấu việc đã xong.</p></div>
+            </div>
+            <div class="panel reveal">
+              <div class="panel-head"><h3>Event log</h3><span class="code">APPEND-ONLY · MỚI NHẤT TRÊN</span></div>
+              <div class="elog"><ul class="log" id="elog" aria-live="polite" aria-relevant="additions"></ul></div>
+            </div>
+          </div>
+        </div>
+
+        <aside class="stack" style="gap:var(--sp-4)">
+          <div class="panel reveal">
+            <div class="panel-head"><h3>Cảnh báo lease thấp</h3><span class="code c-red">MINH HOẠ · &lt; 20%</span></div>
+            <div class="panel-body">
+              <div class="warnbox" role="note">
+                <div class="row between"><span class="state stale">Lease 18%</span><span class="mono c-red">00:11</span></div>
+                <div class="meter crit ticks"><i style="width:18%"></i></div>
+                <p>Run r-88f1 chưa heartbeat 49 giây. Nếu lease hết, run chuyển <b>expired</b>; không có policy replay-safe nên phiếu về Backlog kèm cờ <span class="mono">outcome_unknown</span>, cần đối soát trước khi làm tiếp.</p>
+                <p class="muted" style="font-size:var(--fs-xs)">Runtime đã mất lease chỉ còn đọc, đối soát và báo cáo. Lệnh submit với fence cũ sẽ bị từ chối <span class="mono">STALE_RUN</span>.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel reveal">
+            <div class="panel-head"><h3>Retry budget</h3><span class="code">retry_count / retry_limit</span></div>
+            <div class="panel-body stack">
+              <div class="row between"><span class="slots" aria-label="0 trên 2 lượt retry đã dùng"><i></i><i></i></span><span class="mono" style="font-size:var(--fs-xl)">0 / 2</span></div>
+              <p class="muted" style="margin:0;font-size:var(--fs-xs)">Run paused (chờ quyết định) và requeue sau nghiệm thu không tiêu lượt retry. Chỉ lần chạy thất bại hoặc hết lease được phân loại an toàn mới tiêu lượt.</p>
+            </div>
+          </div>
+
+          <div class="panel desc reveal">
+            <div class="panel-head"><h3>Mô tả nhiệm vụ</h3><span class="code">TẠO BỞI QUẢN ĐỐC · 10:32</span></div>
+            <div class="panel-body">
+              <p>Tách toàn bộ logic xác thực (session, refresh token, kiểm tra quyền) khỏi Worker chính thành service riêng, giữ hợp đồng HTTP hiện tại.</p>
+              <ul><li>Không đổi định dạng cookie <span class="mono">cfhub_session</span></li><li>Có test hồi quy cho refresh token</li><li>Nộp patch + báo cáo test dạng artifact committed</li></ul>
+            </div>
+          </div>
+
+          <div class="panel reveal">
+            <div class="panel-head"><h3>Metadata</h3><span class="code lock"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5" width="8" height="6" style="fill:none;stroke:var(--amber)"/><path d="M4 5V3.5a2 2 0 0 1 4 0V5" style="fill:none;stroke:var(--amber)"/></svg><span class="c-amber">KHOÁ KHI DOING</span></span></div>
+            <div class="panel-body">
+              <div class="meta-k"><span class="k">Tiêu đề</span><span>Tách module xác thực…</span><button class="btn sm" disabled aria-disabled="true">Sửa</button></div>
+              <div class="meta-k"><span class="k">Phòng ban</span><span>KT-01</span><button class="btn sm" disabled aria-disabled="true">Sửa</button></div>
+              <div class="meta-k"><span class="k">Work role</span><span>Backend (gợi ý)</span><button class="btn sm" disabled aria-disabled="true">Sửa</button></div>
+              <div class="meta-k"><span class="k">Giao cho</span><span>ATLAS-01</span><button class="btn sm" disabled aria-disabled="true">Sửa</button></div>
+              <p class="note-red" style="margin:var(--sp-3) 0 0">Metadata chỉ sửa được ở Backlog hoặc Ready. Đổi tiêu đề, mô tả hay phòng ban lúc đang Doing có thể đổi ý định mà run đang thực hiện. Nếu ý định phải đổi: huỷ và tạo phiếu sửa đổi.</p>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+    </main>
+    <div id="titleblock"></div>
+  </div>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(() => {
+  const el = (t, a, p) => BP.svg(t, a, p);
+  /* ---------- State machine ---------- */
+  const N = {
+    backlog: [90, 150], ready: [240, 150], doing: [390, 150], waiting: [545, 245], review: [545, 60], done: [695, 60], cancelled: [695, 245]
+  };
+  const E = [
+    ["br", "M140 150 H190", "schedule", 165, 136],
+    ["rd", "M290 150 H340", "claim", 315, 136],
+    ["dw", "M440 160 C470 160 470 245 495 245", "request decision", 470, 205],
+    ["dv", "M440 140 C470 140 470 60 495 60", "submit", 474, 96],
+    ["vd", "M595 60 H645", "accept", 620, 52],
+    ["wr", "M500 262 C430 300 250 300 240 170", "approve", 330, 296],
+    ["wb", "M545 265 C545 325 90 325 90 170", "reject", 160, 318],
+    ["vr", "M545 40 C545 8 240 8 240 130", "requeue", 330, 20],
+    ["dr", "M372 130 C362 104 268 104 258 130", "retry", 315, 102],
+    ["db", "M380 170 C370 210 110 210 100 170", "exhausted", 190, 214],
+    ["dc", "M595 245 H645", "cancel*", 620, 237]
+  ];
+  const gE = BP.$("#gEdges"), gW = BP.$("#gWalk"), gN = BP.$("#gNodes");
+  const paths = {};
+  E.forEach(([id, d, lbl, lx, ly]) => {
+    paths[id] = el("path", { d, class: "edge", "marker-end": "url(#ar)", "stroke-dasharray": id === "dc" ? "4 3" : "" }, gE);
+    const t = el("text", { x: lx, y: ly, class: "elbl", "text-anchor": "middle", id: "l-" + id }, gE); t.textContent = lbl;
+  });
+  const col = { backlog: "var(--s-backlog)", ready: "var(--s-ready)", doing: "var(--s-doing)", waiting: "var(--s-waiting)", review: "var(--s-review)", done: "var(--s-done)", cancelled: "var(--s-cancelled)" };
+  const vi = { backlog: "BACKLOG", ready: "READY", doing: "DOING", waiting: "WAITING", review: "REVIEW", done: "DONE", cancelled: "CANCELLED" };
+  Object.entries(N).forEach(([k, [x, y]]) => {
+    const g = el("g", { class: "node" }, gN);
+    if (k === "doing") { el("rect", { x: x - 58, y: y - 28, width: 116, height: 56, fill: "none", stroke: "var(--s-doing)", class: "pulse", "stroke-width": 1 }, g); }
+    el("rect", { x: x - 50, y: y - 20, width: 100, height: 40, stroke: col[k], "stroke-width": k === "doing" ? 2 : 1, "stroke-dasharray": k === "cancelled" ? "4 3" : "", fill: k === "doing" ? "var(--t-doing)" : "var(--bp-850)" }, g);
+    const t = el("text", { x, y, fill: col[k], style: `fill:${col[k]}` }, g); t.textContent = vi[k];
+  });
+  const sub = el("text", { x: 390, y: 186, class: "sub", "text-anchor": "middle" }, gN); sub.textContent = "HIỆN TẠI · FENCE 18";
+  const foot = el("text", { x: 695, y: 282, class: "sub", "text-anchor": "middle" }, gN); foot.textContent = "* TỪ MỌI TRẠNG THÁI CHƯA KẾT THÚC";
+  const WALK = ["br", "rd", "dw", "wr", "rd", "dv", "vr", "rd"];
+  const drawn = {};
+  function tween(ms, fn) { return new Promise(res => { let e = 0, last = performance.now(); const s = now => { const dt = now - last; last = now; if (!BP.paused) e += dt; const t = Math.min(1, e / ms); fn(t); t < 1 ? requestAnimationFrame(s) : res(); }; requestAnimationFrame(s); }); }
+  async function drawWalk() {
+    for (const id of WALK) {
+      if (drawn[id]) { drawn[id].n++; BP.$("#l-" + id).textContent = E.find(e => e[0] === id)[2] + " ×" + drawn[id].n; await (BP.reduced ? 0 : BP.wait(350)); continue; }
+      const p = el("path", { d: paths[id].getAttribute("d"), class: "walk", "marker-end": "url(#arOn)" }, gW);
+      const L = p.getTotalLength(); p.style.strokeDasharray = L; p.style.strokeDashoffset = L;
+      BP.$("#l-" + id).classList.add("on");
+      drawn[id] = { n: 1 };
+      if (BP.reduced) { p.style.strokeDashoffset = 0; continue; }
+      await tween(520, t => { p.style.strokeDashoffset = L * (1 - t); });
+    }
+  }
+  drawWalk();
+
+  /* ---------- Event log ---------- */
+  const elog = BP.$("#elog");
+  let seq = 2381;
+  const push = (time, g, c, html, s) => BP.logPush(elog, `<span class="seq">#${s}</span><time>${time}</time><span class="g" style="color:${c}">${g}</span><span>${html}</span>`, 30);
+  [
+    ["10:32:04", "○", "var(--s-backlog)", "task.created bởi Quản đốc · v1", 2260],
+    ["10:40:11", "◇", "var(--s-ready)", "task.scheduled · Backlog → Ready · v2", 2265],
+    ["10:47:30", "▶", "var(--s-doing)", "task.claimed · ATLAS-01 @ rt-atlas-5c1 · fence 16 · v3", 2271],
+    ["11:05:12", "❚❚", "var(--amber)", "decision.requested · proposal v1 · run r-2a07 paused", 2290],
+    ["11:28:40", "✓", "var(--amber)", "approval.approved · Khánh · proposal v1 · Waiting → Ready", 2299],
+    ["11:30:02", "▶", "var(--s-doing)", "task.claimed · fence 17 · run r-4b9c", 2302],
+    ["12:20:47", "◎", "var(--s-review)", "result.submitted · r-4b9c · 2 artifact committed · Doing → Review", 2361],
+    ["12:35:58", "◇", "var(--s-ready)", "task.requeued · SAGE-12 · lý do: thiếu test refresh token · v13", 2369],
+    ["12:36:10", "▶", "var(--s-doing)", "task.claimed · ATLAS-01 @ rt-atlas-7f2 · fence 18 · v14", 2370],
+    ["12:37:15", "◌", "var(--red)", "run.heartbeat.denied · r-4b9c · <span class='mono'>STALE_RUN</span> (run đã kết thúc)", 2372],
+    ["12:41:02", "▣", "var(--ink-2)", "checkpoint.recorded · cp-0193", 2377],
+    ["12:52:19", "▣", "var(--s-done)", "artifact.committed · auth-service.patch · sha256:9f2c…41ab", 2380]
+  ].forEach(r => push(...r));
+
+  /* ---------- Live lease countdown (pause aware) ---------- */
+  let left = 48, ago = 12, runVer = 41;
+  const big = BP.$("#leaseBig"), meter = BP.$("#leaseMeter"), box = BP.$("#leaseBox");
+  const fmt = s => { const m = Math.floor(s / 60), r = s - m * 60; return `${String(m).padStart(2, "0")}:${r.toFixed(1).padStart(4, "0")}`; };
+  const due = () => { const d = new Date(Date.now() + left * 1000); BP.$("#leaseDue").textContent = d.toTimeString().slice(0, 8); };
+  function paint() {
+    const r = left / 60; const cls = r < 0.2 ? "crit" : r < 0.35 ? "warn" : "";
+    big.textContent = fmt(left); big.className = "big " + cls;
+    meter.className = "meter tall ticks " + cls; meter.querySelector("i").style.width = (r * 100) + "%"; meter.setAttribute("aria-valuenow", Math.round(left));
+    BP.$("#hbAgo").textContent = Math.floor(ago) + "s trước";
+  }
+  due(); paint();
+  if (!BP.reduced) {
+    let last = performance.now();
+    const step = now => {
+      const dt = (now - last) / 1000; last = now;
+      if (!BP.paused) {
+        left = Math.max(0, left - dt); ago += dt;
+        if (left <= 38) {
+          left = 60; ago = 0; runVer++; due();
+          BP.$("#runVer").textContent = runVer;
+          box.classList.remove("hb-flash"); void box.offsetWidth; box.classList.add("hb-flash");
+          push(BP.now(), "▶", "var(--s-doing)", `run.heartbeat · r-88f1 · run_version ${runVer} · lease 60s · task_version vẫn v14`, ++seq);
+        }
+        paint();
+      }
+      requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+  let mins = 24; BP.every(60000, () => { BP.$("#durNow").textContent = (++mins) + "m"; });
+
+  BP.$("#btnCancel").addEventListener("click", () => BP.toast("CANCEL · CẦN XÁC NHẬN", "Huỷ sẽ vô hiệu run r-88f1 và mọi quyết định đang chờ. Mở hộp thoại nhập lý do (mô phỏng)."));
+})();
+</script>
+</body>
+</html>

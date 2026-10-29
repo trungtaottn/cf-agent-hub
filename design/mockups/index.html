@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mục lục bản vẽ · CF Agent Factory</title>
+<link rel="stylesheet" href="assets/blueprint.css">
+<style>
+  .cover { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--sp-6); align-items: stretch; }
+  .cover-text { display: flex; flex-direction: column; justify-content: space-between; gap: var(--sp-6); padding: var(--sp-8) var(--sp-6); }
+  .cover-text h2 { margin: var(--sp-2) 0 var(--sp-3); font-family: var(--f-display); font-size: clamp(2rem, 3.4vw, 3rem); line-height: 1.08; font-weight: 600; letter-spacing: 0.005em; }
+  .cover-text p { margin: 0; color: var(--ink-2); max-width: 52ch; }
+  .cover-art svg { width: 100%; height: 100%; min-height: 340px; }
+  .spec { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--line-soft); }
+  .spec div { padding: var(--sp-3) 0; }
+  .spec b { display: block; font-family: var(--f-display); font-size: var(--fs-xl); font-weight: 600; }
+  .spec span { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); letter-spacing: 0.1em; text-transform: uppercase; }
+
+  .group-title { display: flex; align-items: baseline; gap: var(--sp-3); margin: 0 0 var(--sp-3); }
+  .group-title h3 { margin: 0; font-family: var(--f-display); font-size: var(--fs-xl); font-weight: 600; }
+  .sheets { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: var(--sp-4); }
+  .sheet-card { display: flex; flex-direction: column; color: var(--ink); text-decoration: none; background: var(--bp-800); border: 1px solid var(--line-soft); transition: border-color var(--dur-fast), transform var(--dur-fast) var(--ease); }
+  .sheet-card:hover { border-color: var(--line-strong); transform: translateY(-2px); text-decoration: none; }
+  .sheet-card:focus-visible { outline-offset: 3px; }
+  .sheet-card .thumb { aspect-ratio: 16 / 9; border-bottom: 1px solid var(--line-soft); background: var(--bp-900); }
+  .sheet-card .thumb svg { width: 100%; height: 100%; }
+  .sheet-card .meta { display: grid; grid-template-columns: auto 1fr; gap: 2px var(--sp-3); padding: var(--sp-3); }
+  .sheet-card .no { grid-row: span 2; font-family: var(--f-mono); font-size: var(--fs-xl); color: var(--ink-3); line-height: 1; }
+  .sheet-card .nm { font-family: var(--f-display); font-weight: 600; font-size: var(--fs-md); }
+  .sheet-card .ds { font-size: var(--fs-xs); color: var(--ink-2); line-height: 1.4; }
+
+  .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--sp-3); }
+  .sw { display: flex; align-items: center; gap: var(--sp-3); font-size: var(--fs-xs); }
+  .sw i { width: 34px; height: 34px; border: 1px solid var(--line-soft); flex: none; }
+  .sw b { display: block; font-weight: 500; font-size: var(--fs-sm); }
+  .sw span { font-family: var(--f-mono); color: var(--ink-3); font-size: var(--fs-2xs); }
+  .typeset div { padding: var(--sp-3) 0; border-bottom: 1px solid var(--grid-major); display: grid; grid-template-columns: 170px 1fr; gap: var(--sp-4); align-items: baseline; }
+  .typeset .code { font-size: var(--fs-2xs); }
+  @media (max-width: 960px) { .cover { grid-template-columns: 1fr; } .typeset div { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body data-sheet="00" data-title="Mục lục bản vẽ">
+<div class="app paper">
+  <div id="rail"></div>
+  <div class="main">
+    <header id="topbar"></header>
+    <main class="content">
+
+      <section class="panel cover reveal" aria-label="Bìa bộ bản vẽ">
+        <div class="cover-text">
+          <div>
+            <div class="code">BỘ BẢN VẼ UI/UX · CF AGENT HUB · REV R2</div>
+            <h2>Nhà máy AI,<br>vẽ như một bản thiết kế kỹ thuật</h2>
+            <p>Thiết kế lại cf-agent-hub thành một nhà máy có phòng ban, dây chuyền nhiệm vụ, cổng phê duyệt và trạm nghiệm thu. Agent nhận việc, di chuyển, họp và nghỉ ngơi trên mặt bằng blueprint. Mỗi sheet là một trang HTML độc lập.</p>
+          </div>
+          <div class="stack">
+            <div class="actions">
+              <a class="btn primary" href="25-office-hq.html">Vào tòa văn phòng</a>
+              <a class="btn" href="01-factory-floor.html">Sàn nhà máy</a>
+              <a class="btn" href="16-scenarios.html">Xem kịch bản</a>
+            </div>
+            <div class="spec">
+              <div><b>26</b><span>Sheet giao diện</span></div>
+              <div><b>6</b><span>Phòng ban mẫu</span></div>
+              <div><b>12</b><span>Agent mô phỏng</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="cover-art">
+          <svg class="dwg" viewBox="0 0 640 400" role="img" aria-labelledby="coverT">
+            <title id="coverT">Hình chiếu trục đo một nhà máy mái răng cưa với băng chuyền và các agent lục giác.</title>
+            <defs>
+              <pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="7" style="stroke:var(--line-soft)"/></pattern>
+            </defs>
+            <!-- ground grid (axonometric) -->
+            <g style="stroke:var(--grid-major)" stroke-width="1">
+              <path d="M40 300 L320 380 L600 300 M80 289 L360 369 M120 278 L400 358 M40 300 L320 220 L600 300" fill="none"/>
+            </g>
+            <!-- building body -->
+            <g class="draw-g">
+              <path class="wall draw" d="M110 270 L110 170 L320 110 L530 170 L530 270 L320 330 Z"/>
+              <path class="wall-thin draw" d="M320 330 L320 230 M110 170 L320 230 L530 170"/>
+              <!-- sawtooth roof -->
+              <path class="wall draw" d="M110 170 L145 120 L145 160 L180 110 L180 150 L215 100 L215 140 L250 90 L250 130 L285 80 L285 120 L320 110"/>
+              <path class="wall-thin draw" d="M320 110 L355 60 L355 100 L390 70 L390 120 L425 90 L425 130 L460 100 L460 140 L495 110 L495 150 L530 170"/>
+              <!-- windows -->
+              <path class="wall-thin draw" d="M140 225 l40 12 v-30 l-40 -12 z M200 243 l40 12 v-30 l-40 -12 z M260 260 l40 12 v-30 l-40 -12 z"/>
+              <path class="wall-thin draw" d="M350 270 l40 -12 v-30 l-40 12 z M410 252 l40 -12 v-30 l-40 12 z M470 234 l40 -12 v-30 l-40 12 z"/>
+              <!-- door -->
+              <path class="wall draw" d="M300 324 v-46 l40 -12 v46"/>
+              <!-- chimney -->
+              <path class="wall-thin draw" d="M470 125 v-70 h20 v76"/>
+            </g>
+            <!-- conveyor going out of door -->
+            <path id="belt" d="M320 300 L180 340 L60 305" fill="none" style="stroke:var(--line)" stroke-width="10" stroke-opacity="0.35"/>
+            <path class="flow" d="M320 300 L180 340 L60 305"/>
+            <g id="crates"></g>
+            <!-- smoke as data -->
+            <g style="stroke:var(--s-ready)" fill="none" stroke-width="1">
+              <circle cx="480" cy="44" r="6" class="pulse"/><circle cx="492" cy="30" r="4" class="pulse" style="animation-delay:.7s;stroke:var(--s-ready)"/>
+            </g>
+            <!-- annotations -->
+            <path class="leader" d="M215 100 L200 40 L120 40"/>
+            <text class="sub" x="120" y="34">MÁI RĂNG CƯA · 10 PHÒNG</text>
+            <path class="leader" d="M180 340 L160 380 L80 380"/>
+            <text class="sub" x="80" y="374">DÂY CHUYỀN NHIỆM VỤ</text>
+            <path class="leader" d="M490 70 L560 40 L610 40"/>
+            <text class="sub" x="540" y="34">EVENT STREAM</text>
+            <path class="dimline" d="M110 285 L110 300 M530 285 L530 300"/>
+            <text class="sub" x="560" y="290">96.0 m</text>
+          </svg>
+        </div>
+      </section>
+
+      <section class="panel flat" aria-label="Ánh xạ khái niệm">
+        <div class="panel-head"><h3>Ánh xạ từ sản phẩm sang nhà máy</h3><span class="code">CONCEPT MAP</span></div>
+        <div class="panel-body tight" style="overflow-x:auto">
+          <table class="table">
+            <thead><tr><th>cf-agent-hub</th><th>Trong nhà máy</th><th>Sheet</th><th>Quy tắc giữ nguyên</th></tr></thead>
+            <tbody>
+              <tr><td>Project + work role</td><td>Phòng ban</td><td class="mono"><a href="02-departments.html">02</a> · <a href="03-department-detail.html">03</a></td><td class="ink2">Do profile cấu hình, không cấp quyền</td></tr>
+              <tr><td>Task + 6 trạng thái</td><td>Thùng hàng trên dây chuyền</td><td class="mono"><a href="04-mission-line.html">04</a> · <a href="05-work-order.html">05</a></td><td class="ink2">Kéo thả là lệnh, không sửa state tự do</td></tr>
+              <tr><td>Claim, lease, fence</td><td>Trạm nhận việc, thẻ lease</td><td class="mono"><a href="06-pick-task.html">06</a></td><td class="ink2">Hai claim đồng thời chỉ một bên thắng</td></tr>
+              <tr><td>Human decision</td><td>Cổng phê duyệt</td><td class="mono"><a href="12-approval-gate.html">12</a></td><td class="ink2">Duyệt đúng version, duyệt không phải đã chạy</td></tr>
+              <tr><td>Independent review</td><td>Trạm kiểm định</td><td class="mono"><a href="13-qc-review.html">13</a></td><td class="ink2">Reviewer khác người nộp</td></tr>
+              <tr><td>Message, thread, ACK</td><td>Phòng thư, phòng họp</td><td class="mono"><a href="17-mailroom.html">17</a> · <a href="14-meeting-room.html">14</a></td><td class="ink2">Đã giao khác đã đọc khác hoàn tất</td></tr>
+              <tr><td>Presence stale, idle</td><td>Khu giải trí</td><td class="mono"><a href="15-lounge.html">15</a></td><td class="ink2">Presence không phải quyền sở hữu task</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <div id="groups" class="stack" style="gap:var(--sp-8)"></div>
+
+      <section class="grid g-2">
+        <div class="panel">
+          <div class="panel-head"><h3>Bảng màu</h3><span class="code">TOKENS · BLUEPRINT.CSS</span></div>
+          <div class="panel-body swatches">
+            <div class="sw"><i style="background:var(--bp-850)"></i><div><b>Giấy blueprint</b><span>--bp-850</span></div></div>
+            <div class="sw"><i style="background:var(--ink)"></i><div><b>Mực trắng</b><span>--ink</span></div></div>
+            <div class="sw"><i style="background:var(--line)"></i><div><b>Nét vẽ</b><span>--line</span></div></div>
+            <div class="sw"><i style="background:var(--amber)"></i><div><b>Redline người</b><span>--amber</span></div></div>
+            <div class="sw"><i style="background:var(--s-ready)"></i><div><b>Ready</b><span>--s-ready</span></div></div>
+            <div class="sw"><i style="background:var(--s-doing)"></i><div><b>Doing</b><span>--s-doing</span></div></div>
+            <div class="sw"><i style="background:var(--s-review)"></i><div><b>Review</b><span>--s-review</span></div></div>
+            <div class="sw"><i style="background:var(--s-done)"></i><div><b>Done</b><span>--s-done</span></div></div>
+            <div class="sw"><i style="background:var(--red)"></i><div><b>Lỗi, stale</b><span>--red</span></div></div>
+          </div>
+          <div class="panel-body" style="border-top:1px solid var(--line-soft)">
+            <div class="row wrap">
+              <span class="state backlog">Backlog</span><span class="state ready">Ready</span><span class="state doing">Doing</span><span class="state waiting">Waiting</span><span class="state review">Review</span><span class="state done">Done</span><span class="state failed">Failed</span><span class="state cancelled">Cancelled</span><span class="state stale">Stale</span>
+            </div>
+            <p class="muted" style="font-size:var(--fs-xs);margin:var(--sp-3) 0 0">Trạng thái luôn đi kèm glyph và chữ, không chỉ dựa vào màu.</p>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>Chữ và ký hiệu</h3><span class="code">IBM PLEX</span></div>
+          <div class="panel-body typeset">
+            <div><span class="code">Plex Sans Condensed 600</span><span style="font-family:var(--f-display);font-size:var(--fs-2xl);font-weight:600">Xưởng Kỹ thuật</span></div>
+            <div><span class="code">Plex Sans 400</span><span>Agent nhận việc ở trạm Ready và giữ lease có thời hạn.</span></div>
+            <div><span class="code">Plex Mono 500</span><span class="mono">T-1042 · fence 18 · rt-atlas-7f2</span></div>
+            <div><span class="code">Ký hiệu</span><span class="row"><span class="bot">AT</span><span class="human-token">HA</span><span class="tag">capability</span><span class="tag amber">cần người</span></span></div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+    <div id="titleblock"></div>
+  </div>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(() => {
+  const DESC = {
+    "25": "Tòa 4 tầng, mặt cắt + mặt bằng, agent làm việc như người",
+    "26": "Cận cảnh bàn làm việc: 2 màn hình, terminal, đồng hồ lease",
+    "01": "Mặt bằng động: phòng ban, băng chuyền, agent di chuyển",
+    "09": "Wall display: lease radar, outbox, readiness",
+    "11": "Motion graphics dòng chảy task qua toàn hệ thống",
+    "10": "Sự kiện append-only, lọc, trace theo task",
+    "04": "Kanban 6 trạm dạng băng chuyền, kéo thả là lệnh",
+    "06": "Agent tranh claim, lease, fence, stale bị chặn",
+    "05": "Phiếu T-1042: ownership, vòng đời, runs, artifact",
+    "12": "Đề xuất có version, đếm ngược, duyệt hoặc từ chối",
+    "13": "Nghiệm thu độc lập, máy quét QC, con dấu",
+    "07": "12 agent: presence tách khỏi hoạt động",
+    "08": "Bản vẽ robot ATLAS-01, luồng hành động",
+    "02": "6 phòng ban, WIP, luồng chuyển giao",
+    "03": "Mặt bằng Xưởng Kỹ thuật với 3 bàn làm việc",
+    "21": "Thành viên, lời mời, sơ đồ tổ chức",
+    "14": "Standup, planning, retro, kết quả thành task",
+    "15": "Idle, hồi quota, stale, mini game",
+    "16": "Studio kịch bản: ca làm, họp, giải trí, sự cố",
+    "17": "Thread, delivery, ACK, băng chuyền phân loại thư",
+    "18": "Kệ Staged, Uploaded, Committed, xe nâng",
+    "19": "Đăng ký runtime, credential, one-time reveal",
+    "22": "HTTP, CLI, MCP, A2A cùng một băng chuyền lệnh",
+    "20": "Readiness, outbox, uncertainty hold, khôi phục",
+    "23": "Profile, giao diện, chính sách, nhập xuất",
+    "24": "Wizard dựng nhà máy, bản vẽ được vẽ dần"
+  };
+  // Simple schematic glyph per sheet (thumbnail)
+  const T = {
+    floor: '<rect x="20" y="16" width="60" height="40"/><rect x="88" y="16" width="52" height="40"/><rect x="148" y="16" width="52" height="40"/><path d="M20 70h260"/><rect x="20" y="84" width="80" height="44"/><rect x="108" y="84" width="92" height="44"/><rect x="208" y="16" width="72" height="40"/><rect x="208" y="84" width="72" height="44"/>',
+    board: '<rect x="20" y="18" width="38" height="110"/><rect x="64" y="18" width="38" height="110"/><rect x="108" y="18" width="38" height="110"/><rect x="152" y="18" width="38" height="110"/><rect x="196" y="18" width="38" height="110"/><rect x="240" y="18" width="38" height="110"/><path d="M26 34h26M26 44h26M70 34h26M114 34h26M114 44h26M158 34h26M202 34h26M246 34h26"/>',
+    radar: '<circle cx="150" cy="74" r="56"/><circle cx="150" cy="74" r="36"/><circle cx="150" cy="74" r="16"/><path d="M150 74L196 42M94 74h112M150 18v112"/>',
+    flow: '<path d="M20 74C70 74 70 40 120 40S170 74 220 74 260 100 280 100M20 74c50 0 50 40 100 40s50-40 100-40"/>',
+    log: '<path d="M30 24h240M30 46h200M30 68h230M30 90h180M30 112h220"/><path d="M22 20v100"/>',
+    gate: '<path d="M60 128V40h40v88M200 128V40h40v88M100 60h100"/><path d="M110 60l40 30 40-30"/>',
+    qc: '<path d="M20 100h260"/><rect x="120" y="30" width="60" height="70"/><path d="M120 60h60"/><rect x="40" y="86" width="20" height="14"/><rect x="230" y="86" width="20" height="14"/>',
+    order: '<rect x="70" y="14" width="160" height="120"/><path d="M86 34h80M86 50h128M86 66h128M86 82h100M86 104h50"/>',
+    bots: '<polygon points="60,40 76,40 84,54 76,68 60,68 52,54"/><polygon points="130,40 146,40 154,54 146,68 130,68 122,54"/><polygon points="200,40 216,40 224,54 216,68 200,68 192,54"/><polygon points="95,86 111,86 119,100 111,114 95,114 87,100"/><polygon points="165,86 181,86 189,100 181,114 165,114 157,100"/>',
+    robot: '<rect x="120" y="24" width="60" height="40"/><rect x="110" y="70" width="80" height="50"/><path d="M150 24V12M100 80h10M190 80h10M200 40h50M250 40v-10"/>',
+    org: '<rect x="125" y="14" width="50" height="22"/><rect x="40" y="70" width="50" height="22"/><rect x="125" y="70" width="50" height="22"/><rect x="210" y="70" width="50" height="22"/><path d="M150 36v34M65 70V54h170v16"/>',
+    meet: '<ellipse cx="150" cy="74" rx="60" ry="30"/><circle cx="80" cy="74" r="8"/><circle cx="220" cy="74" r="8"/><circle cx="150" cy="30" r="8"/><circle cx="150" cy="118" r="8"/>',
+    lounge: '<rect x="30" y="80" width="90" height="34"/><circle cx="200" cy="70" r="24"/><path d="M188 70h24M200 58v24"/><rect x="240" y="30" width="30" height="40"/>',
+    mail: '<rect x="40" y="40" width="70" height="44"/><path d="M40 40l35 24 35-24"/><path d="M130 62h140"/><rect x="190" y="30" width="20" height="20"/><rect x="230" y="30" width="20" height="20"/>',
+    shelf: '<path d="M30 30h240M30 70h240M30 110h240M30 20v100M270 20v100"/><rect x="50" y="44" width="30" height="26"/><rect x="100" y="84" width="30" height="26"/><rect x="190" y="44" width="30" height="26"/>',
+    shield: '<path d="M150 18l50 18v36c0 30-24 50-50 60-26-10-50-30-50-60V36z"/><path d="M130 74l14 14 28-30"/>',
+    dock: '<path d="M30 110h240"/><rect x="40" y="50" width="50" height="60"/><rect x="125" y="50" width="50" height="60"/><rect x="210" y="50" width="50" height="60"/>',
+    gear: '<circle cx="150" cy="74" r="30"/><circle cx="150" cy="74" r="10"/><path d="M150 30v14M150 104v14M106 74h14M180 74h14M119 43l10 10M171 95l10 10M119 105l10-10M171 53l10-10"/>',
+    sliders: '<path d="M40 40h220M40 74h220M40 108h220"/><rect x="90" y="32" width="14" height="16"/><rect x="180" y="66" width="14" height="16"/><rect x="130" y="100" width="14" height="16"/>',
+    build: '<path d="M30 120h240M60 120V60l90-30 90 30v60"/><path d="M60 60h180" stroke-dasharray="4 4"/>',
+    tower: '<rect x="100" y="20" width="100" height="110"/><path d="M100 48h100M100 76h100M100 104h100M180 20v110"/><rect x="110" y="28" width="12" height="14"/><rect x="130" y="28" width="12" height="14"/><rect x="110" y="56" width="12" height="14"/><rect x="130" y="84" width="12" height="14"/><path d="M60 130h180"/>',
+    desk: '<rect x="70" y="20" width="70" height="46"/><rect x="160" y="20" width="70" height="46"/><path d="M105 66v12M195 66v12M40 82h220M60 82v50M240 82v50"/><circle cx="150" cy="100" r="14"/><path d="M128 132c0-18 10-24 22-24s22 6 22 24"/>',
+    film: '<rect x="30" y="24" width="240" height="90"/><path d="M30 124h240M60 120v8M130 120v8M200 120v8"/><path d="M130 50l30 19-30 19z"/>'
+  };
+  const MAP = { "25": "tower", "26": "desk", "01": "floor", "09": "radar", "11": "flow", "10": "log", "04": "board", "06": "bots", "05": "order", "12": "gate", "13": "qc", "07": "bots", "08": "robot", "02": "floor", "03": "floor", "21": "org", "14": "meet", "15": "lounge", "16": "film", "17": "mail", "18": "shelf", "19": "shield", "22": "dock", "20": "gear", "23": "sliders", "24": "build" };
+  const ACC = { "25": "var(--s-doing)", "26": "var(--s-ready)", "12": "var(--amber)", "13": "var(--s-review)", "15": "var(--s-ready)", "14": "var(--s-review)", "06": "var(--s-doing)", "11": "var(--s-doing)" };
+  BP.$("#groups").innerHTML = BP.sheets.map(g => `
+    <section aria-label="${g.group}">
+      <div class="group-title"><h3>${g.group.split(" · ")[0]}</h3><span class="code">${g.group.split(" · ")[1] || ""} · ${g.items.length} SHEET</span></div>
+      <div class="sheets">
+        ${g.items.map(i => `
+          <a class="sheet-card" href="${i.file}">
+            <div class="thumb"><svg viewBox="0 0 300 148" aria-hidden="true"><g fill="none" style="stroke:${ACC[i.no] || "var(--line)"}" stroke-width="1.25">${T[MAP[i.no]] || ""}</g></svg></div>
+            <div class="meta"><span class="no">${i.no}</span><span class="nm">${i.vi}</span><span class="ds">${DESC[i.no] || ""}</span></div>
+          </a>`).join("")}
+      </div>
+    </section>`).join("");
+
+  // crates riding the conveyor on the cover
+  const belt = BP.$("#belt"), crates = BP.$("#crates");
+  const colors = ["var(--s-ready)", "var(--s-doing)", "var(--s-review)", "var(--s-done)", "var(--amber)"];
+  colors.forEach((c, i) => {
+    const g = BP.svg("g", {}, crates);
+    BP.svg("rect", { x: -7, y: -12, width: 14, height: 10, fill: "var(--bp-850)", stroke: c, "stroke-width": 1.25 }, g);
+    if (!BP.reduced) BP.loopAlong(g, belt, 7000, { delay: i * 1400 });
+    else { const p = belt.getPointAtLength(belt.getTotalLength() * i / 5); g.setAttribute("transform", `translate(${p.x} ${p.y})`); }
+  });
+})();
+</script>
+</body>
+</html>

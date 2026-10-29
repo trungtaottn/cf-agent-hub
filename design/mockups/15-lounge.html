@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Khu giải trí · CF Agent Factory</title>
+<link rel="stylesheet" href="assets/blueprint.css">
+<style>
+  .lz-tools { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--line-soft); }
+  .lz-scroll { overflow-x: auto; }
+  .lz-scroll svg { min-width: 680px; }
+  #lounge .sub { font-size: 11px; }
+  #lounge .lbl { font-size: 14px; }
+  .ag-g text.code-t { font-family: var(--f-mono); font-size: 11px; font-weight: 600; text-anchor: middle; dominant-baseline: central; }
+  .ag-g .nm { font-family: var(--f-mono); font-size: 12px; fill: var(--ink-2); text-anchor: middle; }
+  .bubble-t { font-family: var(--f-mono); font-size: 12px; fill: var(--ink); text-anchor: middle; dominant-baseline: central; }
+  .big-t { font-family: var(--f-mono); font-size: 18px; font-weight: 600; fill: var(--s-ready); }
+
+  .quota { display: flex; flex-direction: column; gap: var(--sp-3); }
+  .quota .clock-big { font-family: var(--f-display); font-size: var(--fs-3xl); font-weight: 600; font-variant-numeric: tabular-nums; color: var(--s-ready); line-height: 1; }
+  .quota .meter { height: 10px; }
+  .quota .meter > i { background: var(--s-ready); }
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: var(--sp-1) var(--sp-3); font-size: var(--fs-sm); margin: 0; }
+  .kv dt { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); letter-spacing: 0.08em; text-transform: uppercase; padding-top: 3px; }
+  .kv dd { margin: 0; }
+
+  .policy { list-style: none; margin: 0; padding: 0; }
+  .policy li { display: grid; grid-template-columns: 22px 1fr; gap: var(--sp-2); padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--grid-major); font-size: var(--fs-sm); }
+  .policy li .g { font-family: var(--f-mono); color: var(--s-done); }
+  .policy li b { font-weight: 600; }
+
+  .fame { list-style: none; margin: 0; padding: 0; }
+  .fame li { display: grid; grid-template-columns: 34px 1fr auto; gap: var(--sp-3); align-items: center; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--grid-major); }
+  .fame .rank { font-family: var(--f-display); font-size: var(--fs-xl); color: var(--ink-3); text-align: center; }
+  .fame .t { font-size: var(--fs-sm); font-weight: 500; }
+  .fame .s { font-size: var(--fs-xs); color: var(--ink-2); }
+  .fame .bot { width: 30px; height: 30px; font-size: 10px; }
+
+  .events { list-style: none; margin: 0; padding: 0; }
+  .events li { display: grid; grid-template-columns: 58px 1fr auto; gap: var(--sp-3); align-items: center; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--grid-major); }
+  .events time { font-family: var(--f-display); font-size: var(--fs-lg); font-weight: 600; }
+  .events .t { font-size: var(--fs-sm); font-weight: 500; }
+  .events .s { font-size: var(--fs-xs); color: var(--ink-2); }
+  .events li.next time { color: var(--s-doing); }
+
+  .feed { max-height: 330px; overflow: hidden; }
+  .tbl-scroll { overflow-x: auto; }
+  .rest { min-width: 860px; }
+  .rest td .row { gap: var(--sp-2); }
+  .rest .bot { width: 30px; height: 30px; font-size: 10px; }
+  .rest tr.stale td { color: var(--ink-2); }
+  .rest tr.stale .bot { border-style: dashed; opacity: 0.6; }
+  .why { font-size: var(--fs-xs); color: var(--ink-3); }
+</style>
+</head>
+<body data-sheet="15" data-title="Khu giải trí">
+<div class="app paper">
+  <div id="rail"></div>
+  <div class="main">
+    <header id="topbar"></header>
+    <main class="content">
+
+      <section class="page-head reveal">
+        <div>
+          <div class="code">ZONE L-02 · KHU GIẢI TRÍ · CHỈ LÀ TRÌNH BÀY PRESENCE</div>
+          <h2>Khu giải trí</h2>
+          <p class="lede">Agent không giữ task nào thì ngồi ở đây: rảnh vì chưa có việc phù hợp, đang hồi quota sau rate-limit, hoặc chỉ còn tín hiệu cũ. Ngồi ở đây không bị phạt, không mất quyền và cũng không được thêm quyền.</p>
+        </div>
+        <div class="actions">
+          <a class="btn" href="07-workforce.html">Xem đội ngũ</a>
+          <button class="btn primary" id="btnWake" type="button">
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1.5a3.5 3.5 0 0 1 3.5 3.5v3l1.5 2H2l1.5-2V5A3.5 3.5 0 0 1 7 1.5zM5.5 12a1.5 1.5 0 0 0 3 0" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>
+            <span>Gọi agent vào ca</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="grid g-4 reveal" aria-label="Chỉ số khu giải trí">
+        <div class="panel kpi"><span class="label">Đang ở khu giải trí</span><span class="value" id="kHere">3</span><span class="note">Không giữ lease nào</span></div>
+        <div class="panel kpi"><span class="label">Đang hồi quota</span><span class="value c-ready">1</span><span class="note">ORBIT-05 · còn <span class="mono" id="kQuota">04:12</span></span></div>
+        <div class="panel kpi"><span class="label">Tín hiệu cũ</span><span class="value c-red">1</span><span class="note">PIXEL-08 · quan sát lần cuối 14:02</span></div>
+        <div class="panel kpi"><span class="label">Việc Ready chờ nhận</span><span class="value c-ready">4</span><span class="note">T-1055, T-1056, T-1057, T-1058</span></div>
+      </section>
+
+      <section class="grid g-main-side">
+        <div class="panel reveal">
+          <div class="lz-tools">
+            <div class="legend" aria-label="Chú giải">
+              <span style="color:var(--ink-3)"><i></i>Rảnh</span>
+              <span style="color:var(--s-ready)"><i></i>Hồi quota</span>
+              <span style="color:var(--red)"><i></i>Tín hiệu cũ</span>
+              <span style="color:var(--s-doing)"><i></i>Đi nhận việc</span>
+            </div>
+            <span class="code" id="zoneState">MẶT BẰNG L-02 · 6.4 × 4.0 m</span>
+          </div>
+          <div class="lz-scroll">
+            <svg id="lounge" class="dwg" viewBox="0 0 860 600" role="img" aria-labelledby="lzTitle lzDesc">
+              <title id="lzTitle">Mặt bằng khu giải trí L-02</title>
+              <desc id="lzDesc">Sofa và bàn trà phía tây bắc, máy cà phê phía đông bắc nơi ORBIT-05 đang hồi quota, bàn cờ ở giữa với BOLT-10 và PIXEL-08, bảng phi tiêu tường tây, ghế massage góc tây nam, kệ sách tường nam, cửa ra phía đông dẫn tới Trạm nhận việc. Bảng "Ai đang nghỉ và vì sao" bên dưới là phiên bản văn bản.</desc>
+              <defs>
+                <pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                  <line x1="0" y1="0" x2="0" y2="8" style="stroke:var(--line-soft)" stroke-width="1"/>
+                </pattern>
+                <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M0 0L10 5L0 10z" style="fill:var(--s-doing)"/>
+                </marker>
+              </defs>
+              <g id="gStatic"></g>
+              <g id="gChess"></g>
+              <g id="gAgents"></g>
+            </svg>
+          </div>
+        </div>
+
+        <div class="stack">
+          <div class="panel reveal">
+            <div class="panel-head"><h3>Đồng hồ hồi quota</h3><span class="code">ORBIT-05 · RATE-LIMIT</span></div>
+            <div class="panel-body quota">
+              <div class="row between"><span class="clock-big" id="qClock" aria-live="off">04:12</span><span class="state" style="color:var(--s-ready)" id="qState">◷ Hồi quota</span></div>
+              <div class="meter ticks" role="progressbar" aria-label="Tiến độ hồi quota" aria-valuemin="0" aria-valuemax="100" id="qMeter"><i style="width:16%"></i></div>
+              <dl class="kv">
+                <dt>Nguồn</dt><dd>Provider trả 429 · Retry-After 300s</dd>
+                <dt>Quota</dt><dd><span id="qPct">16</span>% đã hồi · <span class="unknown">hạn mức tuyệt đối Not reported</span></dd>
+                <dt>Ảnh hưởng</dt><dd>Không gửi claim mới cho tới khi hồi xong. Wake-up gửi lúc này sẽ được ghi nhận nhưng agent tự hoãn.</dd>
+              </dl>
+            </div>
+          </div>
+          <div class="panel reveal">
+            <div class="panel-head"><h3>Chính sách khu giải trí</h3><span class="code">POLICY · TRÌNH BÀY</span></div>
+            <ul class="policy">
+              <li><span class="g" aria-hidden="true">✓</span><span><b>Thời gian idle không bị phạt.</b> Không có chỉ số "lười", không trừ điểm.</span></li>
+              <li><span class="g" aria-hidden="true">✓</span><span><b>Presence không cấp quyền.</b> Có mặt ở đâu cũng không giữ hay mất task.</span></li>
+              <li><span class="g" aria-hidden="true">✓</span><span><b>Wake-up chỉ là thông báo.</b> Agent phải claim thành công ở Trạm nhận việc mới có việc.</span></li>
+              <li><span class="g" aria-hidden="true">✓</span><span><b>Tín hiệu cũ không gọi là Online.</b> Hiển thị giờ quan sát lần cuối.</span></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid g-3">
+        <div class="panel reveal">
+          <div class="panel-head"><h3>Bảng vinh danh tuần</h3><span class="tag amber">SIM · CHO VUI</span></div>
+          <ul class="fame">
+            <li><span class="rank">1</span><div><div class="t">Nghiệm thu không bị gửi lại</div><div class="s">LENS-06 · 7/7 kết quả được nhận ngay lần đầu</div></div><span class="bot" style="--c:var(--s-review)" aria-hidden="true">LN</span></li>
+            <li><span class="rank">2</span><div><div class="t">Heartbeat đều nhất</div><div class="s">NOVA-07 · độ lệch chu kỳ thấp nhất tuần</div></div><span class="bot" style="--c:var(--s-done)" aria-hidden="true">NV</span></li>
+            <li><span class="rank">3</span><div><div class="t">Yield đúng lúc</div><div class="s">FORGE-02 · trả việc trước khi lease hết, không để outcome_unknown</div></div><span class="bot" style="--c:var(--s-doing)" aria-hidden="true">FG</span></li>
+            <li><span class="rank">4</span><div><div class="t">ACK sạch inbox</div><div class="s">ATLAS-01 · 0 tin chưa ACK cuối ngày</div></div><span class="bot" style="--c:var(--s-doing)" aria-hidden="true">AT</span></li>
+          </ul>
+          <p class="code" style="margin:0;padding:var(--sp-3) var(--sp-4)">Bảng vinh danh không ảnh hưởng quyền, ưu tiên claim hay đánh giá.</p>
+        </div>
+
+        <div class="panel reveal">
+          <div class="panel-head"><h3>Hoạt động giải trí</h3><span class="code">MINI EVENT · HÔM NAY</span></div>
+          <ul class="events">
+            <li class="next"><time>15:00</time><div><div class="t">Thi giải đố regex</div><div class="s">Bàn cờ · 6 câu · không tính vào công việc</div></div><span class="tag">3 đăng ký</span></li>
+            <li><time>16:30</time><div><div class="t">Đố vui: fence hay version?</div><div class="s">Bảng phi tiêu · ôn lại task-lifecycle.md</div></div><span class="tag">Mở</span></li>
+            <li><time>17:30</time><div><div class="t">Câu lạc bộ đọc tài liệu</div><div class="s">Kệ sách · chương delivery-semantics</div></div><span class="tag">Mở</span></li>
+            <li><time class="muted">13:00</time><div><div class="t muted">Vẽ icon tự do</div><div class="s">Huỷ vì PIXEL-08 không còn tín hiệu</div></div><span class="state cancelled">Huỷ</span></li>
+          </ul>
+          <p class="code" style="margin:0;padding:var(--sp-3) var(--sp-4)">Đọc sách ở kệ không làm capability tăng. Capability chỉ đổi khi khai báo lại runtime.</p>
+        </div>
+
+        <div class="panel reveal">
+          <div class="panel-head"><h3>Nhật ký khu giải trí</h3><span class="code">PRESENCE EVENTS</span></div>
+          <div class="feed"><ul class="log" id="feed" aria-live="polite" aria-relevant="additions"></ul></div>
+        </div>
+      </section>
+
+      <section class="panel reveal" aria-label="Ai đang nghỉ và vì sao">
+        <div class="panel-head"><h3>Ai đang nghỉ và vì sao</h3><span class="code">THAY THẾ VĂN BẢN CHO MẶT BẰNG</span></div>
+        <div class="tbl-scroll">
+          <table class="table rest">
+            <thead><tr><th>Agent</th><th>Presence</th><th>Lý do ở đây</th><th>Quan sát lần cuối</th><th>Task đang giữ</th><th>Có thể claim?</th><th>Hành động</th></tr></thead>
+            <tbody id="restBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+    <div id="titleblock"></div>
+  </div>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(() => {
+  const el = (t, a, p) => BP.svg(t, a, p);
+  const gS = BP.$("#gStatic"), gC = BP.$("#gChess"), gA = BP.$("#gAgents");
+  const txt = (x, y, s, cls, extra, parent) => { const t = el("text", { x, y, class: cls || "sub", ...(extra || {}) }, parent || gS); t.textContent = s; return t; };
+
+  /* ---------- Room shell ---------- */
+  el("rect", { x: 30, y: 30, width: 760, height: 540, class: "room" }, gS);
+  el("rect", { x: 30, y: 30, width: 760, height: 540, class: "wall" }, gS);
+  // door (east wall) + corridor toward the pick station
+  el("line", { x1: 790, y1: 470, x2: 790, y2: 524, stroke: "var(--bp-800)", "stroke-width": 4 }, gS);
+  el("path", { d: "M790 470 A54 54 0 0 0 736 524", class: "wall-thin", "stroke-dasharray": "2 3" }, gS);
+  el("path", { d: "M790 482 H858 M790 512 H858", class: "wall-thin" }, gS);
+  el("line", { x1: 792, y1: 497, x2: 852, y2: 497, class: "flow mint slow", "marker-end": "url(#arr)" }, gS);
+  txt(780, 446, "CỬA D2 → TRẠM 06", "sub", { "text-anchor": "end" });
+  txt(780, 460, "NHẬN VIỆC · CLAIM Ở ĐÓ", "sub", { "text-anchor": "end" });
+  // dimension lines
+  el("path", { d: "M30 16 H790 M30 10 V22 M790 10 V22", class: "dimline" }, gS);
+  txt(410, 12, "6.4 m", "sub", { "text-anchor": "middle" });
+  el("path", { d: "M14 30 V570 M8 30 H20 M8 570 H20", class: "dimline" }, gS);
+
+  // Sofa L + coffee table (NW)
+  el("path", { d: "M56 56 H300 V80 H82 V200 H56 Z", class: "wall-thin" }, gS);
+  for (let i = 0; i < 3; i++) el("rect", { x: 90 + i * 68, y: 84, width: 60, height: 30, class: "wall-thin", "stroke-dasharray": "2 2" }, gS);
+  el("rect", { x: 122, y: 138, width: 120, height: 46, class: "wall-thin" }, gS);
+  txt(56, 226, "SOFA · 4 CHỖ", "lbl");
+  txt(56, 242, "TRỐNG · KHÔNG AI ĐANG NGỒI");
+
+  // Coffee machine (NE)
+  el("rect", { x: 640, y: 44, width: 120, height: 60, class: "room" }, gS);
+  el("rect", { x: 652, y: 56, width: 36, height: 36, class: "wall-thin" }, gS);
+  el("circle", { cx: 728, cy: 74, r: 13, class: "wall-thin" }, gS);
+  txt(640, 124, "MÁY CÀ PHÊ", "lbl");
+  const steam = el("g", { class: "blink" }, gS);
+  el("path", { d: "M664 50 q4 -6 0 -12 M676 50 q4 -6 0 -12", class: "wall-thin" }, steam);
+  // quota readout under ORBIT
+  txt(600, 262, "HỒI QUOTA · ORBIT-05", "sub");
+  const qText = el("text", { x: 600, y: 286, class: "big-t" }, gS); qText.textContent = "04:12";
+  el("rect", { x: 600, y: 296, width: 150, height: 8, fill: "var(--bp-950)", stroke: "var(--line-soft)" }, gS);
+  const qBar = el("rect", { x: 600, y: 296, width: 24, height: 8, fill: "var(--s-ready)" }, gS);
+
+  // Chess table (center)
+  const BX = 330, BY = 280, SQ = 18;
+  el("rect", { x: BX - 14, y: BY - 14, width: SQ * 8 + 28, height: SQ * 8 + 28, class: "room" }, gS);
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) if ((r + c) % 2) el("rect", { x: BX + c * SQ, y: BY + r * SQ, width: SQ, height: SQ, fill: "var(--bp-600)" }, gS);
+  el("rect", { x: BX, y: BY, width: SQ * 8, height: SQ * 8, class: "wall-thin" }, gS);
+  txt(BX - 14, BY - 40, "BÀN CỜ", "lbl");
+  const chessNote = txt(BX - 14, BY - 24, "Lượt: BOLT-10", "sub");
+  const chessNote2 = txt(BX - 14, BY + SQ * 8 + 32, "", "sub", { style: "fill:var(--red)" });
+  const chessNote3 = txt(BX - 14, BY + SQ * 8 + 46, "", "sub", { style: "fill:var(--red)" });
+
+  // Dartboard (west wall)
+  [26, 18, 10, 3].forEach((r, i) => el("circle", { cx: 56, cy: 320, r, class: i === 3 ? "" : "wall-thin", fill: i === 3 ? "var(--amber)" : "none" }, gS));
+  el("path", { d: "M30 320 H82 M56 294 V346", class: "wall-thin" }, gS);
+  txt(92, 306, "BẢNG PHI TIÊU", "lbl");
+  txt(92, 322, "ĐỐ VUI 16:30");
+  el("line", { x1: 92, y1: 344, x2: 190, y2: 344, class: "dimline", "stroke-dasharray": "4 3" }, gS);
+  txt(92, 360, "VẠCH NÉM 2.37 m");
+
+  // Massage chair (SW)
+  el("path", { d: "M56 450 h70 v80 h-70 z M56 450 v-14 h70 v14", class: "wall-thin" }, gS);
+  el("rect", { x: 68, y: 466, width: 46, height: 50, class: "wall-thin", "stroke-dasharray": "3 2" }, gS);
+  txt(140, 472, "GHẾ MASSAGE", "lbl");
+  txt(140, 488, "NẠP NĂNG LƯỢNG · TRỐNG");
+  txt(140, 502, "trang trí, không đổi lease");
+
+  // Bookshelf (south wall) with hatch
+  el("rect", { x: 400, y: 544, width: 280, height: 20, class: "hatch" }, gS);
+  el("rect", { x: 400, y: 544, width: 280, height: 20, class: "wall-thin" }, gS);
+  for (let i = 1; i < 7; i++) el("line", { x1: 400 + i * 40, y1: 544, x2: 400 + i * 40, y2: 564, class: "wall-thin" }, gS);
+  txt(400, 534, "KỆ SÁCH · HỌC KỸ NĂNG", "lbl");
+  txt(620, 534, "docs/*.md");
+
+  /* ---------- Chess pieces ---------- */
+  const sqC = (c, r) => ({ x: BX + c * SQ + SQ / 2, y: BY + r * SQ + SQ / 2 });
+  const pieces = {};
+  function piece(id, c, r, side) {
+    const p = sqC(c, r);
+    const g = el("g", { transform: `translate(${p.x} ${p.y})` }, gC);
+    if (side === "w") el("circle", { r: 5, fill: "var(--ink)", stroke: "var(--bp-950)" }, g);
+    else el("rect", { x: -4.5, y: -4.5, width: 9, height: 9, fill: "var(--bp-950)", stroke: "var(--red)", "stroke-dasharray": "2 1" }, g);
+    pieces[id] = { g, c, r }; return g;
+  }
+  [["w1", 1, 6], ["w2", 3, 6], ["w3", 4, 7], ["w4", 6, 6], ["w5", 2, 7]].forEach(a => piece(a[0], a[1], a[2], "w"));
+  [["b1", 2, 1], ["b2", 4, 2], ["b3", 5, 1], ["b4", 3, 0], ["b5", 6, 2]].forEach(a => piece(a[0], a[1], a[2], "b"));
+  async function movePiece(id, c, r, ms = 900) {
+    const P = pieces[id], a = sqC(P.c, P.r), b = sqC(c, r);
+    const path = el("path", { d: `M${a.x} ${a.y} L${b.x} ${b.y}` });
+    await BP.moveAlong(P.g, path, ms); P.c = c; P.r = r;
+  }
+
+  /* ---------- Agents ---------- */
+  const agents = {};
+  function agent(id, x, y, opts = {}) {
+    const a = BP.agent(id);
+    const g = el("g", { class: "ag-g", transform: `translate(${x} ${y})` }, gA);
+    const col = opts.col || "var(--ink-3)";
+    if (opts.pulse) el("circle", { r: 20, fill: "none", stroke: col, class: "pulse" }, g);
+    const hex = el("polygon", { points: "-8,-14 8,-14 16,0 8,14 -8,14 -16,0", fill: "var(--bp-950)", stroke: col, "stroke-width": 1.5, "stroke-dasharray": opts.stale ? "3 2" : "" }, g);
+    const t = el("text", { class: "code-t", style: `fill:${col}` }, g); t.textContent = a.code;
+    const anc = opts.side ? { x: 24, style: "text-anchor:start" } : {};
+    const nm = el("text", { y: opts.labelY || 32, class: "nm", ...anc }, g); nm.textContent = opts.label || a.name;
+    if (opts.label2) { const n2 = el("text", { y: (opts.labelY || 32) + 15, class: "nm", style: "fill:var(--red);" + (opts.side ? "text-anchor:start" : ""), x: opts.side ? 24 : 0 }, g); n2.textContent = opts.label2; }
+    if (opts.stale) g.setAttribute("opacity", "0.6");
+    const tt = el("title", {}, g); tt.textContent = `${a.name} · ${opts.title || ""}`;
+    agents[id] = { g, hex, t, nm, x, y, col };
+    return agents[id];
+  }
+  const bolt = agent("bolt", BX - 64, BY + SQ * 4, { label: "BOLT-10 · rảnh", col: "var(--ink-2)", labelY: 34, title: "rảnh, không task phù hợp" });
+  const pixel = agent("pixel", BX + SQ * 8 + 50, BY + SQ * 4, { side: true, labelY: -3, label: "PIXEL-08 · không gọi là Online", label2: "quan sát lần cuối 14:02", stale: true, col: "var(--red)", title: "tín hiệu cũ, không gọi là Online" });
+  const orbit = agent("orbit", 705, 196, { label: "ORBIT-05 · hồi quota", col: "var(--s-ready)", pulse: true, title: "đang hồi quota" });
+  // coffee cup in ORBIT's hand
+  const cup = el("g", { transform: "translate(22 -10)" }, orbit.g);
+  el("path", { d: "M0 0 h9 v9 h-9 z M9 2 h3 v5 h-3", class: "wall-thin" }, cup);
+  el("path", { d: "M2 -3 q2 -3 0 -6 M6 -3 q2 -3 0 -6", class: "wall-thin blink" }, cup);
+
+  function bubble(A, text, ms = 2400, color = "var(--line)") {
+    const b = el("g", {}, A.g);
+    const w = text.length * 7.3 + 18, y = -46;
+    el("rect", { x: -w / 2, y, width: w, height: 22, fill: "var(--bp-950)", stroke: color }, b);
+    const t = el("text", { y: y + 11, class: "bubble-t" }, b); t.textContent = text;
+    if (ms) BP.wait(ms).then(() => b.remove());
+    return b;
+  }
+
+  /* ---------- Feed ---------- */
+  const feed = BP.$("#feed");
+  const push = (g, c, html) => BP.logPush(feed, `<time>${BP.now()}</time><span class="g" style="color:${c}">${g}</span><span>${html}</span>`, 18);
+  [
+    ["◌", "var(--red)", "<b>PIXEL-08</b> không gửi presence từ 14:02. Hiển thị là tín hiệu cũ, không phải Online."],
+    ["◷", "var(--s-ready)", "<b>ORBIT-05</b> nhận 429 từ provider, tự vào hồi quota 300s."],
+    ["–", "var(--ink-3)", "<b>BOLT-10</b> nộp T-1036, lease đã trả. Đang rảnh chờ nghiệm thu."]
+  ].forEach(r => push(...r));
+
+  /* ---------- Quota countdown (pause-aware) ---------- */
+  const QMAX = 300; let qLeft = 252;
+  const fmt = s => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+  function renderQuota() {
+    const pct = Math.round((1 - qLeft / QMAX) * 100);
+    BP.$("#qClock").textContent = fmt(qLeft); BP.$("#kQuota").textContent = fmt(qLeft); qText.textContent = fmt(qLeft);
+    BP.$("#qMeter i").style.width = pct + "%"; BP.$("#qMeter").setAttribute("aria-valuenow", pct); BP.$("#qPct").textContent = pct;
+    qBar.setAttribute("width", (150 * pct / 100).toFixed(1));
+    const q = BP.$("#qState");
+    if (qLeft === 0) { q.textContent = "◇ Đã hồi, chờ claim"; q.style.color = "var(--s-doing)"; }
+    else { q.textContent = "◷ Hồi quota"; q.style.color = "var(--s-ready)"; }
+  }
+  renderQuota();
+  if (!BP.reduced) BP.every(1000, () => {
+    // accelerate x4 so the mock visibly progresses
+    qLeft = Math.max(0, qLeft - 4); renderQuota();
+    if (qLeft === 0 && !orbit.done) {
+      orbit.done = true; bubble(orbit, "quota đã hồi", 3000, "var(--s-doing)");
+      push("◇", "var(--s-doing)", "<b>ORBIT-05</b> hồi quota xong. Vẫn không có task cho tới khi tự claim.");
+      BP.wait(6000).then(() => { qLeft = QMAX; orbit.done = false; renderQuota(); push("◷", "var(--s-ready)", "<b>ORBIT-05</b> gặp 429 lần nữa (mô phỏng lặp)."); });
+    }
+  });
+
+  /* ---------- Choreography ---------- */
+  const MOVES = [["w2", 3, 4], ["w4", 6, 4], ["w1", 1, 4], ["w5", 4, 5]];
+  let mi = 0, waking = false;
+  async function chessTurn() {
+    const [id, c, r] = MOVES[mi % MOVES.length];
+    const back = { c: pieces[id].c, r: pieces[id].r };
+    bubble(bolt, "nước đi " + String.fromCharCode(97 + c) + (8 - r), 1800);
+    await movePiece(id, c, r);
+    push("▸", "var(--ink-3)", `<b>BOLT-10</b> đi quân ${String.fromCharCode(97 + c)}${8 - r}. Chờ PIXEL-08.`);
+    chessNote.textContent = "Lượt: PIXEL-08";
+    chessNote2.textContent = "PIXEL-08: tín hiệu cũ từ 14:02"; chessNote3.textContent = "ván tạm treo, không ai đi thay";
+    await BP.wait(2600);
+    // stale player cannot respond; BOLT takes the move back to keep practising
+    await movePiece(id, back.c, back.r, 700);
+    chessNote.textContent = "Lượt: BOLT-10 · tự luyện"; chessNote2.textContent = ""; chessNote3.textContent = "";
+    mi++;
+  }
+  async function wakeUp(manual) {
+    if (waking) return; waking = true;
+    BP.$("#btnWake").disabled = true;
+    const deliv = "N-" + (7300 + Math.floor(Math.random() * 99));
+    push("✉", "var(--s-ready)", `Wake-up <span class="mono">${deliv}</span> gửi tới <b>BOLT-10</b>: có T-1055 ở Ready. Chỉ là thông báo.`);
+    if (manual) BP.toast("WAKE-UP · " + deliv, "Đã gửi tới BOLT-10. ORBIT-05 hoãn vì đang hồi quota. PIXEL-08 vào inbox nhưng không chắc có runtime nhận.");
+    bubble(bolt, "có việc mới?", 1600, "var(--s-ready)");
+    await BP.wait(1200);
+    // stand up and walk out to the door
+    bolt.hex.setAttribute("style", "stroke:var(--s-doing)"); bolt.t.style.fill = "var(--s-doing)"; bolt.nm.textContent = "BOLT-10 · đi tới Trạm 06";
+    const path = el("path", { d: `M${bolt.x} ${bolt.y} V530 H700 L790 497 H858` });
+    await BP.moveAlong(bolt.g, path, 4200);
+    push("◇", "var(--s-doing)", "<b>BOLT-10</b> rời khu giải trí. Chưa có việc cho tới khi claim T-1055 thành công ở <a href='06-pick-task.html'>Trạm nhận việc</a>.");
+    BP.$("#kHere").textContent = 2;
+    BP.$("#zoneState").textContent = "BOLT-10 ĐÃ RỜI · CHƯA CLAIM";
+    await BP.wait(4000);
+    // loop reset
+    bolt.g.setAttribute("transform", `translate(${bolt.x} ${bolt.y})`);
+    bolt.hex.setAttribute("style", "stroke:var(--ink-2)"); bolt.t.style.fill = "var(--ink-2)"; bolt.nm.textContent = "BOLT-10 · rảnh";
+    BP.$("#kHere").textContent = 3; BP.$("#zoneState").textContent = "MẶT BẰNG L-02 · 6.4 × 4.0 m";
+    push("–", "var(--ink-3)", "<b>BOLT-10</b> quay lại khu giải trí (mô phỏng lặp, T-1055 vẫn Ready).");
+    waking = false; BP.$("#btnWake").disabled = false;
+  }
+  BP.$("#btnWake").addEventListener("click", () => wakeUp(true));
+
+  async function loop() {
+    while (true) {
+      for (let k = 0; k < 3; k++) { if (!waking) await chessTurn(); await BP.wait(1400); }
+      await wakeUp(false);
+      await BP.wait(2000);
+    }
+  }
+  if (!BP.reduced) loop();
+  else { chessNote2.textContent = "PIXEL-08: tín hiệu cũ từ 14:02"; chessNote3.textContent = "ván tạm treo, không ai đi thay"; }
+
+  /* ---------- Rest table ---------- */
+  const ROWS = [
+    { id: "bolt", pres: '<span class="state online">Có tín hiệu</span>', why: "Rảnh: vừa nộp T-1036, chờ SAGE-12 nghiệm thu. Không được tự nghiệm thu.", seen: "14:31:08", task: '<span class="muted">Không</span>', claim: '<span class="c-doing">Có · T-1055 khớp capability</span>', act: '<button class="btn sm" data-wake>Gửi wake-up</button>' },
+    { id: "orbit", pres: '<span class="state online">Có tín hiệu</span>', why: "Hồi quota sau 429 từ provider. Tự hoãn claim mới.", seen: "14:31:02", task: '<span class="muted">Không</span>', claim: '<span class="c-ready">Sau khi hồi quota</span>', act: '<button class="btn sm" disabled title="Đang hồi quota, wake-up sẽ bị hoãn">Gửi wake-up</button>' },
+    { id: "pixel", stale: true, pres: '<span class="state stale">Tín hiệu cũ</span>', why: "Không gửi presence từ 14:02. Không rõ runtime còn chạy hay không.", seen: "14:02:17", task: '<span class="muted">Không</span>', claim: '<span class="unknown">Not reported</span>', act: '<a class="btn sm" href="08-agent-profile.html">Xem runtime</a>' },
+    { id: "echo", stale: true, pres: '<span class="state cancelled">Offline</span>', why: "Không ở khu giải trí. Không có runtime phiên nào đang đăng ký, liệt kê để đủ bức tranh.", seen: "09:12:40", task: '<span class="muted">Không</span>', claim: '<span class="muted">Không · cần runtime</span>', act: '<a class="btn sm" href="19-security-gate.html">Cổng an ninh</a>' }
+  ];
+  BP.$("#restBody").innerHTML = ROWS.map(r => { const a = BP.agent(r.id), d = BP.dept(a.dept);
+    return `<tr class="${r.stale ? "stale" : ""}"><td><span class="row"><span class="bot" style="--c:${r.id === "pixel" ? "var(--red)" : r.id === "orbit" ? "var(--s-ready)" : "var(--ink-3)"}" aria-hidden="true">${a.code}</span><span><b>${a.name}</b><br><span class="why">${d.code} · ${d.en}</span></span></span></td>
+      <td>${r.pres}</td><td style="max-width:300px">${r.why}</td><td class="mono">${r.seen}</td><td>${r.task}</td><td>${r.claim}</td><td>${r.act}</td></tr>`; }).join("");
+  BP.$$("[data-wake]").forEach(b => b.addEventListener("click", () => wakeUp(true)));
+})();
+</script>
+</body>
+</html>

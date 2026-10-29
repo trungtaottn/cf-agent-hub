@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Đội ngũ Agent · CF Agent Factory</title>
+<link rel="stylesheet" href="assets/blueprint.css">
+<style>
+  /* extra state chips used by this sheet (presence + activity) */
+  .state.offline { color: var(--ink-3); border-style: dotted; } .state.offline::before { content: "○"; }
+  .state.cooldown { color: var(--s-ready); border-style: dashed; } .state.cooldown::before { content: "◔"; }
+  .state.meeting { color: var(--s-review); background: var(--t-review); } .state.meeting::before { content: "◈"; }
+
+  .toolbar { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--line-soft); }
+  .filters { display: flex; gap: var(--sp-3); flex-wrap: wrap; align-items: flex-end; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); letter-spacing: 0.1em; text-transform: uppercase; }
+  .field select, .field input {
+    min-height: 36px; padding: 0 var(--sp-3); background: var(--bp-850); color: var(--ink);
+    border: 1px solid var(--line-soft); border-radius: 0; font-family: var(--f-mono); font-size: var(--fs-xs); min-width: 168px;
+  }
+  .field input::placeholder { color: var(--ink-3); }
+  .field select:hover, .field input:hover { border-color: var(--line); }
+  .count { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); letter-spacing: 0.08em; text-transform: uppercase; padding: var(--sp-2) var(--sp-4); border-bottom: 1px solid var(--grid-major); display: flex; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: var(--sp-4); padding: var(--sp-4); }
+  .acard { position: relative; display: flex; flex-direction: column; background: var(--bp-850); border: 1px solid var(--line-soft); transition: border-color var(--dur-fast) var(--ease); }
+  .acard:hover { border-color: var(--line); }
+  .acard::before { content: ""; position: absolute; top: -1px; left: -1px; width: 9px; height: 9px; border: solid var(--line-strong); border-width: 1px 0 0 1px; }
+  .acard.flash { animation: cardflash 1.6s var(--ease) 1; }
+  @keyframes cardflash { 0%, 100% { border-color: var(--line-soft); box-shadow: none; } 15%, 45% { border-color: var(--s-doing); box-shadow: 0 0 0 2px var(--s-doing); } 30%, 60% { border-color: var(--line-soft); box-shadow: none; } 75% { border-color: var(--s-doing); box-shadow: 0 0 0 1px var(--s-doing); } }
+  .ac-head { display: grid; grid-template-columns: auto 1fr auto; gap: var(--sp-3); align-items: center; padding: var(--sp-3) var(--sp-3) var(--sp-2); }
+  .hexbig { --c: var(--s-ready); display: grid; place-items: center; width: 62px; height: 54px; border: 0; color: var(--c); background: var(--c); clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%); position: relative; flex: none; }
+  .hexbig span { display: grid; place-items: center; width: calc(100% - 3px); height: calc(100% - 3px); background: var(--bp-900); clip-path: inherit; font-family: var(--f-mono); font-weight: 600; font-size: var(--fs-md); color: var(--c); }
+  .acard.stale .hexbig, .acard.offline .hexbig { opacity: 0.7; }
+  .ac-name { min-width: 0; }
+  .ac-name h3 { margin: 0; font-family: var(--f-display); font-size: var(--fs-lg); font-weight: 600; letter-spacing: 0.04em; line-height: 1.1; }
+  .ac-name h3 a { color: var(--ink); }
+  .ac-name .code { font-size: var(--fs-2xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+  .ecg { position: relative; height: 40px; margin: 0 var(--sp-3); border: 1px solid var(--grid-major); background: var(--bp-900); overflow: hidden; }
+  .ecg::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, var(--bp-900) 0%, transparent 28%, transparent 86%, var(--bp-900) 100%); pointer-events: none; }
+  .ecg svg { width: 100%; height: 100%; }
+  .ecg .trace { fill: none; stroke-width: 1.4; stroke-linejoin: round; }
+  .ecg .run { animation: ecg var(--ecg-dur, 2.4s) linear infinite; }
+  @keyframes ecg { to { transform: translateX(-100px); } }
+  .ecg .tag-in { position: absolute; right: 6px; top: 4px; z-index: 1; font-family: var(--f-mono); font-size: 10px; color: var(--ink-3); background: var(--bp-900); padding: 0 4px; }
+  .spec { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2) var(--sp-3); margin: 0; padding: var(--sp-3); }
+  .spec div { min-width: 0; }
+  .spec dt { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); letter-spacing: 0.08em; text-transform: uppercase; }
+  .spec dd { margin: 0; font-family: var(--f-mono); font-size: var(--fs-xs); color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .split { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px dashed var(--line-soft); border-bottom: 1px dashed var(--line-soft); }
+  .split > div { padding: var(--sp-2) var(--sp-3); display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .split > div + div { border-left: 1px dashed var(--line-soft); }
+  .split .k { font-family: var(--f-mono); font-size: 10px; color: var(--ink-3); letter-spacing: 0.12em; text-transform: uppercase; }
+  .split .v { font-size: var(--fs-xs); color: var(--ink-2); line-height: 1.35; }
+  .split .v a { font-family: var(--f-mono); }
+  .split .state { align-self: flex-start; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  .lease { padding: var(--sp-2) var(--sp-3) 0; display: flex; flex-direction: column; gap: 4px; min-height: 42px; }
+  .lease .row { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); justify-content: space-between; }
+  .lease .row b { color: var(--ink); font-weight: 500; }
+  .lease .none { font-family: var(--f-mono); font-size: var(--fs-2xs); color: var(--ink-3); padding-top: 6px; }
+  .caps { display: flex; flex-wrap: wrap; gap: 4px; padding: var(--sp-2) var(--sp-3) var(--sp-3); }
+  .ac-foot { margin-top: auto; display: flex; justify-content: space-between; align-items: center; gap: var(--sp-2); padding: 0 var(--sp-3) var(--sp-3); }
+
+  .table-wrap { overflow-x: auto; }
+  .table .nm { display: flex; align-items: center; gap: var(--sp-2); white-space: nowrap; }
+  .table .nm .bot { width: 28px; height: 28px; font-size: 9px; }
+  .table td { font-size: var(--fs-xs); }
+  .table .mini { width: 90px; }
+
+  .legend-card { display: grid; gap: var(--sp-3); }
+  .legend-card dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: var(--sp-2) var(--sp-3); align-items: center; font-size: var(--fs-xs); color: var(--ink-2); }
+  .legend-card dt { min-width: 110px; }
+  .feed { max-height: 330px; overflow: hidden; }
+  [hidden] { display: none !important; }
+  @media (max-width: 560px) {
+    .field select, .field input { min-width: 0; width: 100%; }
+    .filters, .field { width: 100%; }
+    .cards { grid-template-columns: minmax(0, 1fr); padding: var(--sp-3); }
+  }
+</style>
+</head>
+<body data-sheet="07" data-title="Đội ngũ Agent">
+<div class="app paper">
+  <div id="rail"></div>
+  <div class="main">
+    <header id="topbar"></header>
+    <main class="content">
+
+      <section class="page-head reveal">
+        <div>
+          <div class="code">WORKFORCE REGISTER · 12 AGENT · WS-AURORA</div>
+          <h2>Đội ngũ Agent</h2>
+          <p class="lede">Mỗi thẻ là một bản thông số kỹ thuật của agent. Presence (tín hiệu runtime) được tách riêng với hoạt động (việc agent đang làm). Agent có tín hiệu không có nghĩa là đang giữ task; chỉ lease hợp lệ mới là quyền sở hữu.</p>
+        </div>
+        <div class="actions">
+          <a class="btn" href="02-departments.html">Xem phòng ban</a>
+          <a class="btn primary" href="19-security-gate.html">
+            <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.5"/></svg>
+            Đăng ký agent
+          </a>
+        </div>
+      </section>
+
+      <section class="grid g-4 reveal" aria-label="Tóm tắt đội ngũ">
+        <div class="panel kpi"><span class="label">Có tín hiệu · Online</span><span class="value" id="kOnline">10<small> / 12</small></span><span class="note">1 tín hiệu cũ (PIXEL-08), 1 offline (ECHO-11)</span></div>
+        <div class="panel kpi"><span class="label">Đang giữ lease</span><span class="value c-doing" id="kLease">5</span><span class="note">Mỗi lease gắn 1 run, 1 runtime, 1 fence</span></div>
+        <div class="panel kpi"><span class="label">Chờ người</span><span class="value c-amber" id="kWait">1</span><span class="note">VEGA-03 · T-1039 · lease đã nhả</span></div>
+        <div class="panel kpi"><span class="label">Lease dưới 25%</span><span class="value c-red" id="kLow">1</span><span class="note" id="kLowNote">SAGE-12 cần heartbeat sớm</span></div>
+      </section>
+
+      <section class="panel reveal" aria-label="Danh sách agent">
+        <div class="toolbar">
+          <div class="filters" role="search" aria-label="Lọc agent">
+            <div class="field">
+              <label for="fDept">Phòng ban</label>
+              <select id="fDept"><option value="">Tất cả phòng ban</option></select>
+            </div>
+            <div class="field">
+              <label for="fState">Trạng thái</label>
+              <select id="fState">
+                <option value="">Mọi trạng thái</option>
+                <optgroup label="Presence">
+                  <option value="p:online">Online</option>
+                  <option value="p:stale">Tín hiệu cũ (stale)</option>
+                  <option value="p:offline">Offline</option>
+                </optgroup>
+                <optgroup label="Hoạt động">
+                  <option value="a:doing">Đang làm task</option>
+                  <option value="a:idle">Rảnh</option>
+                  <option value="a:waiting">Chờ người</option>
+                  <option value="a:cooldown">Hồi quota</option>
+                  <option value="a:meeting">Đang họp</option>
+                </optgroup>
+              </select>
+            </div>
+            <div class="field">
+              <label for="fText">Tìm theo tên, runtime, capability</label>
+              <input id="fText" type="search" placeholder="vd: review, rt-atlas" autocomplete="off">
+            </div>
+          </div>
+          <div class="seg" role="group" aria-label="Kiểu hiển thị">
+            <button aria-pressed="true" data-view="grid">Lưới</button>
+            <button aria-pressed="false" data-view="table">Bảng</button>
+          </div>
+        </div>
+        <div class="count"><span id="countTxt">Hiển thị 12 / 12 agent</span><span>SIM DATA · presence quan sát bởi server</span></div>
+
+        <div id="viewGrid" class="cards" aria-live="off"></div>
+
+        <div id="viewTable" class="table-wrap" hidden>
+          <table class="table" aria-label="Bảng agent, thay thế đầy đủ cho lưới thẻ">
+            <thead><tr><th>Agent</th><th>Phòng ban</th><th>Model (khai báo)</th><th>Runtime</th><th>Presence</th><th>Quan sát cuối</th><th>Hoạt động</th><th>Task · lease</th><th>Capabilities</th></tr></thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+
+        <div id="emptyState" class="empty" hidden style="margin: var(--sp-4);">
+          <svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true" style="margin:0 auto var(--sp-3)"><polygon points="11,2 33,2 43,22 33,42 11,42 1,22" fill="none" stroke="currentColor" stroke-dasharray="3 3"/><path d="M15 22h14" stroke="currentColor"/></svg>
+          <div style="font-family:var(--f-display);font-size:var(--fs-md);color:var(--ink-2);margin-bottom:4px">Không có agent khớp bộ lọc</div>
+          <div style="margin-bottom:var(--sp-3)">Thử bỏ bớt điều kiện. Agent offline vẫn là thành viên đã đăng ký, chỉ là không có runtime đang hoạt động.</div>
+          <button class="btn sm" id="clearFilter">Xoá bộ lọc</button>
+        </div>
+      </section>
+
+      <section class="grid g-main-side">
+        <div class="panel reveal">
+          <div class="panel-head"><h3>Thay đổi hoạt động</h3><span class="code">ACTIVITY STREAM · SIM</span></div>
+          <div class="feed"><ul class="log" id="feed" aria-live="polite" aria-relevant="additions"></ul></div>
+        </div>
+        <div class="panel reveal">
+          <div class="panel-head"><h3>Đọc thẻ thế nào</h3><span class="code">LEGEND</span></div>
+          <div class="panel-body legend-card">
+            <dl>
+              <dt><span class="state online">Online</span></dt><dd>Server vừa quan sát runtime trong hạn presence.</dd>
+              <dt><span class="state stale">Tín hiệu cũ</span></dt><dd>Quá hạn presence. Không tự huỷ task, không đổi quyền.</dd>
+              <dt><span class="state offline">Offline</span></dt><dd>Không có runtime hoạt động; agent vẫn đã đăng ký.</dd>
+            </dl>
+            <div class="dim">HOẠT ĐỘNG · TÁCH KHỎI PRESENCE</div>
+            <dl>
+              <dt><span class="state doing">Đang làm</span></dt><dd>Có run với lease và fence hợp lệ.</dd>
+              <dt><span class="state waiting">Chờ người</span></dt><dd>Đã checkpoint, lease nhả, chờ quyết định.</dd>
+              <dt><span class="state cooldown">Hồi quota</span></dt><dd>Runtime báo tạm nghỉ do giới hạn nhà cung cấp.</dd>
+              <dt><span class="state meeting">Đang họp</span></dt><dd>Tham gia thread, chỉ là trình bày.</dd>
+            </dl>
+            <p class="note-red" style="margin:0">Model là thông tin agent tự khai báo, KHÔNG chứng minh danh tính. Work role và phòng ban không cấp quyền; quyền đến từ grant của credential.</p>
+          </div>
+        </div>
+      </section>
+
+    </main>
+    <div id="titleblock"></div>
+  </div>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(() => {
+  const F = BP.F;
+  const LEASE_SEC = 900; // 15:00 mock lease
+  // per-agent observation data (SIM)
+  const seen = { atlas: 3, forge: 8, bolt: 5, vega: 14, kite: 6, muse: 11, pixel: 372, nova: 2, orbit: 20, echo: 7400, sage: 9, lens: 12 };
+  const rate = { atlas: 2.2, forge: 1.8, bolt: 3.2, vega: 2.8, kite: 2.0, muse: 3.0, nova: 1.6, orbit: 3.6, sage: 2.4, lens: 2.9 };
+  const actColor = { doing: "var(--s-doing)", idle: "var(--ink-3)", waiting: "var(--amber)", cooldown: "var(--s-ready)", meeting: "var(--s-review)" };
+  const presLabel = { online: "Online", stale: "Tín hiệu cũ", offline: "Offline" };
+  // working copy so the page can mutate activity
+  const A = F.agents.map(a => ({ ...a, seen: seen[a.id], sim: false }));
+
+  /* ---------- helpers ---------- */
+  const fmtAgo = s => s < 60 ? `${Math.round(s)}s trước` : s < 3600 ? `${Math.floor(s / 60)} phút trước` : `${Math.floor(s / 3600)} giờ trước`;
+  const fmtLease = r => { const s = Math.max(0, Math.round(r * LEASE_SEC)); return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`; };
+  const meterCls = r => r < 0.25 ? "crit" : r < 0.4 ? "warn" : "";
+  const hexColor = a => a.presence === "offline" ? "var(--s-cancelled)" : a.presence === "stale" ? "var(--red)" : actColor[a.activity];
+  function actHtml(a) {
+    const label = F.activityVi[a.activity];
+    const chip = `<span class="state ${a.activity}">${label}</span>`;
+    if (a.presence === "offline") return { chip: `<span class="state idle">Không rõ</span>`, text: "Không có runtime để báo hoạt động" };
+    if (a.presence === "stale") return { chip: `<span class="state idle">Lần cuối: ${label}</span>`, text: "Hoạt động chưa xác nhận lại" };
+    if (a.activity === "doing" && a.task) { const t = BP.task(a.task) || { title: a.simTitle || "Task mô phỏng" }; return { chip, text: `<a href="05-work-order.html">${a.task}</a> ${t.title}` }; }
+    if (a.activity === "waiting") return { chip, text: `<a href="12-approval-gate.html">${a.task}</a> chờ quyết định, lease đã nhả` };
+    if (a.activity === "cooldown") return { chip, text: "Không nhận việc mới tới khi hồi quota" };
+    if (a.activity === "meeting") return { chip, text: `Thread <span class="mono">#standup-${a.dept}</span>` };
+    return { chip, text: "Có thể nhận task Ready phù hợp" };
+  }
+  function ecgPath(amp) {
+    let d = "M0 22";
+    for (let i = 0; i < 4; i++) {
+      const o = i * 100;
+      d += ` H${o + 30} L${o + 34} ${22 - 3 * amp} L${o + 38} 22 H${o + 44} L${o + 47} ${22 + 4 * amp} L${o + 51} ${22 - 17 * amp} L${o + 55} ${22 + 9 * amp} L${o + 58} 22 H${o + 66} L${o + 72} ${22 - 5 * amp} L${o + 78} 22 H${o + 100}`;
+    }
+    return d;
+  }
+
+  /* ---------- build grid ---------- */
+  const grid = BP.$("#viewGrid"), tbody = BP.$("#tbody");
+  function cardHtml(a) {
+    const d = BP.dept(a.dept); const act = actHtml(a);
+    const live = a.presence === "online";
+    const traceCol = live ? "var(--s-doing)" : a.presence === "stale" ? "var(--red)" : "var(--s-cancelled)";
+    const ecg = live
+      ? `<g class="run" style="--ecg-dur:${rate[a.id] || 2.5}s"><path class="trace" d="${ecgPath(a.activity === "doing" ? 1 : 0.6)}" style="stroke:${traceCol}"/></g>`
+      : `<path class="trace" d="M0 22 H200" style="stroke:${traceCol}" stroke-dasharray="${a.presence === "stale" ? "4 4" : "1 5"}"/>`;
+    const lease = a.activity === "doing" && a.task && live
+      ? `<div class="row"><span>LEASE <b data-lease>${fmtLease(a.lease)}</b></span><span>FENCE <b>${a.fence}</b></span></div>
+         <div class="meter ticks ${meterCls(a.lease)}" role="meter" aria-label="Lease còn lại" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(a.lease * 100)}"><i style="width:${a.lease * 100}%"></i></div>`
+      : `<div class="none">${a.activity === "waiting" ? "KHÔNG GIỮ LEASE · CHỜ QUYẾT ĐỊNH" : a.presence === "online" ? "KHÔNG GIỮ LEASE" : "KHÔNG GIỮ LEASE · PRESENCE ≠ QUYỀN TASK"}</div>`;
+    return `<article class="acard ${a.presence}" data-id="${a.id}" aria-label="${a.name}, ${presLabel[a.presence]}, ${F.activityVi[a.activity]}">
+      <header class="ac-head">
+        <span class="hexbig" style="--c:${hexColor(a)}" aria-hidden="true"><span>${a.code}</span></span>
+        <div class="ac-name"><span class="code">${d.code} · ${d.name}</span><h3><a href="08-agent-profile.html">${a.name}</a></h3></div>
+        <span class="state ${a.presence}">${presLabel[a.presence]}</span>
+      </header>
+      <div class="ecg" role="img" aria-label="Nhịp heartbeat runtime: ${presLabel[a.presence]}">
+        <svg viewBox="0 0 200 40" preserveAspectRatio="none" aria-hidden="true">${ecg}</svg>
+        <span class="tag-in" data-seen>${a.presence === "online" ? "HB " : ""}${fmtAgo(a.seen)}</span>
+      </div>
+      <dl class="spec">
+        <div><dt>Model · khai báo</dt><dd title="${a.model}">${a.model.replace(" (khai báo)", "")}</dd></div>
+        <div><dt>Runtime ID</dt><dd>${a.runtime}</dd></div>
+      </dl>
+      <div class="split">
+        <div><span class="k">Presence</span><span class="v">Quan sát cuối <b data-seen2>${fmtAgo(a.seen)}</b></span></div>
+        <div><span class="k">Hoạt động</span>${act.chip}<span class="v">${act.text}</span></div>
+      </div>
+      <div class="lease">${lease}</div>
+      <div class="caps">${a.caps.map(c => `<span class="tag">${c}</span>`).join("")}</div>
+      <div class="ac-foot"><span class="code">${a.presence === "stale" ? '<span class="c-red">CẦN KIỂM TRA RUNTIME</span>' : "ROLE: " + d.en.toUpperCase()}</span><a class="btn sm" href="08-agent-profile.html">Mở hồ sơ</a></div>
+    </article>`;
+  }
+  function rowHtml(a) {
+    const d = BP.dept(a.dept); const act = actHtml(a);
+    const lease = a.activity === "doing" && a.task && a.presence === "online"
+      ? `<span class="mono">${a.task}</span> · <span class="mono" data-lease>${fmtLease(a.lease)}</span><div class="meter mini ${meterCls(a.lease)}"><i style="width:${a.lease * 100}%"></i></div>`
+      : `<span class="muted">Không giữ lease</span>`;
+    return `<tr data-id="${a.id}">
+      <td><span class="nm"><span class="bot" style="--c:${hexColor(a)}" aria-hidden="true">${a.code}</span><a href="08-agent-profile.html">${a.name}</a></span></td>
+      <td class="mono">${d.code}</td><td class="mono">${a.model}</td><td class="mono">${a.runtime}</td>
+      <td><span class="state ${a.presence}">${presLabel[a.presence]}</span></td>
+      <td class="mono" data-seen2>${fmtAgo(a.seen)}</td>
+      <td>${act.chip}</td><td>${lease}</td>
+      <td>${a.caps.join(", ")}</td></tr>`;
+  }
+  function render() { grid.innerHTML = A.map(cardHtml).join(""); tbody.innerHTML = A.map(rowHtml).join(""); applyFilter(); kpis(); }
+  function rerenderOne(a, flash) {
+    const old = grid.querySelector(`[data-id="${a.id}"]`); const n = BP.h(cardHtml(a));
+    if (old) old.replaceWith(n);
+    const oldR = tbody.querySelector(`[data-id="${a.id}"]`); if (oldR) oldR.replaceWith(BP.h(`<table><tbody>${rowHtml(a)}</tbody></table>`).querySelector("tr"));
+    if (flash && !BP.reduced) n.classList.add("flash");
+    applyFilter(); kpis();
+  }
+  function kpis() {
+    const on = A.filter(a => a.presence === "online");
+    const leased = on.filter(a => a.activity === "doing" && a.task);
+    const low = leased.filter(a => a.lease < 0.25);
+    BP.$("#kOnline").innerHTML = `${on.length}<small> / ${A.length}</small>`;
+    BP.$("#kLease").textContent = leased.length;
+    BP.$("#kWait").textContent = on.filter(a => a.activity === "waiting").length;
+    BP.$("#kLow").textContent = low.length;
+    BP.$("#kLowNote").textContent = low.length ? low.map(a => a.name).join(", ") + " cần heartbeat sớm" : "Mọi lease còn trên 25%";
+  }
+
+  /* ---------- filters ---------- */
+  const fDept = BP.$("#fDept"), fState = BP.$("#fState"), fText = BP.$("#fText");
+  F.departments.forEach(d => fDept.insertAdjacentHTML("beforeend", `<option value="${d.id}">${d.code} · ${d.name}</option>`));
+  function match(a) {
+    if (fDept.value && a.dept !== fDept.value) return false;
+    const s = fState.value;
+    if (s.startsWith("p:") && a.presence !== s.slice(2)) return false;
+    if (s.startsWith("a:") && (a.presence !== "online" || a.activity !== s.slice(2))) return false;
+    const q = fText.value.trim().toLowerCase();
+    if (q && ![a.name, a.runtime, a.model, ...a.caps].join(" ").toLowerCase().includes(q)) return false;
+    return true;
+  }
+  let view = "grid";
+  function applyFilter() {
+    let n = 0;
+    A.forEach(a => { const ok = match(a); if (ok) n++;
+      const c = grid.querySelector(`[data-id="${a.id}"]`); if (c) c.hidden = !ok;
+      const r = tbody.querySelector(`[data-id="${a.id}"]`); if (r) r.hidden = !ok; });
+    BP.$("#countTxt").textContent = `Hiển thị ${n} / ${A.length} agent`;
+    BP.$("#emptyState").hidden = n !== 0;
+    BP.$("#viewGrid").hidden = view !== "grid" || n === 0;
+    BP.$("#viewTable").hidden = view !== "table" || n === 0;
+  }
+  [fDept, fState].forEach(x => x.addEventListener("change", applyFilter));
+  fText.addEventListener("input", applyFilter);
+  BP.$("#clearFilter").addEventListener("click", () => { fDept.value = ""; fState.value = ""; fText.value = ""; applyFilter(); fDept.focus(); });
+  BP.$$(".seg [data-view]").forEach(b => b.addEventListener("click", () => {
+    view = b.dataset.view;
+    BP.$$(".seg [data-view]").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    applyFilter();
+  }));
+  // deep link: ?empty=1 shows the empty state for review
+  if (new URLSearchParams(location.search).get("empty")) { fText.value = "không-có-agent-nào"; }
+  render();
+
+  /* ---------- feed ---------- */
+  const feed = BP.$("#feed");
+  const push = (glyph, color, html) => BP.logPush(feed, `<time>${BP.now()}</time><span class="g" style="color:${color}">${glyph}</span><span>${html}</span>`, 14);
+  [
+    ["◌", "var(--red)", "<b>PIXEL-08</b> quá hạn presence 5 phút · không giữ task nào, không cần thu hồi"],
+    ["❚❚", "var(--amber)", "<b>VEGA-03</b> checkpoint T-1039, nhả lease, chờ quyết định của người"],
+    ["◔", "var(--s-ready)", "<b>ORBIT-05</b> báo hồi quota nhà cung cấp tới 15:10"],
+    ["▶", "var(--s-doing)", "<b>ATLAS-01</b> heartbeat run <span class='mono'>r-88f1</span> · fence 18"]
+  ].forEach(r => push(...r));
+
+  /* ---------- live ticks: observation age + lease countdown ---------- */
+  BP.every(1000, () => {
+    A.forEach(a => {
+      a.seen += 1;
+      if (a.presence === "online" && a.activity === "doing" && a.task) a.lease = Math.max(0.05, a.lease - 1 / LEASE_SEC);
+    });
+    // light-touch DOM update (no re-render)
+    A.forEach(a => {
+      BP.$$(`[data-id="${a.id}"]`).forEach(root => {
+        const s = root.querySelector("[data-seen]"); if (s) s.textContent = (a.presence === "online" ? "HB " : "") + fmtAgo(a.seen);
+        const s2 = root.querySelector("[data-seen2]"); if (s2) s2.textContent = fmtAgo(a.seen);
+        const l = root.querySelector("[data-lease]"); if (l) l.textContent = fmtLease(a.lease);
+        const m = root.querySelector(".meter"); if (m) { m.className = m.className.replace(/\b(warn|crit)\b/g, "").trim() + " " + meterCls(a.lease); m.querySelector("i").style.width = (a.lease * 100) + "%"; }
+      });
+    });
+  });
+  // heartbeats: online runtimes report every few seconds; doing agents renew lease
+  BP.every(2600, () => {
+    const on = A.filter(a => a.presence === "online");
+    const a = BP.pick(on); a.seen = 0;
+    if (a.activity === "doing" && a.task && Math.random() < 0.5) {
+      a.lease = Math.min(1, a.lease + 0.3);
+      push("▶", "var(--s-doing)", `<b>${a.name}</b> heartbeat gia hạn lease ${a.task} · fence ${a.fence} giữ nguyên`);
+      kpis();
+    }
+  });
+
+  /* ---------- random activity change with border flash ---------- */
+  const readyPool = ["T-1055", "T-1056", "T-1058", "T-1057"];
+  const transitions = {
+    idle: [
+      a => { const t = readyPool.find(id => !A.some(x => x.task === id)); if (!t) return null; a.activity = "doing"; a.task = t; a.lease = 1; a.fence = 1; a.sim = true;
+             return ["◇", "var(--s-ready)", `<b>${a.name}</b> claim ${t} thành công · fence 1 · lease 15:00`]; },
+      a => { a.activity = "meeting"; return ["◈", "var(--s-review)", `<b>${a.name}</b> tham gia thread <span class='mono'>#standup-${a.dept}</span>`]; }
+    ],
+    doing: [
+      a => { if (!a.sim) return null; const t = a.task; a.activity = "idle"; a.task = null; a.lease = 0; a.sim = false;
+             return ["◎", "var(--s-review)", `<b>${a.name}</b> nộp kết quả ${t} sang Review, lease được nhả`]; }
+    ],
+    meeting: [a => { a.activity = "idle"; return ["○", "var(--ink-3)", `<b>${a.name}</b> rời phòng họp, sẵn sàng nhận việc`]; }],
+    cooldown: [a => { a.activity = "idle"; return ["◇", "var(--s-ready)", `<b>${a.name}</b> hồi quota xong, chuyển sang rảnh`]; }]
+  };
+  function changeOne() {
+    const cands = A.filter(a => a.presence === "online" && transitions[a.activity] && (a.activity !== "doing" || a.sim));
+    if (!cands.length) return;
+    const a = BP.pick(cands);
+    const ev = BP.pick(transitions[a.activity])(a);
+    if (!ev) return;
+    push(...ev); rerenderOne(a, true);
+  }
+  if (!BP.reduced) BP.every(5200, changeOne);
+})();
+</script>
+</body>
+</html>
