@@ -275,3 +275,68 @@ individual secret hashes. The ordinary v4 report is unchanged. Safe receipts are
 available privately on success or failure; raw captured originals are not logged.
 This is local source evidence, not a native CLI stdout scan or installed observer
 authority, and does not resolve the three tuple-only obligations.
+
+### V2 host source integration in progress
+
+The fixed host work now includes a guarded Journal inspection producer and a
+pure signed-installation-statement verifier. Neither is an installed host adapter.
+The Journal producer opens the existing Journal with `create:false` and denied
+mutation authority, compares the exact retained request/principal/key/state, and
+closes in `finally`. Its bounded source original does not claim replay continuity,
+HTTP outcome or OS read-only access. Journal construction validates up to 1,000
+rows / 64 MiB of reserved payload; SQLite open may recover a rollback journal.
+It is not a constant-cost point read or permission to bypass protected paths.
+
+`build-native-host.mjs` bundles the source-owned TS observer separately from the
+CLI. Its bytes need a separate host commitment in an eventual installation.
+The pure installation verifier checks fixed Ed25519 signatures, canonical closed
+v2 metadata, expiry/epoch and exact source/config/target subjects. It returns
+`installedAuthority:false`: caller-supplied signed bytes do not establish trusted
+file custody, actual service capability, current grants or isolation. No trust
+root, auth material, server or default adapter is installed by these modules.
+
+V1 fixture/config/evidence semantics and native case rosters are unchanged.
+Complete fixed factory, authenticated run-bound service composition and guarded
+entry resolution remain in progress. Three tuple-only obligations remain blocked.
+
+The v2 source also defines a fixed operator-installation custody reader and an
+explicit response resource-ID convention. Pure metadata tests do not establish
+actual root-owned file custody. No installation files are read by source tests;
+the fixed loader pins the unchanged scenario and remains blocked by the three
+tuple controls and five explicitly unfinished composition capabilities before
+authentication, module import or network effects.
+
+Resource IDs are kind-qualified ASCII identifiers. Task result identity is
+`result-run:<run_id>`, reflecting the actual unique workspace/run relationship,
+not an invented public result ID. Response parsing alone is not independent
+state observation: the pending state producer must select complete fixture
+membership independently, including visibility and pagination constraints,
+rather than querying only the IDs returned by the CLI. This bounded fixture
+profile does not restrict otherwise valid product data or prove artifact bytes.
+
+The pure v2 original-transfer codec signs and verifies a closed, canonical
+Ed25519 envelope against an independently supplied delegated key and exact
+request/manifest correlations. SQL canonical bytes (16 KiB), raw HTTP request or
+response bytes (64 KiB), and journal source projections (4 KiB) remain distinct
+kinds. The current frozen roster yields an 88,852-byte maximum serialized
+envelope, including base64 and signature. Oversized otherwise-valid product
+content is incomplete capture evidence, not an invalid product response.
+
+The codec returns a detached signed statement with `installedAuthority:false`.
+It does not establish producer origin, grant expiry, one-time sequencing, total
+run admission or a working host service. Those remain explicit factory/service
+requirements; no protocol-v1 fallback or acceptance-roster change is introduced.
+
+A fixed 23-selector SQL catalog now validates physical row types, per-cell UTF-8
+sizes, overflow rows and canonical originals. Each original is capped at 16 KiB;
+pre-read bridge reservations are larger and independently calculated (for
+example, the event selector's escaped JSON upper bound is 974,807 bytes including
+its overflow row). These bounds do not claim all maxima fit the total evidence
+budget. Invalid SQL projections carry an explicit validity bit and are rejected,
+never silently treated as legitimate nullable values or dropped.
+
+The catalog has been exercised against all 16 migrations in an in-memory SQLite
+fixture. It does not execute arbitrary caller SQL or authenticate a storage
+handle. Exact schema sequence, required rows, maintenance fence, operation
+visibility and one coherent before/after snapshot are subsequent observer
+obligations; an empty metadata/grant result is not successful admission.
