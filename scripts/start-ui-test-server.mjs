@@ -137,7 +137,7 @@ try {
   for(const port of [proxy,negativeProxy])await new Promise((resolve,reject)=>{const socket=connect({host:'127.0.0.1',port});socket.once('connect',()=>{socket.destroy();reject(Error('LISTENER_SURVIVED_TEARDOWN'));});socket.once('error',()=>resolve());});
   console.log('CFHUB_FIXTURE_SELF_CHECK_PASS provider_signature basic_auth pkce one_use_code exact_egress worker_sql_authority teardown'+(process.argv.includes('--self-check-r2')?' r2_real_commands retained_results committed_artifact bounded_pages do_eviction':''));
  } else {
-  console.log('CFHUB_FIXTURE_READY proxy='+fixture.proxyPort+' negative_proxy='+fixture.negativeProxyPort+' app_port='+fixture.appPort+' app_pin='+fixture.pins[0]+' issuer_pin='+fixture.pins[1]);
+  console.log('CFHUB_FIXTURE_READY proxy='+fixture.proxyPort+' negative_proxy='+fixture.negativeProxyPort+' app_port='+fixture.appPort+' app_pin='+fixture.pins[0]+' issuer_pin='+fixture.pins[1]+' app_certificate='+Buffer.from(fixture.appCertificate).toString('base64'));
  }
 } catch(error) {
  // Do not print provider tokens, environment, request bodies or key material.
