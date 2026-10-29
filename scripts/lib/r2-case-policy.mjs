@@ -94,6 +94,19 @@ export function validateCaseFamily(value,ctx={}){
  const prep=new Map(ctx.preparations.subjects.map(e=>[e.case_id,e]));
  const assembly=ctx.commands.get(value.command_id);
  if(!assembly||assembly.kind!=='contract'||assembly.provenance!=='source'||assembly.exit_code!==0){add(findings,'ASSEMBLY','Evidence assembly must be source contract command');return findings;}
+ return validateCaseRecords(value,ctx,findings,family,prep,assembly);
+}
+/** Native-only non-receipt core; final assembly timing remains a separate gate. */
+export function validateNativeCaseCore(value,ctx={}){
+ const findings=[],keys=['type','version','revision','tree_sha256','environment_id','composition_sha256','records'];
+ if(!value||typeof value!=='object'||Array.isArray(value)||value.type!=='r2-native'||value.version!==1||Object.keys(value).length!==keys.length||keys.some(k=>!Object.hasOwn(value,k))||!Array.isArray(value.records)){add(findings,'FAMILY','Explicit native core carrier required');return findings;}
+ const roster=CASE_POLICY.filter(c=>c.family==='native');
+ if(!equalSet(value.records.map(r=>r?.id),roster.map(r=>r.id))){add(findings,'COVERAGE','Exact native roster required');return findings;}
+ if(bytes(value)>CASE_LIMITS.family)add(findings,'BUDGET','native exceeds4MiB');
+ if(!(ctx.commands instanceof Map)||!ctx.preparations?.subjects){add(findings,'CONTEXT','Commands and independently validated preparations required');return findings;}
+ return validateCaseRecords(value,ctx,findings,'native',new Map(ctx.preparations.subjects.map(e=>[e.case_id,e])),null);
+}
+function validateCaseRecords(value,ctx,findings,family,prep,assembly){
  const records=new Map(value.records.map(r=>[r.id,r]));
  for(const record of value.records){
   const row=byId.get(record.id);if(!row)continue;
@@ -104,7 +117,7 @@ export function validateCaseFamily(value,ctx={}){
   const expectedProvenance=expectedKind==='workers-tests'?'source':'real-run';
   if(command.kind!==expectedKind||command.provenance!==expectedProvenance||command.exit_code!==0)add(findings,'PRODUCER',record.id);
   for(const key of ['revision','tree_sha256','environment_id','composition_sha256'])if(command[key]!==value[key])add(findings,'CANDIDATE',record.id+': '+key);
-  if(!Number.isSafeInteger(record.observed_at)||record.observed_at<command.started_at||record.observed_at>command.ended_at||record.observed_at>assembly.started_at||command.ended_at>assembly.started_at||ctx.preparations.observed_at>command.started_at)add(findings,'TIME',record.id);
+  if(!Number.isSafeInteger(record.observed_at)||record.observed_at<command.started_at||record.observed_at>command.ended_at||(assembly&&(record.observed_at>assembly.started_at||command.ended_at>assembly.started_at))||ctx.preparations.observed_at>command.started_at)add(findings,'TIME',record.id);
   const commitments=command.subjects?.cases;
   if(!Array.isArray(commitments)||commitments.length>CASE_LIMITS.commandCases||!equalSet(command.case_ids,commitments.map(x=>x.case_id))){add(findings,'COMMAND_CASES',record.id);continue;}
   const commitment=commitments.find(x=>x.case_id===record.id);

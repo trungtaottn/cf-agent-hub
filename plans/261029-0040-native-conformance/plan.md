@@ -15,6 +15,8 @@ Implement the dedicated runner/config consumer and source-level subprocess, scen
 
 3. [Native producer integration](phase-03-native-producer.md): reviewed scoped evidence and auxiliary server-denial source contracts.
 
+4. [Owned recording](phase-04-owned-recording.md): bounded original ingestion and truthful validation chronology.
+
 ## Ownership
 Controller owns config, runner, package.json/docs/discovery and integration. One helper may own only scripts/lib/native-r2-process.mjs and its test; another may own only scripts/lib/native-r2-scenario.mjs and its test. Reviewer owns no implementation files. Freeze interfaces before delegation.
 

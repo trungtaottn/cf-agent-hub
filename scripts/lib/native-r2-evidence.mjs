@@ -1,6 +1,6 @@
 /** Pure, bounded projection of custody originals. No I/O or authentication. */
 import {createHash} from 'node:crypto';
-import {CASE_POLICY,caseSchemas,validateCaseFamily,canonicalCaseSubject} from './r2-case-policy.mjs';
+import {CASE_POLICY,caseSchemas,validateCaseFamily,validateNativeCaseCore,canonicalCaseSubject} from './r2-case-policy.mjs';
 const HASH=/^[a-f0-9]{64}$/, ID=/^[A-Za-z0-9_-]{1,128}$/;
 const reject=code=>{throw Error('NATIVE_EVIDENCE_'+code);};
 const typedArrayProto=Object.getPrototypeOf(Uint8Array.prototype);
@@ -28,9 +28,13 @@ function plain(value,depth=0){
  for(const k of Reflect.ownKeys(ds)){if(typeof k!=='string'||['__proto__','constructor','prototype'].includes(k)||!Object.hasOwn(ds[k],'value')||!ds[k].enumerable)reject('SHAPE');out[k]=plain(ds[k].value,depth+1);}return out;
 }
 /** Limits apply before parsing/copying already materialized buffers, not upstream reads. */
-export function loadNativeOriginals(input){
+function reserveOriginals(input){
  const rows=array(input,512).map(value=>closed(value,['id','sha256','bytes']));let total=0;
  for(const row of rows){if(!ID.test(row.id)||!HASH.test(row.sha256)||!(row.bytes instanceof Uint8Array)||Object.getPrototypeOf(row.bytes)!==Uint8Array.prototype&&Object.getPrototypeOf(row.bytes)!==Buffer.prototype)reject('SHAPE');for(const k of ['byteLength','byteOffset','buffer','length','constructor','valueOf',Symbol.toPrimitive])if(Object.hasOwn(row.bytes,k))reject('SHAPE');const buffer=typedBuffer.call(row.bytes);if(buffer instanceof SharedArrayBuffer)reject('SHAPE');const n=typedLength.call(row.bytes);if(n<1||n>65536||total+n>16777216)reject('BUDGET');total+=n;}
+ return {rows,total};
+}
+export function loadNativeOriginals(input){
+ const {rows}=reserveOriginals(input);
  const result=new Map();
  for(const row of rows){if(result.has(row.id))reject('DUPLICATE');const copy=new Uint8Array(typedLength.call(row.bytes));Uint8Array.prototype.set.call(copy,row.bytes);const bytes=Buffer.from(copy.buffer);if(sha(bytes)!==row.sha256)reject('DIGEST');if(bytes[0]===239&&bytes[1]===187&&bytes[2]===191)reject('UTF8');let parsed;try{parsed=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));}catch{reject('JSON');}result.set(row.id,{sha256:row.sha256,byte_size:bytes.length,value:plain(parsed)});}return result;
 }
@@ -157,7 +161,7 @@ function revocationProjection(store,o,related,c,prep,proc){
 }
 const incomplete=code=>({status:'incomplete',scope:'native37',acceptance:'pending-external-inspection',issue48Complete:false,errors:[code]});
 /** All originals are structural inputs. Their independent authentication remains external. */
-export function assembleNativeEvidence(input){
+function projectNative(input,coreOnly=false){
  try{
   const outer=closed(input,['version','context','records','caseBindings','assemblyBinding']);requireValue(outer.version===1,'VERSION');
   const c=contextInput(outer.context),store=loadNativeOriginals(outer.records),bindings=plain(array(outer.caseBindings,37)),assemblyBinding=plain(closed(outer.assemblyBinding,['record_id','command_id','native_artifact_path']));
@@ -199,10 +203,37 @@ export function assembleNativeEvidence(input){
   for(const [related,actual] of [['original_prepared','process_prepared_record_id'],['original_spawned','process_spawned_record_id'],['original_final','process_final_record_id'],['original_preparation','preparation_record_id']])requireValue(restartBinding.related_record_ids[related]===lostBinding[actual],'RESTART_JOIN');
   const lost=rows.find(r=>r.id===lostBinding.case_id).observations,restart=rows.find(r=>r.id===restartBinding.case_id).observations;
   requireValue(restart.original_process_id===lost.process_id,'RESTART_JOIN');for(const key of ['intent_id','retained_request_sha256','retained_key_sha256'])requireValue(restart[key]===lost[key],'RESTART_JOIN');
+  if(coreOnly){
+   requireValue(!store.has(assemblyBinding.record_id)&&ID.test(assemblyBinding.record_id)&&ID.test(assemblyBinding.command_id)&&!commands.some(cmd=>cmd.id===assemblyBinding.command_id),'ASSEMBLY');
+   requireNativeArtifactPath(assemblyBinding.native_artifact_path);
+   const header={type:'r2-native',version:1,revision:c.candidate_sha,tree_sha256:c.source_tree_sha256,environment_id:c.environment_id,composition_sha256:c.composition_sha256,records:rows};
+   for(const row of rows)requireValue(nativeRecordShapes.get(row.id)?.(row),'SCHEMA');
+   requireValue(validateNativeCaseCore(header,caseContext(c,commands,entries)).length===0,'POLICY');
+   requireValue(Buffer.byteLength(canonicalCaseSubject(entries))<=4194304&&commands.every(cmd=>Buffer.byteLength(canonicalCaseSubject(cmd))<=65536),'BUDGET');
+   const manifestSha256=inputManifest(outer.context,bindings,store,assemblyBinding.record_id);
+   const token=Object.freeze(Object.create(null));
+   const retainedContext=Object.fromEntries(fields('run_id candidate_sha source_tree_sha256 environment_id composition_sha256 workspace_id config_epoch executable_sha256 observer_id').map(k=>[k,c[k]]));
+   const state=deepFreeze({c:retainedContext,commands,entries,rows,assemblyBinding,manifestSha256,originalCount:store.size,originalBytes:[...store.values()].reduce((sum,r)=>sum+r.byte_size,0)});
+   pendingTokens.set(token,state);
+   return {status:'core-validated',scope:'native37',acceptance:'pending-external-inspection',issue48Complete:false,input_manifest_sha256:manifestSha256,token};
+  }
   const ar=original(store,assemblyBinding.record_id,fields('type version id run_id candidate_sha source_tree_sha256 environment_id composition_sha256 input_manifest_sha256 started_at ended_at observed_at exit_code observer_id'),'native-assembly-original'),a=ar.value;
+  const manifestSha256=inputManifest(outer.context,bindings,store,assemblyBinding.record_id);
+  return completeProjection({c,commands,entries,rows,assemblyBinding,manifestSha256},ar);
+ }catch(error){return incomplete(/^NATIVE_EVIDENCE_[A-Z_]+$/.test(error?.message)?error.message:'NATIVE_EVIDENCE_INCOMPLETE');}
+}
+
+const pendingTokens=new WeakMap();
+const nativeRecordShapes=new Map(CASE_POLICY.map((row,index)=>[row,index]).filter(([row])=>row.family==='native').map(([row,index])=>[row.id,ajv.compile({$ref:caseSchemas.$id+'#/$defs/case_'+index})]));
+function deepFreeze(value){if(value&&typeof value==='object'){for(const item of Object.values(value))deepFreeze(item);Object.freeze(value);}return value;}
+function inputManifest(context,bindings,store,assemblyId){return hashObject({context:plain(context),caseBindings:bindings,records:[...store].filter(([id])=>id!==assemblyId).map(([id,r])=>({id,sha256:r.sha256})).sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0)});}
+function caseContext(c,commands,entries){return {commands:new Map(commands.map(cmd=>[cmd.id,cmd])),preparations:{subjects:entries,observed_at:Math.min(...entries.map(x=>x.prepared_at))},subjectDigests:new Map(entries.map(e=>[e.case_id,e.subject_sha256])),workspaceId:c.workspace_id,configEpoch:c.config_epoch,nativeExecutableSha256:c.executable_sha256};}
+function requireNativeArtifactPath(path){requireValue(typeof path==='string'&&Buffer.byteLength(path)<=256&&/^validation\/releases\/[A-Za-z0-9_-]{1,128}\/[A-Za-z0-9_.-]+\.json$/.test(path),'PATH');}
+function completeProjection(state,ar){
+ const {c,assemblyBinding,manifestSha256}=state,a=ar.value;
+ const commands=plain(state.commands),entries=plain(state.entries),rows=plain(state.rows);
   requireShared(a,c,fields('run_id candidate_sha source_tree_sha256 environment_id composition_sha256'));
-  const manifest={context:plain(outer.context),caseBindings:bindings,records:[...store].filter(([id])=>id!==assemblyBinding.record_id).map(([id,r])=>({id,sha256:r.sha256})).sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0)};
-  requireValue(a.input_manifest_sha256===hashObject(manifest)&&a.id===assemblyBinding.command_id&&a.observer_id===c.observer_id,'ASSEMBLY');
+  requireValue(a.input_manifest_sha256===manifestSha256&&a.id===assemblyBinding.command_id&&a.observer_id===c.observer_id,'ASSEMBLY');
   requireValue(n(a.started_at)&&n(a.ended_at)&&n(a.observed_at)&&commands.every(cmd=>cmd.ended_at<=a.started_at)&&a.started_at<=a.observed_at&&a.observed_at<=a.ended_at,'TIME');
   const assembly=makeCommand(c,ar,'contract');commands.push(assembly);requireValue(new Set(commands.map(v=>v.id)).size===commands.length,'DUPLICATE');
   const header={version:1,revision:c.candidate_sha,tree_sha256:c.source_tree_sha256,environment_id:c.environment_id,composition_sha256:c.composition_sha256};
@@ -215,5 +246,22 @@ export function assembleNativeEvidence(input){
   const nativeBytes=Buffer.from(canonicalCaseSubject(native));assembly.results=[{type:'r2-native',artifact:{path,sha256:sha(nativeBytes),byte_size:nativeBytes.length}}];requireValue(validR2Command(assembly),'COMMAND');
   requireValue(nativeBytes.length<=4194304&&Buffer.byteLength(canonicalCaseSubject(preparations))<=4194304&&commands.every(cmd=>Buffer.byteLength(canonicalCaseSubject(cmd))<=65536),'BUDGET');
   return {status:'structural-fragment',scope:'native37',acceptance:'pending-external-inspection',issue48Complete:false,native,preparations,commands,externalRequirements:['authenticated-originals','protected-host-read-bounds','independent-live-observer','server-denial-producers','post-r4-acceptance'],rootMergeStatus:'pending-authenticated-global-preparation-timeline'};
+}
+/** Backward-compatible one-shot validation of an already completed actual original. */
+export function assembleNativeEvidence(input){return projectNative(input,false);}
+/** Validates core facts only, with no fabricated completed assembly receipt. */
+export function prepareNativeEvidence(input){return projectNative(input,true);}
+/** Consumes an opaque token before reading the actual terminal original. */
+export function finalizeNativeEvidence(token,input){
+ const state=pendingTokens.get(token);if(!state)return incomplete('NATIVE_EVIDENCE_TOKEN');pendingTokens.delete(token);
+ try{
+  const {assemblyRecord}=closed(input,['assemblyRecord']),reservation=reserveOriginals([assemblyRecord]);
+  requireValue(state.originalCount+1<=512&&state.originalBytes+reservation.total<=16777216,'BUDGET');
+  requireValue(reservation.rows[0].id===state.assemblyBinding.record_id,'ASSEMBLY');
+  const store=loadNativeOriginals(reservation.rows);
+  const ar=original(store,state.assemblyBinding.record_id,fields('type version id run_id candidate_sha source_tree_sha256 environment_id composition_sha256 input_manifest_sha256 started_at ended_at observed_at exit_code observer_id'),'native-assembly-original');
+  return completeProjection(state,ar);
  }catch(error){return incomplete(/^NATIVE_EVIDENCE_[A-Z_]+$/.test(error?.message)?error.message:'NATIVE_EVIDENCE_INCOMPLETE');}
 }
+/** Memory abandonment only; never cleanup/rollback of external effects. */
+export function discardNativeEvidence(token){return pendingTokens.delete(token);}

@@ -8,3 +8,6 @@ export function canonicalCaseSubject(value:unknown):string;
 export function references(value?:unknown):never[];
 export function validatePreparations(value:any,ctx?:any):Finding[];
 export function validateCaseFamily(value:any,ctx?:any):Finding[];
+
+/** Native-only non-receipt validation; does not establish final assembly timing. */
+export function validateNativeCaseCore(value:any,ctx?:any):Finding[];
