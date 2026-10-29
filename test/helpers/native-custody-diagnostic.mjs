@@ -11,3 +11,8 @@ export function custodyDiagnostic(spec){
  function file(path,maxBytes,executable){try{return {canonical:realpathSync(path)===path,...metadataPredicates(lstatSync(path),uid,{maxBytes,executable}),parents:dirs(dirname(path),false,false)};}catch{return {inspectionFailed:true};}}
  return {receipt:dirs(spec.receiptDirectory,true,true),cwd:dirs(spec.cwd,false,false),node:file(spec.nodePath,268435456,true),entry:file(spec.entryPath,33554432,false)};
 }
+export function runtimePermissionsEligible(node){
+ const levels=node?.parents?.levels;
+ if(!node||typeof node.ownerAllowed!=='boolean'||typeof node.modeAllowed!=='boolean'||!Array.isArray(levels)||levels.length===0||levels.some(level=>typeof level.ownerAllowed!=='boolean'||typeof level.modeAllowed!=='boolean'))throw Error('RUNTIME_DIAGNOSTIC_UNAVAILABLE');
+ return node.ownerAllowed&&node.modeAllowed&&levels.every(level=>level.ownerAllowed&&level.modeAllowed);
+}

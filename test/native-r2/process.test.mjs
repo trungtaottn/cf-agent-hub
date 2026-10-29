@@ -3,7 +3,7 @@ import childProcess from 'node:child_process';
 import {syncBuiltinESMExports} from 'node:module';
 import assert from 'node:assert/strict';
 import {runOwnedProcess} from '../../scripts/lib/native-r2-process.mjs';
-import {custodyDiagnostic} from '../helpers/native-custody-diagnostic.mjs';
+import {custodyDiagnostic,runtimePermissionsEligible} from '../helpers/native-custody-diagnostic.mjs';
 test('owned process rejects absent closed input without leaking details',async()=>{
  for(const value of [undefined,null,{}, {nodePath:'private-secret'}])await assert.rejects(()=>runOwnedProcess(value),error=>error.message==='NATIVE_PROCESS_INPUT_REJECTED');
 });
@@ -77,12 +77,13 @@ for(const [label,mutate] of [
 ])test('rejects '+label+' before custody or spawn',()=>withSpec(async(spec,dir)=>{
  mutate(spec);await assert.rejects(()=>runOwnedProcess(spec),error=>error.message==='NATIVE_PROCESS_INPUT_REJECTED');assert.deepEqual(readdirSync(dir),['synthetic.mjs']);
 }));
-test('actual managed runtime owner failure stays blocked without copying or relaxing Node custody',()=>withSpec(async(spec,dir)=>{
- const owner=lstatSync(spec.nodePath).uid;
- if([0,process.getuid()].includes(owner))return; // This environment's specific negative is inapplicable elsewhere.
+test('ineligible runtime owner or writable ancestry is rejected before spawn and receipts',()=>withSpec(async(spec,dir)=>{
+ if(runtimePermissionsEligible(custodyDiagnostic(spec).node))return; // This environment-specific negative is inapplicable on eligible runtimes.
  await assert.rejects(()=>runOwnedProcess(spec),error=>error.message==='NATIVE_PROCESS_INPUT_REJECTED');assert.deepEqual(readdirSync(dir),['synthetic.mjs']);
 }));
-test('real owned process positive execution remains blocked pending trusted runtime custody',{skip:![0,process.getuid()].includes(lstatSync(process.execPath).uid)?'Managed Node UID65534 is not currentUID/root; no host attestation or alternate-root bypass':false},t=>withSpec(async(spec)=>{
+test('real owned process executes only with eligible runtime custody',t=>withSpec(async(spec)=>{
+ const predicates=custodyDiagnostic(spec);
+ if(!runtimePermissionsEligible(predicates.node)){t.diagnostic('custody-predicates '+JSON.stringify(predicates));t.skip('Managed Node owner/mode or ancestor owner/mode is ineligible; positive process custody remains unverified');return;}
  let result;try{result=await runOwnedProcess(spec);}catch(error){t.diagnostic('custody-predicates '+JSON.stringify(custodyDiagnostic(spec)));throw error;}assert.equal(result.status,'terminal');assert.equal(result.exitCode,0);assert.equal(result.readCapturedOutput().stdout.toString(),'synthetic only');assert.equal(Object.keys(result).includes('readCapturedOutput'),false);assert.equal(JSON.stringify(result).includes('synthetic only'),false);
 },false));
 

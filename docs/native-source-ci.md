@@ -27,3 +27,22 @@ or deployed acceptance. `test:native:r2` is not invoked by this job.
 The workflow contract regression checks the bounded job, pinned runtime,
 source-only invocation and dependency wiring. Changes to native source should
 continue to carry their own focused tests and independent review.
+
+## Observed hosted-runtime limit
+
+The first selected job on `88e729e` ran 529 passing tests and one failing positive
+process fixture, with no skips. All nineteen previously locally blocked input
+filesystem cases executed successfully. A test-only diagnostic on `50a61c2`
+then recorded 533 passes and the same failure: the setup-node executable and
+six ancestor levels were group/world writable under the existing custody
+predicate, despite acceptable ownership. Synthetic receipt and entry directories
+passed their predicates. Both failed runs remain evidence; neither is called green.
+
+The process fixture now checks executable and ancestor ownership/mode before its
+positive case. An ineligible runtime has a separate negative assertion requiring
+rejection before spawn and no receipt creation, while the positive case is
+explicitly skipped. Missing diagnostic metadata fails rather than skips. On an
+eligible runtime the original positive execution assertions remain unchanged.
+No runner permission, executable copy, temporary root or product guard is changed.
+A successful source job with this skip still does not prove positive process
+custody or native conformance.
