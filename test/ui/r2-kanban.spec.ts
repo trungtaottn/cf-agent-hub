@@ -85,21 +85,41 @@ test('narrow keyboard disclosure and dialog do not use partial ARIA menu semanti
 });
 
 test('internal Ready and Accept drags prepare the same canonical command dialogs',async({page})=>{
- await board(page);const id=await taskId(page,'Backlog item 01'),calls:{url:string;body:any}[]=[];
+ await board(page);const id=await taskId(page,'Backlog item 01'),calls:{url:string;body:any}[]=[];let phase='board-readiness';
+ const states=['backlog','ready','doing','waiting','review','done','cancelled'];
+ const settled=async()=>{for(const state of states)await expect(page.getByTestId('tasks-'+state)).toHaveAttribute('data-status',/^(ready|empty)$/);};
+ await page.evaluate(()=>{
+  const trace:{type:string;column:string|null;connected:boolean;sourceConnected:boolean|null}[]=[];let source:Element|null=null;
+  (window as any).fixtureDragTrace=trace;(window as any).fixtureDragOmitted=0;let overs=0;
+  for(const type of ['dragstart','dragover','drop','dragend'])document.addEventListener(type,event=>{
+   const target=event.target instanceof Element?event.target:null;if(type==='dragstart')source=target;
+   if(type==='dragover'&&++overs>4){(window as any).fixtureDragOmitted++;return;}
+   if(trace.length>=32){(window as any).fixtureDragOmitted++;return;}
+   trace.push({type,column:target?.closest('[data-testid^="tasks-"]')?.getAttribute('data-testid')??null,connected:target?.isConnected??false,sourceConnected:source?.isConnected??null});
+  },true);
+ });
  page.on('request',request=>{if(request.method()==='POST'&&/:(ready|accept-result)$/.test(request.url()))calls.push({url:request.url(),body:request.postDataJSON()});});
- await page.locator('.task-card').filter({has:page.getByRole('link',{name:'Backlog item 01',exact:true})}).dragTo(page.getByTestId('tasks-ready'));
- await expect(page.getByRole('dialog')).toContainText(id);await page.getByRole('button',{name:'Confirm command',exact:true}).click();await expect(page.getByTestId('tasks-ready')).toContainText('Backlog item 01');
- expect(calls[0]!.body).toEqual({expected_version:1});expect(calls[0]!.url).toContain('/tasks/'+id+':ready');
- await page.locator('.task-card').filter({has:page.getByRole('link',{name:review,exact:true})}).dragTo(page.getByTestId('tasks-done'));
- await page.getByRole('dialog').getByLabel('Reason',{exact:true}).fill('Independent drag review');await page.getByRole('button',{name:'Confirm command',exact:true}).click();await expect(page.getByTestId('tasks-done')).toContainText(review);
- expect(Object.keys(calls[1]!.body).sort()).toEqual(['expected_version','reason']);
+ const step=async(name:string,action:()=>Promise<void>)=>{phase=name;console.log('R2_DRAG_PHASE',name);await test.step(name,action);};
+ try{
+  await step('all initial columns settled',settled);
+  await step('real Backlog to Ready drag',async()=>{await page.locator('.task-card').filter({has:page.getByRole('link',{name:'Backlog item 01',exact:true})}).dragTo(page.getByTestId('tasks-ready'));});
+  await step('Ready dialog prepared and confirmed',async()=>{await expect(page.getByRole('dialog')).toContainText(id);await page.getByRole('button',{name:'Confirm command',exact:true}).click();await expect(page.getByTestId('tasks-ready')).toContainText('Backlog item 01');});
+  expect(calls[0]!.body).toEqual({expected_version:1});expect(calls[0]!.url).toContain('/tasks/'+id+':ready');
+  await step('all refreshed columns settled',settled);
+  await step('real Review to Done drag',async()=>{await page.locator('.task-card').filter({has:page.getByRole('link',{name:review,exact:true})}).dragTo(page.getByTestId('tasks-done'));});
+  await step('Accept dialog prepared and confirmed',async()=>{await page.getByRole('dialog').getByLabel('Reason',{exact:true}).fill('Independent drag review');await page.getByRole('button',{name:'Confirm command',exact:true}).click();await expect(page.getByTestId('tasks-done')).toContainText(review);});
+  expect(Object.keys(calls[1]!.body).sort()).toEqual(['expected_version','reason']);
+ }finally{
+  const diagnostic=await page.evaluate(()=>({events:(window as any).fixtureDragTrace??[],omitted:(window as any).fixtureDragOmitted??0,columns:Array.from(document.querySelectorAll('[data-testid^="tasks-"]')).slice(0,7).map(node=>({column:node.getAttribute('data-testid'),status:node.getAttribute('data-status')}))})).catch(()=>({unavailable:true}));
+  console.log('R2_DRAG_DIAGNOSTIC',JSON.stringify({phase,...diagnostic}));
+ }
 });
 
 test('double activation and external drops cannot dispatch extra commands or manufacture Doing',async({page})=>{
  await board(page);let dispatched=0;page.on('request',request=>{if(request.method()==='POST'&&request.url().endsWith(':ready'))dispatched++;});
  const data=await page.evaluateHandle(()=>{const transfer=new DataTransfer();transfer.setData('application/x-agenthub-task','foreign:task');return transfer;});
  await page.getByTestId('tasks-ready').dispatchEvent('drop',{dataTransfer:data});await page.getByTestId('tasks-doing').dispatchEvent('drop',{dataTransfer:data});await expect(page.getByRole('dialog')).not.toBeVisible();
- await openAction(page,'Backlog item 01','Ready');await page.getByRole('button',{name:'Confirm command',exact:true}).evaluate(node=>{(node as HTMLButtonElement).click();(node as HTMLButtonElement).click();});
+ await openAction(page,'Backlog item 01','Ready');const confirm=page.getByRole('button',{name:'Confirm command',exact:true});await expect(confirm).toBeEnabled();await confirm.evaluate(node=>{(node as HTMLButtonElement).click();(node as HTMLButtonElement).click();});
  await expect(page.getByTestId('tasks-ready')).toContainText('Backlog item 01');expect(dispatched).toBe(1);
 });
 
