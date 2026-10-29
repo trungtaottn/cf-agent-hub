@@ -107,6 +107,14 @@ New native tests cover protected finalization, runtime-path mismatch, once-only 
 The double-activation fixture waits for asynchronous command preparation to enable confirmation before deliberately invoking two synchronous DOM clicks; it still requires exactly one dispatch and the canonical Ready state. Real drag gestures retain their original selectors and unchanged test deadlines. Named phases, explicit completed column reads and a bounded32-event diagnostic record (at most four dragover samples, with an explicit omitted-event count) identify actionability versus replaced drag-source nodes. Diagnostics expose only event types, fixed column/status labels and connectivity booleans, never task text, request bodies, credentials or tokens. This is not a claimed production drag fix; exact-head browser CI must establish the remaining cause.
 
 
+## Completed command modal ownership
+
+A completed task command closes only its still-open modal with the matching focus token and current view, after authoritative refresh. Closing that modal does not require focus to remain on its controls: hiding Confirm can move focus outside the dialog. The application explicitly returns focus to a current card or fallback only while it owns focus inside the dialog; it does not explicitly reclaim outside focus. Native dialog.close focus behavior remains browser-verified, not established by the structural fake. Navigation, newer command/reopen tokens and authority invalidation retain their guards. Structural DOM regressions model body/outside focus loss and completion ownership; they are not native dialog proof. The real drag browser regression requires the Ready dialog to close before the next gesture without force-closing it. Exact-head browser CI remains required.
+
+## Deterministic native deadline probe
+
+The native zero-progress subprocess probe, inherited from R2 #38, uses a test-only monotonic clock and timer scheduler to distinguish malformed chunks before expiry from `REQUEST_TIMEOUT` when expiry wins. The client `Deadline` implementation, 50 ms fixture threshold, real 2-second parent watchdog, and separate real elapsed-time/rejected-promise probe remain unchanged. Controlled-clock results are source tests, not live acceptance evidence.
+
 ## CI source-job envelope
 
 The source job retains a bounded 30-minute orchestration budget for the expanded R2 suite; per-test safety deadlines and every required step remain unchanged. See the [measured budget diagnosis](research/r2-ci-job-budget.md). This adjustment does not clear independent security review or release gates.
