@@ -64,3 +64,21 @@ subprocess, network TLS or full native conformance. Positive process custody
 remains separately unproven on an ineligible hosted runtime. Remote results for
 each newly published head remain pending until observed; historical local passes
 do not imply that the new CI job has passed.
+
+## Browser revocation fixture ordering
+
+The transport checkpoint `c75c98f` passed its native-source, local-sandbox and
+ordinary Node/Workers gates, but its browser run recorded 60 passes and one
+30-second timeout in the revocation-between-render-and-command scenario. No
+trace artifact was available; the exact timed-out await was not established.
+Source inspection found that visible dialog and editable reason precede the
+asynchronous authority/task preparation. Revoking before Confirm becomes enabled
+can test preparation invalidation instead of the intended post-preparation command.
+
+The fixture now observes enabled Confirm before real session revocation, requires
+an actual cancel POST authentication denial, and checks both access status and
+cleared textarea value. Fixed phase names identify a future stalled boundary
+without logging credentials or reason content. No production behavior, force
+click, retry or timeout change is introduced. The revised browser result remains
+pending until exact-head remote CI completes; this source ordering correction is
+not proof of the original timeout's exact cause.
