@@ -1,7 +1,7 @@
 import {parseArgs,type ParseArgsConfig} from 'node:util';
 import {clientOperations} from '../../../src/http/generated/client-operations';
 import type {EnabledOperationId} from '../../client/src/types';
-export interface CommandOptions {origin?:string;workspace?:string;stateDir?:string;json:boolean;idempotencyKey?:string;inputFile?:string;file?:string;contentId?:string;output?:string;}
+export interface CommandOptions {origin?:string;workspace?:string;stateDir?:string;json:boolean;idempotencyKey?:string;inputFile?:string;inputSha256?:string;file?:string;contentId?:string;output?:string;}
 interface CommandSpec {operation:EnabledOperationId;path?:string;query?:readonly string[];body?:boolean;}
 const page=['cursor','limit'];
 export const nativeCommandMap:Readonly<Record<string,CommandSpec>>={
@@ -23,7 +23,7 @@ const locals:Readonly<Record<string,{id?:boolean;remote?:boolean;file?:boolean}>
 };
 export interface ParsedCommand {kind:'native'|'local';command:string;operation?:EnabledOperationId;input:{path?:Record<string,string>;query?:Record<string,string|number|boolean>};options:CommandOptions;id?:string;}
 function reject():never {throw Error('CLI_ARGUMENT_REJECTED');}
-const aliases:Record<string,keyof CommandOptions>={'origin':'origin','workspace':'workspace','state-dir':'stateDir','idempotency-key':'idempotencyKey','input':'inputFile','file':'file','content-id':'contentId','output':'output'};
+const aliases:Record<string,keyof CommandOptions>={'origin':'origin','workspace':'workspace','state-dir':'stateDir','idempotency-key':'idempotencyKey','input':'inputFile','input-sha256':'inputSha256','file':'file','content-id':'contentId','output':'output'};
 /** Shell presentation only. Canonical request preparation remains authoritative. */
 export function parseCommand(argv:readonly string[]):ParsedCommand {
  try{
@@ -35,10 +35,11 @@ export function parseCommand(argv:readonly string[]):ParsedCommand {
   const spec=Object.hasOwn(nativeCommandMap,command)?nativeCommandMap[command]:undefined,local=Object.hasOwn(locals,command)?locals[command]:undefined;if(!spec&&!local)reject();
   const hasId=Boolean(spec?.path||local?.id);if(words.length!==offset+(hasId?1:0)||hasId&&!words[offset])reject();
   const allowed=new Set(['state-dir','json']);if(spec||local?.remote){allowed.add('origin');allowed.add('workspace');}
-  if(spec){for(const q of spec.query??[])allowed.add(q);if(spec.body)allowed.add('input');if(clientOperations[spec.operation].idempotency)allowed.add('idempotency-key');if(spec.operation==='stageArtifact'||spec.operation==='uploadArtifactContent')allowed.add('content-id');if(spec.operation==='uploadArtifactContent')allowed.add('file');if(spec.operation==='downloadArtifactContent')allowed.add('output');}if(local?.file)allowed.add('file');
+  if(spec){for(const q of spec.query??[])allowed.add(q);if(spec.body){allowed.add('input');allowed.add('input-sha256');}if(clientOperations[spec.operation].idempotency)allowed.add('idempotency-key');if(spec.operation==='stageArtifact'||spec.operation==='uploadArtifactContent')allowed.add('content-id');if(spec.operation==='uploadArtifactContent')allowed.add('file');if(spec.operation==='downloadArtifactContent')allowed.add('output');}if(local?.file)allowed.add('file');
   for(const name of seen)if(!allowed.has(name))reject();
   const values=parsed.values as Record<string,string|boolean|undefined>,options:CommandOptions={json:values.json===true};
   for(const [flag,key]of Object.entries(aliases))if(typeof values[flag]==='string')Object.assign(options,{[key]:values[flag]});
+  if(options.inputSha256!==undefined&&(!options.inputFile||! /^[a-f0-9]{64}$/.test(options.inputSha256)))reject();
   if(spec?.body&&!options.inputFile||local?.file&&!options.file||spec?.operation==='stageArtifact'&&!options.contentId||spec?.operation==='downloadArtifactContent'&&!options.output)reject();
   if(spec?.operation==='uploadArtifactContent'&&Boolean(options.file)===Boolean(options.contentId))reject();
   const input:ParsedCommand['input']={};if(spec?.path)input.path={[spec.path]:words[offset]};

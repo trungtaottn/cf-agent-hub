@@ -38,7 +38,7 @@ export async function runCli(argv:readonly string[],dependencies:CliDependencies
   const keyOptions={...(options.idempotencyKey?{idempotencyKey:options.idempotencyKey}:{}),interactive};
   let input:Record<string,unknown>={...parsed.input};
   if(parsed.kind==='native'){
-   if(options.inputFile)input={...input,body:readInputFile(options.inputFile)};
+   if(options.inputFile)input={...input,body:readInputFile(options.inputFile,options.inputSha256)};
    prepareNativeOperation(context.origin!,context.workspaceId!,parsed.operation!,input);
    if(clientOperations[parsed.operation!].idempotency&&!options.idempotencyKey&&!interactive)rejected();
    if(options.idempotencyKey!==undefined&&(options.idempotencyKey.length>256||! /^[\x21-\x7e]+$/.test(options.idempotencyKey)))rejected();
@@ -114,7 +114,7 @@ Native commands:
  messages send | ack; inbox list; threads show ID
  artifacts list | stage | show ID | upload ID | download ID | commit ID
  events list; search --query TEXT
-Bodies: --input FILE. Mutations: --idempotency-key KEY (required unless both TTYs and not --json).
+Bodies: --input FILE; optional --input-sha256 LOWERCASE_SHA256 pins the exact file bytes before effects (body commands only). Mutations: --idempotency-key KEY (required unless both TTYs and not --json).
 List queries, where supported: --cursor CURSOR --limit INTEGER; tasks --state --project-id; inbox --acknowledged true|false; artifacts --task-id; events --after-sequence (excludes cursor); search --query --kind.
 Stage: --content-id ID --input FILE. Upload: exactly --content-id ID or --file FILE. Download: --output NEW_FILE.
 Local controls:

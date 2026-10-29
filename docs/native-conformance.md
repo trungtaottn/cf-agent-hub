@@ -83,8 +83,48 @@ The controller's mandatory `native-r2-bindings.mjs` registry uses the fixed sour
 
 Controls advance the registry only after existing generic and optional typed observation checks. Process bytes and custody are detached before awaited host callbacks, bounded by the admitted process output allowance and checked against complete transcript digests. Tokens are process-local, single-use and non-reentrant; a failure makes the journey unusable rather than admitting a replacement. A private detached summary supports diagnosis, not release evidence or authorization. Synthetic registry tests establish consistency logic, not authentic execution.
 
-This is deliberately **not complete request authority**. The CLI independently reads `input_file`; a path or pre-spawn digest cannot prove the bytes it consumed. Body-only expected-version/run/fence/recipient bindings need a separately reviewed consumed-body custody interface. Output mismatch detection cannot undo a prior effect. Message/recipient/thread body-linked lineage remains outside this bounded slice. Lists are bounded pages, not complete workspace enumeration. Local wrong-runtime/foreign/swap probes retain their deliberate mismatches and cannot update successful resource bindings or substitute for server-denial cases.
+This is deliberately **not complete request authority**. The CLI independently reads `input_file`; a path or pre-spawn digest cannot prove the bytes it consumed. Body-only expected-version/run/fence/recipient bindings need a separately reviewed consumed-body custody interface. Output mismatch detection cannot undo a prior effect. Message request-body admission remains pending; output lineage is checked as described below. Lists are bounded pages, not complete workspace enumeration. Local wrong-runtime/foreign/swap probes retain their deliberate mismatches and cannot update successful resource bindings or substitute for server-denial cases.
 
 The missing concrete host adapter, command-entry orchestration, server wrong-runtime-proof producer and authenticated global380 composition remain explicit source/integration work. Their interfaces and operator questions are recorded in the [issue48 plan](r2-task-plans/issue-048.md). The protected runtime guard, root2/root3 evidence dispatch, native37 roster and post-R4 acceptance boundary are unchanged.
 
 Typed recording finishes before the mandatory resource binding is promoted. If that later binding check fails, protected diagnostic records may retain the already completed scoped per-case wrapper. The controller still returns incomplete, does not include the failed step in its completed count, and never runs final scenario assembly. Wrapper presence alone must not be treated as controller/scenario completion or reused to manufacture complete evidence.
+
+### Message output lineage
+
+The fixed scenario now validates create-message, reviewer inbox, ACK and thread
+responses with canonical generated schemas. The created message must bind the
+workspace, submitter, sole reviewer recipient and known main task. The default
+unacknowledged inbox must contain that exact message before its first ACK; ACK
+may acknowledge only that observed message. Thread dispatch uses the captured
+thread ID, and its response preserves the original message except the
+reviewer-specific non-null acknowledgment time. Duplicate IDs, substituted
+content/identities, unexpected recipients and unrelated thread rows fail closed.
+
+An inbox or thread page that omits the required target is incomplete scenario
+evidence even when `has_more` is true; this does not declare the API page invalid.
+The runner does not invent extra pagination requests beyond its budget. Other
+valid inbox items remain allowed. Other same-thread messages need not name the
+reviewer as recipient because thread participation allows reading history.
+
+The protected summary reports `source-consistent-output-lineage` only after this
+chain completes. It still reports request-body custody pending. An observed ACK
+is recipient acknowledgment, not delivery/execution/acceptance proof, and output
+checks cannot prevent or undo an already wrong request body.
+
+### Exact-byte CLI pin primitive; runner integration pending
+
+The CLI accepts optional `--input-sha256` on body commands and checks it against
+the same bounded file bytes that it parses, before protected-store/network
+effects. This blocks a changed file from silently replacing an expected input;
+it does not authenticate the expected digest or host. Equivalent JSON with
+different raw bytes does not match. Legacy commands without the pin retain
+their existing behavior.
+
+The native scenario/controller/recorder do **not yet supply this pin**. Remaining
+integration must admit one bounded snapshot, validate all source-owned body
+relationships on that snapshot, and bind its digest/size to step, candidate,
+actor and exact invocation in protected custody. No adapter-supplied digest may
+substitute for that read. A failed invocation's exit code or prepared argv alone
+does not prove it reached the consumed-input gate. Raw input digest and canonical
+wire-request digest are distinct. No live custody or issue completion is claimed
+from this primitive.

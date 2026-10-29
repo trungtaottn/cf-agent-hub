@@ -10,18 +10,18 @@ function closed(v,keys){if(!v||Object.getPrototypeOf(v)!==Object.prototype)fail(
 function refsCopy(v,step){const x=closed(v,step.refKeys);if(Object.values(x).some(y=>typeof y!=='string'))fail();buildNativeInvocation(step.id,x);return x;}
 const byteProto=Object.getPrototypeOf(Uint8Array.prototype),lengthOf=Object.getOwnPropertyDescriptor(byteProto,'byteLength').get,backingOf=Object.getOwnPropertyDescriptor(byteProto,'buffer').get;
 function byteLength(v){if(!(v instanceof Uint8Array)||![Buffer.prototype,Uint8Array.prototype].includes(Object.getPrototypeOf(v))||Object.getPrototypeOf(backingOf.call(v))!==ArrayBuffer.prototype||lengthOf.call(v)>1048576||Reflect.ownKeys(v).some(k=>typeof k!=='string'||!/^\d+$/.test(k)))fail();return lengthOf.call(v);}
-const responseNames={createTask:'TaskResponse',getTask:'TaskResponse',patchTask:'TaskResponse',readyTask:'TaskCommandResultResponse',claimTask:'TaskCommandResultResponse',submitTaskResult:'TaskCommandResultResponse',acceptTaskResult:'TaskCommandResultResponse',failTask:'TaskCommandResultResponse',cancelTask:'TaskCommandResultResponse',requeueTask:'TaskCommandResultResponse',getRun:'RunResponse',heartbeatRun:'RunResponse',heartbeatRuntime:'RuntimeResponse',stageArtifact:'ArtifactResponse',uploadArtifactContent:'ArtifactResponse',commitArtifact:'ArtifactResponse',getArtifact:'ArtifactResponse',downloadArtifactContent:'ArtifactResponse',listArtifacts:'ArtifactListResponse',listTaskResults:'TaskResultListResponse'};
+const responseNames={createMessage:'MessageResponse',getInbox:'MessageListResponse',ackMessages:'AckResultResponse',getThread:'MessageListResponse',createTask:'TaskResponse',getTask:'TaskResponse',patchTask:'TaskResponse',readyTask:'TaskCommandResultResponse',claimTask:'TaskCommandResultResponse',submitTaskResult:'TaskCommandResultResponse',acceptTaskResult:'TaskCommandResultResponse',failTask:'TaskCommandResultResponse',cancelTask:'TaskCommandResultResponse',requeueTask:'TaskCommandResultResponse',getRun:'RunResponse',heartbeatRun:'RunResponse',heartbeatRuntime:'RuntimeResponse',stageArtifact:'ArtifactResponse',uploadArtifactContent:'ArtifactResponse',commitArtifact:'ArtifactResponse',getArtifact:'ArtifactResponse',downloadArtifactContent:'ArtifactResponse',listArtifacts:'ArtifactListResponse',listTaskResults:'TaskResultListResponse'};
 const isId=v=>typeof v==='string'&&ID.test(v),isSha=v=>typeof v==='string'&&SHA.test(v);
 const taskFixtures=new Set(['main','fail','cancel','requeue']);
 export function createNativeBindingRegistry(input){
  const raw=closed(input,['workspaceId','submitter','reviewer']),actors={};if(!isId(raw.workspaceId))fail();
  for(const slot of ['submitter','reviewer']){actors[slot]=closed(raw[slot],['principalId','agentId']);const a=actors[slot];if(!isId(a.principalId)||!isId(a.agentId)||a.principalId!==a.agentId)fail();}
  if(actors.submitter.principalId===actors.reviewer.principalId||actors.submitter.agentId===actors.reviewer.agentId)fail();
- const workspace=raw.workspaceId,scenario=getNativeScenario(),tokens=new WeakMap(),used=new Set(),allocatedRuntimeIds=new Set(),FINISHING=Object.freeze({});let active=null,poisoned=false,index=0,state={tasks:{},runs:{},runtimes:{},content:null,artifact:null,submitted:null},completed=[],provenance=[];
+ const workspace=raw.workspaceId,scenario=getNativeScenario(),tokens=new WeakMap(),used=new Set(),allocatedRuntimeIds=new Set(),FINISHING=Object.freeze({});let active=null,poisoned=false,index=0,state={tasks:{},runs:{},runtimes:{},content:null,artifact:null,submitted:null,message:null,messageInboxObserved:false,messageAcknowledged:false,messageThreadObserved:false},completed=[],provenance=[];
  const guarded=fn=>{try{if(poisoned)fail();return fn();}catch(e){poisoned=true;throw e;}};
  const same=(a,b)=>{if(a!==b)fail();},increment=(a,b)=>{if(!Number.isSafeInteger(b)||b>=Number.MAX_SAFE_INTEGER||a!==b+1)fail();};
  function checkRefs(step,r){
-  const bindings={main_task_id:state.tasks.main?.id,fail_task_id:state.tasks.fail?.id,cancel_task_id:state.tasks.cancel?.id,requeue_task_id:state.tasks.requeue?.id,main_run_id:state.runs.main?.id,main_artifact_id:state.artifact?.id,main_runtime_id:state.runtimes.submitter?.id,reviewer_agent_id:actors.reviewer.agentId,content_id:state.content?.id};
+  const bindings={main_task_id:state.tasks.main?.id,fail_task_id:state.tasks.fail?.id,cancel_task_id:state.tasks.cancel?.id,requeue_task_id:state.tasks.requeue?.id,main_run_id:state.runs.main?.id,main_artifact_id:state.artifact?.id,main_runtime_id:state.runtimes.submitter?.id,reviewer_agent_id:actors.reviewer.agentId,content_id:state.content?.id,thread_id:state.message?.thread_id};
   for(const [key,value] of Object.entries(bindings))if(Object.hasOwn(r,key)){if(!value)fail();same(r[key],value);}
   if(step.id==='probe/wrong-runtime'){if(!state.runtimes.submitter||r.wrong_runtime_id===state.runtimes.submitter.id)fail();}
  }
@@ -67,6 +67,31 @@ export function createNativeBindingRegistry(input){
    const d=parsed.data,old=next.artifact;if(!next.content||!next.tasks.main||!next.runs.main)fail();for(const [k,v] of Object.entries({workspace_id:workspace,task_id:next.tasks.main.id,run_id:next.runs.main.id,byte_size:next.content.byteSize,sha256:next.content.sha256}))same(d[k],v);same(d.owner.kind,'agent');same(d.owner.principal_id,actors.submitter.principalId);same(d.owner.agent_id,actors.submitter.agentId);
    if(op==='stageArtifact'){if(old)fail();same(d.status,'staged');same(d.artifact_version,1);same(d.committed_at,null);if(d.expires_at===null)fail();}else{if(!old)fail();for(const k of ['id','filename','media_type','created_at'])same(d[k],old[k]);if(op==='uploadArtifactContent'||op==='commitArtifact'){increment(d.artifact_version,old.artifact_version);same(d.status,op==='uploadArtifactContent'?'uploaded':'committed');if(op==='uploadArtifactContent'){same(d.committed_at,null);same(d.expires_at,old.expires_at);}else{if(d.committed_at===null)fail();same(d.expires_at,null);}}else{same(d.artifact_version,old.artifact_version);same(d.status,old.status);same(d.committed_at,old.committed_at);same(d.expires_at,old.expires_at);}}next.artifact=d;return;
   }
+  if(op==='createMessage'){
+   const d=parsed.data;if(next.message||!next.tasks.main)fail();
+   same(d.workspace_id,workspace);same(d.sender.kind,'agent');same(d.sender.principal_id,actors.submitter.principalId);same(d.sender.agent_id,actors.submitter.agentId);
+   if(!eq(d.recipient_agent_ids,[actors.reviewer.agentId])||!eq(d.refs,[{kind:'task',id:next.tasks.main.id}])||!eq(d.artifact_ids,[]))fail();
+   same(d.acknowledged_at,null);next.message=d;return;
+  }
+  if(op==='getInbox'||op==='getThread'){
+   const message=next.message;if(!message||op==='getThread'&&!next.messageAcknowledged)fail();const ids=new Set();let found=null;
+   for(const d of parsed.data){
+    same(d.workspace_id,workspace);if(ids.has(d.id))fail();ids.add(d.id);
+    if(op==='getInbox'){if(!d.recipient_agent_ids.includes(actors.reviewer.agentId))fail();same(d.acknowledged_at,null);}
+    else same(d.thread_id,message.thread_id);
+    if(d.id===message.id)found=d;
+   }
+   // A bounded page without the dependency is incomplete, even if more pages exist.
+   // Never manufacture extra reads outside the admitted scenario budget.
+   if(!found)fail();
+   if(op==='getInbox'){if(!eq(found,message))fail();next.messageInboxObserved=true;}
+   else{if(found.acknowledged_at===null||!eq({...found,acknowledged_at:null},message))fail();next.messageThreadObserved=true;}
+   return;
+  }
+  if(op==='ackMessages'){
+   if(!next.message||!next.messageInboxObserved||next.messageAcknowledged||!eq(parsed.data.acknowledged_ids,[next.message.id])||!eq(parsed.data.already_acknowledged_ids,[]))fail();
+   next.messageAcknowledged=true;return;
+  }
   if(op==='listArtifacts'||op==='listTaskResults'){
    const expected=op==='listArtifacts'?next.artifact:next.submitted;if(!expected)fail();const found=parsed.data.find(x=>op==='listArtifacts'?x.id===expected.id:eq(x,expected));if(found&&!eq(found,expected))fail();if(!parsed.page.has_more&&!found)fail();
   }
@@ -80,5 +105,5 @@ export function createNativeBindingRegistry(input){
   return {invocationId:v.invocationId,parsed:parseOutput(step,stdout,stderr),provenance:{stepId:step.id,invocationId:v.invocationId,finalSha256:c.final.sha256,stdoutSha256:t.stdout.sha256,stderrSha256:t.stderr.sha256}};
  }
  function finish(token,mode,body){return guarded(()=>{if(active!==token||!tokens.has(token))fail();const p=tokens.get(token);if(p.step.kind==='control'?(mode!=='control'):(mode!=='process'))fail();tokens.delete(token);active=FINISHING;try{const next=structuredClone(state);let proof;if(mode==='process'){const out=process(body,p.step);reduce(p.step,out.parsed,next);proof=out.provenance;}else{const r=closed(body,['stepId','status','recordSha256','configSha256','scenarioSha256','authorityRecordSha256','usage']),u=closed(r.usage,['commands','mutations','artifact_bytes','output_bytes']);if(r.stepId!==p.step.id||r.status!=='observed'||['recordSha256','configSha256','scenarioSha256','authorityRecordSha256'].some(k=>!isSha(r[k]))||Object.values(u).some(x=>!Number.isSafeInteger(x)||x<0))fail();proof={stepId:p.step.id,recordSha256:r.recordSha256};}if(poisoned)fail();if(mode==='process'){used.add(proof.invocationId);if(p.step.operation==='createRuntime')allocatedRuntimeIds.add(next.runtimes[p.step.actor].id);}state=next;completed.push(p.step.id);provenance.push(proof);index++;return Object.freeze({status:'source-consistent-step',stepId:p.step.id});}finally{active=null;}});}
- return Object.freeze({prepare(stepId,refs=null){return guarded(()=>{if(active||index>=scenario.steps.length)fail();active=FINISHING;try{const step=scenario.steps[index];if(stepId!==step.id||step.dependsOn.some(id=>!completed.includes(id)))fail();if(step.kind==='control'){if(refs!==null)fail();}else checkRefs(step,refsCopy(refs,step));if(poisoned)fail();const token=Object.freeze(Object.create(null));tokens.set(token,{step});active=token;return token;}catch(e){active=null;throw e;}});},completeControl:(t,r)=>finish(t,'control',r),completeProcess:(t,r)=>finish(t,'process',r),readSummary(){return structuredClone({status:poisoned?'incomplete':index===scenario.steps.length?'source-consistent-bindings':'pending',completedSteps:index,plannedSteps:scenario.steps.length,requestBodyCustody:'pending',authenticatedHost:'pending',messageThreadBindings:'deferred',issue48Complete:false,bindings:state,provenance});}});
+ return Object.freeze({prepare(stepId,refs=null){return guarded(()=>{if(active||index>=scenario.steps.length)fail();active=FINISHING;try{const step=scenario.steps[index];if(stepId!==step.id||step.dependsOn.some(id=>!completed.includes(id)))fail();if(step.kind==='control'){if(refs!==null)fail();}else checkRefs(step,refsCopy(refs,step));if(poisoned)fail();const token=Object.freeze(Object.create(null));tokens.set(token,{step});active=token;return token;}catch(e){active=null;throw e;}});},completeControl:(t,r)=>finish(t,'control',r),completeProcess:(t,r)=>finish(t,'process',r),readSummary(){return structuredClone({status:poisoned?'incomplete':index===scenario.steps.length?'source-consistent-bindings':'pending',completedSteps:index,plannedSteps:scenario.steps.length,requestBodyCustody:'pending',authenticatedHost:'pending',messageThreadBindings:state.messageThreadObserved?'source-consistent-output-lineage':'pending',issue48Complete:false,bindings:state,provenance});}});
 }

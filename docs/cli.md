@@ -26,7 +26,7 @@ The state directory contains separate `secrets`, `journal` and `uploads` subdire
 
 ## Command layout
 
-All body-bearing commands require `--input FILE`: a regular, non-symlink, at most 65,536-byte UTF-8 JSON file. The canonical generated closed schema remains the final authority. An interactive mutation may generate its key only when both stdin and stderr are terminals and `--json` is absent. Otherwise an explicit nonempty `--idempotency-key KEY` is mandatory. Key generation follows durable keyless-intent creation, never precedes it.
+All body-bearing commands require `--input FILE`: a regular, non-symlink, at most 65,536-byte UTF-8 JSON file. Optional `--input-sha256 DIGEST` pins the exact raw file bytes with a lowercase 64-hex SHA-256. It is accepted only alongside `--input` on body-bearing native commands. The existing bounded file reader checks the same bytes it then parses, before protected-store or network effects; mismatches return sanitized input rejection (exit 2), without retry. Whitespace changes alter the digest even if JSON meaning is unchanged. Omitting the pin preserves existing behavior. A pin is not host authorization, proof of successful execution, or a canonical HTTP-body digest. Treat private-input digests as protected metadata, not public logs. The canonical generated closed schema remains the final authority. An interactive mutation may generate its key only when both stdin and stderr are terminals and `--json` is absent. Otherwise an explicit nonempty `--idempotency-key KEY` is mandatory. Key generation follows durable keyless-intent creation, never precedes it.
 
 | Area | Commands | Notes |
 | --- | --- | --- |
