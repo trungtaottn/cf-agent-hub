@@ -16,7 +16,7 @@ test('control advances bindings only after generic and optional typed control ob
  assert.ok(commit<source.indexOf('completed.push(step.id);continue;'));
 });
 test('source refs checked before child dispatch and output committed after observers',()=>{
- const prepare=source.indexOf('bindings.prepare(step.id,refs)'),spawn=source.indexOf('await runOwnedProcess('),observe=source.indexOf('adapter.observe('),typed=source.indexOf('recorder.finish(caseToken,'),commit=source.indexOf('bindings.completeProcess(');
+ const prepare=source.indexOf('bindings.prepareWithInput(step.id,refs,input)'),spawn=source.indexOf('await runOwnedProcess('),observe=source.indexOf('adapter.observe('),typed=source.indexOf('recorder.finish(caseToken,'),commit=source.indexOf('bindings.completeProcess(');
  assert.ok(prepare>=0&&prepare<spawn&&spawn<observe&&observe<typed&&typed<commit);
  assert.ok(source.slice(commit).includes('stdout:capture.stdout,stderr:capture.stderr,custody:capture.custody'));
 });

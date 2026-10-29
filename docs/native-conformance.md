@@ -83,7 +83,7 @@ The controller's mandatory `native-r2-bindings.mjs` registry uses the fixed sour
 
 Controls advance the registry only after existing generic and optional typed observation checks. Process bytes and custody are detached before awaited host callbacks, bounded by the admitted process output allowance and checked against complete transcript digests. Tokens are process-local, single-use and non-reentrant; a failure makes the journey unusable rather than admitting a replacement. A private detached summary supports diagnosis, not release evidence or authorization. Synthetic registry tests establish consistency logic, not authentic execution.
 
-This is deliberately **not complete request authority**. The CLI independently reads `input_file`; a path or pre-spawn digest cannot prove the bytes it consumed. Body-only expected-version/run/fence/recipient bindings need a separately reviewed consumed-body custody interface. Output mismatch detection cannot undo a prior effect. Message request-body admission remains pending; output lineage is checked as described below. Lists are bounded pages, not complete workspace enumeration. Local wrong-runtime/foreign/swap probes retain their deliberate mismatches and cannot update successful resource bindings or substitute for server-denial cases.
+This is deliberately **not complete request authority**. The controller now admits an owned raw input snapshot, validates source-known body resource relationships and supplies its digest to the CLI same-buffer gate described below. A path or prepared digest alone still cannot prove that a failed invocation reached that gate, authenticate host intent, or establish full external consumption provenance. Output mismatch detection cannot undo a prior effect. Lists are bounded pages, not complete workspace enumeration. Local wrong-runtime/foreign/swap probes retain their deliberate mismatches and cannot update successful resource bindings or substitute for server-denial cases.
 
 The missing concrete host adapter, command-entry orchestration, server wrong-runtime-proof producer and authenticated global380 composition remain explicit source/integration work. Their interfaces and operator questions are recorded in the [issue48 plan](r2-task-plans/issue-048.md). The protected runtime guard, root2/root3 evidence dispatch, native37 roster and post-R4 acceptance boundary are unchanged.
 
@@ -111,20 +111,53 @@ chain completes. It still reports request-body custody pending. An observed ACK
 is recipient acknowledgment, not delivery/execution/acceptance proof, and output
 checks cannot prevent or undo an already wrong request body.
 
-### Exact-byte CLI pin primitive; runner integration pending
+### Controller-owned exact-byte input admission
 
 The CLI accepts optional `--input-sha256` on body commands and checks it against
 the same bounded file bytes that it parses, before protected-store/network
-effects. This blocks a changed file from silently replacing an expected input;
-it does not authenticate the expected digest or host. Equivalent JSON with
-different raw bytes does not match. Legacy commands without the pin retain
-their existing behavior.
+effects. Equivalent JSON with different raw bytes does not match. Legacy
+commands without the pin retain their existing behavior.
 
-The native scenario/controller/recorder do **not yet supply this pin**. Remaining
-integration must admit one bounded snapshot, validate all source-owned body
-relationships on that snapshot, and bind its digest/size to step, candidate,
-actor and exact invocation in protected custody. No adapter-supplied digest may
-substitute for that read. A failed invocation's exit code or prepared argv alone
-does not prove it reached the consumed-input gate. Raw input digest and canonical
-wire-request digest are distinct. No live custody or issue completion is claimed
-from this primitive.
+`executeNativeScenario` now constructs the source-owned input admission ledger
+before scenario effects: all 27 input steps reserve 65,536 bytes each, totaling
+1,769,472 bytes under a separate 8 MiB input ceiling. This does not consume or
+increase output/evidence budgets. Each source step gets one attempt; failure
+poisons the ledger without refund. The reader pins a private admitted parent
+and regular single-link 0600 file, bounds allocation before reading, checks
+name/descriptor/parent identity and metadata before and after, hashes captured
+raw bytes and uses fatal UTF-8/JSON parsing. No caller digest or body replaces
+that read. Bodies are transient; protected summaries retain step/digest/size
+metadata, not raw bodies or public paths.
+
+Strict registry pre-admission uses generated request schemas and checks known
+task/runtime versions, run/fence, retained artifact size/hash, committed artifact
+references, reviewer recipient/main-task/fresh-thread message relationships,
+and exact observed message ACK IDs. The intentional foreign-runtime no-send
+probe remains schema-only for its independently observed foreign version.
+Operator-selected text/routing values are not authenticated by this check;
+the CLI remains final authority for generated byte rules and request preparation.
+This is schema/resource pre-admission, not complete request validation or semantic
+response-echo proof.
+
+The current controller always uses strict admission and the pinned builder.
+Recorder and nonrecorder paths share the same frozen argv; recorded argv is
+compared before spawn. The 79-byte digest argument adds 82 serialized JSON bytes;
+final argv retains 128-argument, 8,192 UTF-8-byte per-argument and 65,536-byte
+serialized bounds. Historical builders, registry/recorder preparation APIs and
+root-2/root-3 originals remain explicitly unpinned and unchanged. No new evidence
+field or retroactive consumption claim is added.
+
+A file replaced between controller admission and CLI reading must contain the
+same admitted bytes or fail the CLI input gate before store/network effects.
+Prepared argv or a failed exit alone does not establish that the gate was reached.
+Raw-file SHA, canonical HTTP-body SHA and external observer commitments remain
+distinct. Full host authorization, actual consumed-body provenance and live
+native37/global380 acceptance remain pending.
+
+Local verification distinguishes pure relationship/builder/recorder tests and
+source-text controller wiring checks from actual execution. In the current
+managed environment, all authorized fixture roots have Git ancestry; 19 new
+reader disk tests explicitly skip rather than weaken that guard. Their FD,
+parent/name swap and positive raw-byte coverage remain unverified locally and
+must run on an eligible ordinary test host. Existing protected runtime custody
+coverage remains separately skipped. Green source tests do not complete #48.

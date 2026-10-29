@@ -121,3 +121,20 @@ export function buildNativeInvocation(stepId,refs){
   return Object.freeze(args);
  }catch{return reject();}
 }
+
+/** Additive exact-file pin; historical projections above remain explicitly unpinned. */
+export function buildPinnedNativeInvocation(stepId,refs,pin){
+ try{
+  const args=[...buildNativeInvocation(stepId,refs)],step=byId.get(stepId);
+  if(step.refKeys.includes('input_file')){
+   if(!pin||Object.getPrototypeOf(pin)!==Object.prototype)reject();
+   const d=Object.getOwnPropertyDescriptors(pin);
+   if(Reflect.ownKeys(d).length!==2||['sha256','byteSize'].some(k=>!Object.hasOwn(d,k)||!Object.hasOwn(d[k],'value')||!d[k].enumerable))reject();
+   const sha=d.sha256.value,size=d.byteSize.value;
+   if(typeof sha!=='string'||!/^[a-f0-9]{64}$/.test(sha)||!Number.isSafeInteger(size)||size<1||size>65536)reject();
+   args.push('--input-sha256='+sha);
+  }else if(pin!==null)reject();
+  if(args.length>128||args.some(v=>Buffer.byteLength(v,'utf8')>8192)||Buffer.byteLength(JSON.stringify(args),'utf8')>65536)reject();
+  return Object.freeze(args);
+ }catch{return reject();}
+}

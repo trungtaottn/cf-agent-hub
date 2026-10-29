@@ -8,6 +8,26 @@ const fail=()=>{throw Error('NATIVE_BINDING_REJECTED');},hash=v=>createHash('sha
 const ID=/^[A-Za-z0-9_-]{1,128}$/,SHA=/^[a-f0-9]{64}$/,eq=(a,b)=>canonicalCaseSubject(a)===canonicalCaseSubject(b);
 function closed(v,keys){if(!v||Object.getPrototypeOf(v)!==Object.prototype)fail();const ds=Object.getOwnPropertyDescriptors(v);if(Reflect.ownKeys(ds).length!==keys.length||keys.some(k=>!Object.hasOwn(ds,k)||!Object.hasOwn(ds[k],'value')||!ds[k].enumerable))fail();return Object.fromEntries(keys.map(k=>[k,ds[k].value]));}
 function refsCopy(v,step){const x=closed(v,step.refKeys);if(Object.values(x).some(y=>typeof y!=='string'))fail();buildNativeInvocation(step.id,x);return x;}
+function detachedBody(value){
+ let nodes=0,bytes=0;
+ const charge=n=>{bytes+=n;if(bytes>65536)fail();};
+ function copy(v,depth=0){
+  if(++nodes>65536||depth>64)fail();
+  if(v===null||typeof v==='boolean'){charge(v===null||v===true?4:5);return v;}
+  if(typeof v==='string'){if(v.length>65536)fail();charge(Buffer.byteLength(JSON.stringify(v),'utf8'));return v;}
+  if(typeof v==='number'){if(!Number.isFinite(v))fail();charge(Buffer.byteLength(JSON.stringify(v),'utf8'));return v;}
+  if(Array.isArray(v)){
+   if(Object.getPrototypeOf(v)!==Array.prototype||v.length>65536)fail();
+   const ds=Object.getOwnPropertyDescriptors(v);if(Reflect.ownKeys(ds).length!==v.length+1)fail();charge(2+Math.max(0,v.length-1));
+   return Array.from({length:v.length},(_,i)=>{if(!ds[i]||!Object.hasOwn(ds[i],'value')||!ds[i].enumerable)fail();return copy(ds[i].value,depth+1);});
+  }
+  if(!v||Object.getPrototypeOf(v)!==Object.prototype)fail();
+  const keys=Reflect.ownKeys(v);if(keys.length>65536||keys.some(k=>typeof k!=='string'||k.length>65536))fail();
+  charge(2+Math.max(0,keys.length-1));
+  return Object.fromEntries(Object.entries(closed(v,keys)).map(([k,x])=>{charge(Buffer.byteLength(JSON.stringify(k),'utf8')+1);return [k,copy(x,depth+1)];}));
+ }
+ return copy(value);
+}
 const byteProto=Object.getPrototypeOf(Uint8Array.prototype),lengthOf=Object.getOwnPropertyDescriptor(byteProto,'byteLength').get,backingOf=Object.getOwnPropertyDescriptor(byteProto,'buffer').get;
 function byteLength(v){if(!(v instanceof Uint8Array)||![Buffer.prototype,Uint8Array.prototype].includes(Object.getPrototypeOf(v))||Object.getPrototypeOf(backingOf.call(v))!==ArrayBuffer.prototype||lengthOf.call(v)>1048576||Reflect.ownKeys(v).some(k=>typeof k!=='string'||!/^\d+$/.test(k)))fail();return lengthOf.call(v);}
 const responseNames={createMessage:'MessageResponse',getInbox:'MessageListResponse',ackMessages:'AckResultResponse',getThread:'MessageListResponse',createTask:'TaskResponse',getTask:'TaskResponse',patchTask:'TaskResponse',readyTask:'TaskCommandResultResponse',claimTask:'TaskCommandResultResponse',submitTaskResult:'TaskCommandResultResponse',acceptTaskResult:'TaskCommandResultResponse',failTask:'TaskCommandResultResponse',cancelTask:'TaskCommandResultResponse',requeueTask:'TaskCommandResultResponse',getRun:'RunResponse',heartbeatRun:'RunResponse',heartbeatRuntime:'RuntimeResponse',stageArtifact:'ArtifactResponse',uploadArtifactContent:'ArtifactResponse',commitArtifact:'ArtifactResponse',getArtifact:'ArtifactResponse',downloadArtifactContent:'ArtifactResponse',listArtifacts:'ArtifactListResponse',listTaskResults:'TaskResultListResponse'};
@@ -17,13 +37,34 @@ export function createNativeBindingRegistry(input){
  const raw=closed(input,['workspaceId','submitter','reviewer']),actors={};if(!isId(raw.workspaceId))fail();
  for(const slot of ['submitter','reviewer']){actors[slot]=closed(raw[slot],['principalId','agentId']);const a=actors[slot];if(!isId(a.principalId)||!isId(a.agentId)||a.principalId!==a.agentId)fail();}
  if(actors.submitter.principalId===actors.reviewer.principalId||actors.submitter.agentId===actors.reviewer.agentId)fail();
- const workspace=raw.workspaceId,scenario=getNativeScenario(),tokens=new WeakMap(),used=new Set(),allocatedRuntimeIds=new Set(),FINISHING=Object.freeze({});let active=null,poisoned=false,index=0,state={tasks:{},runs:{},runtimes:{},content:null,artifact:null,submitted:null,message:null,messageInboxObserved:false,messageAcknowledged:false,messageThreadObserved:false},completed=[],provenance=[];
+ const workspace=raw.workspaceId,scenario=getNativeScenario(),tokens=new WeakMap(),used=new Set(),allocatedRuntimeIds=new Set(),FINISHING=Object.freeze({});let inputAdmissions=[],active=null,poisoned=false,index=0,state={tasks:{},runs:{},runtimes:{},content:null,artifact:null,submitted:null,message:null,messageInboxObserved:false,messageAcknowledged:false,messageThreadObserved:false},completed=[],provenance=[];
  const guarded=fn=>{try{if(poisoned)fail();return fn();}catch(e){poisoned=true;throw e;}};
  const same=(a,b)=>{if(a!==b)fail();},increment=(a,b)=>{if(!Number.isSafeInteger(b)||b>=Number.MAX_SAFE_INTEGER||a!==b+1)fail();};
  function checkRefs(step,r){
   const bindings={main_task_id:state.tasks.main?.id,fail_task_id:state.tasks.fail?.id,cancel_task_id:state.tasks.cancel?.id,requeue_task_id:state.tasks.requeue?.id,main_run_id:state.runs.main?.id,main_artifact_id:state.artifact?.id,main_runtime_id:state.runtimes.submitter?.id,reviewer_agent_id:actors.reviewer.agentId,content_id:state.content?.id,thread_id:state.message?.thread_id};
   for(const [key,value] of Object.entries(bindings))if(Object.hasOwn(r,key)){if(!value)fail();same(r[key],value);}
   if(step.id==='probe/wrong-runtime'){if(!state.runtimes.submitter||r.wrong_runtime_id===state.runtimes.submitter.id)fail();}
+ }
+ const bodyNames={createTask:'TaskCreateRequest',patchTask:'TaskPatchRequest',readyTask:'TaskVersionRequest',claimTask:'TaskClaimRequest',submitTaskResult:'TaskSubmitResultRequest',acceptTaskResult:'TaskVersionRequest',failTask:'TaskFailRequest',cancelTask:'TaskVersionRequest',requeueTask:'TaskVersionRequest',createRuntime:'RuntimeCreateRequest',heartbeatRuntime:'RuntimeHeartbeatRequest',heartbeatRun:'RunHeartbeatRequest',stageArtifact:'ArtifactStageRequest',commitArtifact:'ArtifactCommitRequest',createMessage:'MessageCreateRequest',ackMessages:'MessageAckRequest'};
+ // Pure structural API: only the controller's reader can establish byte origin.
+ function checkInput(step,value){
+  if(!step.refKeys.includes('input_file')){if(value!==null)fail();return null;}
+  const v=closed(value,['sha256','byteSize','body']);
+  if(!isSha(v.sha256)||!Number.isSafeInteger(v.byteSize)||v.byteSize<1||v.byteSize>65536)fail();
+  // Descriptor-only detached JSON pre-admission; CLI still applies final byte rules.
+  const b=detachedBody(v.body),name=bodyNames[step.operation];
+  if(!name||!validators['validate'+name](b))fail();
+  const op=step.operation,t=state.tasks[step.fixture],run=state.runs[step.fixture];
+  if(['patchTask','readyTask','claimTask','submitTaskResult','acceptTaskResult','failTask','cancelTask','requeueTask'].includes(op)){if(!t)fail();same(b.expected_version,t.task_version);}
+  if(op==='claimTask')same(b.runtime_instance_id,state.runtimes[step.actor]?.id);
+  if(op==='submitTaskResult'||op==='failTask'){if(!run)fail();same(b.run_id,run.id);same(b.fence,run.fence);if(op==='failTask')same(b.outcome_unknown,true);else if(!state.artifact||!eq(b.result.artifact_ids,[state.artifact.id]))fail();}
+  if(op==='heartbeatRun'){if(!state.runs.main)fail();same(b.expected_run_version,state.runs.main.run_version);same(b.fence,state.runs.main.fence);}
+  if(op==='heartbeatRuntime'&&step.id!=='probe/wrong-runtime'){if(!state.runtimes[step.actor])fail();same(b.expected_runtime_version,state.runtimes[step.actor].runtime_version);}
+  if(op==='stageArtifact'){if(!state.tasks.main||!state.runs.main||!state.content)fail();same(b.task_id,state.tasks.main.id);same(b.run_id,state.runs.main.id);same(b.byte_size,state.content.byteSize);same(b.sha256,state.content.sha256);}
+  if(op==='commitArtifact'){if(!state.artifact)fail();same(b.expected_artifact_version,state.artifact.artifact_version);}
+  if(op==='createMessage'){if(!state.tasks.main||!eq(b.recipient_agent_ids,[actors.reviewer.agentId])||!eq(b.refs,[{kind:'task',id:state.tasks.main.id}])||!eq(b.artifact_ids,[])||(b.thread_id!==undefined&&b.thread_id!==null))fail();}
+  if(op==='ackMessages'&&(!state.message||!eq(b.message_ids,[state.message.id])))fail();
+  return Object.freeze({stepId:step.id,sha256:v.sha256,byteSize:v.byteSize,status:'structurally-admitted'});
  }
  function parseOutput(step,stdout,stderr){
   if(step.id==='prepare/retain-artifact'){
@@ -105,5 +146,10 @@ export function createNativeBindingRegistry(input){
   return {invocationId:v.invocationId,parsed:parseOutput(step,stdout,stderr),provenance:{stepId:step.id,invocationId:v.invocationId,finalSha256:c.final.sha256,stdoutSha256:t.stdout.sha256,stderrSha256:t.stderr.sha256}};
  }
  function finish(token,mode,body){return guarded(()=>{if(active!==token||!tokens.has(token))fail();const p=tokens.get(token);if(p.step.kind==='control'?(mode!=='control'):(mode!=='process'))fail();tokens.delete(token);active=FINISHING;try{const next=structuredClone(state);let proof;if(mode==='process'){const out=process(body,p.step);reduce(p.step,out.parsed,next);proof=out.provenance;}else{const r=closed(body,['stepId','status','recordSha256','configSha256','scenarioSha256','authorityRecordSha256','usage']),u=closed(r.usage,['commands','mutations','artifact_bytes','output_bytes']);if(r.stepId!==p.step.id||r.status!=='observed'||['recordSha256','configSha256','scenarioSha256','authorityRecordSha256'].some(k=>!isSha(r[k]))||Object.values(u).some(x=>!Number.isSafeInteger(x)||x<0))fail();proof={stepId:p.step.id,recordSha256:r.recordSha256};}if(poisoned)fail();if(mode==='process'){used.add(proof.invocationId);if(p.step.operation==='createRuntime')allocatedRuntimeIds.add(next.runtimes[p.step.actor].id);}state=next;completed.push(p.step.id);provenance.push(proof);index++;return Object.freeze({status:'source-consistent-step',stepId:p.step.id});}finally{active=null;}});}
- return Object.freeze({prepare(stepId,refs=null){return guarded(()=>{if(active||index>=scenario.steps.length)fail();active=FINISHING;try{const step=scenario.steps[index];if(stepId!==step.id||step.dependsOn.some(id=>!completed.includes(id)))fail();if(step.kind==='control'){if(refs!==null)fail();}else checkRefs(step,refsCopy(refs,step));if(poisoned)fail();const token=Object.freeze(Object.create(null));tokens.set(token,{step});active=token;return token;}catch(e){active=null;throw e;}});},completeControl:(t,r)=>finish(t,'control',r),completeProcess:(t,r)=>finish(t,'process',r),readSummary(){return structuredClone({status:poisoned?'incomplete':index===scenario.steps.length?'source-consistent-bindings':'pending',completedSteps:index,plannedSteps:scenario.steps.length,requestBodyCustody:'pending',authenticatedHost:'pending',messageThreadBindings:state.messageThreadObserved?'source-consistent-output-lineage':'pending',issue48Complete:false,bindings:state,provenance});}});
+ function prepare(stepId,refs,input,strict){return guarded(()=>{if(active||index>=scenario.steps.length)fail();active=FINISHING;try{
+  const step=scenario.steps[index];if(stepId!==step.id||step.dependsOn.some(id=>!completed.includes(id)))fail();let admission=null;
+  if(step.kind==='control'){if(refs!==null||strict)fail();}else{checkRefs(step,refsCopy(refs,step));if(strict)admission=checkInput(step,input);}
+  if(poisoned)fail();const token=Object.freeze(Object.create(null));tokens.set(token,{step});if(admission)inputAdmissions.push(admission);active=token;return token;
+ }catch(e){active=null;throw e;}});}
+ return Object.freeze({prepare:(stepId,refs=null)=>prepare(stepId,refs,null,false),prepareWithInput:(stepId,refs,input)=>prepare(stepId,refs,input,true),completeControl:(t,r)=>finish(t,'control',r),completeProcess:(t,r)=>finish(t,'process',r),readSummary(){return structuredClone({status:poisoned?'incomplete':index===scenario.steps.length?'source-consistent-bindings':'pending',completedSteps:index,plannedSteps:scenario.steps.length,requestBodyCustody:'pending',inputAdmissions,authenticatedHost:'pending',messageThreadBindings:state.messageThreadObserved?'source-consistent-output-lineage':'pending',issue48Complete:false,bindings:state,provenance});}});
 }

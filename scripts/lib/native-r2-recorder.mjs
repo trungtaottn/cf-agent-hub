@@ -5,7 +5,7 @@ import Ajv from 'ajv';
 import {caseSchemas,CASE_OPERATIONS,canonicalCaseSubject} from './r2-case-policy.mjs';
 import {validateNativeConfig} from './native-r2-config.mjs';
 import {nativeConfigDigest} from './native-r2-admission.mjs';
-import {getNativeScenario,buildNativeInvocation} from './native-r2-scenario.mjs';
+import {getNativeScenario,buildNativeInvocation,buildPinnedNativeInvocation} from './native-r2-scenario.mjs';
 import {nativeSourceInventoryDigest,loadNativeOriginals,prepareNativeEvidence,finalizeNativeEvidence,discardNativeEvidence} from './native-r2-evidence.mjs';
 import {planNativeOriginalReads} from './native-r2-original-reader.mjs';
 import {validateNativeObservation} from './native-r2-observation.mjs';
@@ -104,24 +104,27 @@ export function createNativeCaseRecorder(input){
    return Object.freeze({status:'controller-checks-complete',stepId:p.step.id,recordId:record.id,sha256:record.sha256,typedCaseStatus:'pending-full-assembler',durability:'memory-only'});
    }finally{activeToken=null;}
  };
- const api={durability:'memory-only',acceptance:'pending-external-inspection',issue48Complete:false};
- Object.defineProperties(api,{
-  readProtectedContext:{value:()=>structuredClone(publicContext)},
-  readProtectedRecords:{value:()=>[...records.values()].map(r=>({...r,bytes:Buffer.from(r.bytes)}))},
-  remainingBytes:{value:()=>16777216-total},
-  prepare:{value:(stepId,value)=>{
-   if(prepared.has(stepId)||!steps.has(stepId))reject();const step=steps.get(stepId),p=snapshot(closed(value,['subject','record_source_id','refs'])),actor=config.actors.find(a=>a.id===step.actor),s=p.subject;
+ function prepareInvocation(stepId,value,pinned){
+   if(prepared.has(stepId)||!steps.has(stepId))reject();const step=steps.get(stepId),p=snapshot(closed(value,pinned?['subject','record_source_id','refs','pin']:['subject','record_source_id','refs'])),actor=config.actors.find(a=>a.id===step.actor),s=p.subject;
    if(!validSubject(s)||!ID.test(p.record_source_id)||!actor||s.actor_kind!=='native'||s.foreign_runs!==null||s.principal_id!==actor.principal_id||s.agent_id!==actor.agent_id||s.workspace_id!==config.workspaces.primary||s.authority_epoch!==ctx.config_epoch||typeof s.credential_id!=='string'||p.refs.state_directory!==actor.state_directory||p.refs.origin!==config.origin||p.refs.workspace!==config.workspaces.primary)reject();
    const operation=step.operation??'createTask',meta=CASE_OPERATIONS[operation];
    if(!meta||(!meta.idempotency&&s.key_sha256!==null)||(meta.idempotency&&!HASH.test(s.key_sha256))||(!meta.runtimeProof&&s.proof_sha256!==null)||(meta.runtimeProof&&(!HASH.test(s.proof_sha256)||typeof s.runtime_id!=='string')))reject();
    if(['getTask','patchTask','readyTask','cancelTask','requeueTask','claimTask','submitTaskResult','acceptTaskResult','failTask','listTaskResults'].includes(operation)&&typeof s.task_id!=='string')reject();
    if(['getRun','heartbeatRun','submitTaskResult','acceptTaskResult','failTask'].includes(operation)&&typeof s.run_id!=='string')reject();
    if(step.resourceKey?.endsWith('task_id')&&p.refs[step.resourceKey]!==s.task_id||step.resourceKey?.endsWith('run_id')&&p.refs[step.resourceKey]!==s.run_id||step.resourceKey?.endsWith('runtime_id')&&p.refs[step.resourceKey]!==s.runtime_id)reject();
-   const invocation=frozen({nodeSha256:config.node.sha256,entrySha256:config.build.sha256,args:buildNativeInvocation(stepId,p.refs),cwd:dirname(config.build.path),env:{TZ:'UTC',LANG:'C.UTF-8'}});
+   const invocation=frozen({nodeSha256:config.node.sha256,entrySha256:config.build.sha256,args:pinned?buildPinnedNativeInvocation(stepId,p.refs,p.pin):buildNativeInvocation(stepId,p.refs),cwd:dirname(config.build.path),env:{TZ:'UTC',LANG:'C.UTF-8'}});
    const original={type:'native-case-preparation-original',version:1,...shared,case_id:step.caseId,step_id:stepId,prepared_at:now(),subject:s,invocation_commitment_sha256:sha(invocation),record_source_id:p.record_source_id};
    const record=emit('prep_'+randomUUID().replaceAll('-',''),original);prepared.set(stepId,{step,original,record,invocation,state:'prepared'});
    const result={prepared:true,stepId,recordId:record.id,sha256:record.sha256};Object.defineProperty(result,'readInvocation',{value:()=>frozen(structuredClone(invocation))});return Object.freeze(result);
-  }},
+
+ }
+ const api={durability:'memory-only',acceptance:'pending-external-inspection',issue48Complete:false};
+ Object.defineProperties(api,{
+  readProtectedContext:{value:()=>structuredClone(publicContext)},
+  readProtectedRecords:{value:()=>[...records.values()].map(r=>({...r,bytes:Buffer.from(r.bytes)}))},
+  remainingBytes:{value:()=>16777216-total},
+  prepare:{value:(stepId,value)=>prepareInvocation(stepId,value,false)},
+  preparePinned:{value:(stepId,value)=>prepareInvocation(stepId,value,true)},
   begin:{value:stepId=>beginCapture(stepId,'case')},
   beginAuxiliary:{value:stepId=>beginCapture(stepId,'auxiliary')},
   reserveProcessRead:{value:(token,invocationId,custody)=>{

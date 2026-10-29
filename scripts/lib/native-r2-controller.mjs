@@ -1,10 +1,11 @@
+import {createNativeInputAdmission} from './native-r2-input.mjs';
 import {createHash,randomUUID} from 'node:crypto';
 import {mkdirSync,lstatSync} from 'node:fs';
 import {join,dirname,relative,isAbsolute} from 'node:path';
 import {admitNativeRun,inspectNativeDirectory} from './native-r2-admission.mjs';
 import {createNativeBudget,withNativeDeadline} from './native-r2-budget.mjs';
 import {validateNativeConfig} from './native-r2-config.mjs';
-import {getNativeScenario,buildNativeInvocation} from './native-r2-scenario.mjs';
+import {getNativeScenario,buildNativeInvocation,buildPinnedNativeInvocation} from './native-r2-scenario.mjs';
 import {runOwnedProcess} from './native-r2-process.mjs';
 import {createNativeBindingRegistry} from './native-r2-bindings.mjs';
 import {readNativeProcessOriginals} from './native-r2-original-reader.mjs';
@@ -97,8 +98,9 @@ export async function executeNativeScenario(input,adapter,evidenceContext=null){
  const subjects={config_sha256:configSha256,candidate_sha:config.candidate_sha,candidate_tree_sha:config.candidate_tree_sha,composition_sha256:config.composition_sha256,node_sha256:config.node.sha256,build_sha256:config.build.sha256,authority_record_sha256:config.authority_record_sha256,scenario_sha256:plan.scenarioSha256,actors_sha256:sha({actors:config.actors,fixture_stores:config.fixture_stores}),workspaces_sha256:sha(config.workspaces)};
  const bindingActor=role=>{const actor=config.actors.find(item=>item.id===role);return {principalId:actor.principal_id,agentId:actor.agent_id};};
  const bindings=createNativeBindingRegistry({workspaceId:config.workspaces.primary,submitter:bindingActor('submitter'),reviewer:bindingActor('reviewer')});
+ const inputs=createNativeInputAdmission();budget.remainingMs();
  const completed=[],protectedResults=[];let retainedArtifactBytes=null,assembled=null;
- const attachEvidence=result=>{Object.defineProperty(result,'readProtectedBindings',{enumerable:false,value:()=>bindings.readSummary()});if(recorder)Object.defineProperty(result,'readProtectedEvidence',{enumerable:false,value:()=>({durability:'memory-only',status:assembled?.result.status??'partial-originals-pending',context:recorder.readProtectedContext(),records:recorder.readProtectedRecords(),assembly:assembled?structuredClone(assembled):null})});return result;};
+ const attachEvidence=result=>{Object.defineProperty(result,'readProtectedInputAdmissions',{enumerable:false,value:()=>inputs.readProtectedSummary()});Object.defineProperty(result,'readProtectedBindings',{enumerable:false,value:()=>bindings.readSummary()});if(recorder)Object.defineProperty(result,'readProtectedEvidence',{enumerable:false,value:()=>({durability:'memory-only',status:assembled?.result.status??'partial-originals-pending',context:recorder.readProtectedContext(),records:recorder.readProtectedRecords(),assembly:assembled?structuredClone(assembled):null})});return result;};
  const currentAuthority=async()=>{
   budget.remainingMs();const auth=await bounded(signal=>adapter.authorize(structuredClone({configSha256,config}),{signal}));
   if(!auth||Object.keys(auth).sort().join(',')!=='authorityRecordSha256,configSha256,expiresAt'||auth.configSha256!==configSha256||auth.authorityRecordSha256!==config.authority_record_sha256||!Number.isSafeInteger(auth.expiresAt)||auth.expiresAt<=Date.now()||auth.expiresAt>Date.now()+300000)throw Error('NATIVE_AUTHORITY_REJECTED');
@@ -127,8 +129,12 @@ export async function executeNativeScenario(input,adapter,evidenceContext=null){
    const actor=config.fixture_stores.find(item=>item.fixture===step.fixture&&item.actor_slot===step.actor)??config.actors.find(item=>item.id===step.actor);
    if(!actor||refs?.state_directory!==actor.state_directory||refs.origin!==undefined&&refs.origin!==config.origin||refs.workspace!==undefined&&refs.workspace!==(['probe/wrong-workspace','probe/server-foreign-workspace'].includes(step.id)?config.workspaces.foreign:config.workspaces.primary))throw Error('NATIVE_SUBJECT_REJECTED');
    for(const key of ['input_file','source_file','output_file'])if(refs[key]&&!within(config.fixture_directory,refs[key]))throw Error('NATIVE_SUBJECT_REJECTED');
-   const bindingToken=bindings.prepare(step.id,refs);
-   let args=buildNativeInvocation(step.id,refs);let casePreparation=null,caseToken=null,ownedInvocation=null;
+   budget.remainingMs();
+   let input=step.refKeys.includes('input_file')?inputs.read(step.id,refs.input_file):null;
+   budget.remainingMs();
+   const pin=input===null?null:Object.freeze({sha256:input.sha256,byteSize:input.byteSize});
+   const bindingToken=bindings.prepareWithInput(step.id,refs,input);input=null;
+   const args=buildPinnedNativeInvocation(step.id,refs,pin);let casePreparation=null,caseToken=null,ownedInvocation=null;
    if(step.requires?.includes('nonempty-artifact-source-at-most-10MiB')){const st=lstatSync(refs.source_file);if(!st.isFile()||st.isSymbolicLink()||st.size<1||st.size!==prepared.artifactBytes)throw Error('NATIVE_SUBJECT_REJECTED');retainedArtifactBytes=st.size;}
    else if(['stageArtifact','uploadArtifactContent','commitArtifact','downloadArtifactContent'].includes(step.operation)){if(retainedArtifactBytes===null||prepared.artifactBytes!==retainedArtifactBytes||cost.artifact_bytes<retainedArtifactBytes)throw Error('NATIVE_SUBJECT_REJECTED');}
    else if(prepared.artifactBytes!==0)throw Error('NATIVE_SUBJECT_REJECTED');
@@ -138,7 +144,7 @@ export async function executeNativeScenario(input,adapter,evidenceContext=null){
     const supplied=await bounded(signal=>adapter.prepareEvidence(structuredClone(step),{refs:structuredClone(refs),runId,context:recorder.readProtectedContext(),signal}));
     if(!supplied||Object.getPrototypeOf(supplied)!==Object.prototype)throw Error('NATIVE_OBSERVER_INCOMPLETE');
     const ds=Object.getOwnPropertyDescriptors(supplied);if(Reflect.ownKeys(ds).length!==2||['subject','record_source_id'].some(k=>!Object.hasOwn(ds,k)||!Object.hasOwn(ds[k],'value')||!ds[k].enumerable))throw Error('NATIVE_OBSERVER_INCOMPLETE');
-    casePreparation=recorder.prepare(step.id,{subject:ds.subject.value,record_source_id:ds.record_source_id.value,refs});ownedInvocation=casePreparation.readInvocation();args=ownedInvocation.args;
+    casePreparation=recorder.preparePinned(step.id,{subject:ds.subject.value,record_source_id:ds.record_source_id.value,refs,pin});ownedInvocation=casePreparation.readInvocation();if(canonicalCaseSubject(ownedInvocation.args)!==canonicalCaseSubject(args))throw Error('NATIVE_INVOCATION_PIN_REJECTED');
     await currentAuthority();
    }
    const invocationId='inv_'+randomUUID().replaceAll('-',''),directory=join(config.output_directory,invocationId);mkdirSync(directory,{mode:0o700});
