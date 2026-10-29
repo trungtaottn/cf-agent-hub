@@ -6,6 +6,7 @@ import {createNativeBudget,withNativeDeadline} from './native-r2-budget.mjs';
 import {validateNativeConfig} from './native-r2-config.mjs';
 import {getNativeScenario,buildNativeInvocation} from './native-r2-scenario.mjs';
 import {runOwnedProcess} from './native-r2-process.mjs';
+import {createNativeBindingRegistry} from './native-r2-bindings.mjs';
 import {readNativeProcessOriginals} from './native-r2-original-reader.mjs';
 import {canonicalCaseSubject} from './r2-case-policy.mjs';
 const sha=value=>createHash('sha256').update(canonicalCaseSubject(value)).digest('hex');
@@ -94,8 +95,10 @@ export async function executeNativeScenario(input,adapter,evidenceContext=null){
  catch{throw Error('NATIVE_ADMISSION_REJECTED');}
  const {config,configSha256}=admitted;const plan=prepareNativeExecution(scenario,config.budgets,description),evidencePlan=recorder?prepareNativeEvidenceExecution(config.budgets,evidenceDescription):null;budget.reserve(plan.totals);if(evidencePlan)budget.reserve(evidencePlan.totals);const evidenceCosts=new Map(evidencePlan?.costs.map(row=>[row.id,Object.fromEntries(costKeys.map(k=>[k,row[k]]))])??[]);
  const subjects={config_sha256:configSha256,candidate_sha:config.candidate_sha,candidate_tree_sha:config.candidate_tree_sha,composition_sha256:config.composition_sha256,node_sha256:config.node.sha256,build_sha256:config.build.sha256,authority_record_sha256:config.authority_record_sha256,scenario_sha256:plan.scenarioSha256,actors_sha256:sha({actors:config.actors,fixture_stores:config.fixture_stores}),workspaces_sha256:sha(config.workspaces)};
+ const bindingActor=role=>{const actor=config.actors.find(item=>item.id===role);return {principalId:actor.principal_id,agentId:actor.agent_id};};
+ const bindings=createNativeBindingRegistry({workspaceId:config.workspaces.primary,submitter:bindingActor('submitter'),reviewer:bindingActor('reviewer')});
  const completed=[],protectedResults=[];let retainedArtifactBytes=null,assembled=null;
- const attachEvidence=result=>{if(recorder)Object.defineProperty(result,'readProtectedEvidence',{enumerable:false,value:()=>({durability:'memory-only',status:assembled?.result.status??'partial-originals-pending',context:recorder.readProtectedContext(),records:recorder.readProtectedRecords(),assembly:assembled?structuredClone(assembled):null})});return result;};
+ const attachEvidence=result=>{Object.defineProperty(result,'readProtectedBindings',{enumerable:false,value:()=>bindings.readSummary()});if(recorder)Object.defineProperty(result,'readProtectedEvidence',{enumerable:false,value:()=>({durability:'memory-only',status:assembled?.result.status??'partial-originals-pending',context:recorder.readProtectedContext(),records:recorder.readProtectedRecords(),assembly:assembled?structuredClone(assembled):null})});return result;};
  const currentAuthority=async()=>{
   budget.remainingMs();const auth=await bounded(signal=>adapter.authorize(structuredClone({configSha256,config}),{signal}));
   if(!auth||Object.keys(auth).sort().join(',')!=='authorityRecordSha256,configSha256,expiresAt'||auth.configSha256!==configSha256||auth.authorityRecordSha256!==config.authority_record_sha256||!Number.isSafeInteger(auth.expiresAt)||auth.expiresAt<=Date.now()||auth.expiresAt>Date.now()+300000)throw Error('NATIVE_AUTHORITY_REJECTED');
@@ -105,6 +108,7 @@ export async function executeNativeScenario(input,adapter,evidenceContext=null){
   for(let i=0;i<scenario.steps.length;i++){
    const step=scenario.steps[i],cost=plan.costs[i];await currentAuthority();
    if(step.kind==='control'){
+    const bindingToken=bindings.prepare(step.id);
     const disableToken=recorder&&step.id==='control/revoke-submitter'?recorder.beginDisable():null;
     const result=snapshotNativeGenericReceipt('control',await bounded(signal=>adapter.control(structuredClone(step),{runId,cost:structuredClone(cost),remainingMs:budget.remainingMs(),completed:[...completed],...(disableToken?{captureFacts:recorder.captureFacts(disableToken)}:{}),signal})));
     // A host receipt is custody input, not a generic boolean proof of isolation.
@@ -114,6 +118,7 @@ export async function executeNativeScenario(input,adapter,evidenceContext=null){
      const supplied=await bounded(signal=>adapter.observeDisableEvidence(structuredClone(step),{runId,captureFacts:recorder.captureFacts(disableToken),expectedRecordSha256:result.recordSha256,cost:structuredClone(extra),maxBytes,signal}));
      const typed=validateNativeTypedReturn(supplied,extra,maxBytes);recorder.captureAcknowledgedDisable(disableToken,{record:typed.record,genericControl:result,cost});
     }
+    bindings.completeControl(bindingToken,result);
     protectedResults.push({stepId:step.id,control:structuredClone(result)});completed.push(step.id);continue;
    }
    const prepared=await bounded(signal=>adapter.prepare(structuredClone(step),{completed:[...completed],signal,readPriorOutput(id){const prior=protectedResults.find(item=>item.stepId===id);if(!prior?.process||!completed.includes(id))throw Error('NATIVE_SUBJECT_REJECTED');const output=prior.process.readCapturedOutput();return {stdout:Buffer.from(output.stdout),stderr:Buffer.from(output.stderr)};}}));
@@ -122,6 +127,7 @@ export async function executeNativeScenario(input,adapter,evidenceContext=null){
    const actor=config.fixture_stores.find(item=>item.fixture===step.fixture&&item.actor_slot===step.actor)??config.actors.find(item=>item.id===step.actor);
    if(!actor||refs?.state_directory!==actor.state_directory||refs.origin!==undefined&&refs.origin!==config.origin||refs.workspace!==undefined&&refs.workspace!==(['probe/wrong-workspace','probe/server-foreign-workspace'].includes(step.id)?config.workspaces.foreign:config.workspaces.primary))throw Error('NATIVE_SUBJECT_REJECTED');
    for(const key of ['input_file','source_file','output_file'])if(refs[key]&&!within(config.fixture_directory,refs[key]))throw Error('NATIVE_SUBJECT_REJECTED');
+   const bindingToken=bindings.prepare(step.id,refs);
    let args=buildNativeInvocation(step.id,refs);let casePreparation=null,caseToken=null,ownedInvocation=null;
    if(step.requires?.includes('nonempty-artifact-source-at-most-10MiB')){const st=lstatSync(refs.source_file);if(!st.isFile()||st.isSymbolicLink()||st.size<1||st.size!==prepared.artifactBytes)throw Error('NATIVE_SUBJECT_REJECTED');retainedArtifactBytes=st.size;}
    else if(['stageArtifact','uploadArtifactContent','commitArtifact','downloadArtifactContent'].includes(step.operation)){if(retainedArtifactBytes===null||prepared.artifactBytes!==retainedArtifactBytes||cost.artifact_bytes<retainedArtifactBytes)throw Error('NATIVE_SUBJECT_REJECTED');}
@@ -140,7 +146,9 @@ export async function executeNativeScenario(input,adapter,evidenceContext=null){
    const processResult=await runOwnedProcess({nodePath:config.node.path,entryPath:config.build.path,args:[...args],cwd:ownedInvocation?.cwd??dirname(config.build.path),env:ownedInvocation?.env??{TZ:'UTC',LANG:'C.UTF-8'},receiptDirectory:directory,timeoutMs:Math.max(1,Math.floor(Math.min(300000,budget.remainingMs()))),maxOutputBytes:cost.output_bytes,invocationId,nodeSha256:config.node.sha256,entrySha256:config.build.sha256,subjects});
    protectedResults.push({stepId:step.id,invocationId,process:processResult});
    if(processResult.status!=='terminal'||processResult.reason!=='exit'||processResult.exitCode!==step.expectedExit||processResult.truncated)throw Error('NATIVE_PROCESS_UNCERTAIN');
-   const capture=processResult.readCapturedOutput();
+   // Detach owned bytes and custody before awaited host observers can inspect the process accessor.
+   const ownedCapture=processResult.readCapturedOutput();
+   const capture={stdout:Buffer.from(ownedCapture.stdout),stderr:Buffer.from(ownedCapture.stderr),custody:structuredClone(ownedCapture.custody)};
    if(!capture.custody.final||Object.values(capture.custody.transcripts).some(item=>!item.complete))throw Error('NATIVE_PROCESS_UNCERTAIN');
    const processRecordSha256=capture.custody.final.sha256;
    const expected={stepId:step.id,invocationId,processExit:processResult.exitCode,executableSha256:config.build.sha256,requestCount:step.expectedRequests,httpStatus:step.expectedStatus??null,configSha256,scenarioSha256:plan.scenarioSha256,authorityRecordSha256:config.authority_record_sha256,principalId:actor.principal_id,agentId:actor.agent_id,workspaceId:refs.workspace??config.workspaces.primary,processRecordSha256};
@@ -161,6 +169,7 @@ export async function executeNativeScenario(input,adapter,evidenceContext=null){
     const recorded=step.caseId?recorder.finish(caseToken,completion):recorder.finishAuxiliary(caseToken,completion);
     protectedResults.at(-1).evidence=recorded;
    }
+   bindings.completeProcess(bindingToken,{invocationId,exitCode:processResult.exitCode,stdout:capture.stdout,stderr:capture.stderr,custody:capture.custody,maxOutputBytes:cost.output_bytes});
    protectedResults.at(-1).observation=structuredClone(observation);completed.push(step.id);
   }
   budget.remainingMs();
