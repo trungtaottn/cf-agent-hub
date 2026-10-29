@@ -7,6 +7,7 @@ import {createFixtureBackend} from './native-fixture-backend.mjs';
 import {createFixtureService} from './native-fixture-service.mjs';
 import {createFixtureClient} from './native-fixture-client.mjs';
 import {createBoundFixtureVerifier} from './native-fixture-verifier.mjs';
+import {createLocalInventoryScanner} from './native-local-inventory.mjs';
 import {createLocalOriginalConsumer} from './native-local-original-consumer.mjs';
 import {createLocalForeignProducer} from './native-local-foreign-producer.mjs';
 import {installLocalIssuer} from './native-local-issuer.mjs';
@@ -26,7 +27,7 @@ const rejected=()=>{throw Error('LOCAL_SANDBOX_REJECTED');};
 /** No target, path, module, credentials, budgets or trust hooks accepted from callers. */
 export async function runLocalNativeSandbox(){
  if(arguments.length!==0)rejected();
- const controller=new AbortController(),pending=new Set(),rounds=[],fixtureSessions=[],providers=[];
+ const controller=new AbortController(),pending=new Set(),rounds=[],fixtureSessions=[],providers=[],inventoryScans=[];
  let harness,buildDirectory,stage='setup',action=null,reason=null,httpStatus=null,expectedHttpStatus=null,bodySucceeded=false,cleanupClosed=false;
  const timer=setTimeout(()=>controller.abort(Error('LOCAL_SANDBOX_DEADLINE')),120000);timer.unref();
  const retain=promise=>{pending.add(promise);promise.then(()=>pending.delete(promise),()=>pending.delete(promise));return promise;};
@@ -116,7 +117,8 @@ export async function runLocalNativeSandbox(){
     let suppressed=false;try{await nativeFetch('https://hub.example.invalid/v2/workspaces/ws_example/tasks',{method:'POST',headers:{authorization:'Bearer '+tokens.submitter,'content-type':'application/json','idempotency-key':key},body,redirect:'manual',signal:controller.signal});}catch(error){if(error?.message==='LOCAL_COMMITTED_RESPONSE_SUPPRESSED')suppressed=true;else throw error;}
     if(!suppressed||routes.disarm().status!=='suppressed')rejected();
     revokedResult=await revocation.run();if(revocation.snapshot().failed||revocation.snapshot().pending!==0)rejected();
-    const captured=foreignProducer.readProtectedOriginals();originalConsumer.consume({foreignRoute:{originals:captured.route,records:foreignProducer.readRecords()},foreignState:{originals:captured.state,records:foreignProducer.readStateRecords()},revocation:{originals:revocation.readProtectedOriginals(),records:revocation.readRecords()}});
+    const captured=foreignProducer.readProtectedOriginals();const pairing=originalConsumer.consume({foreignRoute:{originals:captured.route,records:foreignProducer.readRecords()},foreignState:{originals:captured.state,records:foreignProducer.readStateRecords()},revocation:{originals:revocation.readProtectedOriginals(),records:revocation.readRecords()}});
+    const scan=createLocalInventoryScanner({tokens,fixtureSecrets:{oidc:secret,csrf,cursor}}).scan(pairing);inventoryScans.push(scan);if(scan.status!=='no-known-match')rejected();
     return client.call('configuration-disable-local',{expected_epoch:1,expected_credential_version:1,operation_id:'disable-'+round},{signal:controller.signal});
    };
    stage='round-'+round+'-checks';
@@ -146,8 +148,9 @@ export async function runLocalNativeSandbox(){
    cleanupClosed=true;
   }catch{cleanupClosed=false;}
  }
- if(!bodySucceeded||!cleanupClosed){const error=Error('LOCAL_SANDBOX_FAILED');Object.defineProperties(error,{stage:{value:stage},httpStatus:{value:httpStatus},expectedHttpStatus:{value:expectedHttpStatus},action:{value:action},reason:{value:reason},cleanup:{value:cleanupClosed?'closed':'unknown'}});throw error;}
+ if(!bodySucceeded||!cleanupClosed){const error=Error('LOCAL_SANDBOX_FAILED');Object.defineProperties(error,{stage:{value:stage},httpStatus:{value:httpStatus},expectedHttpStatus:{value:expectedHttpStatus},action:{value:action},reason:{value:reason},cleanup:{value:cleanupClosed?'closed':'unknown'},readInventoryOriginals:{value:()=>inventoryScans.map(s=>s.readOriginal())}});throw error;}
  const report={type:'local-r2-sandbox-result',version:4,status:'local-source-checks-passed',transport:'local-worker-dispatch',nativeConformance:false,issue48Complete:false,acceptance:'not-evaluated',cleanup:'closed',rounds,budgets:{...budgets}};
  if(!validateReport(report))rejected();
+ Object.defineProperty(report,'readInventoryOriginals',{value:()=>inventoryScans.map(s=>s.readOriginal())});
  return report;
 }

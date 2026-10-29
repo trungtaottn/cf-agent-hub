@@ -247,3 +247,31 @@ artifact integrity, journal settlement or native acceptance. Existing three-file
 prepared-invocation joins remain necessary. No new evidence role or acceptance
 version is introduced; installed authority and the three unsupported tuple-only
 controls remain unresolved.
+
+### Known local inventory scans
+
+The local sandbox now scans four actual captured response bodies after the
+existing original-to-record pairing succeeds: two foreign-resource denials,
+revocation own-positive, and fresh same-credential denial. Inventory contains
+four configured synthetic bearer values, three existing fixture secrets and two
+runtime tokens derived from actual enrollment responses. Foreign identifiers are
+the actual B-task ID and workspace ID, not a guessed creator agent.
+
+Only seven needed originals are privately retained through a module-owned
+pairing-result identity (262,144 bytes maximum); scan targets total at most
+163,840 bytes. Nine secrets and two foreign IDs produce at most 202,668 bytes of
+literal/escaped patterns. Each configured string is bounded to 16–4,096 UTF-8
+bytes and must round-trip without surrogate replacement. These are payload
+bounds, not process-memory guarantees. Enrollment originals supply inventory;
+enrollment and SQL originals are intentionally not leak targets.
+
+Matching covers UTF-8 literals and the content emitted by `JSON.stringify` for
+each known value. It does not cover arbitrary Unicode/solidus escapes, base64,
+percent encoding, splitting, unknown secrets or all issuer-created credentials.
+A detected match fails the local flow. A private copy-return receipt, capped at
+4,096 bytes, binds capture identities, pairing manifest and consumed byte hashes;
+it contains category counts and fixed match booleans, never secret values or
+individual secret hashes. The ordinary v4 report is unchanged. Safe receipts are
+available privately on success or failure; raw captured originals are not logged.
+This is local source evidence, not a native CLI stdout scan or installed observer
+authority, and does not resolve the three tuple-only obligations.

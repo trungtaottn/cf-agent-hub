@@ -6,10 +6,13 @@ const fail=()=>{throw Error('LOCAL_ORIGINAL_CONSUMER_REJECTED');},check=v=>{if(!
 const hash=v=>createHash('sha256').update(v).digest('hex');
 function closed(v,keys){check(v&&!types.isProxy(v)&&Object.getPrototypeOf(v)===Object.prototype);const ds=Object.getOwnPropertyDescriptors(v);check(Reflect.ownKeys(ds).length===keys.length);return Object.fromEntries(keys.map(k=>{check(ds[k]?.enumerable&&Object.hasOwn(ds[k],'value'));return[k,ds[k].value];}));}
 function array(v,n){check(v&&!types.isProxy(v)&&Array.isArray(v)&&Object.getPrototypeOf(v)===Array.prototype);const ds=Object.getOwnPropertyDescriptors(v);check(ds.length.value===n&&Reflect.ownKeys(ds).length===n+1);return Array.from({length:n},(_,i)=>{check(ds[i]?.enumerable&&Object.hasOwn(ds[i],'value'));return ds[i].value;});}
+const inventoryPairs=new WeakMap();
+const inventorySelectors={'foreign-route':['foreign_b_create','foreign_enroll','foreign_submit_negative','foreign_fail_negative'],revocation:['enroll','own-positive','fresh-denial']};
+export function readLocalInventoryOriginals(result){const entries=inventoryPairs.get(result);check(entries);return entries.map(e=>({...e,bytes:snapshotLocalOriginalBytes(e.bytes,e.producer==='foreign-route'?16384:65536,true)}));}
 const names=['foreignState','foreignRoute','revocation'],producers=['foreign-state','foreign-route','revocation'];
 export function createLocalOriginalConsumer(identities){
  const supplied=closed(identities,names),expected=names.map((n,i)=>{const x=closed(supplied[n],['producer','capture_id']);check(x.producer===producers[i]&&typeof x.capture_id==='string'&&/^capture_[a-f0-9]{32}$/.test(x.capture_id));return Object.freeze(x);});check(new Set(expected.map(x=>x.capture_id)).size===3);let used=false;
- return Object.freeze({consume(value){check(!used);used=true;const all=closed(value,names),manifest=[];let total=0;
+ return Object.freeze({consume(value){check(!used);used=true;const all=closed(value,names),manifest=[],inventory=[];let total=0;
   for(let g=0;g<names.length;g++){
    const pair=closed(all[names[g]],['originals','records']),o=closed(pair.originals,['type','version','producer','capture_id','assurance','durability','status','entries']),producer=producers[g],roster=localOriginalRoster(producer);
    check(o.type==='local-captured-originals'&&o.version===1&&o.producer===producer&&o.capture_id===expected[g].capture_id&&o.assurance==='source-test-only'&&o.durability==='memory-only'&&o.status==='complete');
@@ -24,11 +27,11 @@ export function createLocalOriginalConsumer(identities){
     else if(r.kind==='selected-json'){s=closed(records[i],['kind','selector','sha256','byte_size']);check(s.kind==='local-sql-observation'&&s.selector===r.selector);}
     else if(r.kind==='http-response'){s=closed(records[i],['kind','status','sha256','byte_size']);check(s.kind==='local-native-response'&&Number.isInteger(s.status)&&s.status>=100&&s.status<=599);}
     else{s=closed(records[i],['kind','sha256','byte_size']);check(s.kind==='local-human-revoke-response');}
-    check(s.sha256===e.sha256&&s.byte_size===e.byte_size);entries.push({sequence:e.sequence,kind:e.kind,selector:e.selector,sha256:e.sha256,byte_size:e.byte_size});
+    check(s.sha256===e.sha256&&s.byte_size===e.byte_size);if(inventorySelectors[producer]?.includes(e.selector))inventory.push({producer,capture_id:expected[g].capture_id,selector:e.selector,sha256:e.sha256,byte_size:e.byte_size,bytes});entries.push({sequence:e.sequence,kind:e.kind,selector:e.selector,sha256:e.sha256,byte_size:e.byte_size});
    }
    manifest.push({...expected[g],entries});
   }
   const encoded=JSON.stringify(manifest);check(Buffer.byteLength(encoded)<=65536);
-  return Object.freeze({type:'local-capture-pairing',version:1,status:'local-captures-matched',nativeConformance:false,durability:'memory-only',records:98,byte_size:total,manifest_sha256:hash(encoded)});
+  const result=Object.freeze({type:'local-capture-pairing',version:1,status:'local-captures-matched',nativeConformance:false,durability:'memory-only',records:98,byte_size:total,manifest_sha256:hash(encoded)});check(inventory.length===7);inventoryPairs.set(result,inventory);return result;
  }});
 }
