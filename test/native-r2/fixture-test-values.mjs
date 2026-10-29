@@ -1,0 +1,5 @@
+/** Synthetic protocol values, not an installed identity verifier. */
+import {fixturePolicyDigest,FIXTURE_CAPABILITIES} from '../../scripts/lib/native-fixture-protocol.mjs';
+export const policy=(now=Date.now(),observations=1,disables=1)=>({type:'native-fixture-policy',version:1,origin:'https://fixture.example.invalid',issuer:'https://issuer.example.invalid',audience:'fixture',service_id:'service',principal_id:'principal',assurance:'source-test-only',expires_at:now+120000,run:{run_id:'run',instance_id:'instance',candidate_sha:'a'.repeat(40),config_sha256:'b'.repeat(64),scenario_sha256:'c'.repeat(64),workspace_id:'ws',object_name:'object'},plan:{observations,configuration_disables:disables}});
+export const claims=p=>({policy_sha256:fixturePolicyDigest(p),issuer:p.issuer,audience:p.audience,service_id:p.service_id,principal_id:p.principal_id,assurance:p.assurance,expires_at:p.expires_at,capabilities:[...FIXTURE_CAPABILITIES]});
+export const request=(operation='preflight',payload={required_capabilities:['preflight']},sequence=1)=>({version:1,service_id:'service',run_id:'run',instance_id:'instance',sequence,request_id:'request_'+sequence,operation,payload});

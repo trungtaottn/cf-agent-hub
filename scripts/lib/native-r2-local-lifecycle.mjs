@@ -42,3 +42,9 @@ export async function closeLocalRound({pending,close}){
  await close();
  if(pending.size!==0)throw Error('LOCAL_SANDBOX_ROUND_PENDING');
 }
+/** Interrupt real owned IO even when one protocol session cannot settle. */
+export async function closeLocalFixtureResources({sessions,close}){
+ if(!Array.isArray(sessions)||typeof close!=='function')throw Error('LOCAL_SANDBOX_CLEANUP_UNKNOWN');
+ const results=await Promise.allSettled([Promise.resolve().then(close),...sessions.map(session=>Promise.resolve().then(()=>session.close()))]);
+ if(results.some(result=>result.status==='rejected'))throw Error('LOCAL_SANDBOX_CLEANUP_UNKNOWN');
+}

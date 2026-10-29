@@ -1,6 +1,6 @@
 # Native host producer integration design
 
-Status: Proposed integration architecture; service implementation, independent trust installation and live native conformance remain pending. This document does not install an authority or enable execution.
+Status: Integration architecture with a bounded local fixture-controller core implemented; independent trust installation, remaining native adapters and live native conformance remain pending. This document does not install an authority or enable protected execution.
 
 ## Why the protected entry is still blocked
 
@@ -104,3 +104,12 @@ trust relationship by pretending it exists.
 No real credentials, persistent service, deployment or fault/revocation actions
 are authorized or created by this design document. Formal integrated acceptance
 remains deferred until after R4, separately from unfinished adapter code.
+
+## Implemented local protocol slice
+
+The fixed version 1 fixture client/service and selected SQL/configuration-control
+backend now have a concrete source implementation. See
+[native fixture controller](native-fixture-controller.md) for its exact closed
+protocol, joint budgets, real local sandbox wiring and remaining installation
+and native adapter gaps. The local test verifier is explicitly synthetic; this
+does not install or demonstrate a production trust authority.

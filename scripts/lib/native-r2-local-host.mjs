@@ -2,11 +2,15 @@
 import {mkdtemp,mkdir,rm,readFile} from 'node:fs/promises';
 import {join,dirname} from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
-import {randomBytes} from 'node:crypto';
+import {randomBytes,createHash} from 'node:crypto';
+import {createFixtureBackend} from './native-fixture-backend.mjs';
+import {createFixtureService} from './native-fixture-service.mjs';
+import {createFixtureClient} from './native-fixture-client.mjs';
+import {FIXTURE_PROJECTIONS,fixturePolicyDigest} from './native-fixture-protocol.mjs';
 import {build} from 'esbuild';
 import {createTestHarness} from 'wrangler';
 import Ajv from 'ajv/dist/2020.js';
-import {closeLocalSandbox,snapshotLocalInstallReceipt,assertLocalDisableChange,closeLocalRound} from './native-r2-local-lifecycle.mjs';
+import {closeLocalSandbox,snapshotLocalInstallReceipt,assertLocalDisableChange,closeLocalRound,closeLocalFixtureResources} from './native-r2-local-lifecycle.mjs';
 const root=dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const budgets=Object.freeze({httpRequestsPerRound:32,sqlStatementsPerRound:128,rowsPerQuery:128,responseBytesPerRound:2097152,sqlBytesPerRound:2097152});
 const reportSchema=JSON.parse(await readFile(new URL('../../spec/local-r2-sandbox-result.schema.json',import.meta.url),'utf8'));
@@ -15,7 +19,7 @@ const rejected=()=>{throw Error('LOCAL_SANDBOX_REJECTED');};
 /** No target, path, module, credentials, budgets or trust hooks accepted from callers. */
 export async function runLocalNativeSandbox(){
  if(arguments.length!==0)rejected();
- const controller=new AbortController(),pending=new Set(),rounds=[];
+ const controller=new AbortController(),pending=new Set(),rounds=[],fixtureSessions=[];
  let harness,buildDirectory,stage='setup',action=null,reason=null,httpStatus=null,expectedHttpStatus=null,bodySucceeded=false,cleanupClosed=false;
  const timer=setTimeout(()=>controller.abort(Error('LOCAL_SANDBOX_DEADLINE')),120000);timer.unref();
  const retain=promise=>{pending.add(promise);promise.then(()=>pending.delete(promise),()=>pending.delete(promise));return promise;};
@@ -75,9 +79,27 @@ export async function runLocalNativeSandbox(){
      throw error;
     }
    };
+   stage='round-'+round+'-fixture-protocol';
+   // This source-only identity is not an installed issuer, native runtime, or release attestation.
+   const policy={type:'native-fixture-policy',version:1,origin:'https://fixture.example.invalid',issuer:'https://issuer.example.invalid',audience:'local-source-fixture',service_id:'local-fixture',principal_id:'local-source-controller',assurance:'source-test-only',expires_at:Date.now()+120000,run:{run_id:name,instance_id:name,candidate_sha:'0'.repeat(40),config_sha256:input.bundle.config_digest,scenario_sha256:createHash('sha256').update('source-local-journey-v1').digest('hex'),workspace_id:'ws_example',object_name:name},plan:{observations:39,configuration_disables:1}};
+   const backend=createFixtureBackend({policy,storage:{exec:(...args)=>tracked(()=>storage.exec(...args))},disable,track:retain});
+   const service=createFixtureService({policy,backend,verify:async()=>({policy_sha256:fixturePolicyDigest(policy),issuer:policy.issuer,audience:policy.audience,service_id:policy.service_id,principal_id:policy.principal_id,assurance:policy.assurance,expires_at:policy.expires_at,capabilities:[...backend.capabilities]})});
+   const client=createFixtureClient({policy,send:request=>service.handle(request)});fixtureSessions.push(client,service);
+   await tracked(()=>client.call('preflight',{required_capabilities:[...backend.capabilities]},{signal:controller.signal}));
+   const queries=new Map();
+   for(const [selector,columns] of Object.entries(FIXTURE_PROJECTIONS)){
+    const credential=selector==='submitter_credential',epoch=selector==='workspace_epoch',table=credential?'native_credentials':epoch?'workspace_metadata':selector;
+    const select=Object.entries(columns).map(([key,kind])=>kind==='integer'?key:`substr(${key},1,257) AS ${key}`).join(',');
+    const where=credential?' WHERE workspace_id=? AND credential_id=?':epoch?' WHERE workspace_id=?':'',order=credential?'credential_id':epoch?'workspace_id':'id';
+    queries.set(`SELECT ${select} FROM ${table}${where} ORDER BY ${order} LIMIT 129`,{selector,bindings:credential?['ws_example','credential_research_1']:epoch?['ws_example']:[]});
+   }
+   const observedStorage={exec:async(query,...bindings)=>{const known=queries.get(query);if(!known||JSON.stringify(bindings)!==JSON.stringify(known.bindings))rejected();return (await client.call('observe-selected-state',{selector:known.selector},{signal:controller.signal})).rows;}};
+   const controlledDisable=()=>client.call('configuration-disable-local',{expected_epoch:1,expected_credential_version:1,operation_id:'disable-'+round},{signal:controller.signal});
    stage='round-'+round+'-checks';
-   const summary=await tracked(()=>api.runLocalNativeFixture({round,tokens,signal:controller.signal,track:retain,worker:{fetch:(...args)=>tracked(()=>worker.fetch(...args))},storage:{exec:(...args)=>tracked(()=>storage.exec(...args))},disable}));
-   rounds.push(summary);
+   const summary=await tracked(()=>api.runLocalNativeFixture({round,tokens,signal:controller.signal,track:retain,worker:{fetch:(...args)=>tracked(()=>worker.fetch(...args))},storage:observedStorage,disable:controlledDisable}));
+   if(backend.snapshot().sqlStatements!==41||client.snapshot().attempts!==41)rejected();
+   await client.close();await service.close();
+   rounds.push({...summary,sqlStatements:backend.snapshot().sqlStatements,sqlBytes:backend.snapshot().sqlBytes});
   }
   bodySucceeded=true;
  }catch(error){
@@ -91,7 +113,7 @@ export async function runLocalNativeSandbox(){
  }finally{
   clearTimeout(timer);controller.abort(Error('LOCAL_SANDBOX_FINISHED'));
   try{
-   await closeLocalSandbox({pending,close:()=>harness?.close(),remove:()=>buildDirectory?rm(buildDirectory,{recursive:true,force:true}):undefined});
+   await closeLocalSandbox({pending,close:()=>closeLocalFixtureResources({sessions:fixtureSessions,close:()=>harness?.close()}),remove:()=>buildDirectory?rm(buildDirectory,{recursive:true,force:true}):undefined});
    cleanupClosed=true;
   }catch{cleanupClosed=false;}
  }
