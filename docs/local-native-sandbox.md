@@ -81,3 +81,45 @@ observer/control interfaces. No Node ownership change, `.git` removal, arbitrary
 proxy or TLS-ignore flag is part of this local mode. If ordinary Wrangler app
 configuration needs an existing writable `XDG_CONFIG_HOME`, it may be selected
 for normal tool setup; that does not relocate or weaken protected native stores.
+
+## Local route capture and commit-before-publication fixture
+
+Local report version 2 adds bounded source-owned route observations to each
+fresh round. The version 1 schema remains unchanged; neither version can be
+used as native conformance evidence. The observer forwards exact bounded
+request bytes to the real local Worker, records response digests and sizes,
+and does not retain enrollment response bodies or credential headers.
+
+A one-shot synthetic task creation is armed by credential reference, request
+body digest and idempotency-key digest. An independent parameterized SQL read
+first establishes absence of that exact outcome. After the real 201 response,
+a fixed join checks the idempotency outcome, task, event and task history,
+including original request ID, canonical outcome, actor, versions and times.
+Only then is response publication intentionally suppressed. This is not a TCP
+fault, built-CLI lost-response test, or permission to retry a retained intent.
+A non-201 response means commit was not established, not proof of no commit.
+
+Safe observations bind the local run, instance, ordinal, arm ID and commit
+proof digest. Candidate/scenario binding and durable protected-original
+publication remain responsibilities of the later native composition; this
+local producer does not claim those absent bindings. Originals are memory-only.
+The fixed plan allows 32 requests, 65,536 bytes per body, 8,192 header bytes per
+direction per request, and 4,096 bytes per safe record. Invalid, mismatched or
+duplicate arms fail closed before another dispatch. Unread or late responses
+remain owned and cancellation failures prevent a closed-cleanup claim.
+
+The three isolated slot/generation/principal-only swap obligations remain
+blocked: supported credential lifecycle operations also change runtime-proof
+provenance. Compound lifecycle tests do not satisfy those exact obligations.
+No typed roster, release-root verdict or acceptance requirement is replaced by
+this local fixture. Installed host authority and the remaining native adapter
+composition are still required; formal acceptance remains scheduled after R4.
+
+The independent commit projection byte-gates each SQL cell before the bridge.
+For its maximum two selected rows, raw scalar payload is at most 22,064 bytes
+(excluding object overhead); a conservative JSON encoding bound including fixed
+keys and escaping is 132,823 bytes. Neither bound measures process memory or
+wire/bridge metadata. These bounds are distinct from
+the accepted canonical 16 KiB per observation and 32 KiB retained SQL total.
+No overbound observation is truncated into valid evidence. The real two-round
+fixture currently performs 17 handler requests and 43 SQL statements per round.

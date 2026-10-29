@@ -7,6 +7,7 @@ import {createFixtureBackend} from './native-fixture-backend.mjs';
 import {createFixtureService} from './native-fixture-service.mjs';
 import {createFixtureClient} from './native-fixture-client.mjs';
 import {createBoundFixtureVerifier} from './native-fixture-verifier.mjs';
+import {createLocalRouteObserver} from './native-route-observer.mjs';
 import {FIXTURE_PROJECTIONS,fixturePolicyDigest} from './native-fixture-protocol.mjs';
 import {build} from 'esbuild';
 import {createTestHarness} from 'wrangler';
@@ -14,7 +15,7 @@ import Ajv from 'ajv/dist/2020.js';
 import {closeLocalSandbox,snapshotLocalInstallReceipt,assertLocalDisableChange,closeLocalRound,closeLocalFixtureResources} from './native-r2-local-lifecycle.mjs';
 const root=dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const budgets=Object.freeze({httpRequestsPerRound:32,sqlStatementsPerRound:128,rowsPerQuery:128,responseBytesPerRound:2097152,sqlBytesPerRound:2097152});
-const reportSchema=JSON.parse(await readFile(new URL('../../spec/local-r2-sandbox-result.schema.json',import.meta.url),'utf8'));
+const reportSchema=JSON.parse(await readFile(new URL('../../spec/local-r2-sandbox-result-v2.schema.json',import.meta.url),'utf8'));
 const validateReport=new Ajv({strict:true}).compile(reportSchema);
 const rejected=()=>{throw Error('LOCAL_SANDBOX_REJECTED');};
 /** No target, path, module, credentials, budgets or trust hooks accepted from callers. */
@@ -96,12 +97,22 @@ export async function runLocalNativeSandbox(){
     queries.set(`SELECT ${select} FROM ${table}${where} ORDER BY ${order} LIMIT 129`,{selector,bindings:credential?['ws_example','credential_research_1']:epoch?['ws_example']:[]});
    }
    const observedStorage={exec:async(query,...bindings)=>{const known=queries.get(query);if(!known||JSON.stringify(bindings)!==JSON.stringify(known.bindings))rejected();return (await client.call('observe-selected-state',{selector:known.selector},{signal:controller.signal})).rows;}};
-   const controlledDisable=()=>client.call('configuration-disable-local',{expected_epoch:1,expected_credential_version:1,operation_id:'disable-'+round},{signal:controller.signal});
+   const routes=createLocalRouteObserver({origin:'https://hub.example.invalid',workspaceId:'ws_example',instanceId:name,runId:name,credentials:[{ref:'submitter',principalId:'agent_research',agentId:'agent_research',tokenSha256:createHash('sha256').update(tokens.submitter).digest('hex')},{ref:'reviewer',principalId:'agent_reviewer',agentId:'agent_reviewer',tokenSha256:createHash('sha256').update(tokens.reviewer).digest('hex')}],worker:{fetch:(...args)=>tracked(()=>worker.fetch(...args))},storage:{exec:(...args)=>tracked(()=>storage.exec(...args))},signal:controller.signal,track:retain});fixtureSessions.push(routes);
+   const controlledDisable=async()=>{
+    const body=JSON.stringify({title:'Local committed-response fixture',description:'Synthetic source-only fault'}),key='local_fault_'+round;
+    routes.armCreateTask({arm_id:'fault_'+round,request_body_sha256:createHash('sha256').update(body).digest('hex'),idempotency_key_sha256:createHash('sha256').update(key).digest('hex'),credential_ref:'submitter'});
+    let suppressed=false;try{await routes.fetch('https://hub.example.invalid/v2/workspaces/ws_example/tasks',{method:'POST',headers:{authorization:'Bearer '+tokens.submitter,'content-type':'application/json','idempotency-key':key},body,redirect:'manual',signal:controller.signal});}catch(error){if(error?.message==='LOCAL_COMMITTED_RESPONSE_SUPPRESSED')suppressed=true;else throw error;}
+    if(!suppressed||routes.disarm().status!=='suppressed')rejected();
+    return client.call('configuration-disable-local',{expected_epoch:1,expected_credential_version:1,operation_id:'disable-'+round},{signal:controller.signal});
+   };
    stage='round-'+round+'-checks';
-   const summary=await tracked(()=>api.runLocalNativeFixture({round,tokens,signal:controller.signal,track:retain,worker:{fetch:(...args)=>tracked(()=>worker.fetch(...args))},storage:observedStorage,disable:controlledDisable}));
+   const summary=await tracked(()=>api.runLocalNativeFixture({round,tokens,signal:controller.signal,track:retain,worker:{fetch:routes.fetch},storage:observedStorage,disable:controlledDisable}));
    if(backend.snapshot().sqlStatements!==41||client.snapshot().attempts!==41)rejected();
    await client.close();await service.close();
-   rounds.push({...summary,sqlStatements:backend.snapshot().sqlStatements,sqlBytes:backend.snapshot().sqlBytes});
+   const captured=routes.readRecords(),observed=routes.snapshot();if(observed.failed||observed.pending!==0||observed.sqlStatements!==2||observed.requests!==17||captured.length!==17||observed.armState!=='disarmed')rejected();
+   const suppressedRecords=captured.filter(x=>x.publication==='suppressed-after-observed-commit');if(suppressedRecords.length!==1||suppressedRecords[0].arm_id!=='fault_'+round||!/^[a-f0-9]{64}$/.test(suppressedRecords[0].commit_proof_sha256))rejected();
+   await routes.close();
+   rounds.push({...summary,httpRequests:observed.requests,responseBytes:observed.responseBytes,sqlStatements:backend.snapshot().sqlStatements+observed.sqlStatements,sqlBytes:backend.snapshot().sqlBytes+observed.sqlBytes,route_observer:{record_count:captured.length,records_sha256:createHash('sha256').update(JSON.stringify(captured)).digest('hex'),committed_response_suppressed:true,memory_only:true,native_transport:false}});
   }
   bodySucceeded=true;
  }catch(error){
@@ -120,7 +131,7 @@ export async function runLocalNativeSandbox(){
   }catch{cleanupClosed=false;}
  }
  if(!bodySucceeded||!cleanupClosed){const error=Error('LOCAL_SANDBOX_FAILED');Object.defineProperties(error,{stage:{value:stage},httpStatus:{value:httpStatus},expectedHttpStatus:{value:expectedHttpStatus},action:{value:action},reason:{value:reason},cleanup:{value:cleanupClosed?'closed':'unknown'}});throw error;}
- const report={type:'local-r2-sandbox-result',version:1,status:'local-source-checks-passed',transport:'local-worker-dispatch',nativeConformance:false,issue48Complete:false,acceptance:'not-evaluated',cleanup:'closed',rounds,budgets:{...budgets}};
+ const report={type:'local-r2-sandbox-result',version:2,status:'local-source-checks-passed',transport:'local-worker-dispatch',nativeConformance:false,issue48Complete:false,acceptance:'not-evaluated',cleanup:'closed',rounds,budgets:{...budgets}};
  if(!validateReport(report))rejected();
  return report;
 }
