@@ -1,3 +1,4 @@
+import {parseNativeCliOutput} from './native-cli-output.mjs';
 /** Fixed source consistency only: not authenticated host or consumed request-body custody. */
 import {PROCESS_LIMITS} from './native-r2-process.mjs';
 import {createHash} from 'node:crypto';
@@ -30,7 +31,7 @@ function detachedBody(value){
 }
 const byteProto=Object.getPrototypeOf(Uint8Array.prototype),lengthOf=Object.getOwnPropertyDescriptor(byteProto,'byteLength').get,backingOf=Object.getOwnPropertyDescriptor(byteProto,'buffer').get;
 function byteLength(v){if(!(v instanceof Uint8Array)||![Buffer.prototype,Uint8Array.prototype].includes(Object.getPrototypeOf(v))||Object.getPrototypeOf(backingOf.call(v))!==ArrayBuffer.prototype||lengthOf.call(v)>1048576||Reflect.ownKeys(v).some(k=>typeof k!=='string'||!/^\d+$/.test(k)))fail();return lengthOf.call(v);}
-const responseNames={createMessage:'MessageResponse',getInbox:'MessageListResponse',ackMessages:'AckResultResponse',getThread:'MessageListResponse',createTask:'TaskResponse',getTask:'TaskResponse',patchTask:'TaskResponse',readyTask:'TaskCommandResultResponse',claimTask:'TaskCommandResultResponse',submitTaskResult:'TaskCommandResultResponse',acceptTaskResult:'TaskCommandResultResponse',failTask:'TaskCommandResultResponse',cancelTask:'TaskCommandResultResponse',requeueTask:'TaskCommandResultResponse',getRun:'RunResponse',heartbeatRun:'RunResponse',heartbeatRuntime:'RuntimeResponse',stageArtifact:'ArtifactResponse',uploadArtifactContent:'ArtifactResponse',commitArtifact:'ArtifactResponse',getArtifact:'ArtifactResponse',downloadArtifactContent:'ArtifactResponse',listArtifacts:'ArtifactListResponse',listTaskResults:'TaskResultListResponse'};
+
 const isId=v=>typeof v==='string'&&ID.test(v),isSha=v=>typeof v==='string'&&SHA.test(v);
 const taskFixtures=new Set(['main','fail','cancel','requeue']);
 export function createNativeBindingRegistry(input){
@@ -93,16 +94,7 @@ export function createNativeBindingRegistry(input){
   const freeze=v=>{if(v&&typeof v==='object'){for(const child of Object.values(v))freeze(child);Object.freeze(v);}return v;};
   return freeze({body,json,sha256,byteSize});
  });}
- function parseOutput(step,stdout,stderr){
-  if(step.id==='prepare/retain-artifact'){
-   if(stdout.length)fail();const text=new TextDecoder('utf-8',{fatal:true}).decode(stderr),lines=text.split('\n').filter(Boolean),local=lines.filter(x=>x.startsWith('Local: '));if(local.length!==1||lines.some(x=>!x.startsWith('Local: ')&&x!=='Local action completed.'))fail();
-   const v=closed(JSON.parse(local[0].slice(7)),['id','state','byteSize','sha256','references']);if(!isId(v.id)||v.state!=='ready'||!Number.isSafeInteger(v.byteSize)||v.byteSize<1||v.byteSize>10485760||!isSha(v.sha256)||!Number.isSafeInteger(v.references)||v.references<0)fail();return v;
-  }
-  if(step.expectedExit!==0||(!responseNames[step.operation]&&step.operation!=='createRuntime'))return null;
-  const v=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(stdout));
-  if(step.operation==='createRuntime'){const envelope=closed(v,['data','request_id']),masked=closed(envelope.data,['runtime','runtime_token','revealed']);if(masked.runtime_token!==null||masked.revealed!==false||!validators.validateRuntimeResponse({data:masked.runtime,request_id:envelope.request_id}))fail();return masked.runtime;}
-  if(!validators['validate'+responseNames[step.operation]](v))fail();return v;
- }
+ function parseOutput(step,stdout,stderr){return parseNativeCliOutput({stepId:step.id,stdout,stderr,mode:'legacy-lineage'}).parsed;}
  function reduce(step,parsed,next){
   if(step.expectedExit!==0)return;
   const op=step.operation,fixture=step.fixture,actor=actors[step.actor];

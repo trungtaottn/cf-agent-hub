@@ -9,6 +9,7 @@ import {validateNativeConfig} from './native-r2-config.mjs';
 import {getNativeScenario,buildNativeInvocation,buildPinnedNativeInvocation} from './native-r2-scenario.mjs';
 import {runOwnedProcess} from './native-r2-process.mjs';
 import {createNativeBindingRegistry} from './native-r2-bindings.mjs';
+import {nativeOutputVerificationPlan,verifyNativeCapturedOutput} from './native-r2-projection.mjs';
 import {readNativeProcessOriginals} from './native-r2-original-reader.mjs';
 import {canonicalCaseSubject} from './r2-case-policy.mjs';
 const sha=value=>createHash('sha256').update(canonicalCaseSubject(value)).digest('hex');
@@ -101,7 +102,7 @@ export async function executeNativeScenario(input,adapter,evidenceContext=null){
  if(scenario.steps.some(step=>step.requires?.includes('separate-explicit-fixture-store-authorization')&&!initial.fixture_stores.some(item=>item.fixture===step.fixture&&item.actor_slot===step.actor)))throw Error('NATIVE_FIXTURE_BINDINGS_UNAVAILABLE');
  try{admitted=await bounded(signal=>admitNativeRun(initial,{authorize:value=>adapter.authorize(value,{signal})}));description=await bounded(signal=>adapter.describe(structuredClone({config:initial,scenario}),{signal}));if(recorder)evidenceDescription=await bounded(signal=>adapter.describeEvidence(structuredClone({config:initial,scenario}),{signal}));}
  catch{throw Error('NATIVE_ADMISSION_REJECTED');}
- const {config,configSha256}=admitted;const plan=prepareNativeExecution(scenario,config.budgets,description),evidencePlan=recorder?prepareNativeEvidenceExecution(config.budgets,evidenceDescription):null;budget.reserve(plan.totals);if(evidencePlan)budget.reserve(evidencePlan.totals);const evidenceCosts=new Map(evidencePlan?.costs.map(row=>[row.id,Object.fromEntries(costKeys.map(k=>[k,row[k]]))])??[]);
+ const {config,configSha256}=admitted;const plan=prepareNativeExecution(scenario,config.budgets,description),evidencePlan=recorder?prepareNativeEvidenceExecution(config.budgets,evidenceDescription):null;budget.reserve(plan.totals);if(evidencePlan)budget.reserve(evidencePlan.totals);if(recorder)budget.reserve(nativeOutputVerificationPlan().cost);const evidenceCosts=new Map(evidencePlan?.costs.map(row=>[row.id,Object.fromEntries(costKeys.map(k=>[k,row[k]]))])??[]);
  const subjects={config_sha256:configSha256,candidate_sha:config.candidate_sha,candidate_tree_sha:config.candidate_tree_sha,composition_sha256:config.composition_sha256,node_sha256:config.node.sha256,build_sha256:config.build.sha256,authority_record_sha256:config.authority_record_sha256,scenario_sha256:plan.scenarioSha256,actors_sha256:sha({actors:config.actors,fixture_stores:config.fixture_stores}),workspaces_sha256:sha(config.workspaces)};
  const bindingActor=role=>{const actor=config.actors.find(item=>item.id===role);return {principalId:actor.principal_id,agentId:actor.agent_id};};
  const bindings=createNativeBindingRegistry({workspaceId:config.workspaces.primary,submitter:bindingActor('submitter'),reviewer:bindingActor('reviewer')});
@@ -169,18 +170,26 @@ export async function executeNativeScenario(input,adapter,evidenceContext=null){
    const processRecordSha256=capture.custody.final.sha256;
    const expected={stepId:step.id,invocationId,processExit:processResult.exitCode,executableSha256:config.build.sha256,requestCount:step.expectedRequests,httpStatus:step.expectedStatus??null,configSha256,scenarioSha256:plan.scenarioSha256,authorityRecordSha256:config.authority_record_sha256,principalId:actor.principal_id,agentId:actor.agent_id,workspaceId:refs.workspace??config.workspaces.primary,processRecordSha256};
    await currentAuthority();
-   const observation=snapshotNativeGenericReceipt('observation',await bounded(signal=>adapter.observe(structuredClone(step),{invocationId,processResult,refs:structuredClone(refs),subjects:structuredClone(subjects),remainingMs:budget.remainingMs(),cost:structuredClone(cost),...(caseToken?{captureFacts:recorder.captureFacts(caseToken)}:{}),signal})));
-   if(!validateNativeObservation(observation,expected,cost))throw Error('NATIVE_OBSERVER_INCOMPLETE');
+   let processOriginals=null,outputVerification=null;
    if(caseToken){
     const custody={prepared:capture.custody.prepared,spawned:capture.custody.spawned,final:capture.custody.final};
     const allowance=recorder.reserveProcessRead(caseToken,invocationId,custody);
     const read=readNativeProcessOriginals({outputDirectory:config.output_directory,invocationId,custody:allowance.custody,remainingBytes:allowance.totalBytes});
+    processOriginals=read.readProtectedRecords().map(({id,sha256,bytes})=>({id,sha256,bytes}));
+    outputVerification=verifyNativeCapturedOutput({stepId:step.id,invocationId,runId,finalOriginal:processOriginals.find(record=>record.id===invocationId+'_final'),expectedSubjects:subjects,stdout:capture.stdout,stderr:capture.stderr,maxOutputBytes:cost.output_bytes});
+    protectedResults.at(-1).outputVerification=outputVerification;
+    if(outputVerification.status!=='syntax-verified')throw Error('NATIVE_OUTPUT_SYNTAX_REJECTED');
+    await currentAuthority();
+   }
+   const observation=snapshotNativeGenericReceipt('observation',await bounded(signal=>adapter.observe(structuredClone(step),{invocationId,processResult,refs:structuredClone(refs),subjects:structuredClone(subjects),remainingMs:budget.remainingMs(),cost:structuredClone(cost),...(caseToken?{captureFacts:recorder.captureFacts(caseToken),readOutputVerification:()=>outputVerification.readVerificationOriginal()}:{}),signal})));
+   if(!validateNativeObservation(observation,expected,cost))throw Error('NATIVE_OBSERVER_INCOMPLETE');
+   if(caseToken){
     await currentAuthority();
     const extra=evidenceCosts.get(step.id),maxBytes=Math.min(65536,extra.output_bytes,recorder.remainingBytes());if(maxBytes<1)throw Error('NATIVE_OBSERVER_INCOMPLETE');
-    const evidenceOptions={runId,context:recorder.readProtectedContext(),captureFacts:recorder.captureFacts(caseToken),expectedRecordSha256:observation.recordSha256,preparation:{recordId:casePreparation.recordId,sha256:casePreparation.sha256},invocationId,processRecordSha256,genericObservation:structuredClone(observation),cost:structuredClone(extra),maxBytes};
+    const evidenceOptions={readOutputVerification:()=>outputVerification.readVerificationOriginal(),runId,context:recorder.readProtectedContext(),captureFacts:recorder.captureFacts(caseToken),expectedRecordSha256:observation.recordSha256,preparation:{recordId:casePreparation.recordId,sha256:casePreparation.sha256},invocationId,processRecordSha256,genericObservation:structuredClone(observation),cost:structuredClone(extra),maxBytes};
     const supplied=await bounded(signal=>step.caseId?adapter.observeEvidence(structuredClone(step),{...evidenceOptions,signal}):adapter.observeAuxiliaryEvidence(structuredClone(step),{...evidenceOptions,signal}));
     const typed=validateNativeTypedReturn(supplied,extra,maxBytes),original=typed.record;
-    const originals=read.readProtectedRecords().map(({id,sha256,bytes})=>({id,sha256,bytes}));
+    const originals=processOriginals;
     const completion={records:[...originals,original],processPreparedId:invocationId+'_prepared',processSpawnedId:invocationId+'_spawned',processFinalId:invocationId+'_final',observerId:original.id,genericObservation:observation,cost};
     const recorded=step.caseId?recorder.finish(caseToken,completion):recorder.finishAuxiliary(caseToken,completion);
     protectedResults.at(-1).evidence=recorded;

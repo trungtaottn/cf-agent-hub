@@ -227,3 +227,23 @@ There is no partial execution, extra secret lookup, installer or configurable
 module loader. Source classification failure remains blocked with no raw errors.
 The diagnostic improves actionable failure information; it does not complete
 the still-missing fixed native host adapter or authorize real fixture effects.
+
+### Captured-output verification boundary
+
+The recorder-enabled controller reserves an additional 159,744 output bytes
+(39 originals at 4,096 bytes each) in the same cumulative run budget before
+scenario effects. It reuses the existing protected prepared/spawned/final read
+once, before host observation, and joins detached stdout/stderr bytes to the
+actual final original's subjects, invocation, exit, lengths and digests.
+A source-owned parser covers all 33 native operations; the older lineage parser
+retains its original operation applicability. Invalid syntax retains a bounded
+failed-check original and prevents subsequent observer composition.
+
+The verification original is private, copy-returned and memory-only. It reports
+secret-inventory, foreign-identifier, artifact-byte, transport and prepared
+invocation checks as **not evaluated**. Valid JSON, a masked enrollment response,
+or a recognized exit-5 diagnostic cannot establish leak absence, no-send,
+artifact integrity, journal settlement or native acceptance. Existing three-file
+prepared-invocation joins remain necessary. No new evidence role or acceptance
+version is introduced; installed authority and the three unsupported tuple-only
+controls remain unresolved.
