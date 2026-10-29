@@ -340,3 +340,36 @@ fixture. It does not execute arbitrary caller SQL or authenticate a storage
 handle. Exact schema sequence, required rows, maintenance fence, operation
 visibility and one coherent before/after snapshot are subsequent observer
 obligations; an empty metadata/grant result is not successful admission.
+
+### Private local source observer
+
+The Worker-only private observer now authenticates the actual synthetic bearer
+with the product verifier, then runs the product readers inside real synchronous
+SQLite transactions. Its source-owned registry binds one prepared invocation to
+one workspace, configuration, maintenance generation and credential; presenting
+a registry entry is not authentication. Seven read operations are supported:
+workspace, configuration, profile, agent list, agent detail, task detail and run
+detail. Admission is limited to the fixed static-grant, absent-profile,
+null-result fixture profile: task detail is backlog version 1 and run detail is
+active version 1, not arbitrary production workspace states. Other operations
+fail closed rather than returning empty success.
+
+Every observation includes three genuine transaction scopes, each preceded by
+eight independently selected bounded SQL inventories. The fixed query ledger
+admits only the reviewed source SQL and parameters. It retains 24 canonical
+originals, each at most 16 KiB. Source reader projections are not HTTP originals.
+Private capture handles permit one detached copy-out; normal results contain no
+bearer or raw credential rows. Metadata is separately measured against 16 KiB,
+with a 64 KiB projection ceiling and 475,136-byte reservation per observation
+(3,325,952 bytes for seven). These are retained payload reservations, not heap
+limits or proof that a complete release run fits its cumulative evidence cap.
+
+The isolated Worker tests exercise all seven actual authenticated reads, wrong
+bearer rejection, changed configuration/fence bindings, one-use captures and
+pending-close/concurrent-call failures. The fixture-only source registry and
+observer explicitly return `installedAuthority:false` and
+`native_conformance:false`. This is not a deployed observer or a completed native
+run. The remaining fixed factory still must bind installed trust, the private
+observer, process/transport originals, run sequencing and cumulative admission;
+the three unsupported tuple-only controls remain unresolved without a scope
+change. No product authentication, SQL endpoint or runtime custody guard changed.
