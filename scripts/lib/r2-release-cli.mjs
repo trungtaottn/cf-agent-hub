@@ -1,13 +1,13 @@
 import {execFileSync} from 'node:child_process';
 import {resolve,relative,sep} from 'node:path';
 import {readR2Root} from './r2-evidence-loader.mjs';
-import {validR2Root} from './r2-schema-registry.mjs';
+import {validVersionedR2Root} from './r2-schema-registry.mjs';
 import {verifyR2Release} from './r2-release-verifier.mjs';
 /** R2 CLI uses bounded disk reads, not the historical eager R1 Map loader. */
 export function verifyR2Checkout(root,evidencePath){
  const path=relative(root,resolve(root,evidencePath)).split(sep).join('/');
  const input=readR2Root(root,path);
- if(!validR2Root(input))return verifyR2Release(input,{root});
+ if(!validVersionedR2Root(input))return verifyR2Release(input,{root});
  const git=args=>execFileSync('git',args,{cwd:root,encoding:'utf8',stdio:['ignore','pipe','ignore'],timeout:5000,maxBuffer:2097152});
  const head=git(['rev-parse','HEAD']).trim(),prefix='validation/releases/'+input.release_id+'/';
  const tracked=git(['ls-files','--stage','-z']).split('\0').filter(Boolean);

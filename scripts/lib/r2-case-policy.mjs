@@ -1,3 +1,4 @@
+import {validR2PreparationsV2} from './r2-preparation-schema.mjs';
 /** Fixed source-backed R2 evidence predicates. This module never reads files,
  * executes commands, authenticates original records, or promotes source to live. */
 import operations from './r2-policy-data/operations.json' with {type:'json'};
@@ -84,7 +85,37 @@ function rulePass(rule,o,s,ctx){
  default:return false;
  }
 }
-export function validateCaseFamily(value,ctx={}){
+/** Exact v2 global preparation contract. This validates claims, not original provenance. */
+export function validatePreparationsV2(value,ctx={}){
+ const findings=[];
+ if(!validR2PreparationsV2(value)){add(findings,'PREPARATION_SCHEMA','Exact preparation v2 receipt required');return findings;}
+ findings.push(...validatePreparations(value,ctx));
+ if(!(ctx.commands instanceof Map)){add(findings,'CONTEXT','Commands required');return findings;}
+ const aggregate=ctx.commands.get(value.command_id),originals=new Set([value.record_sha256,...[...ctx.commands.values()].map(command=>command.record_sha256).filter(x=>typeof x==='string')]);
+ if(!aggregate||aggregate.id!==value.command_id||aggregate.kind!=='contract'||aggregate.provenance!=='source'||aggregate.exit_code!==0||!Number.isSafeInteger(aggregate.started_at)||!Number.isSafeInteger(aggregate.ended_at)||aggregate.started_at>value.observed_at||value.observed_at>aggregate.ended_at){add(findings,'ASSEMBLY','Preparation aggregate must be actual completed source contract');return findings;}
+ for(const key of ['revision','tree_sha256','environment_id','composition_sha256'])if(aggregate[key]!==value[key])add(findings,'CANDIDATE','preparations: '+key);
+ for(const entry of value.subjects){
+  const producer=ctx.commands.get(entry.producer_command_id);
+  if(originals.has(entry.preparation_record_sha256))add(findings,'PREPARATION_ORIGINAL',entry.case_id);
+  originals.add(entry.preparation_record_sha256);
+  if(!producer||producer.id===aggregate.id||!Number.isSafeInteger(producer.started_at)||!Number.isSafeInteger(producer.ended_at)||producer.ended_at<producer.started_at){add(findings,'PREPARATION_PRODUCER',entry.case_id);continue;}
+  const row=byId.get(entry.case_id),expectedKind=row.producer==='native-live'?'native-live':row.producer==='browser-tests'?'browser-tests':'workers-tests';
+  if(producer.id!==entry.producer_command_id||producer.kind!==expectedKind||producer.provenance!==(expectedKind==='workers-tests'?'source':'real-run')||producer.exit_code!==0)add(findings,'PREPARATION_PRODUCER',entry.case_id);
+  if(entry.prepared_at>producer.started_at||producer.ended_at>aggregate.started_at)add(findings,'TIME',entry.case_id);
+  for(const key of ['revision','tree_sha256','environment_id','composition_sha256'])if(producer[key]!==value[key])add(findings,'CANDIDATE',entry.case_id+': '+key);
+  const commitments=producer.subjects?.cases;
+  if(!Array.isArray(commitments)||!equalSet(producer.case_ids,commitments.map(x=>x.case_id))||commitments.filter(x=>x.case_id===entry.case_id&&x.subject_sha256===entry.subject_sha256).length!==1)add(findings,'PREPARATION_PRODUCER',entry.case_id);
+ }
+ return findings;
+}
+/** New explicit entrypoint never treats an unchecked caller flag as preparation validation. */
+export function validateCaseFamilyV2(value,ctx={}){
+ const preparationFindings=validatePreparationsV2(ctx.preparations,ctx);
+ if(preparationFindings.length)return preparationFindings;
+ return validateFullCaseFamily(value,ctx,true);
+}
+export function validateCaseFamily(value,ctx={}){return validateFullCaseFamily(value,ctx,false);}
+function validateFullCaseFamily(value,ctx,perEntry){
  const findings=[],family=value?.type?.slice(3);
  if(!families.includes(family)||!Array.isArray(value.records)){add(findings,'FAMILY','Unknown or missing case family');return findings;}
  const roster=CASE_POLICY.filter(c=>c.family===family);
@@ -94,7 +125,8 @@ export function validateCaseFamily(value,ctx={}){
  const prep=new Map(ctx.preparations.subjects.map(e=>[e.case_id,e]));
  const assembly=ctx.commands.get(value.command_id);
  if(!assembly||assembly.kind!=='contract'||assembly.provenance!=='source'||assembly.exit_code!==0){add(findings,'ASSEMBLY','Evidence assembly must be source contract command');return findings;}
- return validateCaseRecords(value,ctx,findings,family,prep,assembly);
+ if(perEntry){const aggregate=ctx.commands.get(ctx.preparations.command_id);if(assembly.id===aggregate.id||!Number.isSafeInteger(assembly.started_at)||aggregate.ended_at>assembly.started_at)add(findings,'TIME','Family assembly must follow a distinct completed preparation aggregate');}
+ return validateCaseRecords(value,ctx,findings,family,prep,assembly,perEntry);
 }
 /** Native-only non-receipt core; final assembly timing remains a separate gate. */
 export function validateNativeCaseCore(value,ctx={}){
@@ -106,7 +138,7 @@ export function validateNativeCaseCore(value,ctx={}){
  if(!(ctx.commands instanceof Map)||!ctx.preparations?.subjects){add(findings,'CONTEXT','Commands and independently validated preparations required');return findings;}
  return validateCaseRecords(value,ctx,findings,'native',new Map(ctx.preparations.subjects.map(e=>[e.case_id,e])),null);
 }
-function validateCaseRecords(value,ctx,findings,family,prep,assembly){
+function validateCaseRecords(value,ctx,findings,family,prep,assembly,perEntry=false){
  const records=new Map(value.records.map(r=>[r.id,r]));
  for(const record of value.records){
   const row=byId.get(record.id);if(!row)continue;
@@ -117,7 +149,8 @@ function validateCaseRecords(value,ctx,findings,family,prep,assembly){
   const expectedProvenance=expectedKind==='workers-tests'?'source':'real-run';
   if(command.kind!==expectedKind||command.provenance!==expectedProvenance||command.exit_code!==0)add(findings,'PRODUCER',record.id);
   for(const key of ['revision','tree_sha256','environment_id','composition_sha256'])if(command[key]!==value[key])add(findings,'CANDIDATE',record.id+': '+key);
-  if(!Number.isSafeInteger(record.observed_at)||record.observed_at<command.started_at||record.observed_at>command.ended_at||(assembly&&(record.observed_at>assembly.started_at||command.ended_at>assembly.started_at))||ctx.preparations.observed_at>command.started_at)add(findings,'TIME',record.id);
+  if(!Number.isSafeInteger(record.observed_at)||record.observed_at<command.started_at||record.observed_at>command.ended_at||(assembly&&(record.observed_at>assembly.started_at||command.ended_at>assembly.started_at))||(perEntry?entry.prepared_at:ctx.preparations.observed_at)>command.started_at)add(findings,'TIME',record.id);
+  if(perEntry&&entry.producer_command_id!==record.command_id)add(findings,'PREPARATION_PRODUCER',record.id);
   const commitments=command.subjects?.cases;
   if(!Array.isArray(commitments)||commitments.length>CASE_LIMITS.commandCases||!equalSet(command.case_ids,commitments.map(x=>x.case_id))){add(findings,'COMMAND_CASES',record.id);continue;}
   const commitment=commitments.find(x=>x.case_id===record.id);

@@ -1,0 +1,21 @@
+/** Replayed against immutable95 policy when recording the expected verdict fixture. */
+export const legacyMutations:Record<string,(f:any)=>void>={
+ baseline:()=>{},
+ missingRoster:f=>{f.preparations.subjects.pop();},
+ wrongDigest:f=>{f.subjectDigests.set(f.preparations.subjects[0].case_id,'0'.repeat(64));},
+ wrongEpoch:f=>{f.preparations.subjects[0].subject.authority_epoch++;},
+ wrongActor:f=>{f.preparations.subjects[0].subject.actor_kind='native';},
+ missingCommand:f=>{f.commands.delete(f.receipts.native.records[0].command_id);},
+ badProducer:f=>{f.commands.get(f.receipts.native.records[0].command_id).provenance='synthetic';},
+ childDenialAsHarness:f=>{f.commands.get(f.receipts.native.records[0].command_id).exit_code=5;},
+ futureGlobalPreparation:f=>{f.preparations.observed_at=9999;},
+ futureRecord:f=>{f.receipts.native.records[0].observed_at=9999;},
+ wrongCandidate:f=>{f.commands.get(f.receipts.native.records[0].command_id).revision='f'.repeat(40);},
+ wrongSubject:f=>{f.receipts.native.records[0].subject_sha256='0'.repeat(64);},
+ missingObservations:f=>{delete f.receipts.native.records[0].observations;},
+ missingAssembly:f=>{f.commands.delete(f.receipts.native.command_id);},
+ earlyAssembly:f=>{f.commands.get(f.receipts.native.command_id).started_at=0;},
+ duplicateCase:f=>{f.receipts.native.records.push(f.receipts.native.records[0]);},
+ commandAlias:f=>{const c=structuredClone(f.commands.get(f.receipts.native.records[0].command_id));c.id='alias';f.commands.set(c.id,c);},
+ malformedCommitment:f=>{f.commands.get(f.receipts.native.records[0].command_id).subjects.cases=[];},
+};

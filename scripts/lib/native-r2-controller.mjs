@@ -30,6 +30,32 @@ export function prepareNativeExecution(scenario,budgets,reservations){
  createNativeBudget(budgets,()=>0).reserve(totals);
  return {costs,totals,scenarioSha256:sha(scenario)};
 }
+const auxiliarySteps=['prepare/fail-create','prepare/revoke-own-positive'];
+const typedSteps=()=>getNativeScenario().steps.filter(s=>s.caseId||auxiliarySteps.includes(s.id)||s.id==='control/revoke-submitter').map(s=>s.id);
+function dataObject(value,keys){if(!value||Object.getPrototypeOf(value)!==Object.prototype)fail();const ds=Object.getOwnPropertyDescriptors(value);if(Reflect.ownKeys(ds).length!==keys.length||keys.some(k=>!Object.hasOwn(ds,k)||!Object.hasOwn(ds[k],'value')||!ds[k].enumerable))fail();return Object.fromEntries(keys.map(k=>[k,ds[k].value]));}
+/** Detach the originally committed generic receipt before later awaited host work. */
+export function snapshotNativeGenericReceipt(kind,value){
+ const keys=kind==='control'?['authorityRecordSha256','configSha256','recordSha256','scenarioSha256','status','stepId','usage']:kind==='observation'?['stepId','invocationId','processExit','executableSha256','requestCount','httpStatus','configSha256','scenarioSha256','authorityRecordSha256','principalId','agentId','workspaceId','processRecordSha256','secretCount','recordSha256','usage']:null;
+ if(!keys)fail();const row=dataObject(value,keys),usage=dataObject(row.usage,costKeys);
+ for(const key of keys)if(key!=='usage'&&row[key]!==null&&!['string','number','boolean'].includes(typeof row[key]))fail();
+ for(const key of costKeys)if(!Number.isSafeInteger(usage[key])||usage[key]<0)fail();
+ return Object.freeze({...row,usage:Object.freeze(usage)});
+}
+/** Explicit evidence-only costs. No fallback zeros or inferred host cost. */
+export function prepareNativeEvidenceExecution(budgets,reservations){
+ const ids=[...typedSteps(),'evidence/assembly'];if(ids.length!==41||!Array.isArray(reservations)||Object.getPrototypeOf(reservations)!==Array.prototype||reservations.length!==ids.length)fail();
+ const ds=Object.getOwnPropertyDescriptors(reservations);if(Reflect.ownKeys(ds).length!==ids.length+1)fail();const totals=Object.fromEntries(costKeys.map(k=>[k,0]));
+ const costs=ids.map((id,index)=>{if(!ds[index]||!Object.hasOwn(ds[index],'value'))fail();const row=dataObject(ds[index].value,['id',...costKeys]);if(row.id!==id||costKeys.some(k=>!Number.isSafeInteger(row[k])||row[k]<0)||row.output_bytes<1)fail();if(id==='evidence/assembly'&&(row.commands!==1||row.mutations!==0||row.artifact_bytes!==0))fail();for(const k of costKeys){totals[k]+=row[k];if(!Number.isSafeInteger(totals[k]))fail();}return {...row};});
+ createNativeBudget(budgets,()=>0).reserve(totals);return {costs,totals};
+}
+/** Actual returned original bytes must fit the specifically assigned evidence cost. */
+export function validateNativeTypedReturn(value,cost,maxBytes){
+ const outer=dataObject(value,['record','usage']),record=dataObject(outer.record,['id','sha256','bytes']),usage=dataObject(outer.usage,costKeys);
+ if(!accounted(usage,cost)||typeof record.id!=='string'||!/^[A-Za-z0-9_-]{1,128}$/.test(record.id)||typeof record.sha256!=='string'||!/^[a-f0-9]{64}$/.test(record.sha256)||!(record.bytes instanceof Uint8Array)||![Uint8Array.prototype,Buffer.prototype].includes(Object.getPrototypeOf(record.bytes)))fail();
+ const proto=Object.getPrototypeOf(Uint8Array.prototype),length=Object.getOwnPropertyDescriptor(proto,'byteLength').get.call(record.bytes),buffer=Object.getOwnPropertyDescriptor(proto,'buffer').get.call(record.bytes);
+ if(Object.getPrototypeOf(buffer)!==ArrayBuffer.prototype||Reflect.ownKeys(record.bytes).some(k=>typeof k!=='string'||!/^\d+$/.test(k))||!Number.isSafeInteger(maxBytes)||length<1||length>65536||length>maxBytes||usage.output_bytes<length)fail();
+ const bytes=new Uint8Array(length);Uint8Array.prototype.set.call(bytes,record.bytes);return {record:{id:record.id,sha256:record.sha256,bytes:Buffer.from(bytes.buffer)},usage};
+}
 export {validateNativeObservation} from './native-r2-observation.mjs';
 import {validateNativeObservation} from './native-r2-observation.mjs';
 /** Capture only validated data descriptors before any awaited host work. */
@@ -57,19 +83,19 @@ export async function executeNativeScenario(input,adapter,evidenceContext=null){
    const {createNativeCaseRecorder}=await import('./native-r2-recorder.mjs');
    recorder=createNativeCaseRecorder({config:initial,context:{run_id:runId,...Object.fromEntries(keys.map(k=>[k,ds[k].value]))}});
   }catch{throw Error('NATIVE_EVIDENCE_CONTEXT_REJECTED');}
-  if(typeof adapter.prepareEvidence!=='function'||typeof adapter.observeEvidence!=='function')throw Error('NATIVE_EVIDENCE_AUTHORITY_UNAVAILABLE');
+  if(['prepareEvidence','observeEvidence','observeAuxiliaryEvidence','observeDisableEvidence','describeEvidence'].some(name=>typeof adapter[name]!=='function'))throw Error('NATIVE_EVIDENCE_AUTHORITY_UNAVAILABLE');
  }
 
  if(!['submitter','reviewer'].every(role=>initial.actors.some(actor=>actor.id===role)))throw Error('NATIVE_SUBJECT_REJECTED');
  const bounded=work=>withNativeDeadline(work,budget.remainingMs());
- let admitted,description;const scenario=getNativeScenario();
+ let admitted,description,evidenceDescription;const scenario=getNativeScenario();
  if(scenario.steps.some(step=>step.requires?.includes('separate-explicit-fixture-store-authorization')&&!initial.fixture_stores.some(item=>item.fixture===step.fixture&&item.actor_slot===step.actor)))throw Error('NATIVE_FIXTURE_BINDINGS_UNAVAILABLE');
- try{admitted=await bounded(signal=>admitNativeRun(initial,{authorize:value=>adapter.authorize(value,{signal})}));description=await bounded(signal=>adapter.describe(structuredClone({config:initial,scenario}),{signal}));}
+ try{admitted=await bounded(signal=>admitNativeRun(initial,{authorize:value=>adapter.authorize(value,{signal})}));description=await bounded(signal=>adapter.describe(structuredClone({config:initial,scenario}),{signal}));if(recorder)evidenceDescription=await bounded(signal=>adapter.describeEvidence(structuredClone({config:initial,scenario}),{signal}));}
  catch{throw Error('NATIVE_ADMISSION_REJECTED');}
- const {config,configSha256}=admitted;const plan=prepareNativeExecution(scenario,config.budgets,description);budget.reserve(plan.totals);
+ const {config,configSha256}=admitted;const plan=prepareNativeExecution(scenario,config.budgets,description),evidencePlan=recorder?prepareNativeEvidenceExecution(config.budgets,evidenceDescription):null;budget.reserve(plan.totals);if(evidencePlan)budget.reserve(evidencePlan.totals);const evidenceCosts=new Map(evidencePlan?.costs.map(row=>[row.id,Object.fromEntries(costKeys.map(k=>[k,row[k]]))])??[]);
  const subjects={config_sha256:configSha256,candidate_sha:config.candidate_sha,candidate_tree_sha:config.candidate_tree_sha,composition_sha256:config.composition_sha256,node_sha256:config.node.sha256,build_sha256:config.build.sha256,authority_record_sha256:config.authority_record_sha256,scenario_sha256:plan.scenarioSha256,actors_sha256:sha({actors:config.actors,fixture_stores:config.fixture_stores}),workspaces_sha256:sha(config.workspaces)};
- const completed=[],protectedResults=[];let retainedArtifactBytes=null;
- const attachEvidence=result=>{if(recorder)Object.defineProperty(result,'readProtectedEvidence',{enumerable:false,value:()=>({durability:'memory-only',status:'partial-auxiliary-originals-pending',context:recorder.readProtectedContext(),records:recorder.readProtectedRecords()})});return result;};
+ const completed=[],protectedResults=[];let retainedArtifactBytes=null,assembled=null;
+ const attachEvidence=result=>{if(recorder)Object.defineProperty(result,'readProtectedEvidence',{enumerable:false,value:()=>({durability:'memory-only',status:assembled?.result.status??'partial-originals-pending',context:recorder.readProtectedContext(),records:recorder.readProtectedRecords(),assembly:assembled?structuredClone(assembled):null})});return result;};
  const currentAuthority=async()=>{
   budget.remainingMs();const auth=await bounded(signal=>adapter.authorize(structuredClone({configSha256,config}),{signal}));
   if(!auth||Object.keys(auth).sort().join(',')!=='authorityRecordSha256,configSha256,expiresAt'||auth.configSha256!==configSha256||auth.authorityRecordSha256!==config.authority_record_sha256||!Number.isSafeInteger(auth.expiresAt)||auth.expiresAt<=Date.now()||auth.expiresAt>Date.now()+300000)throw Error('NATIVE_AUTHORITY_REJECTED');
@@ -79,9 +105,15 @@ export async function executeNativeScenario(input,adapter,evidenceContext=null){
   for(let i=0;i<scenario.steps.length;i++){
    const step=scenario.steps[i],cost=plan.costs[i];await currentAuthority();
    if(step.kind==='control'){
-    const result=await bounded(signal=>adapter.control(structuredClone(step),{runId,cost:structuredClone(cost),remainingMs:budget.remainingMs(),completed:[...completed],signal}));
+    const disableToken=recorder&&step.id==='control/revoke-submitter'?recorder.beginDisable():null;
+    const result=snapshotNativeGenericReceipt('control',await bounded(signal=>adapter.control(structuredClone(step),{runId,cost:structuredClone(cost),remainingMs:budget.remainingMs(),completed:[...completed],...(disableToken?{captureFacts:recorder.captureFacts(disableToken)}:{}),signal})));
     // A host receipt is custody input, not a generic boolean proof of isolation.
     if(!result||Object.keys(result).sort().join(',')!=='authorityRecordSha256,configSha256,recordSha256,scenarioSha256,status,stepId,usage'||result.status!=='observed'||!accounted(result.usage,cost)||result.stepId!==step.id||result.configSha256!==configSha256||result.scenarioSha256!==plan.scenarioSha256||result.authorityRecordSha256!==config.authority_record_sha256||typeof result.recordSha256!=='string'||!/^[a-f0-9]{64}$/.test(result.recordSha256))throw Error('NATIVE_OBSERVER_INCOMPLETE');
+    if(disableToken){
+     await currentAuthority();const extra=evidenceCosts.get(step.id),maxBytes=Math.min(65536,extra.output_bytes,recorder.remainingBytes());if(maxBytes<1)throw Error('NATIVE_OBSERVER_INCOMPLETE');
+     const supplied=await bounded(signal=>adapter.observeDisableEvidence(structuredClone(step),{runId,captureFacts:recorder.captureFacts(disableToken),expectedRecordSha256:result.recordSha256,cost:structuredClone(extra),maxBytes,signal}));
+     const typed=validateNativeTypedReturn(supplied,extra,maxBytes);recorder.captureAcknowledgedDisable(disableToken,{record:typed.record,genericControl:result,cost});
+    }
     protectedResults.push({stepId:step.id,control:structuredClone(result)});completed.push(step.id);continue;
    }
    const prepared=await bounded(signal=>adapter.prepare(structuredClone(step),{completed:[...completed],signal,readPriorOutput(id){const prior=protectedResults.find(item=>item.stepId===id);if(!prior?.process||!completed.includes(id))throw Error('NATIVE_SUBJECT_REJECTED');const output=prior.process.readCapturedOutput();return {stdout:Buffer.from(output.stdout),stderr:Buffer.from(output.stderr)};}}));
@@ -96,7 +128,7 @@ export async function executeNativeScenario(input,adapter,evidenceContext=null){
    else if(prepared.artifactBytes!==0)throw Error('NATIVE_SUBJECT_REJECTED');
    await currentAuthority();
    inspectNativeDirectory(config.output_directory);inspectNativeDirectory(actor.state_directory);
-   if(recorder&&step.caseId){
+   if(recorder&&(step.caseId||auxiliarySteps.includes(step.id))){
     const supplied=await bounded(signal=>adapter.prepareEvidence(structuredClone(step),{refs:structuredClone(refs),runId,context:recorder.readProtectedContext(),signal}));
     if(!supplied||Object.getPrototypeOf(supplied)!==Object.prototype)throw Error('NATIVE_OBSERVER_INCOMPLETE');
     const ds=Object.getOwnPropertyDescriptors(supplied);if(Reflect.ownKeys(ds).length!==2||['subject','record_source_id'].some(k=>!Object.hasOwn(ds,k)||!Object.hasOwn(ds[k],'value')||!ds[k].enumerable))throw Error('NATIVE_OBSERVER_INCOMPLETE');
@@ -104,7 +136,7 @@ export async function executeNativeScenario(input,adapter,evidenceContext=null){
     await currentAuthority();
    }
    const invocationId='inv_'+randomUUID().replaceAll('-',''),directory=join(config.output_directory,invocationId);mkdirSync(directory,{mode:0o700});
-   if(casePreparation)caseToken=recorder.begin(step.id);
+   if(casePreparation)caseToken=step.caseId?recorder.begin(step.id):recorder.beginAuxiliary(step.id);
    const processResult=await runOwnedProcess({nodePath:config.node.path,entryPath:config.build.path,args:[...args],cwd:ownedInvocation?.cwd??dirname(config.build.path),env:ownedInvocation?.env??{TZ:'UTC',LANG:'C.UTF-8'},receiptDirectory:directory,timeoutMs:Math.max(1,Math.floor(Math.min(300000,budget.remainingMs()))),maxOutputBytes:cost.output_bytes,invocationId,nodeSha256:config.node.sha256,entrySha256:config.build.sha256,subjects});
    protectedResults.push({stepId:step.id,invocationId,process:processResult});
    if(processResult.status!=='terminal'||processResult.reason!=='exit'||processResult.exitCode!==step.expectedExit||processResult.truncated)throw Error('NATIVE_PROCESS_UNCERTAIN');
@@ -113,21 +145,26 @@ export async function executeNativeScenario(input,adapter,evidenceContext=null){
    const processRecordSha256=capture.custody.final.sha256;
    const expected={stepId:step.id,invocationId,processExit:processResult.exitCode,executableSha256:config.build.sha256,requestCount:step.expectedRequests,httpStatus:step.expectedStatus??null,configSha256,scenarioSha256:plan.scenarioSha256,authorityRecordSha256:config.authority_record_sha256,principalId:actor.principal_id,agentId:actor.agent_id,workspaceId:refs.workspace??config.workspaces.primary,processRecordSha256};
    await currentAuthority();
-   const observation=await bounded(signal=>adapter.observe(structuredClone(step),{invocationId,processResult,refs:structuredClone(refs),subjects:structuredClone(subjects),remainingMs:budget.remainingMs(),cost:structuredClone(cost),signal}));
+   const observation=snapshotNativeGenericReceipt('observation',await bounded(signal=>adapter.observe(structuredClone(step),{invocationId,processResult,refs:structuredClone(refs),subjects:structuredClone(subjects),remainingMs:budget.remainingMs(),cost:structuredClone(cost),...(caseToken?{captureFacts:recorder.captureFacts(caseToken)}:{}),signal})));
    if(!validateNativeObservation(observation,expected,cost))throw Error('NATIVE_OBSERVER_INCOMPLETE');
    if(caseToken){
     const custody={prepared:capture.custody.prepared,spawned:capture.custody.spawned,final:capture.custody.final};
     const allowance=recorder.reserveProcessRead(caseToken,invocationId,custody);
     const read=readNativeProcessOriginals({outputDirectory:config.output_directory,invocationId,custody:allowance.custody,remainingBytes:allowance.totalBytes});
     await currentAuthority();
-    const original=await bounded(signal=>adapter.observeEvidence(structuredClone(step),{runId,context:recorder.readProtectedContext(),preparation:{recordId:casePreparation.recordId,sha256:casePreparation.sha256},invocationId,processRecordSha256,genericObservation:structuredClone(observation),maxBytes:Math.min(65536,recorder.remainingBytes()),signal}));
+    const extra=evidenceCosts.get(step.id),maxBytes=Math.min(65536,extra.output_bytes,recorder.remainingBytes());if(maxBytes<1)throw Error('NATIVE_OBSERVER_INCOMPLETE');
+    const evidenceOptions={runId,context:recorder.readProtectedContext(),captureFacts:recorder.captureFacts(caseToken),expectedRecordSha256:observation.recordSha256,preparation:{recordId:casePreparation.recordId,sha256:casePreparation.sha256},invocationId,processRecordSha256,genericObservation:structuredClone(observation),cost:structuredClone(extra),maxBytes};
+    const supplied=await bounded(signal=>step.caseId?adapter.observeEvidence(structuredClone(step),{...evidenceOptions,signal}):adapter.observeAuxiliaryEvidence(structuredClone(step),{...evidenceOptions,signal}));
+    const typed=validateNativeTypedReturn(supplied,extra,maxBytes),original=typed.record;
     const originals=read.readProtectedRecords().map(({id,sha256,bytes})=>({id,sha256,bytes}));
-    const recorded=recorder.finish(caseToken,{records:[...originals,original],processPreparedId:invocationId+'_prepared',processSpawnedId:invocationId+'_spawned',processFinalId:invocationId+'_final',observerId:original?.id,genericObservation:observation,cost});
+    const completion={records:[...originals,original],processPreparedId:invocationId+'_prepared',processSpawnedId:invocationId+'_spawned',processFinalId:invocationId+'_final',observerId:original.id,genericObservation:observation,cost};
+    const recorded=step.caseId?recorder.finish(caseToken,completion):recorder.finishAuxiliary(caseToken,completion);
     protectedResults.at(-1).evidence=recorded;
    }
    protectedResults.at(-1).observation=structuredClone(observation);completed.push(step.id);
   }
   budget.remainingMs();
+  if(recorder){await currentAuthority();const cost=evidenceCosts.get('evidence/assembly'),candidate=recorder.assemble({outputBytes:cost.output_bytes});budget.remainingMs();if(!accounted(candidate.usage,cost)||candidate.result.status!=='structural-fragment')throw Error('NATIVE_OBSERVER_INCOMPLETE');assembled=candidate;}
  }catch{
   const result={status:'incomplete',scope:'producer-fragment',issue48Complete:false,externalRequirements:scenario.externalRequirements.map(item=>item.id),acceptance:'pending-external-inspection',completedSteps:completed.length,plannedSteps:scenario.steps.length,runId,retryAllowed:false,cleanup:'not-attempted'};
   Object.defineProperty(result,'readProtectedResults',{enumerable:false,value:()=>protectedResults});return attachEvidence(result);

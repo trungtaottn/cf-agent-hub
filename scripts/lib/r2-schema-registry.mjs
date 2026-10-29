@@ -1,3 +1,4 @@
+import {validR2PreparationsV2} from './r2-preparation-schema.mjs';
 import Ajv2020 from 'ajv/dist/2020.js';
 import draft7Meta from 'ajv/dist/refs/json-schema-draft-07.json' with {type:'json'};
 import core from '../../validation/r2-runtime-evidence.schema.json' with {type:'json'};
@@ -32,3 +33,10 @@ export const receiptPolicies=Object.freeze({
  ...Object.fromEntries([['recovery','recovery',2097152,['deployed-recovery']],['result-graph','result_graph',16384,['native-live','workers-tests','node-tests']],['restore-input-context','restore_input',8192,['operator-tests']],['expected-transform','expected_transform',65536,['operator-tests']]].map(([type,name,bound,kinds])=>['r2-'+type,{validate:compile(recovery,name),bound,kinds}])),
  ...Object.fromEntries([['platform','platform',16384,['contract']],['platform-resolution','resolution',8192,['deployed-recovery']],['platform-plan','plan',32768,['contract']],['platform-workload','workload',8192,['deployed-recovery','operator-tests']]].map(([type,name,bound,kinds])=>['r2-'+type,{validate:compile(platform,name),bound,kinds}]))
 });
+
+// Explicit evidence-format selection; legacy exports and lookup remain unchanged.
+export const validR2RootV3=compile(core,'root_v3');
+export {validR2PreparationsV2} from './r2-preparation-schema.mjs';
+export const validVersionedR2Root=value=>value?.format_version===3?validR2RootV3(value):validR2Root(value);
+const {['r2-case-preparations']:legacyPreparation,...sharedReceiptPolicies}=receiptPolicies;
+export const receiptPoliciesV3=Object.freeze({...sharedReceiptPolicies,'r2-case-preparations-v2':{validate:validR2PreparationsV2,bound:4194304,kinds:['contract']}});
