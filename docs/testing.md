@@ -102,6 +102,11 @@ The existing Node runner collects `test/cli/journal-recovery.test.ts`, `secret-s
 
 New native tests cover protected finalization, runtime-path mismatch, once-only actual-lease proof access, late-capture cleanup and invalid asynchronous-hook rejection without unhandled secret-bearing errors. Process-kill tests do not establish host reboot, container replacement, actual suspend or hardware power-loss durability. Actual-host storage is overlayfs; persistent backing and ext-family/XFS behavior remain separately qualified in [ADR0009](adr/0009-r2-cli-local-durability.md). See [exact results and non-passes](r2-task-plans/issue-041-execution.md).
 
+## Board gesture diagnostics (2026-10-29)
+
+The double-activation fixture waits for asynchronous command preparation to enable confirmation before deliberately invoking two synchronous DOM clicks; it still requires exactly one dispatch and the canonical Ready state. Real drag gestures retain their original selectors and unchanged test deadlines. Named phases, explicit completed column reads and a bounded32-event diagnostic record (at most four dragover samples, with an explicit omitted-event count) identify actionability versus replaced drag-source nodes. Diagnostics expose only event types, fixed column/status labels and connectivity booleans, never task text, request bodies, credentials or tokens. This is not a claimed production drag fix; exact-head browser CI must establish the remaining cause.
+
+
 ## CI source-job envelope
 
 The source job retains a bounded 30-minute orchestration budget for the expanded R2 suite; per-test safety deadlines and every required step remain unchanged. See the [measured budget diagnosis](research/r2-ci-job-budget.md). This adjustment does not clear independent security review or release gates.
