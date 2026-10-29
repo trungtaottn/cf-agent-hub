@@ -19,9 +19,12 @@ export async function nativeRunnerMain(args){
    return {exitCode:0,stdout:JSON.stringify(report)+'\n',stderr:''};
   }catch{return {exitCode:5,stdout:'',stderr:'Local sandbox checks failed or cleanup is uncertain; native conformance was not evaluated.\n'};}
  }
- try{readNativeConfig(args[1]);}
+ let config;
+ try{config=readNativeConfig(args[1]);}
  catch{return {exitCode:2,stdout:'',stderr:'Native conformance input rejected; no request sent.\n'};}
- return {exitCode:3,stdout:'',stderr:'Native conformance blocked: independently authorized target, observer and control integration is unavailable; no request sent.\n'};
+ let stdout='';
+ try{const {diagnoseNativeReadiness}=await import('./lib/native-r2-readiness.mjs');stdout=JSON.stringify(diagnoseNativeReadiness(config))+'\n';}catch{/* Source/config mismatch is unavailable, never guessed support. */}
+ return {exitCode:3,stdout,stderr:'Native conformance blocked: independently authorized target, observer and control integration is unavailable; no request sent.\n'};
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  const result=await nativeRunnerMain(process.argv.slice(2));

@@ -195,3 +195,35 @@ The protected entry still lacks its real host adapter. The bounded
 [producer integration design](native-host-producer-design.md) distinguishes code
 we still must implement from the small set of operator trust/capability choices;
 it does not install a service or fabricate authority.
+
+## Protected-entry source/config readiness diagnostic
+
+A valid protected `--config` input now emits bounded diagnostic JSON on stdout
+and retains exit 3 plus the blocked stderr summary. Invalid or unsafe input still
+has empty stdout and exits 2. The JSON type is `native-r2-source-readiness`, not a
+release evidence receipt or preflight authorization. It is deterministic, at most
+16 KiB, and does not echo supplied paths, principals, origins or credential data.
+
+The diagnostic joins the actual fixed scenario's actor roles and explicitly
+required fixture stores with the supplied configuration. It identifies absent
+roles/stores and source-known insufficient command, mutation, artifact and output
+budgets. Current necessary lower bounds are 68 command reservations, 34 mutation
+reservations, 2 artifact bytes across two separately reserved steps, and 56 output
+bytes across non-control steps. These are only necessary minima, not useful
+execution budgets or full admission: observer, control and evidence costs remain
+unknown until the actual adapter is available.
+
+All 68 source steps and the two separate external-observer obligations are
+classified. Even with every fixture declaration present, each of the three
+slot/generation/principal-only controls remains explicitly unsupported under the
+current contract. Local producer success is not native capability. An exact
+source-scenario digest guard rejects unreviewed future classification changes;
+it does not amend the scenario, its case roster or acceptance semantics.
+
+Only the existing protected config-file read has happened at this entry point.
+Executable/store custody, installed authority, network observation, subprocess
+execution, full budget admission and native acceptance remain unperformed.
+There is no partial execution, extra secret lookup, installer or configurable
+module loader. Source classification failure remains blocked with no raw errors.
+The diagnostic improves actionable failure information; it does not complete
+the still-missing fixed native host adapter or authorize real fixture effects.
