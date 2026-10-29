@@ -7,6 +7,7 @@ import {createFixtureBackend} from './native-fixture-backend.mjs';
 import {createFixtureService} from './native-fixture-service.mjs';
 import {createFixtureClient} from './native-fixture-client.mjs';
 import {createBoundFixtureVerifier} from './native-fixture-verifier.mjs';
+import {createLocalForeignProducer} from './native-local-foreign-producer.mjs';
 import {installLocalIssuer} from './native-local-issuer.mjs';
 import {createLocalRevocation} from './native-local-revocation.mjs';
 import {Response as WorkerResponse} from 'miniflare';
@@ -17,8 +18,8 @@ import {createTestHarness} from 'wrangler';
 import Ajv from 'ajv/dist/2020.js';
 import {closeLocalSandbox,snapshotLocalInstallReceipt,assertLocalDisableChange,closeLocalRound,closeLocalFixtureResources,acquireLocalIssuerProvider} from './native-r2-local-lifecycle.mjs';
 const root=dirname(dirname(dirname(fileURLToPath(import.meta.url))));
-const budgets=Object.freeze({httpRequestsPerRound:32,sqlStatementsPerRound:128,rowsPerQuery:128,responseBytesPerRound:2097152,sqlBytesPerRound:2097152});
-const reportSchema=JSON.parse(await readFile(new URL('../../spec/local-r2-sandbox-result-v3.schema.json',import.meta.url),'utf8'));
+const budgets=Object.freeze({httpRequestsPerRound:64,sqlStatementsPerRound:128,rowsPerQuery:128,responseBytesPerRound:2097152,sqlBytesPerRound:2097152});
+const reportSchema=JSON.parse(await readFile(new URL('../../spec/local-r2-sandbox-result-v4.schema.json',import.meta.url),'utf8'));
 const validateReport=new Ajv({strict:true}).compile(reportSchema);
 const rejected=()=>{throw Error('LOCAL_SANDBOX_REJECTED');};
 /** No target, path, module, credentials, budgets or trust hooks accepted from callers. */
@@ -44,10 +45,11 @@ export async function runLocalNativeSandbox(){
   const api=await tracked(()=>import(pathToFileURL(modulePath).href));
   for(const round of [1,2]){
    stage='round-'+round+'-setup';
-   const name='native-local-'+randomBytes(12).toString('hex'),tokens={submitter:randomBytes(32).toString('base64url'),reviewer:randomBytes(32).toString('base64url'),revoked:randomBytes(32).toString('base64url')};
+   const name='native-local-'+randomBytes(12).toString('hex'),tokens={submitter:randomBytes(32).toString('base64url'),reviewer:randomBytes(32).toString('base64url'),revoked:randomBytes(32).toString('base64url'),foreign:randomBytes(32).toString('base64url')};
    const input=await tracked(()=>api.fixture(name));api.configureLocalNativeFixture(input.config);
    const d={...structuredClone(input.config.static_credential_refs[0]),credential_id:'credential_revoke_1',agent_id:'agent_revoke',scopes:['workspace:read','runtimes:manage']};input.config.static_credential_refs.push(d);input.config.static_participants.push({workspace_id:'ws_example',agent_id:'agent_revoke',display_name:'Synthetic revoke participant'});const human=input.config.human_grants[0];if(human.principal_id!=='human_operator')rejected();human.scopes=[...new Set([...human.scopes,'credentials:manage'])];human.delegable_native_scopes=['workspace:read','runtimes:manage'];
-   input.bundle.credentials=[{workspace_id:'ws_example',credential_id:'credential_research_1',token_sha256:await tracked(()=>api.sha256(tokens.submitter))},{workspace_id:'ws_example',credential_id:'credential_reviewer_1',token_sha256:await tracked(()=>api.sha256(tokens.reviewer))},{workspace_id:'ws_example',credential_id:'credential_revoke_1',token_sha256:await tracked(()=>api.sha256(tokens.revoked))}];
+   const foreignName=name+'_other';input.config.workspace_catalog.push({workspace_id:'ws_other',object_name:foreignName});input.config.static_participants.push({workspace_id:'ws_other',agent_id:'agent_foreign',display_name:'Synthetic foreign participant'});input.config.static_credential_refs.push({...structuredClone(input.config.static_credential_refs[0]),workspace_id:'ws_other',agent_id:'agent_foreign',credential_id:'credential_foreign_1',scopes:['workspace:read','tasks:read','tasks:create']});const foreignPolicy={...structuredClone(input.config.workspace_policies[0]),workspace_id:'ws_other'};for(const rule of foreignPolicy.execution_policy.eligibility_rules)rule.eligible_agent_ids=['agent_foreign'];input.config.workspace_policies.push(foreignPolicy);input.config.authentication.allowed_origins.push('https://other.example.invalid');input.config.authentication.redirect_uris.push({workspace_id:'ws_other',redirect_uri:'https://other.example.invalid/v2/workspaces/ws_other/auth/callback'});
+   input.bundle.credentials=[{workspace_id:'ws_example',credential_id:'credential_research_1',token_sha256:await tracked(()=>api.sha256(tokens.submitter))},{workspace_id:'ws_example',credential_id:'credential_reviewer_1',token_sha256:await tracked(()=>api.sha256(tokens.reviewer))},{workspace_id:'ws_example',credential_id:'credential_revoke_1',token_sha256:await tracked(()=>api.sha256(tokens.revoked))},{workspace_id:'ws_other',credential_id:'credential_foreign_1',token_sha256:await tracked(()=>api.sha256(tokens.foreign))}];
    input.bundle.config_digest=await tracked(()=>api.sha256(api.canonicalJson(input.config)));
    const provider=await tracked(()=>acquireLocalIssuerProvider({create:()=>api.outboundProvider(),providers}));const secret=provider.bindings.OIDC_CLIENT_SECRET,csrf=provider.bindings.CSRF_SECRET,cursor=provider.bindings.CURSOR_ENCRYPTION_KEY;
    const options=()=>({root,workers:[{configPath:'./wrangler.jsonc',env:'test',vars:{DEPLOYMENT_CONFIG:JSON.stringify(input.config)},secrets:{[input.config.authentication.client_secret_ref]:secret,CSRF_SECRET:csrf,CURSOR_ENCRYPTION_KEY:cursor}},{configPath:'./workers/recovery-anchor/wrangler.jsonc',env:'test'}]});
@@ -61,8 +63,9 @@ export async function runLocalNativeSandbox(){
    stage='round-'+round+'-install';
    let receipt=await tracked(async()=>{const env=await worker.getEnv();return snapshotLocalInstallReceipt(await env.WORKSPACE.getByName(name).reconcileConfiguration(api.operator(),prepared));});
    if(receipt.epoch!==1||receipt.installationDigest!==prepared.installationDigest)rejected();
+   const foreignPrepared=await tracked(()=>api.prepareBootstrap(input.config,input.bundle,'ws_other'));const foreignReceipt=await tracked(async()=>{const env=await worker.getEnv();return snapshotLocalInstallReceipt(await env.WORKSPACE.getByName(foreignName).reconcileConfiguration({...api.operator(),workspaceId:'ws_other'},foreignPrepared));});if(foreignReceipt.epoch!==1||foreignReceipt.installationDigest!==foreignPrepared.installationDigest)rejected();
    stage='round-'+round+'-storage';
-   storage=await tracked(()=>worker.getDurableObjectStorage('WORKSPACE',{name}));
+   storage=await tracked(()=>worker.getDurableObjectStorage('WORKSPACE',{name}));const foreignStorage=await tracked(()=>worker.getDurableObjectStorage('WORKSPACE',{name:foreignName}));
    let disabled=false;
    const disable=async()=>{
     try{
@@ -104,7 +107,9 @@ export async function runLocalNativeSandbox(){
    const observedStorage={exec:async(query,...bindings)=>{const known=queries.get(query);if(!known||JSON.stringify(bindings)!==JSON.stringify(known.bindings))rejected();return (await client.call('observe-selected-state',{selector:known.selector},{signal:controller.signal})).rows;}};
    const routes=createLocalRouteObserver({origin:'https://hub.example.invalid',workspaceId:'ws_example',instanceId:name,runId:name,credentials:[{ref:'submitter',principalId:'agent_research',agentId:'agent_research',tokenSha256:createHash('sha256').update(tokens.submitter).digest('hex')},{ref:'reviewer',principalId:'agent_reviewer',agentId:'agent_reviewer',tokenSha256:createHash('sha256').update(tokens.reviewer).digest('hex')},{ref:'revoked',principalId:'agent_revoke',agentId:'agent_revoke',tokenSha256:createHash('sha256').update(tokens.revoked).digest('hex')}],worker:{fetch:(...args)=>tracked(()=>worker.fetch(...args))},storage:{exec:(...args)=>tracked(()=>storage.exec(...args))},signal:controller.signal,track:retain});fixtureSessions.push(routes);let nativeDispatches=0;const nativeFetch=(...args)=>{if(nativeDispatches>=20)rejected();nativeDispatches++;return routes.fetch(...args);};
    const revocation=createLocalRevocation({worker:{fetch:nativeFetch},storage:{exec:(...args)=>tracked(()=>storage.exec(...args))},login:issuer.login,token:tokens.revoked,signal:controller.signal,track:retain});let revokedResult;
+   const foreignProducer=createLocalForeignProducer({worker:{fetch:(...args)=>tracked(()=>worker.fetch(...args))},storageA:{exec:(...args)=>tracked(()=>storage.exec(...args))},storageB:{exec:(...args)=>tracked(()=>foreignStorage.exec(...args))},installationA:{objectName:name,installationDigest:prepared.installationDigest,configDigest:input.bundle.config_digest},installationB:{objectName:foreignName,installationDigest:foreignPrepared.installationDigest,configDigest:input.bundle.config_digest},tokens:{a:tokens.submitter,b:tokens.foreign},signal:controller.signal,track:retain});let foreignResult;
    const controlledDisable=async()=>{
+    foreignResult=await foreignProducer.run();if(foreignProducer.snapshot().failed||foreignProducer.snapshot().pending!==0)rejected();
     const body=JSON.stringify({title:'Local committed-response fixture',description:'Synthetic source-only fault'}),key='local_fault_'+round;
     routes.armCreateTask({arm_id:'fault_'+round,request_body_sha256:createHash('sha256').update(body).digest('hex'),idempotency_key_sha256:createHash('sha256').update(key).digest('hex'),credential_ref:'submitter'});
     let suppressed=false;try{await nativeFetch('https://hub.example.invalid/v2/workspaces/ws_example/tasks',{method:'POST',headers:{authorization:'Bearer '+tokens.submitter,'content-type':'application/json','idempotency-key':key},body,redirect:'manual',signal:controller.signal});}catch(error){if(error?.message==='LOCAL_COMMITTED_RESPONSE_SUPPRESSED')suppressed=true;else throw error;}
@@ -119,8 +124,8 @@ export async function runLocalNativeSandbox(){
    const captured=routes.readRecords(),observed=routes.snapshot();if(nativeDispatches!==20||observed.failed||observed.pending!==0||observed.sqlStatements!==2||observed.requests!==20||captured.length!==20||observed.armState!=='disarmed')rejected();
    const suppressedRecords=captured.filter(x=>x.publication==='suppressed-after-observed-commit');if(suppressedRecords.length!==1||suppressedRecords[0].arm_id!=='fault_'+round||!/^[a-f0-9]{64}$/.test(suppressedRecords[0].commit_proof_sha256))rejected();
    await routes.close();
-   const issuerStats=issuer.snapshot();if(issuerStats.humanCalls!==4||issuerStats.privateIssueCalls!==1||!revokedResult||revokedResult.sqlStatements!==8)rejected();await issuer.close();
-   rounds.push({...summary,httpRequests:observed.requests+issuerStats.humanCalls,responseBytes:observed.responseBytes+issuerStats.responseBytes,sqlStatements:backend.snapshot().sqlStatements+observed.sqlStatements+revokedResult.sqlStatements,sqlBytes:backend.snapshot().sqlBytes+observed.sqlBytes+revokedResult.sqlBytes,human_revocation:{same_credential:true,same_epoch:true,records_sha256:revokedResult.records_sha256,runtime_count:revokedResult.runtime_count,issuer_calls:issuerStats.issuerCalls,human_calls:issuerStats.humanCalls,synthetic_issuer:true,native_conformance:false},route_observer:{record_count:captured.length,records_sha256:createHash('sha256').update(JSON.stringify(captured)).digest('hex'),committed_response_suppressed:true,memory_only:true,native_transport:false}});
+   const issuerStats=issuer.snapshot();if(!foreignResult||foreignResult.httpRequests!==12||foreignResult.sqlStatements!==74||issuerStats.humanCalls!==4||issuerStats.privateIssueCalls!==1||!revokedResult||revokedResult.sqlStatements!==8)rejected();await issuer.close();
+   rounds.push({...summary,httpRequests:observed.requests+issuerStats.humanCalls+foreignResult.httpRequests,responseBytes:observed.responseBytes+issuerStats.responseBytes+foreignResult.responseBytes,sqlStatements:backend.snapshot().sqlStatements+observed.sqlStatements+revokedResult.sqlStatements+foreignResult.sqlStatements,sqlBytes:backend.snapshot().sqlBytes+observed.sqlBytes+revokedResult.sqlBytes+foreignResult.sqlBytes,foreign_resource:{cases:2,claim:'cross-workspace-resource-mismatch',selected_state_unchanged:true,negative_before_positive:true,records_sha256:foreignResult.records_sha256,native_conformance:false},human_revocation:{same_credential:true,same_epoch:true,records_sha256:revokedResult.records_sha256,runtime_count:revokedResult.runtime_count,issuer_calls:issuerStats.issuerCalls,human_calls:issuerStats.humanCalls,synthetic_issuer:true,native_conformance:false},route_observer:{record_count:captured.length,records_sha256:createHash('sha256').update(JSON.stringify(captured)).digest('hex'),committed_response_suppressed:true,memory_only:true,native_transport:false}});
   }
   bodySucceeded=true;
  }catch(error){
@@ -140,7 +145,7 @@ export async function runLocalNativeSandbox(){
   }catch{cleanupClosed=false;}
  }
  if(!bodySucceeded||!cleanupClosed){const error=Error('LOCAL_SANDBOX_FAILED');Object.defineProperties(error,{stage:{value:stage},httpStatus:{value:httpStatus},expectedHttpStatus:{value:expectedHttpStatus},action:{value:action},reason:{value:reason},cleanup:{value:cleanupClosed?'closed':'unknown'}});throw error;}
- const report={type:'local-r2-sandbox-result',version:3,status:'local-source-checks-passed',transport:'local-worker-dispatch',nativeConformance:false,issue48Complete:false,acceptance:'not-evaluated',cleanup:'closed',rounds,budgets:{...budgets}};
+ const report={type:'local-r2-sandbox-result',version:4,status:'local-source-checks-passed',transport:'local-worker-dispatch',nativeConformance:false,issue48Complete:false,acceptance:'not-evaluated',cleanup:'closed',rounds,budgets:{...budgets}};
  if(!validateReport(report))rejected();
  return report;
 }

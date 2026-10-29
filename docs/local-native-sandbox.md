@@ -164,3 +164,38 @@ promise, even when an outward abort has already won. Cleanup drains that actual
 promise before disposing its resource. Credential expiry is checked again around
 the final denial, so a token that expires during the flow cannot be reported as
 a revocation-caused denial merely because it returned 401.
+
+## Cross-workspace resource producer (local report version 4)
+
+Version 4 adds a second fresh, independently mapped workspace with a distinct
+synthetic credential and a genuinely created foreign task. Separate submit and
+fail controls each create, ready and claim their own A task. An A request naming
+the existing B task and valid A run must return the validated forbidden envelope
+without disclosing the foreign identifier, title or description. Only after
+independent selected-state observations show no change may the same A proof and
+run perform the own-target positive control. The fail control preserves the
+product's `outcome_unknown` flag; it does not install a replay rule or clear holds.
+
+The exact claim is **cross-workspace/resource mismatch**, not an isolated
+same-workspace wrong-run test or proof that A can see B. Read-only SQL observers
+bind both installed workspace identities, the current A credential/grant/proof,
+run lease and selected resources. Snapshots include tasks, runs, results,
+acceptances, events, history and idempotency outcomes for the selected identities.
+Idempotency selection does not filter away an incorrectly attributed mutation.
+Each positive requires the joined actual task/run/outcome/event/history state,
+with the result row for submit, rather than mere row existence.
+
+The additional fixed producer admits 12 application calls and 74 SQL reads.
+The combined round admits 36 application calls and 125 SQL reads. Its separately
+reserved 12 responses of 16 KiB bring the response envelope to 2,064,384 bytes,
+below the unchanged 2 MiB cumulative cap. Each accepted canonical SQL projection
+is at most 16 KiB. Typed cell gates and overflow rows bound bridge projections
+separately: the largest conservative JSON bound is 532,237 bytes for the
+17-row idempotency projection, not a wire-size or process-memory claim. Per-query
+deadlines retain ownership of unsettled SQL and prohibit further reads after
+failure. The local version 4 schema retains explicitly false native-conformance
+and issue-complete fields; prior versions and native release schemas are unchanged.
+
+This closes a local producer path only. Durable native-original composition,
+protected process execution and genuinely installed authority remain distinct.
+The three unchanged tuple-only swap obligations are not satisfied by this flow.
