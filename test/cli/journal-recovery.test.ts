@@ -59,7 +59,22 @@ describe('durable journal binding and replay',()=>{
   const db=dbOpen(p,false);let last=first.id,admitted=1;db.transaction(sql=>{const row=sql.prepare('SELECT * FROM journal_entries').get()!,reserved=Number(row.reserved_bytes),insert=sql.prepare('INSERT INTO journal_entries VALUES (?,?,?,?)');for(let total=reserved;total+reserved<=64*1024*1024;total+=reserved){last=randomUUID();const payload=JSON.stringify({...JSON.parse(String(row.payload)),id:last});insert.run(last,payload,createHash('sha256').update(payload).digest('hex'),reserved);admitted++;}});db.close();
   const j=open(p,false);expect(admitted).toBeGreaterThan(500);expect(admitted).toBeLessThan(650);await expect(j.recordIntent({request:large,principal:binding})).rejects.toThrow();expect(await j.get(first.id)).not.toBe(null);await j.attachKey(last,'synthetic-key');await j.markFirstDispatch(last,{...stamp(),requestFingerprint:requestFingerprint(large)});await j.recordOutcome(last,{status:201,code:null,requestId:null});expect((await j.get(last))?.replayState).toBe('settled');
  });
- it('unresolved_limit_blocks_new_intent_without_eviction',async()=>{const j=open(root());let first='';for(let i=0;i<1000;i++){const e=await j.recordIntent({request,principal:binding});if(i===0)first=e.id;}await expect(j.recordIntent({request,principal:binding})).rejects.toThrow();expect((await j.get(first))?.key).toBe(null);expect(await j.pruneSettled()).toBe(0);expect(await j.get(first)).not.toBe(null);});
+ it('unresolved_limit_blocks_new_intent_without_eviction',async()=>{
+  const p=root(),seed=open(p),first=await seed.recordIntent({request,principal:binding});seed.close();
+  // Seed valid unresolved history in one durable fixture transaction; exercise
+  // the real admission boundary at 999 -> 1000 -> refusal, not 1000 setup flushes.
+  const fixture=dbOpen(p,false);fixture.transaction(sql=>{
+   const row=sql.prepare('SELECT * FROM journal_entries').get()!,insert=sql.prepare('INSERT INTO journal_entries VALUES (?,?,?,?)');
+   for(let i=1;i<999;i++){const id=randomUUID(),payload=JSON.stringify({...JSON.parse(String(row.payload)),id});insert.run(id,payload,createHash('sha256').update(payload).digest('hex'),row.reserved_bytes);}
+   expect(sql.prepare('SELECT count(*) AS n FROM journal_entries').get()?.n).toBe(999);
+  });fixture.close();
+  const j=open(p,false),last=await j.recordIntent({request,principal:binding});j.close();
+  const snapshot=dbOpen(p,false),before=snapshot.read(sql=>sql.prepare('SELECT * FROM journal_entries ORDER BY id').all());snapshot.close();
+  expect(before).toHaveLength(1000);
+  const full=open(p,false);await expect(full.recordIntent({request,principal:binding})).rejects.toThrow();expect(await full.get(first.id)).toEqual(first);expect(await full.get(last.id)).toEqual(last);expect(await full.pruneSettled()).toBe(0);full.close();
+  const reopened=open(p,false);expect(await reopened.get(first.id)).toEqual(first);expect(await reopened.get(last.id)).toEqual(last);reopened.close();
+  const verify=dbOpen(p,false),after=verify.read(sql=>sql.prepare('SELECT * FROM journal_entries ORDER BY id').all());verify.close();expect(after).toEqual(before);
+ });
  it('explicit_prune_deletes_only_settled_entries_after_seven_days',async()=>{const j=open(root()),unresolved=await j.recordIntent({request,principal:binding}),settled=await j.recordIntent({request,principal:binding});vi.spyOn(Date,'now').mockReturnValue(1_000_000);await j.recordOutcome(settled.id,{status:200,code:null,requestId:null});vi.spyOn(Date,'now').mockReturnValue(1_000_000+604_799_999);expect(await j.pruneSettled()).toBe(0);vi.spyOn(Date,'now').mockReturnValue(1_000_000+604_800_000);expect(await j.pruneSettled()).toBe(1);expect(await j.get(settled.id)).toBe(null);expect(await j.get(unresolved.id)).not.toBe(null);});
 });
 
