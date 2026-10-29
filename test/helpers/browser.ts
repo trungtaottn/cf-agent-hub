@@ -1,4 +1,4 @@
-import {readFixtureResponse} from './fixture-https-read';
+import {readFixtureResponse,sendFixtureReady} from './fixture-https-read';
 import { test as base, chromium, type Browser, type Route } from '@playwright/test';
 export const appOrigin='https://hub.fixture.example.invalid';
 export const issuerOrigin='https://issuer.fixture.example.invalid';
@@ -23,7 +23,14 @@ export { expect } from '@playwright/test';
 /** Route.fetch uses Node TLS, not Chromium's ephemeral SPKI allowlist. */
 export async function readFixtureRoute(route:Route){
  if(route.request().method()!=='GET')throw Error('FIXTURE_METHOD_DENIED');
+ return readFixtureResponse(route.request().url(),await route.request().allHeaders(),fixtureReadTrust());
+}
+
+function fixtureReadTrust(){
  const encoded=process.env.CFHUB_APP_CERTIFICATE;if(!encoded||!(/^[A-Za-z0-9+/]+={0,2}$/).test(encoded))throw Error('Missing fixture certificate readiness capture');
- const values=captures();
- return readFixtureResponse(route.request().url(),await route.request().allHeaders(),{port:values.appPort,pin:values.pins[0]!,certificate:Buffer.from(encoded,'base64').toString('utf8')});
+ const values=captures();return {port:values.appPort,pin:values.pins[0]!,certificate:Buffer.from(encoded,'base64').toString('utf8')};
+}
+export async function sendFixtureReadyRoute(route:Route){
+ const request=route.request(),body=request.postDataBuffer();if(request.method()!=='POST'||!body)throw Error('FIXTURE_METHOD_DENIED');
+ return sendFixtureReady(request.url(),await request.allHeaders(),body,fixtureReadTrust());
 }
