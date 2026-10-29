@@ -81,6 +81,7 @@ jobs:
           test "$(npm --version)" = '11.19.1'
       - run: npm ci
       - run: node scripts/test-native-r2.mjs --local-sandbox
+      - run: npm run test:native:r2:observer-local
   dependencies:
     runs-on: ubuntu-24.04
     timeout-minutes: 10

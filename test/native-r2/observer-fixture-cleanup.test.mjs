@@ -1,0 +1,13 @@
+// Source response-reader tests only: no Worker, credentials, deployment or native process.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {build} from 'esbuild';
+const compiled=await build({stdin:{contents:"export {readObserverFixtureResponse} from './test/helpers/native-observer/local-fixture.ts';",resolveDir:process.cwd(),sourcefile:'observer-response-reader-test-entry.ts',loader:'ts'},bundle:true,platform:'node',format:'esm',write:false,treeShaking:true,logLevel:'silent'});
+const {readObserverFixtureResponse:read}=await import('data:text/javascript;base64,'+Buffer.from(compiled.outputFiles[0].contents).toString('base64'));
+function streamResponse({status=200,bytes=Buffer.from('{"data":{"ok":true}}'),finish=false,rejectCancel=false}={}){let cancelled=0;const stream=new ReadableStream({start(c){c.enqueue(bytes);if(finish)c.close();},cancel(){cancelled++;if(rejectCancel)throw Error('synthetic cancellation rejection');}});return {response:new Response(stream,{status}),cancelled:()=>cancelled};}
+test('normal finite JSON returns data and releases reader ownership',async()=>{const x=streamResponse({finish:true});assert.deepEqual(await read(x.response,200),{ok:true});assert.equal(x.response.body.locked,false);});
+test('unexpected HTTP status cancels unread original body',async()=>{const x=streamResponse({status:403});await assert.rejects(read(x.response,200));assert.equal(x.cancelled(),1);assert.equal(x.response.body.locked,false);});
+test('unexpected HTTP cancellation rejection is propagated, not successful cleanup',async()=>{const x=streamResponse({status:403,rejectCancel:true});await assert.rejects(read(x.response,200),/synthetic cancellation rejection/);assert.equal(x.cancelled(),1);});
+test('64 KiB exact JSON response admitted',async()=>{const prefix='{"data":"',suffix='"}';const bytes=Buffer.from(prefix+'x'.repeat(65536-prefix.length-suffix.length)+suffix);const x=streamResponse({bytes,finish:true});assert.equal((await read(x.response,200)).length,65525);assert.equal(x.response.body.locked,false);});
+test('64 KiB plus one rejects and cancels actual body',async()=>{const x=streamResponse({bytes:new Uint8Array(65537)});await assert.rejects(read(x.response,200));assert.equal(x.cancelled(),1);assert.equal(x.response.body.locked,false);});
+test('overflow cancellation rejection is observed and lock released',async()=>{const x=streamResponse({bytes:new Uint8Array(65537),rejectCancel:true});await assert.rejects(read(x.response,200),/synthetic cancellation rejection/);assert.equal(x.cancelled(),1);assert.equal(x.response.body.locked,false);});

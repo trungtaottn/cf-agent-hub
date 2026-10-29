@@ -1,0 +1,8 @@
+{
+  "name": "agenthub-private-observer-local",
+  "main": "./worker.ts",
+  "compatibility_date": "2026-10-19",
+  "durable_objects": {"bindings": [{"name": "WORKSPACE", "class_name": "WorkspaceDO"}]},
+  "migrations": [{"tag": "local-observer-v1", "new_sqlite_classes": ["WorkspaceDO"]}],
+  "r2_buckets": [{"binding": "ARTIFACT_BUCKET", "bucket_name": "observer-local-fake-artifacts"}, {"binding": "RECOVERY_BUCKET", "bucket_name": "observer-local-fake-recovery"}]
+}

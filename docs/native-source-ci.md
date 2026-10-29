@@ -82,3 +82,13 @@ without logging credentials or reason content. No production behavior, force
 click, retry or timeout change is introduced. The revised browser result remains
 pending until exact-head remote CI completes; this source ordering correction is
 not proof of the original timeout's exact cause.
+
+## Observer service local integration — 2026-10-29
+
+The existing five-minute local-sandbox job runs the observer-local command after
+the original sandbox command, serially on the same pinned runtime. The new command
+exercises seven restricted real workerd reader profiles, signed original delivery
+and owned cleanup; pure native-source tests alone do not select this integration.
+The job cap, per-operation limits, read-only workflow permissions and custody guards
+remain unchanged. Actual CI execution must be checked before claiming coverage.
+This remains synthetic local source assurance, not installed/native acceptance.

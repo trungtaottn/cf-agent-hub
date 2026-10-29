@@ -36,7 +36,8 @@
     "test:current-provider-operator": "vitest run --config vitest.current-provider-operator.config.ts",
     "test:anchor-provider": "vitest run --config vitest.anchor-provider.config.ts",
     "test:native:r2": "node scripts/test-native-r2.mjs",
-    "test:native:r2:source": "node --test test/native-r2/*.test.mjs"
+    "test:native:r2:source": "node --test test/native-r2/*.test.mjs",
+    "test:native:r2:observer-local": "node scripts/test-native-r2-observer-local.mjs"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "1.4.7",

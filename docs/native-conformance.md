@@ -317,8 +317,9 @@ profile does not restrict otherwise valid product data or prove artifact bytes.
 The pure v2 original-transfer codec signs and verifies a closed, canonical
 Ed25519 envelope against an independently supplied delegated key and exact
 request/manifest correlations. SQL canonical bytes (16 KiB), raw HTTP request or
-response bytes (64 KiB), and journal source projections (4 KiB) remain distinct
-kinds. The current frozen roster yields an 88,852-byte maximum serialized
+response bytes (64 KiB), journal source projections (4 KiB), and explicitly typed source-reader
+projections (64 KiB) remain distinct kinds. The current frozen roster yields an
+88,859-byte maximum serialized
 envelope, including base64 and signature. Oversized otherwise-valid product
 content is incomplete capture evidence, not an invalid product response.
 
@@ -373,3 +374,51 @@ run. The remaining fixed factory still must bind installed trust, the private
 observer, process/transport originals, run sequencing and cumulative admission;
 the three unsupported tuple-only controls remain unresolved without a scope
 change. No product authentication, SQL endpoint or runtime custody guard changed.
+
+
+### Run-bound local observer service
+
+Run `npm run test:native:r2:observer-local` for the fixed synthetic local vertical
+slice. It starts an ephemeral workerd fixture with a dedicated test-only
+configuration, prepares two tasks and one active run through the actual native
+HTTP handlers, and binds a private observer registry. Production Worker exports,
+public routes, authentication and runtime custody guards are unchanged.
+
+The run-bound source-only service authenticates every canonical request, admits
+one prepared observation once, and transfers one original at a time. The client
+checks the exact run, invocation, record, request sequence, digest and Ed25519
+signature. A projection is explicitly `source-reader-projection`, never raw HTTP.
+Local signing/identity keys are ephemeral synthetic fixtures, not installed trust.
+
+The complete seven-reader local path executes 184 service calls and 184 private
+RPC calls, retrieves 168 SQL originals plus seven projections, and enforces the
+603-query source ledger. Setup separately uses five actual native HTTP requests
+and one fixed SQL generation read. The private RPC bridge returns bounded
+canonical primitive strings because the local harness owns object RPC results as
+proxies; generic untrusted-object guards are not relaxed. Originals use canonical
+base64 only within their record reply, with decoded size and digest checked again
+before signing. No aggregate raw capture crosses the bridge.
+
+Full-profile reservations are 753,664 service request bytes, 4,658,237 service
+response bytes, 762,880 private RPC input bytes and 4,578,088 private RPC output
+bytes. These are distinct measured logical payload budgets, not undocumented RPC
+framing, total process memory, or a complete native run's evidence admission.
+Existing HTTP original maximum remains 88,852 bytes; the longer projection kind
+raises the codec-wide maximum to 88,859. Existing kind bounds remain unchanged.
+
+Closed schemas, exact manifests, target binding, signature correlation, canonical
+bytes including BOM rejection, concurrent-call poisoning and cleanup ownership
+have source regressions. The per-request deadline is ten seconds or earlier
+policy expiry. If actual work ignores cancellation, the service reports
+`cleanup-unknown` rather than waiting indefinitely or claiming it stopped; owned
+promises remain tracked. Explicit close/dispose allows one second to observe
+cleanup, reports unknown if work or unowned/failed body cleanup remains, and never
+retries an uncertain original read. The local harness always attempts its own
+disposal independently of service cleanup failure.
+
+This slice does not run the native CLI, install a trusted service, prove an
+independent implementation of product visibility, or complete issue 48. Other
+state/causal profiles, real native front-door originals and fixed factory/controller
+integration remain source work. The unchanged full scenario still rejects missing
+capabilities and the three unsupported tuple-only controls. Formal acceptance
+remains after R4; green local or CI results are not that acceptance.

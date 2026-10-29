@@ -7,7 +7,7 @@ const check=value=>{if(!value)reject();};
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 const canonical=value=>value===null||typeof value!=='object'?JSON.stringify(value):Array.isArray(value)?'['+value.map(canonical).join(',')+']':'{'+Object.keys(value).sort().map(key=>JSON.stringify(key)+':'+canonical(value[key])).join(',')+'}';
 const domain='AGENTHUB_NATIVE_HOST_ORIGINAL_V2\n';
-const caps=Object.freeze({'sql-canonical':16384,'http-request-raw':65536,'http-response-raw':65536,'journal-source-projection':4096});
+const caps=Object.freeze({'sql-canonical':16384,'http-request-raw':65536,'http-response-raw':65536,'journal-source-projection':4096,'source-reader-projection':65536});
 const ids=['service_id','run_id','instance_id','invocation_id','request_id','producer_id','record_id'];
 const expectedKeys=[...ids,'descriptor_sha256','step_id','sequence','kind','byte_size','sha256'];
 const envelopeKeys=['type','version',...expectedKeys,'payload_base64','signature_base64'];
@@ -18,7 +18,7 @@ const typed=Object.getPrototypeOf(Uint8Array.prototype),getLength=Object.getOwnP
 function bytes(value,max){check(value&&!types.isProxy(value)&&[Buffer.prototype,Uint8Array.prototype].includes(Object.getPrototypeOf(value)));const n=getLength.call(value);check(n<=max&&Object.getPrototypeOf(getBuffer.call(value))===ArrayBuffer.prototype);check(Reflect.ownKeys(value).every(key=>typeof key==='string'&&/^(0|[1-9][0-9]*)$/.test(key)));return Buffer.from(value);}
 function base64(value,size){check(typeof value==='string'&&value.length===4*Math.ceil(size/3)&&! /[^A-Za-z0-9+/=]/.test(value));const decoded=Buffer.from(value,'base64');check(decoded.length===size&&decoded.toString('base64')===value);return decoded;}
 const longestStep=[...steps].sort((a,b)=>b.length-a.length)[0];
-const maximal={type:'native-host-original',version:2,...Object.fromEntries(ids.map(key=>[key,'z'.repeat(128)])),descriptor_sha256:'f'.repeat(64),step_id:longestStep,sequence:Number.MAX_SAFE_INTEGER,kind:'http-response-raw',byte_size:65536,sha256:'f'.repeat(64),payload_base64:'/'.repeat(87382)+'==',signature_base64:'/'.repeat(86)+'=='};
+const maximal={type:'native-host-original',version:2,...Object.fromEntries(ids.map(key=>[key,'z'.repeat(128)])),descriptor_sha256:'f'.repeat(64),step_id:longestStep,sequence:Number.MAX_SAFE_INTEGER,kind:'source-reader-projection',byte_size:65536,sha256:'f'.repeat(64),payload_base64:'/'.repeat(87382)+'==',signature_base64:'/'.repeat(86)+'=='};
 /** Independent field maxima, not a claim that a live original reaches this shape. */
 export const NATIVE_ORIGINAL_WIRE_MAX=Buffer.byteLength(canonical(maximal));
 check(NATIVE_ORIGINAL_WIRE_MAX<131072);
