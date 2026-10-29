@@ -75,10 +75,10 @@ session cannot settle; it never silently abandons a failed close.
 ## Remaining installation and source work
 
 This core does not install an issuer, verify a particular deployment's signed
-policy, start an HTTPS service, or provision runtime custody. The current
-client transport is trusted-composition injection; an actual installed
-transport and authenticated verifier must be bound to the chosen operator's
-trust roots and service identity. Normal HTTPS validation must be preserved.
+policy, start an HTTPS service, or provision runtime custody. The fixed normal-HTTPS transport and bound verifier wrapper are implemented
+in [fixture transport](native-fixture-transport.md), but an actual installed
+authentication/verifier relationship must still be bound to the chosen
+operator's trust roots and service identity. Normal HTTPS validation must be preserved.
 No operator has supplied those installation authorities in this source task.
 
 The three-operation backend is intentionally insufficient for the full native

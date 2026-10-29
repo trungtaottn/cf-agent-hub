@@ -6,6 +6,7 @@ import {randomBytes,createHash} from 'node:crypto';
 import {createFixtureBackend} from './native-fixture-backend.mjs';
 import {createFixtureService} from './native-fixture-service.mjs';
 import {createFixtureClient} from './native-fixture-client.mjs';
+import {createBoundFixtureVerifier} from './native-fixture-verifier.mjs';
 import {FIXTURE_PROJECTIONS,fixturePolicyDigest} from './native-fixture-protocol.mjs';
 import {build} from 'esbuild';
 import {createTestHarness} from 'wrangler';
@@ -83,7 +84,8 @@ export async function runLocalNativeSandbox(){
    // This source-only identity is not an installed issuer, native runtime, or release attestation.
    const policy={type:'native-fixture-policy',version:1,origin:'https://fixture.example.invalid',issuer:'https://issuer.example.invalid',audience:'local-source-fixture',service_id:'local-fixture',principal_id:'local-source-controller',assurance:'source-test-only',expires_at:Date.now()+120000,run:{run_id:name,instance_id:name,candidate_sha:'0'.repeat(40),config_sha256:input.bundle.config_digest,scenario_sha256:createHash('sha256').update('source-local-journey-v1').digest('hex'),workspace_id:'ws_example',object_name:name},plan:{observations:39,configuration_disables:1}};
    const backend=createFixtureBackend({policy,storage:{exec:(...args)=>tracked(()=>storage.exec(...args))},disable,track:retain});
-   const service=createFixtureService({policy,backend,verify:async()=>({policy_sha256:fixturePolicyDigest(policy),issuer:policy.issuer,audience:policy.audience,service_id:policy.service_id,principal_id:policy.principal_id,assurance:policy.assurance,expires_at:policy.expires_at,capabilities:[...backend.capabilities]})});
+   const verify=createBoundFixtureVerifier({policy,verifyIdentity:async(_message,context)=>({version:1,request_sha256:context.request_sha256,claims:{policy_sha256:fixturePolicyDigest(policy),issuer:policy.issuer,audience:policy.audience,service_id:policy.service_id,principal_id:policy.principal_id,assurance:policy.assurance,expires_at:policy.expires_at,capabilities:[...backend.capabilities]}})});
+   const service=createFixtureService({policy,backend,verify});
    const client=createFixtureClient({policy,send:request=>service.handle(request)});fixtureSessions.push(client,service);
    await tracked(()=>client.call('preflight',{required_capabilities:[...backend.capabilities]},{signal:controller.signal}));
    const queries=new Map();
