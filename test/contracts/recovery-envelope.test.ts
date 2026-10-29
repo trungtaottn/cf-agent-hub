@@ -1,0 +1,19 @@
+import {describe,it,expect} from 'vitest';
+import {assertRecoveryEnvelope,RESTORE_ENVELOPE_LIMIT,VERIFY_ENVELOPE_LIMIT,RESUME_ENVELOPE_LIMIT} from '../../src/recovery/operator-envelope';
+const byteSize=(x:unknown)=>new TextEncoder().encode(JSON.stringify(x)).length;
+function body(op:string){return {operation:op,workspace_id:'w'.repeat(128),capture_id:'c'.repeat(128),expected_authority_epoch:Number.MAX_SAFE_INTEGER,operation_id:'o'.repeat(128),reason:'\0'.repeat(1024),payload:op==='restore'?{manifest:{},ledger:{}}:op==='verify'?{manifest:{}}:{receipt_id:'r'.repeat(128),ledger:{},source_retirement_receipt:{},cutover_record:{}}};}
+const current={format_version:2,checkpoint:{contract_revision:'0.2',schema_version:16}};
+const sized=(bytes:number)=>({x:'a'.repeat(bytes-8)});
+describe('operation-specific current16 envelopes',()=>{
+ it('computes exact worst-case framing rather than doubling a global limit',()=>{expect(byteSize(body('restore'))-4+2*65536).toBe(RESTORE_ENVELOPE_LIMIT);expect(byteSize(body('verify'))-2+65536).toBe(VERIFY_ENVELOPE_LIMIT);expect(byteSize(body('resume'))-6+3*65536).toBe(RESUME_ENVELOPE_LIMIT);});
+ it('larger resume requires server-validated current16 job',()=>{const b=body('resume');b.payload.ledger=sized(65536);expect(()=>assertRecoveryEnvelope(b as never,{current16Job:true})).not.toThrow();expect(()=>assertRecoveryEnvelope(b as never,{current16Job:false})).toThrow();expect(()=>assertRecoveryEnvelope(b as never,{})).toThrow();expect(()=>assertRecoveryEnvelope(b as never,{provisional:true})).not.toThrow();});
+ it.each([15,7,999])('does not give schema%s the current16 allowance',schema=>{const b=body('restore');b.payload.manifest={...current,checkpoint:{...current.checkpoint,schema_version:schema}};b.payload.ledger=sized(65536);expect(()=>assertRecoveryEnvelope(b as never,{})).toThrow();});
+ it('bounds each signed component even when aggregate fits',()=>{const b=body('restore');b.payload.manifest=current;b.payload.ledger=sized(65537);expect(()=>assertRecoveryEnvelope(b as never,{})).toThrow('RECOVERY_BYTES_LIMIT');});
+ it('enforces raw whitespace size independently of canonical size',()=>{const b=body('verify');b.payload.manifest=current;expect(()=>assertRecoveryEnvelope(b as never,{current16Job:true,rawBytes:VERIFY_ENVELOPE_LIMIT})).not.toThrow();expect(()=>assertRecoveryEnvelope(b as never,{current16Job:true,rawBytes:VERIFY_ENVELOPE_LIMIT+1})).toThrow();});
+ it.each([NaN,Infinity,-1,0,203480])('rejects invalid trusted raw-count %s',rawBytes=>{expect(()=>assertRecoveryEnvelope(body('resume') as never,{current16Job:true,rawBytes})).toThrow();});
+ it('keeps binary write-chunk control at original limit',()=>{expect(()=>assertRecoveryEnvelope({operation:'write-chunk',payload:{}} as never,{rawBytes:65537,current16Job:true})).toThrow();});
+});
+
+it.each([['restore',137765],['verify',72218],['resume',203479]] as const)('accepts exact%s raw cap and rejects cap+1', (operation,cap)=>{const b=body(operation);if(operation!=='resume')b.payload.manifest=current;expect(()=>assertRecoveryEnvelope(b as never,{rawBytes:cap,current16Job:true})).not.toThrow();expect(()=>assertRecoveryEnvelope(b as never,{rawBytes:cap+1,current16Job:true})).toThrow('RECOVERY_BYTES_LIMIT');});
+it.each(['ledger','source_retirement_receipt','cutover_record'])('enforces resume nested%s independently', key=>{const b=body('resume');(b.payload as Record<string,unknown>)[key]=sized(65537);expect(()=>assertRecoveryEnvelope(b as never,{current16Job:true})).toThrow('RECOVERY_BYTES_LIMIT');});
+it('validates two-sided canonical current manifest size separately from raw transport',()=>{const b=body('verify');b.payload.manifest={...current,padding:'x'.repeat(65536)};expect(()=>assertRecoveryEnvelope(b as never,{current16Job:true,rawBytes:100})).toThrow('RECOVERY_BYTES_LIMIT');});

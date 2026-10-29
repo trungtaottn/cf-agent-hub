@@ -1,3 +1,4 @@
+import {isRestoreExpiryEvent} from '../recovery/restore-audit';
 import {readImport,importHuman,assertImportVisible} from '../imports/repository';
 import {projectTaskResult} from '../tasks/results';
 import {getArtifact} from '../artifacts/repository';
@@ -142,6 +143,7 @@ export function projectEvent(tx:WorkspaceTransaction,actor:ActorContext,id:strin
  if(resource===null||resource!==row.resource_type)return null;
  if(resource==='task'&&(!row.task_version||!tx.one('SELECT id FROM tasks WHERE workspace_id=? AND id=?',[actor.workspaceId,row.resource_id])))return null;
  const event=projection(row);
+ if(event.actor.kind==='system'&&event.actor.principal_id==='system:recovery'&&!isRestoreExpiryEvent(tx,event))return null;
  const visible:unknown=visibility(tx,live,{kind:row.resource_type,id:row.resource_id,projectId:null},event,nowMs);
  if(visible!==null&&(typeof visible==='object'||typeof visible==='function')&&typeof (visible as {then?:unknown}).then==='function'){
   void Promise.resolve(visible).catch(()=>{});throw new HttpError('INTERNAL_ERROR',500);
@@ -187,7 +189,11 @@ export const resourceEventVisibility:EventVisibility=(tx,actor,resource,event,no
    if(resource.kind!=='task'||event.run_id===null||event.fence===null||event.task_version===null)return false;
    const run=tx.one<{task_id:string;fence:number;agent_id:string;status:string;ended_at:number}>('SELECT task_id,fence,agent_id,status,ended_at FROM runs WHERE workspace_id=? AND id=?',[actor.workspaceId,event.run_id]);
    if(!run||run.task_id!==resource.id||run.fence!==event.fence||run.status!==(event.type==='task.failed'?'failed':'expired')||new Date(run.ended_at).toISOString()!==event.occurred_at)return false;
-   if(event.type==='task.expired'?(event.actor.kind!=='system'||event.actor.principal_id!=='system:lease-expiry'||event.actor.agent_id!==null):(event.actor.kind!=='agent'||event.actor.agent_id!==run.agent_id))return false;
+   if(event.type==='task.expired'){
+    if(event.actor.kind!=='system'||event.actor.agent_id!==null)return false;
+    if(event.actor.principal_id==='system:recovery'){if(!isRestoreExpiryEvent(tx,event))return false;}
+    else if(event.actor.principal_id!=='system:lease-expiry')return false;
+   }else if(event.actor.kind!=='agent'||event.actor.agent_id!==run.agent_id)return false;
    const task=taskRecord(tx,actor.workspaceId,run.task_id);if(!taskVisible(actor,task)||event.task_version>task.task_version)return false;taskView(tx,actor,task,nowMs);return true;
   }
   if(resource.kind==='run'||event.type==='task.claimed'){

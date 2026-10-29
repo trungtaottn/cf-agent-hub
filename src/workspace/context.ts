@@ -29,6 +29,7 @@ export interface WorkspaceEnvironment {
  RECOVERY_BUCKET:R2Bucket;
  /** Separate private product binding; absent until operator mapping is approved. */
  ARTIFACT_BUCKET?:R2Bucket;
+ RECOVERY_ANCHOR?:{fetch(request:Request):Promise<Response>};RECOVERY_ANCHOR_BINDING_ID?:string;
  RECOVERY_ENVIRONMENT_ID?:string;RECOVERY_INTEGRITY_KEY_ID?:string;RECOVERY_INTEGRITY_KEY?:string;RECOVERY_RELEASE?:string;
  CF_VERSION_METADATA?:{id:string;tag?:string;timestamp?:string};
 }

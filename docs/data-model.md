@@ -1,6 +1,6 @@
 # Data model
 
-Status: R2 schema15 and local source through reviewed create-only imports · Contract revision0.1 · Later-round commands and live acceptance pending.
+Status: R2 schema16 local source with conditional current restore; historical schema15 retained for capture/read compatibility. Integrated verification and live acceptance remain pending.
 
 This page defines conceptual ownership and invariants. The local storage and successive identity/task/artifact/result producers are described in the issue-scoped sections below. Other conceptual behavior is not automatically an enabled command. JSON field spelling and request schemas are defined in [HTTP API](http-api.md) and [OpenAPI](../spec/openapi.json). Database table/index design must preserve these invariants while being verified against the chosen runtime.
 
@@ -180,3 +180,8 @@ Every attempt retains its report and import-event association. A revision-only u
 ## Current capture projection (issue39, no schema migration)
 
 The historical schema-version paragraphs above describe their named migration checkpoints. Issue39 now exports exact schema15 through a separate V2/revision0.2 typed representation; current restore remains unavailable. The existing36-table registry and migrations1–15 are unchanged. All registry modes are included: archived identities, credential/runtime verification hashes, run/task/result/history, immutable imports, catalog records and unrelated recovery controls. Current login nonce and PKCE verifier cells are projected to empty strings without source mutation; this is an explicit invalidated-secret projection, not literal SQL byte identity. Exact stored approved-input JSON is retained as evidence, not executable R3 approval authority. Only current capture bookkeeping is excluded. Generation-qualified manifest identity, drain-before-checkpoint and strict bounded job state are owned by the [issue39 amendment](adr/r2-recovery-contract.md#issue39-current-capture-amendment-revision02-schema15), not a reinterpretation of frozen schema8 or V1.
+
+
+### Issue43 isolated restore disposition
+
+The [issue43 amendment](adr/r2-recovery-contract.md#issue43-isolated-schema16-restore-and-current-controls) supersedes earlier current-restore-unavailable statements only for conditional exact schema16 restore. Source schema15 does not become restorable. The target retains its installed migration registry and its own maintenance/recovery/scheduler bookkeeping; source control rows remain evidence. Canonical current static authority wins; active human-managed identities advance epoch without resurrecting archived ones, while revoked dynamic credentials retain historical epoch and identity. Per-page source validation precedes conservative execution and upload invalidation. No new schema version or table is introduced.

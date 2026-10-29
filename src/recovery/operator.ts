@@ -1,5 +1,6 @@
 import {validateRecoveryCommand,type RecoveryCommand} from './generated/recovery-validators.js';
 import {boundedBytes,decodeHeader,digestBytes,CHUNK_LIMIT,CONTROL_LIMIT} from './encoding';
+import {assertRecoveryEnvelope,assertProvisionalRawEnvelope,isCurrent16Manifest,OPERATOR_RAW_LIMIT} from './operator-envelope';
 import type {RecoveryContext} from './protocol';
 import {jwtVerify,createRemoteJWKSet,customFetch} from 'jose';
 import {approvedHttpsUrl} from '../config/deployment';
@@ -110,13 +111,19 @@ export async function installOperation(request:Request,env:OperatorBindings,poli
  return outcome.receipt;
 }
 
+// Parser-owned metadata cannot be supplied in a command or request header.
+const parsedRawBytes=new WeakMap<object,number>();
 export async function readOperatorRequest(request:Request):Promise<RecoveryCommand>{
  const contentType=request.headers.get('content-type')?.split(';')[0].trim().toLowerCase();let body:unknown;
  try{
   if(contentType==='application/octet-stream'){body=decodeHeader(request.headers.get('X-CFHub-Recovery-Control'));if(!validateRecoveryCommand(body)||body.operation!=='write-chunk')throw Error('INVALID_RECOVERY_HEADER');return body;}
   if(contentType!=='application/json')throw Error('INVALID_RECOVERY_CONTENT_TYPE');
-  const bytes=await boundedBytes(request.body,CONTROL_LIMIT);body=JSON.parse(new TextDecoder('utf-8',{fatal:true,ignoreBOM:false}).decode(bytes));
-  if(!validateRecoveryCommand(body)||body.operation==='write-chunk')throw Error('INVALID_RECOVERY_COMMAND');return body;
+  const bytes=await boundedBytes(request.body,OPERATOR_RAW_LIMIT);
+  try{body=JSON.parse(new TextDecoder('utf-8',{fatal:true,ignoreBOM:false}).decode(bytes));}
+  catch(error){if(bytes.length>CONTROL_LIMIT)throw Error('RECOVERY_BYTES_LIMIT');throw error;}
+  assertProvisionalRawEnvelope(body,bytes.length);
+  if(!validateRecoveryCommand(body)||body.operation==='write-chunk')throw Error('INVALID_RECOVERY_COMMAND');
+  assertRecoveryEnvelope(body,{rawBytes:bytes.length,provisional:true});parsedRawBytes.set(body,bytes.length);return body;
  }catch(error){throw new AuthError('INVALID_REQUEST',error instanceof Error&&error.message==='RECOVERY_BYTES_LIMIT'?413:400);}
 }
 /** Authenticates binary metadata and current target epoch before touching the upload stream. */
@@ -128,7 +135,9 @@ export async function operatorOperation(request:Request,env:OperatorBindings,pol
  const proof=await verifyOperatorIdentity(request,policy,body.workspace_id,body.operation),mapping=policy.workspace_catalog.find(x=>x.workspace_id===body.workspace_id);
  if(!mapping||!policy.recovery)throw new AuthError('FORBIDDEN',403);
  const target=env.WORKSPACE.getByName(mapping.object_name) as DurableObjectStub<WorkspaceDO>,current=await target.authoritySnapshot({workspaceId:body.workspace_id,objectName:mapping.object_name});
- if(current.epoch!==body.expected_authority_epoch)throw Error('OPERATION_CONFLICT');
+ // Only exact current restore admission may delegate an epoch mismatch to the DO.
+ // It can return a matching prior receipt, never grant generic stale-epoch authority.
+ if(current.epoch!==body.expected_authority_epoch&&!(body.operation==='restore'&&isCurrent16Manifest(body.payload.manifest)))throw Error('OPERATION_CONFLICT');
  if(current.recoveryIntegrityKeyId!==policy.recovery.integrity_key_id)throw new AuthError('AUTH_UNAVAILABLE',503);
  const fingerprint=await sha256(canonicalJson(body)),anchor=policy.recovery.current_ledgers.find(x=>x.workspace_id===body.workspace_id);
  const context:RecoveryContext={principalId:proof.principalId,workspaceId:body.workspace_id,objectName:mapping.object_name,environmentId:policy.environment_id,requestId,operationId:body.operation_id,operation:body.operation,captureId:body.capture_id,expectedEpoch:body.expected_authority_epoch,expectedInstallationDigest:current.installationDigest,proofExpiresAt:proof.expiresAt,requestFingerprint:fingerprint,ledgerAnchor:anchor?{authorityEpoch:anchor.authority_epoch,sha256:anchor.sha256}:null};
@@ -138,7 +147,7 @@ export async function operatorOperation(request:Request,env:OperatorBindings,pol
   let bytes:Uint8Array;try{bytes=await boundedBytes(request.body,CHUNK_LIMIT);}catch(error){throw new AuthError('INVALID_REQUEST',error instanceof Error&&error.message==='RECOVERY_BYTES_LIMIT'?413:400);}
   if(bytes.length!==body.payload.byte_size||await digestBytes(bytes)!==body.payload.sha256)throw new AuthError('INVALID_REQUEST',400);binary=bytes.slice().buffer;
  }
- const result=await target.recoveryOperation(context,body,binary);
+ const result=await target.recoveryOperation(context,body,binary,parsedRawBytes.get(body));
  if(!result.ok){if(result.code==='UNAUTHENTICATED')throw new AuthError('UNAUTHENTICATED',401);if(result.code==='CONFLICT')throw Error('OPERATION_CONFLICT');throw new AuthError(result.code==='RECOVERY_UNAVAILABLE'?'AUTH_UNAVAILABLE':'INVALID_REQUEST',result.code==='RECOVERY_UNAVAILABLE'?503:400);}
  if('chunk' in result)return {chunk:result.chunk};return {data:result.data};
 }

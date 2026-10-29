@@ -1,3 +1,4 @@
+import type {TrustedAnchorCapability} from './trusted-anchor';
 import {frozenSchema15Capture} from './frozen-schema15';
 import type {WorkspaceTransaction} from '../storage/transaction';
 import type {Clock,Entropy} from '../workspace/context';
@@ -17,7 +18,7 @@ export interface RecoveryContext {
 }
 export interface RecoveryIntegrity {keyId:string;key:string;}
 export interface RecoveryWorkspace {
- storage:DurableObjectStorage;bucket:R2Bucket;artifactBucket?:R2Bucket;workspaceId:string;objectName:string;environmentId:string;
+ storage:DurableObjectStorage;bucket:R2Bucket;artifactBucket?:R2Bucket;trustedAnchor?:TrustedAnchorCapability;workspaceId:string;objectName:string;environmentId:string;
  clock:Clock;entropy:Entropy;integrity:RecoveryIntegrity;release:RecoveryManifest['release'];
  repairSchedule:()=>Promise<{armed:boolean;nextDueAt:number|null;generation:number;dirty:boolean}>;
 }
@@ -61,10 +62,10 @@ export type RecoveryManifestV1=Extract<RecoveryManifest,{format_version:1}>;
 export type RecoveryManifestV2=Extract<RecoveryManifest,{format_version:2}>;
 export type RecoveryArtifactEntry=RecoveryManifestV2['artifacts'][number];
 
-/** Current capability is capture-only. Exact tuple checks precede replay and effects. */
+/** Exact recovery capability tuple; operation dispatch separately gates capture and current16 restore/control. */
 export function recoverySchema(tx:WorkspaceTransaction,ctx:Pick<RecoveryContext,'operation'|'captureId'>):7|15|16{
  const n=tx.one<{version:number}>('SELECT MAX(version) AS version FROM schema_migrations')?.version;
- if(n!==7){if(!['capture','read-chunk','status'].includes(ctx.operation)||n!==15&&n!==CURRENT_SCHEMA_VERSION)throw Error('RECOVERY_FORMAT_UNAVAILABLE');if(n===15){const job=frozenSchema15Capture(tx);if(!job||job.capture_id!==ctx.captureId)throw Error('RECOVERY_FORMAT_UNAVAILABLE');}}
+ if(n!==7){if(n!==15&&n!==CURRENT_SCHEMA_VERSION)throw Error('RECOVERY_FORMAT_UNAVAILABLE');if(n===15){if(!['capture','read-chunk','status'].includes(ctx.operation))throw Error('RECOVERY_FORMAT_UNAVAILABLE');const job=frozenSchema15Capture(tx);if(!job||job.capture_id!==ctx.captureId)throw Error('RECOVERY_FORMAT_UNAVAILABLE');}}
  try{assertSchemaVersion(tx,n);}catch{throw Error('RECOVERY_FORMAT_UNAVAILABLE');}return n;
 }
 export type CurrentRecoveryManifest=Extract<RecoveryManifest,{checkpoint:{schema_version:15|16}}>;

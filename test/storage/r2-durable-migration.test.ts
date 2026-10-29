@@ -178,7 +178,7 @@ describe('R2 scoped constraints and transaction behavior',()=>{
  });
 });
 
-describe('current schema16 requires product capture binding and keeps restore closed before effects',()=>{
+describe('current schema16 denies absent capture binding, nonempty restore targets and absent probe anchor before effects',()=>{
  it('capture_and_restore_do_not_write_replay_maintenance_alarm_or_objects',async()=>{
   const {advanceCapture}=await import('../../src/recovery/capture');
   const {beginRestore}=await import('../../src/recovery/restore');
@@ -192,8 +192,8 @@ describe('current schema16 requires product capture binding and keeps restore cl
    const snapshot=()=>Object.fromEntries(TABLE_REGISTRY.map(t=>[t.name,rows(state.storage,t.name)])),before=snapshot(),alarm=await state.storage.getAlarm();
    expect(withTransaction(state.storage,inspectRegistry).schemaVersion).toBe(16);
    await expect(advanceCapture(workspace,context,{max_rows:100,max_artifacts:0,max_total_bytes:100000})).rejects.toThrow('RECOVERY_ARTIFACT_BINDING_UNAVAILABLE');
-   await expect(beginRestore(workspace,{...context,operation:'restore'},{} as never,{} as never)).rejects.toThrow('RECOVERY_FORMAT_UNAVAILABLE');
-   await expect(recordProbe(workspace,{...context,operation:'probe',captureId:null})).rejects.toThrow('RECOVERY_FORMAT_UNAVAILABLE');
+   await expect(beginRestore(workspace,{...context,operation:'restore'},{} as never,{} as never)).rejects.toThrow('RECOVERY_TARGET_NOT_EMPTY');
+   await expect(recordProbe(workspace,{...context,operation:'probe',captureId:null})).rejects.toThrow('RECOVERY_ANCHOR_UNAVAILABLE');
    expect(snapshot()).toEqual(before);expect(await state.storage.getAlarm()).toBe(alarm);expect(objectEffects).toBe(0);
   });
  });

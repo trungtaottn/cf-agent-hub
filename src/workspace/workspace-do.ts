@@ -1,3 +1,7 @@
+import {assertRecoveryEnvelope,isCurrent16Manifest} from '../recovery/operator-envelope';
+import {replayCurrentRestoreAdmission} from '../recovery/restore-current';
+import {loadCurrentRestoreJob,restoreGuard,restoreProgress} from '../recovery/restore-job';
+import {loadCurrentCaptureJob} from '../recovery/jobs';
 import {importPath,importRoutes} from '../http/import-routes';
 import {searchPath,searchRoutes} from '../http/search-routes';
 import {artifactPath,artifactRoutes} from '../http/artifact-routes';
@@ -129,14 +133,35 @@ export class WorkspaceDO extends DurableObject<WorkspaceEnvironment> {
   if(this.env.WORKSPACE.idFromName(operator.objectName).toString()!==this.ctx.id.toString()||this.env.RECOVERY_ENVIRONMENT_ID!==operator.environmentId||!this.env.RECOVERY_INTEGRITY_KEY_ID||!this.env.RECOVERY_INTEGRITY_KEY||!this.env.RECOVERY_RELEASE)throw Error('RECOVERY_CONFIGURATION_UNAVAILABLE');
   let release:unknown;try{release=JSON.parse(this.env.RECOVERY_RELEASE);}catch{throw Error('RECOVERY_CONFIGURATION_UNAVAILABLE');}
   if(!closed(release,['revision','worker_version','binding_ids'])||typeof release.revision!=='string'||typeof release.worker_version!=='string'||!Array.isArray(release.binding_ids))throw Error('RECOVERY_CONFIGURATION_UNAVAILABLE');
-  return {storage:this.ctx.storage,bucket:this.env.RECOVERY_BUCKET,artifactBucket:productArtifactBucket(this.env),workspaceId:operator.workspaceId,objectName:operator.objectName,environmentId:operator.environmentId,clock:systemClock,entropy:systemEntropy,integrity:{keyId:this.env.RECOVERY_INTEGRITY_KEY_ID,key:this.env.RECOVERY_INTEGRITY_KEY},release:{revision:release.revision,worker_version:this.env.CF_VERSION_METADATA?.id??release.worker_version,binding_ids:release.binding_ids as string[],catalog_mapping:{workspace_id:operator.workspaceId,object_name:operator.objectName}},repairSchedule:()=>this.repairSchedule()};
+  return {storage:this.ctx.storage,bucket:this.env.RECOVERY_BUCKET,artifactBucket:productArtifactBucket(this.env),trustedAnchor:this.env.RECOVERY_ANCHOR&&this.env.RECOVERY_ANCHOR_BINDING_ID&&(release.binding_ids as string[]).includes(this.env.RECOVERY_ANCHOR_BINDING_ID)?{binding:this.env.RECOVERY_ANCHOR,bindingId:this.env.RECOVERY_ANCHOR_BINDING_ID}:undefined,workspaceId:operator.workspaceId,objectName:operator.objectName,environmentId:operator.environmentId,clock:systemClock,entropy:systemEntropy,integrity:{keyId:this.env.RECOVERY_INTEGRITY_KEY_ID,key:this.env.RECOVERY_INTEGRITY_KEY},release:{revision:release.revision,worker_version:this.env.CF_VERSION_METADATA?.id??release.worker_version,binding_ids:release.binding_ids as string[],catalog_mapping:{workspace_id:operator.workspaceId,object_name:operator.objectName}},repairSchedule:()=>this.repairSchedule()};
  }
  /** Binding-only finite recovery adapter. The public HTTP router never dispatches these methods. */
- async recoveryOperation(operator:RecoveryContext,body:RecoveryRequest,binary?:ArrayBuffer):Promise<RecoveryRpcResult|{ok:true;chunk:{metadata:ChunkMetadata;bytes:ArrayBuffer}}> {
+ async recoveryOperation(operator:RecoveryContext,body:RecoveryRequest,binary?:ArrayBuffer,rawBytes?:number):Promise<RecoveryRpcResult|{ok:true;chunk:{metadata:ChunkMetadata;bytes:ArrayBuffer}}> {
   try{
-   const workspace=this.#recoveryWorkspace(operator),fence=withTransaction(this.ctx.storage,tx=>assertRecoveryContext(tx,workspace,operator));
-   if(!validateRecoveryCommand(body)||body.operation!==operator.operation||body.workspace_id!==operator.workspaceId||body.capture_id!==operator.captureId||body.operation_id!==operator.operationId||body.expected_authority_epoch!==operator.expectedEpoch||canonicalBytes(body).length>CONTROL_LIMIT||body.operation!=='write-chunk'&&binary!==undefined)throw Error('INVALID_RECOVERY_COMMAND');
-   if(await digestBytes(canonicalBytes(body))!==operator.requestFingerprint)throw Error('RECOVERY_OPERATION_CONFLICT');withTransaction(this.ctx.storage,tx=>assertRecoveryContext(tx,workspace,operator,fence));
+   const workspace=this.#recoveryWorkspace(operator);
+   if(!validateRecoveryCommand(body)||body.operation!==operator.operation||body.workspace_id!==operator.workspaceId||body.capture_id!==operator.captureId||body.operation_id!==operator.operationId||body.expected_authority_epoch!==operator.expectedEpoch||body.operation!=='write-chunk'&&binary!==undefined)throw Error('INVALID_RECOVERY_COMMAND');
+   const selected=withTransaction(this.ctx.storage,tx=>{
+    const schema=tx.one<{version:number}>('SELECT MAX(version) AS version FROM schema_migrations')?.version;
+    if(schema!==16)return null;
+    const rows=tx.all<{id:string}>("SELECT id FROM recovery_jobs WHERE workspace_id=? AND capture_id=? AND operation='restore' LIMIT 2",[operator.workspaceId,operator.captureId]);
+    if(rows.length>1)throw Error('RECOVERY_JOB_CONFLICT');return rows.length?loadCurrentRestoreJob(tx,rows[0].id):null;
+   });
+   // Resume also applies to a completed captured source. Its larger envelope
+   // is selected from a validated persisted current manifest, never a caller flag.
+   // Keep restore selection separate for admission replay and status dispatch.
+   const capturedSource16=body.operation==='resume'&&!selected&&withTransaction(this.ctx.storage,tx=>{
+    if(tx.one<{version:number}>('SELECT MAX(version) AS version FROM schema_migrations')?.version!==16)return false;
+    const rows=tx.all<{id:string}>("SELECT id FROM recovery_jobs WHERE workspace_id=? AND capture_id=? AND operation='capture' LIMIT 2",[operator.workspaceId,operator.captureId]);
+    if(rows.length>1)throw Error('RECOVERY_JOB_CONFLICT');
+    const job=rows.length?loadCurrentCaptureJob(tx,rows[0].id):null;
+    return job?.state==='complete'&&job.workspace_id===operator.workspaceId&&job.capture_id===operator.captureId&&isCurrent16Manifest(job.details.manifest);
+   });
+   assertRecoveryEnvelope(body,{rawBytes,current16Job:Boolean(selected)||Boolean(capturedSource16)});
+   const replayCandidate=body.operation==='restore'&&isCurrent16Manifest(body.payload.manifest)&&selected!==null&&operator.expectedEpoch===0;
+   const fence=replayCandidate?null:withTransaction(this.ctx.storage,tx=>assertRecoveryContext(tx,workspace,operator));
+   if(await digestBytes(canonicalBytes(body))!==operator.requestFingerprint)throw Error('RECOVERY_OPERATION_CONFLICT');
+   if(replayCandidate&&body.operation==='restore'){const result=await replayCurrentRestoreAdmission(workspace,operator,body.payload.manifest);if(!result)throw Error('RECOVERY_OPERATION_CONFLICT');return {ok:true,data:result};}
+   withTransaction(this.ctx.storage,tx=>assertRecoveryContext(tx,workspace,operator,fence!));
    switch(body.operation){
     case 'capture':return {ok:true,data:await advanceCapture(workspace,operator,body.payload.budget)};
     case 'read-chunk':return {ok:true,chunk:await readRecoveryChunk(workspace,operator,body.payload.index)};
@@ -147,7 +172,7 @@ export class WorkspaceDO extends DurableObject<WorkspaceEnvironment> {
     case 'resolve-delivery':return {ok:true,data:await resolveDelivery(workspace,operator,body.payload)};
     case 'retire':return {ok:true,data:await retireWorkspace(workspace,operator)};
     case 'resume':return {ok:true,data:await resumeWorkspace(workspace,operator,body.payload)};
-    case 'status':return {ok:true,data:readRecoveryStatus(workspace,operator,body.payload.job_id)};
+    case 'status':if(selected){if(selected.id!==body.payload.job_id)throw Error('RECOVERY_JOB_CONFLICT');await restoreGuard(workspace,operator,selected)();return {ok:true,data:restoreProgress(selected)};}return {ok:true,data:readRecoveryStatus(workspace,operator,body.payload.job_id)};
    }
   }catch(error){return recoveryError(error);}
  }

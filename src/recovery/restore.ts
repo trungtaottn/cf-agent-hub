@@ -1,3 +1,5 @@
+import {beginCurrentRestore,writeCurrentRestoreChunk} from './restore-current';
+import {advanceCurrentVerify} from './restore-verify';
 import {withTransaction,type WorkspaceTransaction,type SqlValue} from '../storage/transaction';
 import {canonicalJson,prepareBootstrap,restoreAuthorityOverlay} from '../config/bootstrap';
 import {TABLE_REGISTRY,tableDefinition,inspectRegistry,type RecoveryTableName} from './table-registry-v1';
@@ -15,6 +17,7 @@ function emptyTarget(tx:WorkspaceTransaction):void {
  if(maintenanceRow(tx)?.state==='retired')throw Error('AUTHORITY_RETIRED');
 }
 export async function beginRestore(w:RecoveryWorkspace,ctx:RecoveryContext,manifestInput:RecoveryManifest,ledgerInput:CurrentLedger):Promise<RecoveryJobProgress>{
+ if(manifestInput.format_version===2)return beginCurrentRestore(w,ctx,manifestInput,ledgerInput);
  if(ctx.operation!=='restore'||!ctx.captureId)throw Error('INVALID_RECOVERY_CONTEXT');
  const fence=withTransaction(w.storage,tx=>{const f=assertRecoveryContext(tx,w,ctx);emptyTarget(tx);inspectRegistry(tx);return f;});
  const manifest=await verifyManifest(manifestInput,w.integrity),verified=await verifyCurrentLedger(ledgerInput,ctx.ledgerAnchor,w,manifest.checkpoint.authority_epoch);
@@ -54,6 +57,7 @@ function insertChunkRows(tx:WorkspaceTransaction,chunk:RecoveryChunk,job:Recover
  job.details.lastKeys[chunk.table]=primaryKey(table,chunk.rows.at(-1)!);
 }
 export async function writeRestoreChunk(w:RecoveryWorkspace,ctx:RecoveryContext,metadata:{index:number;sha256:string;byte_size:number},bytes:Uint8Array):Promise<RecoveryJobProgress>{
+ if(withTransaction(w.storage,tx=>tx.one<{version:number}>('SELECT MAX(version) AS version FROM schema_migrations')?.version)===16)return writeCurrentRestoreChunk(w,ctx,metadata,bytes);
  if(ctx.operation!=='write-chunk'||!ctx.captureId)throw Error('INVALID_RECOVERY_CONTEXT');withTransaction(w.storage,tx=>assertRecoveryContext(tx,w,ctx));const id=await jobIdFor(w.workspaceId,ctx.captureId,'restore');
  let job=withTransaction(w.storage,tx=>assertJob(tx,w,ctx,id));const entry=job.details.manifest!.database.chunks[metadata.index];
  if(!entry||entry.sha256!==metadata.sha256||entry.byte_size!==metadata.byte_size||bytes.length!==metadata.byte_size||await digestBytes(bytes)!==metadata.sha256)throw Error('RECOVERY_CHUNK_MISMATCH');
@@ -83,6 +87,7 @@ function verifyRow(tx:WorkspaceTransaction,chunk:RecoveryChunk,cells:SqlCell[],j
  if(table.name==='outbox'&&raw.destination_snapshot_json!==null&&!validateIntent(tx,actual as unknown as OutboxRow))throw Error('RECOVERY_RELATIONSHIP_MISMATCH');
 }
 export async function advanceVerify(w:RecoveryWorkspace,ctx:RecoveryContext,manifestInput:RecoveryManifest):Promise<RecoveryJobProgress>{
+ if(manifestInput.format_version===2)return advanceCurrentVerify(w,ctx,manifestInput);
  if(ctx.operation!=='verify'||!ctx.captureId)throw Error('INVALID_RECOVERY_CONTEXT');withTransaction(w.storage,tx=>assertRecoveryContext(tx,w,ctx));const id=await jobIdFor(w.workspaceId,ctx.captureId,'restore'),manifest=await verifyManifest(manifestInput,w.integrity),digest=await digestBytes(canonicalBytes(manifest));
  const admitted=withTransaction(w.storage,tx=>{let job=assertJob(tx,w,ctx,id);if(job.manifest_digest!==digest)throw Error('RECOVERY_MANIFEST_MISMATCH');const prior=priorOperation(tx,ctx);if(prior){if(!validateRecoveryJobProgress(prior))throw Error('RECOVERY_OPERATION_CONFLICT');return {job,prior};}
   if(job.state!=='running'||job.details.phase==='awaiting_chunks'){const result=progress(job);storeOperation(tx,ctx,result,w.clock.nowMs());return {job,prior:result};}

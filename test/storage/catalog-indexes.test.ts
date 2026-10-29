@@ -97,7 +97,7 @@ it.each([9,16] as const)('schema%s keeps historical recovery closed or requires 
   const context:import('../../src/recovery/protocol').RecoveryContext={principalId:'synthetic_operator',workspaceId:'ws_example',objectName:'synthetic',environmentId:'synthetic',requestId:'synthetic_request',operationId:'synthetic_operation',operation:'capture',captureId:'synthetic_capture',expectedEpoch:1,expectedInstallationDigest:null,proofExpiresAt:Date.now()+120000,requestFingerprint:'a'.repeat(64),ledgerAnchor:null};
   const before=rows(state.storage);
   expect(()=>withTransaction(state.storage,tx=>assertRecoveryContext(tx,workspace,context))).toThrow(version===9?'RECOVERY_FORMAT_UNAVAILABLE':'RECOVERY_EPOCH_CONFLICT');
-  expect(()=>withTransaction(state.storage,tx=>assertRecoveryContext(tx,workspace,{...context,operation:'restore'}))).toThrow('RECOVERY_FORMAT_UNAVAILABLE');
+  expect(()=>withTransaction(state.storage,tx=>assertRecoveryContext(tx,workspace,{...context,operation:'restore'}))).toThrow(version===9?'RECOVERY_FORMAT_UNAVAILABLE':'RECOVERY_EPOCH_CONFLICT');
   expect(rows(state.storage)).toEqual(before);expect(effects).toBe(0);
  });
 });

@@ -1,6 +1,6 @@
 # R2 recovery envelope and trusted artifact mapping
 
-Status: Historical issue22 decision retained; issue39 capture-only amendment below. No released or live-accepted recovery capability is claimed.
+Status: Historical decisions retained; issue43 conditional schema16 restore amendment below. No released or live-accepted recovery capability is claimed.
 
 Sections before the issue39 amendment describe their named historical checkpoint, not current runtime availability. The amendment explicitly supersedes those activation/status statements; historical wire examples and signatures remain unchanged.
 
@@ -95,3 +95,26 @@ A deployment while schema15 is already frozen must not strand an authorized capt
 An existing15 checkpoint retains its original producer revision/worker-version while still requiring the current exact environment, catalogue and bucket-binding declarations. Before the first checkpoint no captured producer exists, so the executing build is recorded explicitly together with schema15. New16 captures keep the strict current producer checks. This narrow continuation rule does not grant old runtime/session execution authority, import data, release maintenance or implement cutover. The retained original pre16 fixture is used for actual new-constructor eviction/continuation/readback tests; synthetic fixtures and local source tests remain distinct from deployed recovery acceptance.
 
 See [issue42 execution evidence](../r2-task-plans/issue-042-execution.md). Current restore/control is still owned by issue43; operator/client orchestration remains issue46.
+
+
+## Issue43 isolated schema16 restore and current controls
+
+The accepted tuple is exactly V2, semantic revision0.2, captured schema16 and an empty isolated schema16 target. Historical V1/schema7 stays separate. Retained schema15 remains capture/read/status only; no implicit schema upgrade, source relabeling or imported executable recovery jobs is allowed. All 36 registered tables are covered. No SQL migration is introduced.
+
+A deployment-owned service binding supplies a bounded fresh, independent authoritative ledger anchor. Its response binds workspace, environment, object name, positive epoch, digest and monotonic generation; the configured binding identity is also pinned. Every asynchronous cryptographic, bucket, stream or alarm continuation is followed by a fresh observation and synchronous local proof/installation/fence/job check. The provider must be linearizable and independent; that property is an issue46 integration obligation, not established by a TypeScript interface or test fake. The default capability is absent and fails closed.
+
+The restart sequence is: bounded import with cyclic FK pointer staging; bounded restoration of original source pointers; original typed and semantic relationship validation; exact source database digest; full committed artifact byte verification/copy; bounded final authority and execution invalidation; bounded missing-current-authority additions; restored maintenance receipt. No destructive transformation can conceal an invalid original task/run/result association. No stage opens admission or dispatches old effects.
+
+Artifact copies preserve exact generation-qualified identity, use conditional creation, hash existing and newly copied bytes, and apply backpressure with at most 64 KiB writes. Never-dispatched reserved generation evidence remains reserved; it is not invented drainage or a cleanup authorization. In-flight/uncertain source effects contradict complete capture and deny restore.
+
+The actual authenticated operator adapter has finite raw parsing plus exact operation and server-job caps: restore 137765 bytes, verify 72218 bytes, resume 203479 bytes; each nested signed record remains at most 65536 bytes. Other accepted operations and V1 retain the 65536-byte envelope. Resume cannot select a version through its body. Exact epoch0 restore admission retry is the only narrow stale-epoch exception and requires the fresh target installation digest and unchanged original identity/fingerprint.
+
+Current controls keep bounded internal pending/completed admission evidence separate from the public receipt and immutable capture job. Retire/resume completion records the exact post-transition state; replay verifies both records, outcome digest, fresh anchor and current local state before returning the prior result without effects. Source capture evidence is never rewritten to add this admission.
+
+Recovery expiry audit events use the truthful system:recovery producer, not the natural lease-expiry identity. Current visibility requires non-importable bounded provenance, completed schema16 restore, exact source page/offset and task/run/fence/history correlation in addition to ordinary current authorization. The development workflow includes genuine source capture, eviction, authenticated malformed-source cases, byte/rotation failures and actual HTTP-to-DO envelopes. Local results are not release acceptance; actual provider/client integration and post-R4 rehearsal remain pending.
+
+### Issue43 reviewed engine metadata compatibility
+
+A genuine alarm probe followed by recapture revealed the engine-owned `_cf_METADATA` table. Current schema16 inspection accepts only its exact observed type, name, owner and SQL declaration on the pinned workerd runtime; case variants, extra owner objects and schema drift fail closed. This is not a broad internal-name exemption. All 36 product table definitions and `sqlite_sequence` checks remain mandatory. Historical schema15/V1 policy is unchanged.
+
+The table is never a product registry entry and its contents are never read, copied, imported or deleted by recovery. The platform alarm API retains ownership. The [pinned metadata implementation](https://github.com/cloudflare/workerd/blob/v1.20261019.1/src/workerd/util/sqlite-metadata.c%2B%2B) and [SQL access regulator](https://github.com/cloudflare/workerd/blob/v1.20261019.1/src/workerd/api/sql.c%2B%2B) explain its creation and application-access restriction. This exact engine shape is not a promised public API: an incompatible runtime must fail with `RECOVERY_ENGINE_SCHEMA_INCOMPATIBLE` and receive explicit compatibility review, not silently skip unknown tables. Real-alarm repeated-recovery regression evidence is required in the checkpoint.

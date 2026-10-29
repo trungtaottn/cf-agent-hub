@@ -1,5 +1,6 @@
 import {CURRENT_SCHEMA_VERSION,EXPECTED_SCHEMA_VERSIONS} from '../storage/schema-version.ts';
 import type {WorkspaceTransaction} from '../storage/transaction';
+import {inspectAlarmMetadata} from './engine-metadata.ts';
 export const RECOVERY_SCHEMA_VERSION=CURRENT_SCHEMA_VERSION;
 export interface RegistryColumn {name:string;type:string;notNull:boolean;defaultValue:string|null;pk:number;}
 export interface RegistryTable {name:string;mode:'evidence'|'invalidate'|'domain-outcomes'|'paused-effects'|'restore';columns:readonly RegistryColumn[];primaryKey:readonly string[];foreignKeys:readonly (readonly (string|number)[])[];}
@@ -3757,11 +3758,14 @@ export function tableDefinition(name:string):RegistryTable {
  const table=TABLE_REGISTRY.find(x=>x.name===name);if(!table)throw Error('UNKNOWN_RECOVERY_TABLE');return table;
 }
 interface ColumnInfo {cid:number;name:string;type:string;notnull:number;dflt_value:string|null;pk:number;}
-/** No prefix exclusion: an unexpected application OR engine table is a schema mismatch. */
+/** No prefix exclusion: only the exact reviewed optional schema16 alarm table is engine-owned. */
 export function inspectRegistry(tx:WorkspaceTransaction,schemaVersion:15|16=CURRENT_SCHEMA_VERSION):{schemaVersion:15|16;eventSequence:number;tables:number} {
  const actual=tx.all<{name:string}>("SELECT name FROM sqlite_schema WHERE type='table' ORDER BY name").map(x=>x.name);
+ const alarmMetadata=inspectAlarmMetadata(tx,schemaVersion);
+ if(schemaVersion===16&&actual.some(name=>name.toLowerCase().startsWith('_cf_')&&!(alarmMetadata&&name==='_cf_METADATA')))throw Error('RECOVERY_ENGINE_SCHEMA_INCOMPATIBLE');
+ const productAndSequence=alarmMetadata?actual.filter(name=>name!=='_cf_METADATA'):actual;
  const expected=[...TABLE_REGISTRY.map(x=>x.name),...ENGINE_TABLES].sort();
- if(JSON.stringify(actual)!==JSON.stringify(expected))throw Error('RECOVERY_SCHEMA_MISMATCH');
+ if(JSON.stringify(productAndSequence)!==JSON.stringify(expected))throw Error('RECOVERY_SCHEMA_MISMATCH');
  for(const table of TABLE_REGISTRY){
   const columns=tx.all<ColumnInfo>('PRAGMA table_info("'+table.name+'")');
   if(columns.length!==table.columns.length||columns.some((c,i)=>{const e:RegistryColumn=table.columns[i];return c.cid!==i||c.name!==e.name||c.type!==e.type||Boolean(c.notnull)!==e.notNull||c.dflt_value!==e.defaultValue||c.pk!==e.pk;}))throw Error('RECOVERY_SCHEMA_MISMATCH');
