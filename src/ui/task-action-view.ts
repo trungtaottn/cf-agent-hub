@@ -95,9 +95,12 @@ export class TaskActionPanel {
  }
  /** Called after current bounded reads finish, never at optimistic dispatch time. */
  restoreFocus(token:number,currentTarget:HTMLElement|null):void{
-  if(token!==this.#focusToken||!this.#ownsFocus||this.#view!==this.options.viewKey()||!this.dialog.contains(document.activeElement))return;
-  this.#ownsFocus=false;if(this.dialog.open)this.dialog.close();this.update();
-  (currentTarget?.isConnected?currentTarget:this.options.fallback()).focus();
+  if(token!==this.#focusToken||this.#view!==this.options.viewKey()||this.actions.state.status!=='succeeded'||!this.dialog.open)return;
+  // Completion owns this modal, not necessarily the user's current focus. Hiding
+  // Confirm may have moved focus outside; that must not strand a blocking modal.
+  const restore=this.#ownsFocus&&this.dialog.contains(document.activeElement);
+  this.#ownsFocus=false;this.dialog.close();this.update();
+  if(restore)(currentTarget?.isConnected?currentTarget:this.options.fallback()).focus();
  }
  #returnTarget():HTMLElement{
   const keys=['task:'+this.#retainedTask,this.#focusKey];
