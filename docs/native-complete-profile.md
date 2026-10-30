@@ -272,3 +272,46 @@ with an empty tuple list: this means the deferred tuple obligations are absent,
 not that other missing authority or producers are ready. Full-profile preflight
 retains its exact six unavailable tuple control/probe IDs. Cleanup counts describe
 actual partial work, and pending work cannot be labeled closed.
+
+## Fixed installed inputs and guarded local bootstrap
+
+A separate complete-tagged v2 installation verifier now checks the exact selected
+profile, fixture/ledger and scenario commitments, the existing signed context,
+and the thirteen closed service operation capabilities. It preserves the old
+untagged verifier unchanged and does not downgrade either form. The root-signed
+complete descriptor also pins private-input and client-auth file digests and the
+delegated client public key. Signature validity alone is not installed authority.
+
+The fixed resolver uses the existing root-owned, stable-FD, no-symlink and runtime
+custody rules. It reads the fixed complete installation/input paths and only safe
+identifier references under `/etc/agenthub-native/auth/`. This auth-directory
+layout is an explicit new complete-profile source contract, not a claim that the
+old resolver already implemented it. Five distinct references select exactly
+three credential files, one human pair and one client signing key; no arbitrary
+path, module, token generation or login is supported.
+
+Canonical private file ceilings are 2,280 bytes for inputs, 220 for client auth,
+123 for the human pair and 43 for each credential. Together with the unchanged
+anchor and descriptor ceilings, one resolution admits at most 23,232 payload
+bytes. Secret files retain narrow private modes. Source tests verify exact bounds,
+canonical keys/tokens, aliases and old/new dispatch without reading or installing
+actual operator files. Branded private materials remain pending service preflight;
+current checks preserve the original deadline and poison changed bindings rather
+than granting a rolling lease or permitting restore-and-retry.
+
+The reusable bootstrap executes the fixed ten local actions: initialize/import
+and independently check each of three protected stores, then read the actual
+29-byte artifact. It uses existing CLI/storage guards and ordinary actual provider
+leases, not raw database edits or asserted slot hashes. The six CLI calls are
+in-process local actions, not six new native scenario processes. All outcomes and
+cleanup are owned; imports use only their private canonical credential value and
+cannot send network requests.
+
+An internal same-invocation cleanup observer preserves ordinary CLI outputs while
+reporting failures from acquired-resource closes. Constructors can conceal partial
+cleanup before returning a handle, so bootstrap conservatively reports any
+nonzero CLI return or failed binding constructor as cleanup unknown, retaining
+actual exit receipts rather than fabricating success. Local source tests exercise
+real guarded disk operations with synthetic credentials, including these failure
+paths. They do not establish installed host authority, service admission, native
+conformance or completion of the remaining service/factory/report integration.
