@@ -25,3 +25,7 @@ Required evidence covers claim races, WIP contention, stale submission, decision
 ## Dated R2 contract amendment — 2026-10-26
 
 [ADR 0008](0008-r2-authority-and-history.md) records the selected provenance and restore-authority contract. This is an additive design amendment, not deployed evidence. Restore revokes human-managed credentials and runtime proofs even at the same numeric authority epoch; it does not revive archived/disabled identities or upgrade revoked credentials. Fresh issuance requires current human authority and operator ceilings. Existing lease/fence checks, independent acceptance and uncertainty holds remain mandatory. R3 decision routes are not enabled by this R2 amendment.
+
+## Issue 29 implementation boundary
+
+The local staged engine adopts conditional ownership checks after comparing [pinned open-source implementations](../research/r2-claim-leases.md). It reuses the workspace SQLite transaction rather than a distributed lock, a second scheduler or PostgreSQL locking syntax. Agent WIP includes unswept active attempts, including expired leases. The scoped run read is a domain interface, not public route activation. Claims stay unavailable until the issue 30/31 expiry and settlement owners integrate. Local source tests cannot establish deployed acceptance or external exactly-once effects.

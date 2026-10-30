@@ -27,13 +27,23 @@ export function assertTaskReferences(tx:WorkspaceTransaction,actor:ActorContext,
  if(task.project_id!==null&&!profile.projects.some(p=>p.id===task.project_id&&!p.archived)||task.work_role_id!==null&&!profile.work_roles.some(r=>r.id===task.work_role_id&&!r.archived))throw new HttpError('NOT_FOUND',404);
  if(task.assigned_agent_id!==null&&!tx.one("SELECT agent_id FROM static_agents WHERE workspace_id=? AND agent_id=? AND status='active' AND config_epoch=(SELECT config_epoch FROM workspace_metadata WHERE id=1)",[actor.workspaceId,task.assigned_agent_id]))throw new HttpError('NOT_FOUND',404);
 }
-/** Eligibility uses a single coherent live credential; work-role labels never grant access. */
-export function assertTaskEligible(tx:WorkspaceTransaction,ctx:CommandContext,task:Task,agentId:string|null):EligibilityEvidence{
+function taskEligibility(tx:WorkspaceTransaction,ctx:CommandContext,task:Task,agentId:string|null){
  assertTaskReferences(tx,ctx.actor,task);
  if(task.flags.includes('outcome_unknown')||task.flags.includes('retry_exhausted'))throw new HttpError('INVALID_STATE',409);
  const policy=installedExecutionPolicy(tx,ctx.actor),rule=policy.eligibility_rules.find(r=>r.project_id===task.project_id&&r.work_role_id===task.work_role_id);
  if(!rule)throw new HttpError('FORBIDDEN',403);
  if(agentId!==null&&task.assigned_agent_id!==null&&agentId!==task.assigned_agent_id)throw new HttpError('FORBIDDEN',403);
+ return {policy,rule};
+}
+/** Current execution authority is distinct from permission to claim another attempt.
+ * Caller supplies the freshly resolved exact run owner with tasks:execute. */
+export function assertTaskExecutionEligible(tx:WorkspaceTransaction,ctx:CommandContext,task:Task):void{
+ const {rule}=taskEligibility(tx,ctx,task,ctx.actor.agentId);
+ if(ctx.actor.kind!=='agent'||!ctx.actor.agentId||!ctx.actor.scopes.has('tasks:execute')||!rule.eligible_agent_ids.includes(ctx.actor.agentId))throw new HttpError('FORBIDDEN',403);
+}
+/** Ready/claim eligibility requires one coherent live claim-and-execute credential. */
+export function assertTaskEligible(tx:WorkspaceTransaction,ctx:CommandContext,task:Task,agentId:string|null):EligibilityEvidence{
+ const {policy,rule}=taskEligibility(tx,ctx,task,agentId);
  const assigned=agentId??task.assigned_agent_id,candidates=assigned===null?rule.eligible_agent_ids:[assigned];
  const eligible=candidates.some(id=>{
   if(!rule.eligible_agent_ids.includes(id))return false;
