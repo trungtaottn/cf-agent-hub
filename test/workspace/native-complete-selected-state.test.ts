@@ -1,10 +1,18 @@
 import {it,expect} from 'vitest';
 import {env} from 'cloudflare:workers';
 import {runInDurableObject} from 'cloudflare:test';
-import {prepared,operator} from '../helpers/environment';
+import {fixture,operator} from '../helpers/environment';
+import {prepareBootstrap,sha256,canonicalJson} from '../../src/config/bootstrap';
 import {createCompleteSelectedState,decodeCompleteRows,completePhaseReservation} from '../../workers/native-fixture/selected-state';
 const bindings={W:'ws_example',C:'cred_research',human:'human_owner',principal:'agent_research',operation:'domain.createTask',target:'ws_example',key:'r2_'+ '1'.repeat(32)};
-async function workspace(name:string){const stub=env.WORKSPACE.getByName(name);await stub.reconcileConfiguration(operator(),await prepared(name));return stub;}
+async function workspace(name:string){
+ const {config,bundle}=await fixture(name);
+ // HG now observes every workspace grant; install the admitted narrow fixture
+ // through normal configuration rather than hiding the broad example grant.
+ config.human_grants[0].scopes=['credentials:manage','workspace:read'];
+ bundle.config_digest=await sha256(canonicalJson(config));
+ const stub=env.WORKSPACE.getByName(name);await stub.reconcileConfiguration(operator(),await prepareBootstrap(config,bundle,'ws_example'));return stub;
+}
 it('captures actual source SQLite phase within its atomic reservation, without authority claims',async()=>{
  const stub=await workspace('complete-selected-source');
  await runInDurableObject(stub,(_instance,state)=>{

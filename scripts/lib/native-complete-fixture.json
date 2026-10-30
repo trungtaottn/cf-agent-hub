@@ -77,7 +77,7 @@
   },
   "selected_state": {
     "source": "workers/native-fixture/complete-selectors.json",
-    "sha256": "1c0d0bb848a9a349c01f7061c2f9a245775033d55b41537ed980f2ef7829527b",
+    "sha256": "e63f87cd0c522867507d9fa1c373d78f21f8cb70f9a2fc52a8d9c350be179a81",
     "selectors": 34
   },
   "process_output_offers": [

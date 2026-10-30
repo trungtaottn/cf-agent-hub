@@ -84,3 +84,67 @@ entry composition still require implementation and integration. Actual eligible
 runtime/store custody, independent installed trust and existing operator-provided
 materials remain deployment inputs, not something this source contract creates.
 Formal acceptance after R4 does not turn these unfinished code paths into a pass.
+
+## Source fixture admission and full-profile framing
+
+The private `fixture-admission.ts` component now captures one actual P or F
+baseline in a single storage transaction, validates the fixed deployment recipe,
+current static rows and existing human session correlations, and returns a
+source-only timing/fence summary. Hashing after the transaction does not make the
+snapshot current again. Expiry is rechecked after hashing; actual authentication
+and current fences still require normal product checks before any effect. The
+stored CSRF digest is state correlation, not human-request authentication.
+
+A reviewed catalog correction makes HG select the whole workspace's human grants
+with one accepted row and a second-row overflow lookahead. The original
+expected-principal filter could hide an additional principal. The literal query,
+parameter list and fixture commitment changed; selector count, row/byte limits and
+all phase reservations did not. Actual P-one/F-none negatives now cover another
+principal. This is a source correctness correction, not an acceptance waiver or
+protocol-version change. Earlier candidate commitments remain historical; new
+complete configurations must bind this candidate's compiled commitment.
+
+The source policy codec fixes the full 70-obligation roster, exact run context and
+original admission lifetime. The preparation codec selects the existing 39 typed
+subjects, 17 null-subject process windows, 27 input windows, six artifact variants
+and fixed journal states by source step. Post-enrollment main-store preparations
+require runtime/proof presence; the separate foreign store stays unbound. Presence
+is not proof that an ID or credential is current. `foreign_runs` remains null in
+this particular complete native fixture; other evidence schemas are unchanged.
+
+The request codec rejects unknown fields, role substitutions and oversized streams.
+It checks the selected wire cap and combined declared stream sizes before decoding
+base64, then verifies actual decoded length and digest. Only the provision control
+accepts the exact private S/R/X credential and existing human cookie/CSRF handoff;
+those parsed values must never enter public logs or evidence. Other controls
+cannot carry that lane. Hash references still require genuine service-owned
+resolution, not merely syntactically valid SHA strings.
+
+The fixed lifecycle schedule has 370 logical dispatch admissions. Immediate scans
+follow each completed process before typed observation; final scans follow inventory
+sealing. E1/E2 are inserted at their original causal boundaries. Concurrent,
+duplicate or future calls poison the owner without retry/refund. Actual callbacks
+remain owned after a caller deadline. Failure cleanup uses the same single close
+allowance, counts pending cleanup, and accepts only an explicit validated closed
+receipt; fulfilled unknown or malformed cleanup cannot become closed. This source
+owner is not a network parser: actual incoming HTTP bytes and bodies need their
+separate transport ownership and cumulative reservation.
+
+Framing alone does not supply the installed attachment, authentic control/observer
+joins, complete service dispatch, fixed host factory or report-2 assembly. Those
+remain pending integration, alongside the unchanged three unavailable tuple
+capabilities and genuine operator installation inputs. A successful source-fake
+370-callback lifecycle test is not a successful 370-call native execution.
+
+## Owner decision — 2026-10-30
+
+The owner approved deferring the three tuple-only cases from the **R2 merge gate**
+to R4 acceptance. The cases remain **unverified**, not passed, and security guards
+are unchanged. This supersedes earlier pending-waiver wording above; the original
+full roster and its historical evidence are retained.
+
+The decision does not waive unfinished R2 source, other verification, independent
+review or CI, and does not establish native or global release acceptance. Any
+reduced required R2 execution plan must be explicitly reviewed and documented
+before implementation; this documentation change does not enable such a run.
+Ordered merging remains conditional on completing those remaining obligations.
