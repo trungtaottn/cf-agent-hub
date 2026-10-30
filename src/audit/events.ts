@@ -38,6 +38,9 @@ export function projectEvent(tx:WorkspaceTransaction,actor:ActorContext,id:strin
  authorize(tx,live,'events:read',undefined,nowMs);
  const row=tx.one<EventRow>('SELECT * FROM events WHERE id=? AND workspace_id=?',[id,actor.workspaceId]);
  if(!row)return null;
+ // A caller-supplied visibility hook cannot enable an unknown producer/resource pair.
+ const resource=row.type==='configuration.installed'?'configuration':Object.hasOwn(definitions,row.type)?definitions[row.type as keyof typeof definitions].resource:null;
+ if(resource===null||resource!==row.resource_type)return null;
  const event=projection(row);
  const visible:unknown=visibility(tx,live,{kind:row.resource_type,id:row.resource_id,projectId:null},event,nowMs);
  if(visible!==null&&(typeof visible==='object'||typeof visible==='function')&&typeof (visible as {then?:unknown}).then==='function'){

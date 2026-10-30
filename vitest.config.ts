@@ -1,2 +1,3 @@
-import { defineConfig } from 'vitest/config';
-export default defineConfig({ test: { environment:'node', exclude:['test/config/settings.test.ts','test/http/settings-contract.test.ts'], include: ['test/acceptance/readiness-tools.test.ts','test/acceptance/release-evidence.test.ts','test/acceptance/release-manifest.test.ts','test/acceptance/capability-gates.test.ts','test/client/**/*.test.ts','test/http/**/*.test.ts','test/audit/**/*.test.ts','test/contracts/**/*.test.ts','test/config/**/*.test.ts','test/auth/operator-provisioning.test.ts'] } });
+import {configDefaults,defineConfig} from 'vitest/config';
+import {nodeInclude,nodeExclude} from './test/helpers/runtime-suites';
+export default defineConfig({test:{environment:'node',include:nodeInclude,exclude:[...configDefaults.exclude,...nodeExclude]}});

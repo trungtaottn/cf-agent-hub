@@ -1,7 +1,10 @@
 import {canonicalJson} from '../config/bootstrap';
 import {HttpError} from './envelopes';
 import type {Entropy} from '../workspace/context';
-export interface CursorBinding {workspaceId:string;principalId:string;lane:'human'|'agent';credentialId:string|null;sessionId:string|null;operation:'inbox'|'thread'|'events';queryHash:string;}
+/** Only routes with implemented query/retention semantics may mint cursors.
+ * Future task/search/history owners extend this closed map with their own bindings. */
+const cursorOperations={inbox:'message',thread:'message',events:'sequence'} as const;
+export interface CursorBinding {workspaceId:string;principalId:string;lane:'human'|'agent';credentialId:string|null;sessionId:string|null;operation:keyof typeof cursorOperations;queryHash:string;}
 export interface MessagePosition {createdAt:number;id:string;}
 export type CursorPosition=MessagePosition|number;
 export interface CursorPayload {version:1;binding:CursorBinding;highWater:CursorPosition;lastScanned:CursorPosition;expiresAt:number;}
@@ -14,11 +17,19 @@ export function comparePosition(a:CursorPosition,b:CursorPosition):number {
  if(a.createdAt!==b.createdAt)return a.createdAt-b.createdAt;
  const left=utf8.encode(a.id),right=utf8.encode(b.id);for(let i=0;i<Math.min(left.length,right.length);i++)if(left[i]!==right[i])return left[i]-right[i];return left.length-right.length;
 }
+function validBinding(value:unknown):value is CursorBinding {
+ if(!value||typeof value!=='object'||Object.keys(value).sort().join(',')!=='credentialId,lane,operation,principalId,queryHash,sessionId,workspaceId')return false;
+ const b=value as CursorBinding;
+ const id=(v:unknown):v is string=>typeof v==='string'&&v.length>0;
+ return id(b.workspaceId)&&id(b.principalId)&&typeof b.queryHash==='string'&&/^[a-f0-9]{64}$/.test(b.queryHash)&&
+  typeof b.operation==='string'&&Object.hasOwn(cursorOperations,b.operation)&&
+  (b.lane==='human'?b.credentialId===null&&id(b.sessionId):b.lane==='agent'&&id(b.credentialId)&&b.sessionId===null);
+}
 function validPayload(p:unknown,binding:CursorBinding):p is CursorPayload {
  if(!p||typeof p!=='object'||Object.keys(p).sort().join(',')!=='binding,expiresAt,highWater,lastScanned,version')return false;
  const c=p as CursorPayload;
- return c.version===1&&canonicalJson(c.binding)===canonicalJson(binding)&&Number.isSafeInteger(c.expiresAt)&&c.expiresAt>0&&position(c.highWater)&&position(c.lastScanned)&&
- (binding.operation==='events')===(typeof c.highWater==='number')&&typeof c.highWater===typeof c.lastScanned&&comparePosition(c.lastScanned,c.highWater)<=0;
+ return c.version===1&&validBinding(binding)&&validBinding(c.binding)&&canonicalJson(c.binding)===canonicalJson(binding)&&Number.isSafeInteger(c.expiresAt)&&c.expiresAt>0&&position(c.highWater)&&position(c.lastScanned)&&
+ (cursorOperations[binding.operation]==='sequence')===(typeof c.highWater==='number')&&typeof c.highWater===typeof c.lastScanned&&comparePosition(c.lastScanned,c.highWater)<=0;
 }
 const base64=(bytes:Uint8Array)=>{let text='';for(let i=0;i<bytes.length;i+=8192)text+=String.fromCharCode(...bytes.subarray(i,i+8192));return btoa(text).replaceAll('+','-').replaceAll('/','_').replace(/=+$/,'');};
 /** Key material is a separate managed 256-bit secret, never a bearer verifier or public configuration. */
@@ -34,7 +45,7 @@ export function createCursorCodec(keyHex:string,entropy:Entropy){
    const bytes=new Uint8Array(12+ciphertext.length);bytes.set(nonce);bytes.set(ciphertext,12);return base64(bytes);
   },
   async decodeCursor(token:string,expectedBinding:CursorBinding,nowMs:number):Promise<CursorPayload>{
-   if(!/^[A-Za-z0-9_-]+$/.test(token)||token.length<40)return invalid();
+   if(!validBinding(expectedBinding)||!/^[A-Za-z0-9_-]+$/.test(token)||token.length<40)return invalid();
    let payload:unknown;
    try{
     const bytes=Uint8Array.from(atob(token.replaceAll('-','+').replaceAll('_','/')+'='.repeat((4-token.length%4)%4)),x=>x.charCodeAt(0));

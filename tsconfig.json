@@ -26,6 +26,7 @@
     "src/ui/app.ts",
     "src/ui/settings.ts",
     "src/ui/dom.ts",
-    "test/recovery/operator-transport.test.ts"
+    "test/recovery/operator-transport.test.ts",
+    "test/recovery/r2-operator.test.ts"
   ]
 }

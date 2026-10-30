@@ -8,6 +8,7 @@
   "include": [
     "test/auth/operator-gateway.test.ts",
     "workers/operator/worker-configuration.d.ts",
-    "test/recovery/operator-transport.test.ts"
+    "test/recovery/operator-transport.test.ts",
+    "test/recovery/r2-operator.test.ts"
   ]
 }

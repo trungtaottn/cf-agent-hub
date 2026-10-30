@@ -27,3 +27,15 @@ it('cursor_preserves_opaque_unicode_positions_and_sql_utf8_order',async()=>{
  const long={...payload,highWater:{createdAt:1,id:'Ω'.repeat(20000)+'😀'},lastScanned:{createdAt:1,id:'Ω'.repeat(20000)}};
  const token=await codec.encodeCursor(long);expect(await codec.decodeCursor(token,binding,0)).toEqual(long);
 });
+it('malformed_or_cross_lane_binding_never_mints_or_consumes_cursor',async()=>{
+ const token=await codec.encodeCursor(payload);
+ for(const change of [{operation:'future'},{operation:'constructor'},{lane:'operator'},{credentialId:null},{sessionId:'forged-human-session'},{queryHash:'not-a-hash'},{workspaceId:''},{extra:true}]){
+  const invalid={...binding,...change} as CursorBinding;
+  await expect(codec.encodeCursor({...payload,binding:invalid})).rejects.toMatchObject({code:'INVALID_REQUEST'});
+  await expect(codec.decodeCursor(token,invalid,100)).rejects.toMatchObject({code:'INVALID_REQUEST'});
+ }
+ const human:CursorBinding={...binding,lane:'human',credentialId:null,sessionId:'session_a'};
+ const humanToken=await codec.encodeCursor({...payload,binding:human});
+ expect((await codec.decodeCursor(humanToken,human,100)).binding).toEqual(human);
+ await expect(codec.decodeCursor(humanToken,{...human,sessionId:'session_b'},100)).rejects.toMatchObject({code:'INVALID_REQUEST'});
+});

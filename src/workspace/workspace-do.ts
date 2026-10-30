@@ -1,3 +1,4 @@
+import {r2Routes} from '../http/r2-routes';
 import {advanceCapture,readRecoveryChunk,readRecoveryStatus} from '../recovery/capture';
 import {beginRestore,writeRestoreChunk,advanceVerify} from '../recovery/restore';
 import {recordProbe} from '../recovery/probes';
@@ -157,7 +158,7 @@ export class WorkspaceDO extends DurableObject<WorkspaceEnvironment> {
   const path=new URL(request.url).pathname;
   const settings=settingsPath.exec(path),message=messagePath.exec(path),operations=operationsPath.exec(path),readiness=readinessPath.exec(path),base=workspacePath.exec(path);
   const selected=match??settings??message??operations??readiness??base;
-  if(!selected)return new Response(null,{status:404,headers:securityHeaders});
+  if(!selected)return r2Routes(request);
   // Protected diagnostics observe persisted scheduler/probe state. A GET must
   // not repair that state or manufacture a fresh health observation.
   const diagnostic=Boolean(operations||readiness);
