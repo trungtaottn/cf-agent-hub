@@ -315,3 +315,36 @@ actual exit receipts rather than fabricating success. Local source tests exercis
 real guarded disk operations with synthetic credentials, including these failure
 paths. They do not establish installed host authority, service admission, native
 conformance or completion of the remaining service/factory/report integration.
+
+## Required phase attachment and fixed HTTPS client
+
+The private required-phase attachment now executes the fixed P/F application
+plans through ordinary product authentication and captures actual selected SQL
+before and after each owned window. Source tests cover 51 primary and six foreign
+application requests in separate DO-owned journeys, including genuine runtime
+proofs, revoked authorization, artifact requests and an unpublished committed
+response. These are not one joint global controller run or native-process evidence.
+The sole frontdoor, global ownership and authenticated service composition remain
+separate integration work.
+
+A committed unpublished response may remain observed-held after an authentic
+client terminal only until its scheduled disarm/drain. Unknown completion fails
+closed; no pending count or clock ordering is invented. Private capture metadata
+includes subject, ingress, timestamps and its wrapper: its explicit ceiling is
+1,536 bytes per capture, admitted before SQL and checked again before retention.
+The fixed 59 primary plus seven foreign captures reserve 101,376 bytes jointly
+(90,624 primary; 10,752 foreign). This is private working metadata, not additional
+wire, logical-action or release-evidence allowance.
+
+The fixed HTTPS client uses the branded installed binding and a pinned client key;
+its separate synthetic transport test core cannot establish installed authority.
+It checks exact profile/config commitments, current custody, canonical request
+proofs and closed canonical response framing. Redirects, TLS bypasses and arbitrary
+transport configuration are unavailable. Its two selected proof headers reserve
+216 bytes per call; the independent physical HTTP-header ceiling is 8,192 bytes,
+not a substitute for body or release budgets. A poisoned request admits only its
+reserved next-sequence close after owned transport cleanup, never a normal retry.
+Response framing remains structural and signature-unverified until the service
+original verifier and causal payload checks consume it. Neither client tests nor
+attachment tests satisfy native conformance, installation or the three deferred
+and unverified R4 tuple cases.

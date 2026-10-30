@@ -1,0 +1,16 @@
+/** Ephemeral synthetic source-test keys. Never installed authority. */
+import {generateKeyPairSync,createHash} from 'node:crypto';
+import {selectCompleteProfile} from '../../scripts/lib/native-profile-selection.mjs';
+import {canonicalCaseSubject as canonical} from '../../scripts/lib/r2-case-policy.mjs';
+import {completeSlotRegistry,completePolicyDigest} from '../../scripts/lib/native-complete-protocol.mjs';
+export const hash=v=>createHash('sha256').update(v).digest('hex');
+export function values(tag='native-r2-required-prepared-v1'){
+ const selected=selectCompleteProfile(tag),h='a'.repeat(64),now=Date.now(),{privateKey,publicKey}=generateKeyPairSync('ed25519');
+ const context={version:2,runId:'synthetic_run',configSha256:h,scenarioSha256:hash(canonical(selected.scenario)),candidateSha:'b'.repeat(40),candidateTreeSha:'c'.repeat(40),compositionSha256:h,nodeSha256:h,buildSha256:h,authorityRecordSha256:h};
+ const policy={type:'native-complete-run-policy',version:2,profile:tag,assurance:'source-test-only',service_id:'synthetic_service',instance_id:'synthetic_instance',run_id:context.runId,descriptor_sha256:h,run_context:context,actors_sha256:h,workspaces_sha256:h,fixture_stores_sha256:h,source_inventory_sha256:h,family_ledger_sha256:selected.commitments.family_ledger_sha256,coverage:completeSlotRegistry(tag).map(r=>({...r,supported:false,producer_id:null})),expires_at:now+61000};
+ const installation={version:2,scope:'signed-installation-statement',installedAuthority:false,descriptorSha256:h,anchorSha256:h,payload:{profile:tag,service_id:policy.service_id,service_origin:'https://synthetic.example',client_key_spki_base64:publicKey.export({format:'der',type:'spki'}).toString('base64'),not_before:now-1000,expires_at:now+62000,candidate_sha:context.candidateSha,candidate_tree_sha:context.candidateTreeSha,composition_sha256:h,config_sha256:h,scenario_sha256:context.scenarioSha256,cli_sha256:h,source_inventory_sha256:h,fixture_sha256:selected.commitments.fixture_sha256,family_ledger_sha256:selected.commitments.family_ledger_sha256}};
+ const validationOptions={context,now,operationalMs:60000};
+ const request={type:'native-complete-request',version:2,profile:tag,service_id:policy.service_id,instance_id:policy.instance_id,run_id:policy.run_id,descriptor_sha256:h,policy_sha256:completePolicyDigest(policy),sequence:1,request_id:'synthetic_request',operation:'preflight',payload:{policy_sha256:completePolicyDigest(policy),family_ledger_sha256:selected.commitments.family_ledger_sha256,slot_roster_sha256:hash(canonical(completeSlotRegistry(tag)))}};
+ const response={type:'native-complete-response',version:2,profile:tag,service_id:policy.service_id,instance_id:policy.instance_id,run_id:policy.run_id,descriptor_sha256:h,policy_sha256:completePolicyDigest(policy),sequence:1,request_id:request.request_id,operation:'preflight',data:{status:'blocked',coverage_sha256:hash(canonical(policy.coverage)),family_ledger_sha256:selected.commitments.family_ledger_sha256,unsupported:tag==='native-r2-required-prepared-v1'?[]:['control/prepare-swap-slot','control/prepare-swap-generation','control/prepare-swap-principal','probe/swapped-slot','probe/swapped-generation','probe/swapped-principal']},installedAuthority:false,native_conformance:false};
+ return {policy,installation,validationOptions,privateKey,request,response};
+}
