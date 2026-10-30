@@ -179,8 +179,10 @@ export class WorkspaceDO extends DurableObject<WorkspaceEnvironment> {
   // within the DO lifetime without awaiting after the final authorized projection.
   // Failure remains dirty for the existing scheduled catalog sweep/restart repair.
   if(task&&request.method==='POST'&&/:(claim|fail|cancel|heartbeat)$/.test(path)&&response.ok)this.ctx.waitUntil(this.#repairDirty());
+  if(message&&request.method==='POST'&&response.ok)this.ctx.waitUntil(this.#repairDirty());
   if(artifact&&request.method!=='GET'&&request.method!=='OPTIONS'&&response.ok)this.ctx.waitUntil(this.#repairDirty());
-  if(!diagnostic)await this.#repairDirty();return response;
+  // Message/event startup repair stays before authentication; never await it after projection.
+  if(!diagnostic&&!message)await this.#repairDirty();return response;
  }
  async command(request:InternalRequest):Promise<InternalResponse> {
   if(!closed(request,['workspaceId','objectName','requestId','operation'])||!identifier(request.workspaceId)||!identifier(request.objectName)||!identifier(request.requestId)||typeof request.operation!=='string'||request.operation.length>128)throw Error('INVALID_INTERNAL_REQUEST');

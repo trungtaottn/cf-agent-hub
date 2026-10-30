@@ -1,11 +1,10 @@
 import type {WorkspaceTransaction} from '../storage/transaction';
 import type {ActorContext,CommandContext} from '../workspace/context';
-import type {Artifact} from '../http/dto';
+import type {Artifact,MessageReference} from '../http/dto';
 import {validateArtifact} from '../http/generated/auth-validators.js';
 import {refreshActor} from '../auth/authorize';
 import {HttpError} from '../http/envelopes';
-import {taskRecord} from '../tasks/repository';
-import {assertMessageVisible} from '../messages/references';
+import {assertResourceReferences,actorResourceGrant,type RelationshipGrant} from '../auth/resource-visibility';
 import {assertStoredScalarBytes,assertTaskItemFits} from '../tasks/bounds';
 export const ARTIFACT_MAX_BYTES=10485760;
 export const ATTACHMENT_MAX_BYTES=26214400;
@@ -27,25 +26,25 @@ export function artifactView(row:ArtifactRow):Artifact{
 export function artifactActor(tx:WorkspaceTransaction,ctx:Pick<CommandContext,'actor'|'nowMs'>,scope:string):ActorContext{
  const actor=refreshActor(tx,ctx.actor,ctx.nowMs);if(!actor.scopes.has(scope))throw new HttpError('FORBIDDEN',403);return actor;
 }
-function taskRelationship(tx:WorkspaceTransaction,actor:ActorContext,id:string):void{
- if(!actor.scopes.has('tasks:read'))inaccessible();const row=taskRecord(tx,actor.workspaceId,id);
- if(actor.projectIds!==null&&(row.project_id===null||!actor.projectIds.includes(row.project_id)))inaccessible();
-}
-/** Association checks use one current grant, never aggregate multiple credentials or follow cycles. */
-export function assertArtifactAssociations(tx:WorkspaceTransaction,actor:ActorContext,row:ArtifactRow,nowMs:number):void{
- if(row.workspace_id!==actor.workspaceId)inaccessible();
- if(row.task_id!==null)taskRelationship(tx,actor,row.task_id);else if(actor.projectIds!==null)inaccessible();
- const associations=tx.all<{resource_kind:string;resource_id:string}>('SELECT resource_kind,resource_id FROM artifact_associations WHERE workspace_id=? AND artifact_id=? LIMIT 2049',[actor.workspaceId,row.id]);
+/** Resolve reviewed association edges without authentication fabrication or recursive visibility. */
+export function artifactAssociationReferences(tx:WorkspaceTransaction,grant:RelationshipGrant,row:ArtifactRow):MessageReference[]{
+ if(row.workspace_id!==grant.workspaceId||row.task_id===null&&grant.projectIds!==null)inaccessible();
+ const associations=tx.all<{resource_kind:string;resource_id:string}>('SELECT resource_kind,resource_id FROM artifact_associations WHERE workspace_id=? AND artifact_id=? LIMIT 2049',[grant.workspaceId,row.id]);
  if(associations.length>2048)throw new HttpError('DEPENDENCY_UNAVAILABLE',503);
  for(const [kind,id] of [['task',row.task_id],['run',row.run_id]])if(id!==null&&!associations.some(x=>x.resource_kind===kind&&x.resource_id===id))inaccessible();
+ const refs:MessageReference[]=[];
  for(const a of associations){
-  if(a.resource_kind==='task'){taskRelationship(tx,actor,a.resource_id);continue;}
-  if(a.resource_kind==='run'){const run=tx.one<{task_id:string}>('SELECT task_id FROM runs WHERE workspace_id=? AND id=?',[actor.workspaceId,a.resource_id]);if(!run||row.run_id===a.resource_id&&run.task_id!==row.task_id)inaccessible();taskRelationship(tx,actor,run!.task_id);continue;}
-  if(a.resource_kind==='result'){const result=tx.one<{task_id:string}>('SELECT r.task_id FROM task_results r JOIN result_artifacts ra ON ra.workspace_id=r.workspace_id AND ra.result_id=r.id WHERE r.workspace_id=? AND r.id=? AND ra.artifact_id=?',[actor.workspaceId,a.resource_id,row.id]);if(!result)inaccessible();taskRelationship(tx,actor,result!.task_id);continue;}
-  if(a.resource_kind==='message'){if(!tx.one('SELECT message_id FROM message_artifacts WHERE workspace_id=? AND message_id=? AND artifact_id=?',[actor.workspaceId,a.resource_id,row.id]))inaccessible();assertMessageVisible(tx,actor,a.resource_id,nowMs);continue;}
+  if(a.resource_kind==='task'){refs.push({kind:'task',id:a.resource_id});continue;}
+  if(a.resource_kind==='run'){const run=tx.one<{task_id:string}>('SELECT task_id FROM runs WHERE workspace_id=? AND id=?',[grant.workspaceId,a.resource_id]);if(!run||row.run_id===a.resource_id&&run.task_id!==row.task_id)inaccessible();refs.push({kind:'task',id:run!.task_id});continue;}
+  if(a.resource_kind==='result'){const result=tx.one<{task_id:string}>('SELECT r.task_id FROM task_results r JOIN result_artifacts ra ON ra.workspace_id=r.workspace_id AND ra.result_id=r.id WHERE r.workspace_id=? AND r.id=? AND ra.artifact_id=?',[grant.workspaceId,a.resource_id,row.id]);if(!result)inaccessible();refs.push({kind:'task',id:result!.task_id});continue;}
+  if(a.resource_kind==='message'){if(!tx.one('SELECT message_id FROM message_artifacts WHERE workspace_id=? AND message_id=? AND artifact_id=?',[grant.workspaceId,a.resource_id,row.id]))inaccessible();refs.push({kind:'message',id:a.resource_id});continue;}
   // Checkpoints have no reviewed runtime in this round.
   inaccessible();
  }
+ return refs;
+}
+export function assertArtifactAssociations(tx:WorkspaceTransaction,actor:ActorContext,row:ArtifactRow,_nowMs:number):void{
+ assertResourceReferences(tx,actorResourceGrant(actor),artifactAssociationReferences(tx,actor,row));
 }
 export function committedGeneration(tx:WorkspaceTransaction,row:ArtifactRow):GenerationRow{
  if(row.status!=='committed'||row.committed_at===null||row.expires_at!==null||row.committed_generation_id===null||(row.active_generation_id!==null&&row.active_generation_id!==row.committed_generation_id))inaccessible();
