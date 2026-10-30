@@ -1,6 +1,6 @@
 # Fixed complete native fixture profile
 
-Status: source development; complete factory integration and native acceptance pending.
+Status: fixed required-profile source composition implemented; installed end-to-end execution and native acceptance pending.
 
 This is an additive source contract for issue 48, not an installed service, a
 successful native run, or release acceptance. Existing configuration version 1,
@@ -72,18 +72,33 @@ allowance does not enforce a shared global budget. Local workerd tests exercise
 real SQLite, while callback lifecycle adversarial tests use an explicitly labeled
 source fake; neither establishes an installed independent observer.
 
-## Remaining mandatory gates
+## Current gates — 2026-10-30
 
-The full run is unavailable while the three tuple-only controls have no authentic
-producer: slot-only, generation-only and principal-only replacement. The source
-capability guard rejects them before effects; caller `supported: true` assertions
-cannot override it. No owner waiver or native requirement change is included here.
+The fixed required-profile service, phase controls, recorder/report-2 dispatch,
+protected entry composition and bounded output publisher are now implemented.
+See the [current task boundary](r2-task-plans/issue-048.md#current-source-boundary-and-next-operator-interface)
+and [service attachment](native-complete-service.md). Earlier implementation-stage
+descriptions of future coordination are historical notes, not additional
+missing adapter APIs. Source tests and the actual local service schedule do not
+prove the complete protected factory run: actual CLI/store/Journal/artifact/HTTPS
+execution and final original/report publication still require eligible installed
+authority and end-to-end verification.
 
-The complete fixed service, phase controls, recorder/report-2 dispatch and protected
-entry composition still require implementation and integration. Actual eligible
-runtime/store custody, independent installed trust and existing operator-provided
-materials remain deployment inputs, not something this source contract creates.
-Formal acceptance after R4 does not turn these unfinished code paths into a pass.
+The full 68-step profile remains unavailable while its three tuple-only controls
+have no authentic producer: slot-only, generation-only and principal-only
+replacement. The source capability guard rejects them before effects; caller
+`supported: true` assertions cannot override it. The owner's 2026-10-30 decision
+allows only these three obligations to remain deferred and unverified until R4
+for the R2 merge gate. The separately closed required profile omits their six
+control/probe slots; the full profile and original obligations are preserved.
+This is neither a passing result nor a security-guard change.
+
+Actual eligible runtime/store custody, independent installed trust and scoped
+operator-provided materials remain installation inputs. Formal acceptance after
+R4 does not replace source review, CI or authentic native evidence. Historical
+statements that the fixed composition still required implementation, or that no
+owner waiver existed, describe the initial profile slice and are superseded only
+by this dated status reconciliation.
 
 ## Source fixture admission and full-profile framing
 
