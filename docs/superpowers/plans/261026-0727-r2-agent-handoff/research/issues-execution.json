@@ -1,0 +1,416 @@
+[
+  {
+    "author": {
+      "id": "U_kgDOCNDwxA",
+      "is_bot": false,
+      "login": "trungtaottn",
+      "name": "kaynt"
+    },
+    "body": "## Summary\n\nImplement Backlog creation, constrained metadata edits, explicit Ready scheduling and scoped task reads. Own trusted policy validation and eligibility evidence used by later claims; state remains server-owned.\n\n## Problem / motivation\n\nR1 settings policy is read from installed configuration inside SQL (`src/config/policy.ts:8–15`). The task record/state/version model is specified in `docs/data-model.md:30–38` and original Task3 (`docs/superpowers/plans/2026-10-23-r2-durable-work.md:111–126`), but task commands do not exist. Treating labels as grants or a missing WIP policy as unlimited execution would violate that boundary.\n\n## Proposed flow\n\n1. Validate all required execution policy fields and exact project/role tuple rules, rejecting inactive agents, conflicting matches and missing configuration.\n2. Implement createTask with server-assigned version 1/proposal version 0, state Backlog, fixed current retry policy, null execution/result/approval pointers and globally distinct ID.\n3. Implement metadata-only PATCH with at least one allowed field, exact expected version and current reference visibility; permit only Backlog/Ready without active approved intent.\n4. Implement readyTask checking active references, exact eligibility, assignment and absence of outcome_unknown/retry_exhausted holds. Return eligibility evidence policyVersion/replaySafetyRuleId for claim consumption.\n5. Implement get/list and retained history projections through current authorization and the shared confidential cursor, with ascending created_at/id, high-water semantics and 50/200 task page limits.\n\n## Scope\n\n**In scope**\n\n- Same-workspace references, null/empty project restrictions, opaque IDs and current actor checks apply before replay as well as initial execution.\n- Domain mutation/event/outcome commit in one R1 transaction; task/proposal versions follow canonical lifecycle and cannot be supplied as state setters.\n- Preserve synthetic approved/Waiting compatibility records while leaving R3 routes unavailable. Profile stable-ID rename/upsert must not rewrite task IDs.\n\n**Out of scope / non-goals**\n\n- No claim/run ownership, generic column PATCH, approval activation, policy edits through profile or imported authority.\n\n## Acceptance criteria\n\n- [ ] Creation ignores no unknown authority fields: invalid state/owner/fence/retry fields reject and leave no task/event/outcome; valid task is server-owned Backlog.\n- [ ] Outside Backlog/Ready or with approved intent, every metadata edit rejects; stale versions and foreign references change nothing.\n- [ ] Missing/conflicting policy denies Ready; assigned/unassigned eligibility follows exact tuples and role labels grant no access. Holds cannot be cleared.\n- [ ] Authorized pages retain order across restart, filter before output and reauthorize after cursor awaits; revoked/foreign readers get no hidden IDs/counts.\n- [ ] Later run `npm run test:workers -- test/tasks/metadata.test.ts` and `npm run typecheck`; update lifecycle/config docs and inspect event/outcome counts on abort.\n\n## Touchpoints\n\n- Existing: `src/config/policy.ts`.\n- Existing: `src/config/profile.ts`.\n- Existing: `src/config/settings-service.ts`.\n- Existing: `src/workspace/commands.ts`.\n- Existing: `src/http/cursors.ts`.\n- Existing: `src/http/read-routes.ts`.\n- Existing: `src/audit/events.ts`.\n- Existing: `src/workspace/workspace-do.ts`.\n- Existing: `docs/task-lifecycle.md`.\n- Existing: `docs/data-model.md`.\n- Planned new: `src/config/execution-policy.ts`.\n- Planned new: `src/tasks/commands.ts`.\n- Planned new: `src/tasks/repository.ts`.\n- Planned new: `src/tasks/history.ts`.\n- Planned new: `test/tasks/metadata.test.ts`.\n\n## Notes\n\nCatalog lifecycle is a separate consumer of these task guards. Ready scheduling does not create a run; claim exposure waits for safe expiry processing.\n\nParent: [R2](https://github.com/trungtaottn/cf-agent-hub/issues/4). Source: retained candidate `22226633284e6410b2724acfcbfe1fe32f9325cc`; original tasks R2-T03. Future verification only; no implementation or product test is claimed by this draft.\n\n- Hard dependency [R2-T02-C](https://github.com/trungtaottn/cf-agent-hub/issues/26): Agents/credentials/runtime foundation is complete.\n- Interface dependency [R2-T01-A](https://github.com/trungtaottn/cf-agent-hub/issues/20): Consume exact trusted eligibility and replay-safety policy.\n- Interface dependency [R2-T02-A](https://github.com/trungtaottn/cf-agent-hub/issues/24): Use scoped task/history schema and indexes.\n",
+    "comments": [],
+    "labels": [
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC-zrojg",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGhIA",
+        "name": "ai-handle",
+        "description": "Bounded task suitable for an agent once readiness and dependencies permit.",
+        "color": "0e8a16"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGnmg",
+        "name": "blocked",
+        "description": "Named prerequisite or owner/environment input is unmet.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHfAA",
+        "name": "priority:high",
+        "description": "High sequencing or correctness importance; does not imply readiness.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHjRw",
+        "name": "round:R2",
+        "description": "Work owned by the R2 roadmap round.",
+        "color": "1d76db"
+      }
+    ],
+    "number": 27,
+    "state": "OPEN",
+    "title": "[R2-T03-A] Implement versioned task metadata, eligibility and authorized reads",
+    "url": "https://github.com/trungtaottn/cf-agent-hub/issues/27"
+  },
+  {
+    "author": {
+      "id": "U_kgDOCNDwxA",
+      "is_bot": false,
+      "login": "trungtaottn",
+      "name": "kaynt"
+    },
+    "body": "## Summary\n\nImplement explicit immutable catalog preview and atomic archive/remap apply. Preserve ordinary advisory profile preview and PUT semantics while preventing archive/reactivation bypass through profile imports.\n\n## Problem / motivation\n\nR1 profile settings already implement stable-ID upsert and revision checks in `src/config/settings-service.ts`; original Task3 (`docs/superpowers/plans/2026-10-23-r2-durable-work.md:111–126`) adds lifecycle operations because references now affect live work. A preview that does not bind all affected versions could silently remap intent after another actor claims or edits it.\n\n## Proposed flow\n\n1. Preview current profile revision and all affected task/agent records in one transaction; store an immutable auditable 15-minute plan including every touched version. Reject >200 affected resources as a whole.\n2. For archive require null replacement, retain existing/history references and make the ID unavailable to new selection/claim. For remap require a distinct active same-kind destination.\n3. At apply recheck human session/CSRF, profile revision, expiry, full affected-version set, project visibility and additional tasks:edit/agents:manage grants; commit profile, eligible task/agent metadata, event and outcome atomically.\n4. Reject live Doing/Waiting/Review references, approved intent, or changes requiring policy-rule rewriting. Terminal/history references remain unchanged.\n5. Extend existing profile validators to block archive flag bypass and preset reactivation while retaining omitted stable IDs and advisory duplicate-name conflicts.\n\n## Scope\n\n**In scope**\n\n- Remaps affect only Backlog/Ready without approved authorization and explicitly listed agent role metadata.\n- Duplicate IDs reject; duplicate labels remain advisory. Plan IDs reveal no inaccessible resource details. Current access is required for successful replay.\n- Conflict recovery requires a new reviewed preview, never applying an unaffected subset or silently rebasing versions.\n\n**Out of scope / non-goals**\n\n- No new profile:apply route, persisted ordinary profile preview, generic policy editor, live-intent rewrite, implicit unarchive or unbounded remap.\n\n## Acceptance criteria\n\n- [ ] Rename/upsert preserves omitted IDs and historical references; archive blocks new selection/claim without rewriting old tasks.\n- [ ] Changed profile, touched task or agent after preview, expired plan, missing extra scope or hidden affected resource rejects all writes/events.\n- [ ] Doing/Waiting/Review and synthetic approved Ready references prevent remap; policy-rule rewrites and preset reactivation reject.\n- [ ] Concurrent apply/replay has one committed outcome; injected failure leaves profile/tasks/agents/event counts unchanged.\n- [ ] Later run `npm run test:workers -- test/config/catalog-lifecycle.test.ts` and `npm run typecheck`; document retry-by-new-preview and inspect all update predicates.\n\n## Touchpoints\n\n- Existing: `src/config/settings-service.ts`.\n- Existing: `src/config/profile.ts`.\n- Existing: `src/workspace/commands.ts`.\n- Existing: `src/audit/events.ts`.\n- Existing: `src/workspace/workspace-do.ts`.\n- Existing: `docs/customization.md`.\n- Existing: `docs/configuration.md`.\n- Existing: `docs/http-api.md`.\n- Planned new: `src/config/catalog-commands.ts`.\n- Planned new: `test/config/catalog-lifecycle.test.ts`.\n\n## Notes\n\nOne apply transaction owns the whole batch. Profile presentation remains separate from operator policy and cannot create authority.\n\nParent: [R2](https://github.com/trungtaottn/cf-agent-hub/issues/4). Source: retained candidate `22226633284e6410b2724acfcbfe1fe32f9325cc`; original tasks R2-T03. Future verification only; no implementation or product test is claimed by this draft.\n\n- Hard dependency [R2-T03-A](https://github.com/trungtaottn/cf-agent-hub/issues/27): Use current task versions, references and approved-intent guards.\n- Hard dependency [R2-T02-B](https://github.com/trungtaottn/cf-agent-hub/issues/25): Agent metadata and archive rules must exist.\n- Interface dependency [R2-T01-A](https://github.com/trungtaottn/cf-agent-hub/issues/20): Consume reviewed catalog DTOs and lifecycle limits.\n",
+    "comments": [],
+    "labels": [
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC-zrojg",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGhIA",
+        "name": "ai-handle",
+        "description": "Bounded task suitable for an agent once readiness and dependencies permit.",
+        "color": "0e8a16"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGnmg",
+        "name": "blocked",
+        "description": "Named prerequisite or owner/environment input is unmet.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHfAA",
+        "name": "priority:high",
+        "description": "High sequencing or correctness importance; does not imply readiness.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHjRw",
+        "name": "round:R2",
+        "description": "Work owned by the R2 roadmap round.",
+        "color": "1d76db"
+      }
+    ],
+    "number": 28,
+    "state": "OPEN",
+    "title": "[R2-T03-B] Apply version-bound catalog archive and remap plans atomically",
+    "url": "https://github.com/trungtaottn/cf-agent-hub/issues/28"
+  },
+  {
+    "author": {
+      "id": "U_kgDOCNDwxA",
+      "is_bot": false,
+      "login": "trungtaottn",
+      "name": "kaynt"
+    },
+    "body": "## Summary\n\nOwn the complete claim/WIP/fence/lease authority transaction and reusable assertActiveRun. Every claim creates one new run and larger task-local fence; heartbeat renews only the exact current owner.\n\n## Problem / motivation\n\n`src/workspace/commands.ts:42–63` already samples trusted time and current authority inside the mutation/replay transaction. Original Task4 (`docs/superpowers/plans/2026-10-23-r2-durable-work.md:127–142`) requires reuse of this boundary for task and agent-wide WIP contention. UI state, readable runtime IDs or a delayed preflight timestamp cannot enforce ownership.\n\n## Proposed flow\n\n1. Implement claimTask checking current Ready version, holds, active catalog/policy, assignment, credential/runtime proof and captured eligibility evidence in one synchronous transaction.\n2. Conservatively count active attempts, enforce the last WIP slot, increment fence and persist run/task/event/outcome plus preexecution retry-safety evidence atomically. Unswept expired runs retain WIP until T05-A settles them.\n3. Implement assertActiveRun checking credential/runtime/epoch, task/run/agent binding, active pointer/status, exact fence and `now < lease_expires_at`.\n4. Implement heartbeatRun with expected_run_version and a 60-second lease from current transaction time, changing run_version only; keep separate 90-second presence.\n5. Schedule earliest due lease through the shared scheduler after commit and bind scoped getRun. Approved-authorization tasks take an unavailable R3 validator branch that creates no run.\n\n## Scope\n\n**In scope**\n\n- Reserve entropy outside SQL and preserve ≥24-hour sanitized same-key replay; current authority/visibility still applies before replay.\n- Claim/archive race must yield one valid order; archive cannot commit half-revoked authority and claim cannot create a run for archived identity.\n- A new run/fence is required for every future attempt; paused or ended runs never resume.\n\n**Out of scope / non-goals**\n\n- No automatic external execution, system actor supplied by a client, generic ownership PATCH, expired lease revival or R2 approved-action execution.\n\n## Acceptance criteria\n\n- [ ] Synchronized two-claim and two-task/last-WIP-slot races have one winner and one conflict, with one active run and correct event/outcome counts after restart.\n- [ ] Test deadline−1/deadline/deadline+1 ms, delayed dispatch and client/server clock disagreement; expiry denies before any alarm.\n- [ ] Heartbeat advances only run version/lease; wrong credential/runtime/fence, revocation and archived identity deny renewal/submission/replay.\n- [ ] Same-key lost-response claim returns its original run; changed body conflicts and cross-principal key cannot replay. Transaction abort rolls all ownership writes back.\n- [ ] Later run `npm run test:workers -- test/tasks/claim-concurrency.test.ts test/tasks/lease-boundary.test.ts`; keep claim exposure disabled until T05-A/T05-B complete conservative expiry/cancellation.\n\n## Touchpoints\n\n- Existing: `src/workspace/commands.ts`.\n- Existing: `src/workspace/context.ts`.\n- Existing: `src/storage/transaction.ts`.\n- Existing: `src/outbox/scheduler-state.ts`.\n- Existing: `src/outbox/scheduler.ts`.\n- Existing: `src/workspace/workspace-do.ts`.\n- Existing: `src/audit/events.ts`.\n- Existing: `docs/task-lifecycle.md`.\n- Existing: `docs/adr/0003-leases-and-decisions.md`.\n- Planned new: `src/tasks/claim.ts`.\n- Planned new: `src/tasks/lease.ts`.\n- Planned new: `test/tasks/claim-concurrency.test.ts`.\n- Planned new: `test/tasks/lease-boundary.test.ts`.\n\n## Notes\n\nThis issue retains the entire claim invariant under one owner. Fencing governs hub state; external side effects still require their own identity/reconciliation and are never claimed exactly-once.\n\nParent: [R2](https://github.com/trungtaottn/cf-agent-hub/issues/4). Source: retained candidate `22226633284e6410b2724acfcbfe1fe32f9325cc`; original tasks R2-T04. Future verification only; no implementation or product test is claimed by this draft.\n\n- Hard dependency [R2-T02-C](https://github.com/trungtaottn/cf-agent-hub/issues/26): Consume credential-bound runtime proof.\n- Hard dependency [R2-T03-B](https://github.com/trungtaottn/cf-agent-hub/issues/28): Catalog lifecycle and complete Task3 guards must be installed.\n- Interface dependency [R2-T03-A](https://github.com/trungtaottn/cf-agent-hub/issues/27): Use task eligibility evidence and scoped reads.\n",
+    "comments": [],
+    "labels": [
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC-zrojg",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGhIA",
+        "name": "ai-handle",
+        "description": "Bounded task suitable for an agent once readiness and dependencies permit.",
+        "color": "0e8a16"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGnmg",
+        "name": "blocked",
+        "description": "Named prerequisite or owner/environment input is unmet.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHfAA",
+        "name": "priority:high",
+        "description": "High sequencing or correctness importance; does not imply readiness.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHjRw",
+        "name": "round:R2",
+        "description": "Work owned by the R2 roadmap round.",
+        "color": "1d76db"
+      }
+    ],
+    "number": 29,
+    "state": "OPEN",
+    "title": "[R2-T04-A] Enforce atomic claim, WIP, fences and execution lease renewal",
+    "url": "https://github.com/trungtaottn/cf-agent-hub/issues/29"
+  },
+  {
+    "author": {
+      "id": "U_kgDOCNDwxA",
+      "is_bot": false,
+      "login": "trungtaottn",
+      "name": "kaynt"
+    },
+    "body": "## Summary\n\nImplement conservative fail/expiry transitions and bounded shared-alarm processing. An uncertain external outcome remains visible and unclaimable; retry eligibility derives only from the policy captured before execution.\n\n## Problem / motivation\n\n`docs/task-lifecycle.md:78–84` defines additional-attempt budgets and unknown-outcome holds; original Task5 (`docs/superpowers/plans/2026-10-23-r2-durable-work.md:143–158`) requires expiry even if alarms are delayed. R1 already has a durable outbox scheduler, so adding a separate alarm that replaces its next due time would strand delivery or lease work.\n\n## Proposed flow\n\n1. Implement failTask through current assertActiveRun and exact expected version; stale/expired owners cannot retrospectively declare safety or mutate old attempts.\n2. Implement expireDueRuns(tx,nowMs,limit) with 1–200 due rows, trusted server event identities and one transaction per bounded processing unit.\n3. End each run with ended_at, clear active_run_id, retain latest_run_id/history and atomically choose Backlog+outcome_unknown, safe Ready retry, or Backlog+retry_exhausted.\n4. Use only captured preexecution policy/rule evidence. Unknown outcome always overrides safe classification; allowed additional retry atomically increments retry_count once.\n5. Integrate due leases into the existing dirty-generation/earliest-due scheduler and maintenance barrier. Persist remaining due work and a redacted diagnostic on failure.\n\n## Scope\n\n**In scope**\n\n- Default expiry is unknown external outcome, no retry increment and no automatic execution. Retry limit is fixed per task; 0 means first known failure is exhausted.\n- Safe retry consumes additional-attempt budget 1 then 2 for fixture limit 2; a third failed attempt exhausts without resetting history.\n- Command-time deadline enforcement continues to deny stale ownership even if scheduler processing is unavailable. Failed processing remains durably due, and current epoch/admission checks prevent maintenance-crossing mutations.\n\n**Out of scope / non-goals**\n\n- No runtime-declared post-expiry safety, hold-clear endpoint, retry reset, separate scheduler authority, alarm-dependent authorization or exactly-once external claim.\n\n## Acceptance criteria\n\n- [ ] Unclassified expiry produces expired run/Backlog/outcome_unknown with unchanged retry_count; runtime safety claims cannot alter it.\n- [ ] Known-safe fail/expiry consumes at most one additional attempt per transition; unknown overrides safe rules and limit 0 exhausts immediately.\n- [ ] Duplicate alarms, response loss and restart never double-charge retries or free WIP while leaving an active owner.\n- [ ] Injected batch failure leaves remaining work due, preserves previous atomic transitions and reports a bounded diagnostic; outbox scheduling still runs.\n- [ ] Later run `npm run test:workers -- test/tasks/failure-recovery.test.ts` and `npm run typecheck`; inspect task/run/history/event/outcome together and document external reconciliation.\n\n## Touchpoints\n\n- Existing: `src/outbox/scheduler.ts`.\n- Existing: `src/outbox/scheduler-state.ts`.\n- Existing: `src/workspace/workspace-do.ts`.\n- Existing: `src/workspace/commands.ts`.\n- Existing: `src/audit/events.ts`.\n- Existing: `src/recovery/maintenance.ts`.\n- Existing: `docs/task-lifecycle.md`.\n- Existing: `docs/delivery-semantics.md`.\n- Planned new: `src/tasks/failure.ts`.\n- Planned new: `test/tasks/failure-recovery.test.ts`.\n\n## Notes\n\nThis completes claim expiry semantics before task admission is exposed. Replacing work after documented reconciliation is explicit new provenance-bearing work, never in-place resurrection of an uncertain attempt.\n\nParent: [R2](https://github.com/trungtaottn/cf-agent-hub/issues/4). Source: retained candidate `22226633284e6410b2724acfcbfe1fe32f9325cc`; original tasks R2-T05. Future verification only; no implementation or product test is claimed by this draft.\n\n- Hard dependency [R2-T04-A](https://github.com/trungtaottn/cf-agent-hub/issues/29): Use the exact active-owner and lease/fence boundary.\n- Interface dependency [R2-T01-A](https://github.com/trungtaottn/cf-agent-hub/issues/20): Consume trusted preexecution retry-safety policy and bounded budget.\n",
+    "comments": [],
+    "labels": [
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC-zrojg",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGhIA",
+        "name": "ai-handle",
+        "description": "Bounded task suitable for an agent once readiness and dependencies permit.",
+        "color": "0e8a16"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGnmg",
+        "name": "blocked",
+        "description": "Named prerequisite or owner/environment input is unmet.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHfAA",
+        "name": "priority:high",
+        "description": "High sequencing or correctness importance; does not imply readiness.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHjRw",
+        "name": "round:R2",
+        "description": "Work owned by the R2 roadmap round.",
+        "color": "1d76db"
+      }
+    ],
+    "number": 30,
+    "state": "OPEN",
+    "title": "[R2-T05-A] Settle failed and expired attempts without losing uncertainty",
+    "url": "https://github.com/trungtaottn/cf-agent-hub/issues/30"
+  },
+  {
+    "author": {
+      "id": "U_kgDOCNDwxA",
+      "is_bot": false,
+      "login": "trungtaottn",
+      "name": "kaynt"
+    },
+    "body": "## Summary\n\nAdd explicit cancelTask and requeueTask commands to the task command module supplied by T03-A. Preserve all historical results/approvals and retry/uncertainty evidence while invalidating current pointers and owner authority.\n\n## Problem / motivation\n\nThe lifecycle contract (`docs/task-lifecycle.md:78–88`) forbids requeue from clearing outcome_unknown or retry_exhausted. Original Task5 (`docs/superpowers/plans/2026-10-23-r2-durable-work.md:147–155`) also requires cancellation to win safely against submit and pending decisions. A generic state update could leave an active run able to submit after the task is cancelled.\n\n## Proposed flow\n\n1. Bind exact TaskReasonRequest operations with current expected task version, reason and appropriate scope in the existing command lane.\n2. Requeue only permitted current states, invalidate current result/approval pointers, retain historical records and keep retry_count/retry_limit/holds unchanged.\n3. Cancel each allowed nonterminal state atomically: terminate active run as cancelled with ended_at, clear ownership, invalidate pending approval records and record actor/reason/history.\n4. Reject terminal cancellation and stale versions without partial event/outcome writes. Keep synthetic Waiting/approved fixtures for compatibility without exposing R3.\n5. Add both cancel/submit orderings using persisted fixtures now, and have T07-A execute the real command race when submission exists.\n\n## Scope\n\n**In scope**\n\n- Current authority and visibility apply before replay; no caller supplies a system actor or fence.\n- A cancel-first owner cannot renew/submit; submit-first cancellation of Review keeps submitted evidence historical.\n- Scheduler markers reflect ended ownership, and no requeue path resets retry budgets or silently returns held work to Ready.\n\n**Out of scope / non-goals**\n\n- No resurrected ended run, automatic revised task creation, approval creation/decision, generic state PATCH or history deletion.\n\n## Acceptance criteria\n\n- [ ] Requeue preserves result/decision history, invalidates only current pointers and refuses both uncertainty/exhaustion holds.\n- [ ] All permitted nonterminal cancellation states are covered; terminal/stale/foreign/unauthorized requests produce no state/event changes.\n- [ ] Cancel-before-submit invalidates owner; submit-before-cancel preserves result attribution while task becomes cancelled. Pending decision fixtures are invalidated atomically.\n- [ ] Same-key lost response replays original outcome under current access; concurrent command version conflicts cannot double-end runs or erase evidence.\n- [ ] Later run `npm run test:workers -- test/tasks/cancellation-race.test.ts test/tasks/failure-recovery.test.ts` and `npm run typecheck`; document explicit fresh-read/reason recovery.\n\n## Touchpoints\n\n- Existing: `src/workspace/commands.ts`.\n- Existing: `src/audit/events.ts`.\n- Existing: `src/workspace/workspace-do.ts`.\n- Existing: `docs/task-lifecycle.md`.\n- Existing: `docs/data-model.md`.\n- Planned new: `test/tasks/cancellation-race.test.ts`.\n\n## Notes\n\nModify dependency-owned src/tasks/commands.ts and src/tasks/lease.ts sequentially, rather than creating a second command module. T07-A owns the complete real-submit race verification once its command exists.\n\nParent: [R2](https://github.com/trungtaottn/cf-agent-hub/issues/4). Source: retained candidate `22226633284e6410b2724acfcbfe1fe32f9325cc`; original tasks R2-T05. Future verification only; no implementation or product test is claimed by this draft.\n\n- Hard dependency [R2-T05-A](https://github.com/trungtaottn/cf-agent-hub/issues/30): Use complete expiry, retry-budget and ended-run semantics.\n- Interface dependency [R2-T03-A](https://github.com/trungtaottn/cf-agent-hub/issues/27): Use task version/current-reference guards and retained history.\n",
+    "comments": [],
+    "labels": [
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC-zrojg",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGhIA",
+        "name": "ai-handle",
+        "description": "Bounded task suitable for an agent once readiness and dependencies permit.",
+        "color": "0e8a16"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGnmg",
+        "name": "blocked",
+        "description": "Named prerequisite or owner/environment input is unmet.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHfAA",
+        "name": "priority:high",
+        "description": "High sequencing or correctness importance; does not imply readiness.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHjRw",
+        "name": "round:R2",
+        "description": "Work owned by the R2 roadmap round.",
+        "color": "1d76db"
+      }
+    ],
+    "number": 31,
+    "state": "OPEN",
+    "title": "[R2-T05-B] Cancel and requeue tasks with preserved holds and history",
+    "url": "https://github.com/trungtaottn/cf-agent-hub/issues/31"
+  },
+  {
+    "author": {
+      "id": "U_kgDOCNDwxA",
+      "is_bot": false,
+      "login": "trungtaottn",
+      "name": "kaynt"
+    },
+    "body": "## Summary\n\nImplement the complete immutable artifact admission pipeline and committed-content authorization. Own stage/reservation/upload-generation/commit exclusion as one state machine; cleanup consumes that persisted protocol in T06-B.\n\n## Problem / motivation\n\n`docs/data-model.md:52–56` requires a durable cleanup tombstone and exact committed bytes; original Task6 (`docs/superpowers/plans/2026-10-23-r2-durable-work.md:159–174`) requires bounded streaming outside SQL. Object existence cannot prove a commit, and a delayed upload to a reused key could overwrite accepted evidence.\n\n## Proposed flow\n\n1. Stage a server-owned manifest, deadline and exact creator/run/fence/proof/epoch binding; native unbound writes still require runtime proof and humans cannot impersonate a run.\n2. Reserve a fresh server-generated immutable object generation for each accepted byte-write; stream bounded buffers while independently computing size/SHA-256 and rejecting misleading length/digest.\n3. Select one verified generation in SQL after rechecking current intent/version/deadline/authority. Persist key/digest identity so same-key identical-byte replay reconciles response loss while different bytes conflict.\n4. Commit verifies the selected generation outside SQL, then rechecks trusted current time, active run/fence where bound, epoch, maintenance generation and tombstone before marking committed and clearing expiry.\n5. Add committed metadata/content reads and assertCommittedArtifacts for visibility, associations, unique IDs, five-item/25-MiB aggregate limits; use attachment headers and escaped/sanitized filenames.\n\n## Scope\n\n**In scope**\n\n- Individual bytes ≤10,485,760; message/result references ≤5 and ≤26,214,400 aggregate bytes. Structured references and JSON keep existing bounds. No base64 whole-file encoding.\n- A chosen committed generation is immutable forever. Uploads never write its key again; crash after object put but before SQL creates uncommitted/orphan evidence only.\n- Define transactionally exclusive tombstone-versus-commit CAS and persisted in-flight reservation state for cleanup and recovery consumers before exposing writes. Exact committed application/json ID+digest supports future R3 input binding.\n\n**Out of scope / non-goals**\n\n- No mutable committed bytes, public bucket paths, arbitrary object keys, content search, approval activation, unbounded buffering or R2 calls inside WorkspaceTransaction.\n\n## Acceptance criteria\n\n- [ ] Test size ceiling−1/ceiling/+1, misleading Content-Length, digest mismatch, duplicate IDs, five/six references and aggregate limits.\n- [ ] Wrong runtime/credential/workspace, human run impersonation and revocation/lease expiry during byte verification deny finalization without committed metadata.\n- [ ] Lost upload response reconciles persisted generation; same key/same digest replays and changed digest conflicts; delayed writes cannot overwrite committed bytes.\n- [ ] Crash after put/before SQL remains unavailable; exact committed-only reads deny hidden references and emit no public object key.\n- [ ] Later run `npm run test:workers -- test/artifacts/commit-integrity.test.ts` and `npm run typecheck`; inspect all async boundaries and document ambiguous-upload recovery.\n\n## Touchpoints\n\n- Existing: `src/storage/transaction.ts`.\n- Existing: `src/http/bounds.ts`.\n- Existing: `src/http/router.ts`.\n- Existing: `src/workspace/commands.ts`.\n- Existing: `src/recovery/maintenance.ts`.\n- Existing: `src/workspace/workspace-do.ts`.\n- Existing: `wrangler.jsonc`.\n- Existing: `docs/http-api.md`.\n- Existing: `docs/limits.md`.\n- Existing: `docs/data-model.md`.\n- Planned new: `src/artifacts/commands.ts`.\n- Planned new: `src/artifacts/content.ts`.\n- Planned new: `test/artifacts/commit-integrity.test.ts`.\n\n## Notes\n\nT06-B must prove both cleanup/commit orderings before artifact writes are exposed. Capturing immutable generation and authority at stage never replaces rechecking current authority at final commit.\n\nParent: [R2](https://github.com/trungtaottn/cf-agent-hub/issues/4). Source: retained candidate `22226633284e6410b2724acfcbfe1fe32f9325cc`; original tasks R2-T06. Future verification only; no implementation or product test is claimed by this draft.\n\n- Hard dependency [R2-T05-B](https://github.com/trungtaottn/cf-agent-hub/issues/31): Execution/cancellation/expiry authority is complete.\n- Interface dependency [R2-T02-C](https://github.com/trungtaottn/cf-agent-hub/issues/26): Native writes require exact credential/runtime proof.\n- Interface dependency [R2-T02-A](https://github.com/trungtaottn/cf-agent-hub/issues/24): Use immutable generation, intent and association schema.\n",
+    "comments": [],
+    "labels": [
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC-zrojg",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGhIA",
+        "name": "ai-handle",
+        "description": "Bounded task suitable for an agent once readiness and dependencies permit.",
+        "color": "0e8a16"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGnmg",
+        "name": "blocked",
+        "description": "Named prerequisite or owner/environment input is unmet.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHfAA",
+        "name": "priority:high",
+        "description": "High sequencing or correctness importance; does not imply readiness.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHjRw",
+        "name": "round:R2",
+        "description": "Work owned by the R2 roadmap round.",
+        "color": "1d76db"
+      }
+    ],
+    "number": 32,
+    "state": "OPEN",
+    "title": "[R2-T06-A] Implement immutable artifact stage, upload, commit and authorized download",
+    "url": "https://github.com/trungtaottn/cf-agent-hub/issues/32"
+  },
+  {
+    "author": {
+      "id": "U_kgDOCNDwxA",
+      "is_bot": false,
+      "login": "trungtaottn",
+      "name": "kaynt"
+    },
+    "body": "## Summary\n\nAdd bounded expiry cleanup and orphan inventory reconciliation using T06-A immutable generations. Cleanup first wins a durable SQL tombstone, then deletes only proven uncommitted generations; committed retained evidence remains protected.\n\n## Problem / motivation\n\n`docs/data-model.md:56` explicitly forbids check-then-delete without durable exclusion. Original Task6 (`docs/superpowers/plans/2026-10-23-r2-durable-work.md:165–173`) names cleanup_tombstone_wins_late_upload and commit_wins_cleanup_without_byte_loss. The shared maintenance barrier must also prevent destructive cleanup crossing a recovery checkpoint.\n\n## Proposed flow\n\n1. Implement expireArtifactIntents(tx,nowMs,limit) to atomically tombstone expired uncommitted intents and return only known uncommitted generation candidates plus nextDueAt.\n2. Delete candidate objects outside SQL after rechecking the current persisted exclusion/admission token required by the shared protocol; never infer eligibility from a missing reference alone.\n3. Reconcile late generations and crash-created objects with a bounded, resumable workspace inventory cursor. Count/record orphan observations without unbounded listings or exposing keys to product callers.\n4. Integrate next due expiry and remaining inventory work into the existing scheduler, retaining pending work through restart.\n5. Honor maintenance barriers, retained accepted-result/proposal-input associations and current restoration inventory; do not delete exact immutable generations covered by complete capture.\n\n## Scope\n\n**In scope**\n\n- Tombstones are permanent for that intent; late uploads can only become orphans and cannot revive it.\n- Retry of deletion/reconciliation is idempotent; object-store failure leaves metadata/diagnostics sufficient for a later bounded resume.\n- Preserve accepted result and synthetic approval-input artifacts while retaining no raw proof or request body in cleanup diagnostics.\n\n**Out of scope / non-goals**\n\n- No blind bucket purge, unbounded scan, arbitrary client object-key cleanup, restored authority reuse, retention-policy deletion of required evidence or automatic result rewriting.\n\n## Acceptance criteria\n\n- [ ] Synchronize cleanup and commit: tombstone-first rejects commit and late generation is reconciled; commit-first preserves exact selected bytes.\n- [ ] Crash at reservation/put/selection/tombstone/delete boundaries converges without expired intent revival or committed-byte loss.\n- [ ] Object deletion failure remains retryable and bounded after restart, while unrelated scheduler sources continue to run.\n- [ ] Capture maintenance blocks new cleanup/reservations and delayed destructive effects cannot cross the recorded barrier; retained result/input references survive.\n- [ ] Later run `npm run test:workers -- test/artifacts/cleanup-race.test.ts test/artifacts/commit-integrity.test.ts`; inspect both metadata and byte existence and update recovery/operations runbooks.\n\n## Touchpoints\n\n- Existing: `src/outbox/scheduler.ts`.\n- Existing: `src/outbox/scheduler-state.ts`.\n- Existing: `src/recovery/maintenance.ts`.\n- Existing: `src/workspace/workspace-do.ts`.\n- Existing: `docs/data-model.md`.\n- Existing: `docs/backup-restore.md`.\n- Existing: `docs/operations.md`.\n- Planned new: `src/artifacts/reconcile.ts`.\n- Planned new: `test/artifacts/cleanup-race.test.ts`.\n\n## Notes\n\nThis issue implements the consumer of the exclusion protocol, not an alternate commit algorithm. The final recovery gate repeats these interleavings with a real isolated private bucket.\n\nParent: [R2](https://github.com/trungtaottn/cf-agent-hub/issues/4). Source: retained candidate `22226633284e6410b2724acfcbfe1fe32f9325cc`; original tasks R2-T06. Future verification only; no implementation or product test is claimed by this draft.\n\n- Hard dependency [R2-T06-A](https://github.com/trungtaottn/cf-agent-hub/issues/32): Consume immutable generations and the shared tombstone/commit exclusion protocol.\n- Interface dependency [R2-T05-A](https://github.com/trungtaottn/cf-agent-hub/issues/30): Use shared bounded scheduler and maintenance fences.\n",
+    "comments": [],
+    "labels": [
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC-zrojg",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGhIA",
+        "name": "ai-handle",
+        "description": "Bounded task suitable for an agent once readiness and dependencies permit.",
+        "color": "0e8a16"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGnmg",
+        "name": "blocked",
+        "description": "Named prerequisite or owner/environment input is unmet.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHfAA",
+        "name": "priority:high",
+        "description": "High sequencing or correctness importance; does not imply readiness.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHjRw",
+        "name": "round:R2",
+        "description": "Work owned by the R2 roadmap round.",
+        "color": "1d76db"
+      }
+    ],
+    "number": 33,
+    "state": "OPEN",
+    "title": "[R2-T06-B] Reconcile expired artifact intents and orphans without deleting committed bytes",
+    "url": "https://github.com/trungtaottn/cf-agent-hub/issues/33"
+  },
+  {
+    "author": {
+      "id": "U_kgDOCNDwxA",
+      "is_bot": false,
+      "login": "trungtaottn",
+      "name": "kaynt"
+    },
+    "body": "## Summary\n\nExtend R1 message admission/read/replay to support task references and committed artifact attachments using the new domain validators. Preserve fixed thread participants, current coherent-grant checks and atomic notification identity.\n\n## Problem / motivation\n\nThis is a concrete source gap: `src/messages/commands.ts:19–20` and `src/messages/references.ts:50–51` deliberately reject tasks/artifacts, and accepted messages set artifact_ids to [] (`commands.ts:38`). Original Task6 supplies assertCommittedArtifacts for result/message use. Adding artifact endpoints alone would leave that promised message flow unusable.\n\n## Proposed flow\n\n1. Replace only the R1 unavailable guards for implemented R2 references with current scoped task/artifact visibility and committed-artifact association validation.\n2. Require the actual caller and every fixed participant, including omitted reply recipients, to have one coherent live grant satisfying all referenced resources; never union scopes/projects across credentials. Preserve current workspace-wide message access rules.\n3. Persist artifact associations and return exact canonical message IDs on accepted/replayed/thread/inbox projections; use the reviewed schema rather than trusting incoming object keys.\n4. Keep thread/message/inbox/outbox/event/outcome atomic and preserve immutable notification payload version/IDs without adding task contents or artifact secrets to notifications.\n5. Recheck current association access on reads/replay/dispatch so later revocation cannot expose embedded reference metadata or content.\n\n## Scope\n\n**In scope**\n\n- Same-workspace, committed-only, unique references, five attachments/26,214,400 aggregate bytes and 8,192 serialized reference bytes apply consistently.\n- A rejected reference creates no partial thread, message, inbox, event or delivery. Historical ACK remains recipient-owned and never mutates task state.\n- Message body/filenames are inert text, and artifact download remains separately authorized; references do not mint capabilities.\n\n**Out of scope / non-goals**\n\n- No R3 message composition UI, new thread membership expansion, task state change on ACK/delivery, public artifact link or synthesized participant authentication.\n\n## Acceptance criteria\n\n- [ ] Authorized task/artifact references survive restart, identical replay and inbox/thread projection with exact attachment IDs.\n- [ ] Hidden/foreign/uncommitted/expired artifacts or participant-inaccessible task references reject generically and leave all atomic table counts unchanged.\n- [ ] Two credentials whose scopes/projects would only work when combined cannot authorize a participant; revocation before replay/read/dispatch removes access.\n- [ ] Five/six references and aggregate-size limits are covered; notification bytes contain only canonical notification IDs, and ACK does not complete referenced work.\n- [ ] Later run `npm run test:workers -- test/messages/r2-references.test.ts test/messages/acceptance.test.ts`; update R1-specific unavailable text to staged R2 availability.\n\n## Touchpoints\n\n- Existing: `src/messages/commands.ts`.\n- Existing: `src/messages/references.ts`.\n- Existing: `src/messages/reads.ts`.\n- Existing: `src/messages/ack.ts`.\n- Existing: `src/outbox/repository.ts`.\n- Existing: `src/outbox/dispatcher.ts`.\n- Existing: `src/audit/events.ts`.\n- Existing: `src/http/message-routes.ts`.\n- Existing: `docs/data-model.md`.\n- Existing: `docs/http-api.md`.\n- Existing: `test/messages/acceptance.test.ts`.\n- Planned new: `test/messages/r2-references.test.ts`.\n\n## Notes\n\nThis child closes the existing integration guard rather than building a second messaging lane. Schema/table changes remain coordinated with the storage owner; append a migration if an already-integrated schema needs correction.\n\nParent: [R2](https://github.com/trungtaottn/cf-agent-hub/issues/4). Source: retained candidate `22226633284e6410b2724acfcbfe1fe32f9325cc`; original tasks R2-T06, R2-T08. Future verification only; no implementation or product test is claimed by this draft.\n\n- Hard dependency [R2-T06-A](https://github.com/trungtaottn/cf-agent-hub/issues/32): Use committed artifact validation and current association authorization.\n- Interface dependency [R2-T03-A](https://github.com/trungtaottn/cf-agent-hub/issues/27): Use authoritative task visibility and opaque scoped IDs.\n- Interface dependency [R2-T02-B](https://github.com/trungtaottn/cf-agent-hub/issues/25): Use live canonical agent grants for every participant.\n",
+    "comments": [],
+    "labels": [
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC-zrojg",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGhIA",
+        "name": "ai-handle",
+        "description": "Bounded task suitable for an agent once readiness and dependencies permit.",
+        "color": "0e8a16"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGnmg",
+        "name": "blocked",
+        "description": "Named prerequisite or owner/environment input is unmet.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHfAA",
+        "name": "priority:high",
+        "description": "High sequencing or correctness importance; does not imply readiness.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHjRw",
+        "name": "round:R2",
+        "description": "Work owned by the R2 roadmap round.",
+        "color": "1d76db"
+      }
+    ],
+    "number": 34,
+    "state": "OPEN",
+    "title": "[R2-T06-C] Enable task and committed artifact references in existing messages",
+    "url": "https://github.com/trungtaottn/cf-agent-hub/issues/34"
+  },
+  {
+    "author": {
+      "id": "U_kgDOCNDwxA",
+      "is_bot": false,
+      "login": "trungtaottn",
+      "name": "kaynt"
+    },
+    "body": "## Summary\n\nImplement atomic result submission to Review and independent acceptance to Done. Retain stable submitter and reviewer attribution across credential rotation, requeue, archive and recovery; this is result review, not R3 human approval.\n\n## Problem / motivation\n\n`docs/data-model.md:34,46–50` requires results to bind submitted run and stable principal/agent. Original Task7 (`docs/superpowers/plans/2026-10-23-r2-durable-work.md:175–190`) excludes both identity axes; comparing only the current credential would let the submitter accept through a rotated token. R1 ACK and delivery are unrelated receipt states.\n\n## Proposed flow\n\n1. Implement submitTaskResult with current assertActiveRun, exact expected task version and authorized committed artifact validation.\n2. Persist canonical submitted_by Actor, run_id, submitted_at, bounded summary and artifact IDs; end run submitted with ended_at, clear active pointer and enter Review in the same event/outcome transaction.\n3. Implement acceptTaskResult against current result/version, reviewer scope, current project/artifact visibility and both principal/agent exclusions. Enter Done with distinct immutable acceptance history/event.\n4. Retain reviewer identity/reason/result/run/version/time internally and surface through authorized existing history/event reads without undocumented Task fields.\n5. Integrate actual submit/cancel race orderings and requeue history so invalidated current results remain inspectable as historical evidence.\n\n## Scope\n\n**In scope**\n\n- Archived submitters still resolve for comparison; another credential/runtime of the same agent does not count as independence.\n- Simultaneous reviewers produce one acceptance, and response-loss replay returns the original outcome only while current access remains valid.\n- All result associations remain retained for cleanup/recovery; no acceptance is inferred from comments, ACKs, webhook delivery or submission.\n\n**Out of scope / non-goals**\n\n- No auto-accept, broad human approval endpoint, current-result overwrite, artifact-integrity shortcut or erase-and-resubmit identity laundering.\n\n## Acceptance criteria\n\n- [ ] Submit releases lease and enters Review only; an independent authorized second agent or human may then enter Done.\n- [ ] Same principal or same agent, including alternate token/runtime and archived submitter identity, cannot accept.\n- [ ] Uncommitted/foreign/duplicate/oversized artifacts and stale owner/version reject atomically; concurrent reviews have exactly one accepted event.\n- [ ] Cancel-first blocks submit; submit-first cancellation retains evidence; requeue invalidates current result but preserves stable historical attribution.\n- [ ] Later run `npm run test:workers -- test/tasks/independent-review.test.ts test/tasks/cancellation-race.test.ts`; inspect task/run/result/history/event/outcome after restart and record two-agent journey.\n\n## Touchpoints\n\n- Existing: `src/workspace/commands.ts`.\n- Existing: `src/audit/events.ts`.\n- Existing: `src/workspace/workspace-do.ts`.\n- Existing: `docs/task-lifecycle.md`.\n- Existing: `docs/data-model.md`.\n- Existing: `docs/http-api.md`.\n- Planned new: `src/tasks/results.ts`.\n- Planned new: `test/tasks/independent-review.test.ts`.\n\n## Notes\n\nSubmission and acceptance stay in one issue because stable attribution is their shared invariant. R3 proposals/decisions remain disabled and independent from this review flow.\n\nParent: [R2](https://github.com/trungtaottn/cf-agent-hub/issues/4). Source: retained candidate `22226633284e6410b2724acfcbfe1fe32f9325cc`; original tasks R2-T07. Future verification only; no implementation or product test is claimed by this draft.\n\n- Hard dependency [R2-T06-B](https://github.com/trungtaottn/cf-agent-hub/issues/33): Committed evidence must survive cleanup races.\n- Interface dependency [R2-T06-A](https://github.com/trungtaottn/cf-agent-hub/issues/32): Consume assertCommittedArtifacts and immutable bytes.\n- Hard dependency [R2-T05-B](https://github.com/trungtaottn/cf-agent-hub/issues/31): Use complete cancellation/requeue/history semantics.\n- Interface dependency [R2-T04-A](https://github.com/trungtaottn/cf-agent-hub/issues/29): Use exact active-run ownership assertion.\n",
+    "comments": [],
+    "labels": [
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC-zrojg",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGhIA",
+        "name": "ai-handle",
+        "description": "Bounded task suitable for an agent once readiness and dependencies permit.",
+        "color": "0e8a16"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGnmg",
+        "name": "blocked",
+        "description": "Named prerequisite or owner/environment input is unmet.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHfAA",
+        "name": "priority:high",
+        "description": "High sequencing or correctness importance; does not imply readiness.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHjRw",
+        "name": "round:R2",
+        "description": "Work owned by the R2 roadmap round.",
+        "color": "1d76db"
+      }
+    ],
+    "number": 35,
+    "state": "OPEN",
+    "title": "[R2-T07-A] Submit results and require independent current-authority acceptance",
+    "url": "https://github.com/trungtaottn/cf-agent-hub/issues/35"
+  }
+]

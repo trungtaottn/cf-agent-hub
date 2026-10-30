@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "snapshotRevision": 3,
+  "phase": "targeted-reverification-and-whole-plan-sweep-pending",
+  "priorFixedSnapshotSha256": "b221de94c56ac33571d68d8b7d074360f3294e7ab7ebc80c1471093f7ed3fbdf",
+  "priorFullPasses": [
+    {
+      "lens": "contracts",
+      "coverage": 32,
+      "findings": [
+        "F-D1 High local proof-store credential ID unavailable for imported opaque token"
+      ]
+    },
+    {
+      "lens": "failure modes",
+      "coverage": 32,
+      "findings": []
+    },
+    {
+      "lens": "security boundaries",
+      "coverage": 32,
+      "findings": []
+    }
+  ],
+  "appliedCorrections": [
+    {
+      "id": "F-D1",
+      "scope": "Only local proof-store producer/consumer signatures and tests; pinned protected slot/generation plus authenticated principal/runtime provenance; server credential binding and token grammar unchanged"
+    },
+    {
+      "id": "S1",
+      "scope": "Accurate pending/blocked/no released baseline status marker; validator unchanged"
+    },
+    {
+      "id": "RV02-clarification",
+      "scope": "Suspend-aware elapsed-time proof required; sameboot/hrtime alone insufficient; no new OS/backend selection"
+    }
+  ],
+  "rejectedWatchItems": [
+    {
+      "topic": "post-checkpoint outcome loss through supported same-capture retirement after source resume",
+      "reason": "controls.ts:12-14 requires captured/restored maintenance; resume opens at49; old capture cannot then retire. Resume checks exact capture/barrier/epoch retirement and separate environment at43-44. Arbitrary external rollback is outside supported flow.",
+      "decision": "Not retained as a new defect; no blanket same-principal rotation ban"
+    }
+  ],
+  "runtimeTests": "not run",
+  "newModelChecks": "27 hypothetical assertions, not application tests",
+  "structuralValidation": "revision3 pending; prior revision2 docs failed S1; historical plans636 passed",
+  "gate": "#17 and D1/D2/D3/D-HISTORY/D-JOURNAL unchanged; no implementation or publication approval inferred"
+}

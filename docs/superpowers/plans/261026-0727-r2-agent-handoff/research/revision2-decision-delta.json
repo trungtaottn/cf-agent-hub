@@ -1,0 +1,114 @@
+{
+  "schema": 1,
+  "revision": "approved-correction-draft-2",
+  "approved": true,
+  "approvalScope": "Four adjudicated plan corrections plus explicit AgentKit workflow alignment; no runtime implementation or release",
+  "sourceSha": "7ab5cbf90ace18bbdce87db6804da14da1f92b9e",
+  "originalSnapshotSha256": "1b9b29eae52c4156ab9880b885843c09969ff56c40836f748b8463a1f2b74870",
+  "decisions": [
+    {
+      "id": "R2-RV-01",
+      "severity": "High",
+      "affectedIssues": [
+        38,
+        40,
+        41,
+        44,
+        48
+      ],
+      "evidence": [
+        "plans/docs/r2-task-plans/issue-041.md:64-67",
+        "plans/docs/r2-task-plans/issue-044.md:66-72",
+        "plans/docs/r2-task-plans/issue-045.md:63",
+        "source/src/workspace/idempotency.ts:19-25",
+        "source/src/workspace/commands.ts:46-57",
+        "source/src/auth/authorize.ts:15"
+      ],
+      "correction": "Persist immutable complete validated semantic request (method, operation, path/resource IDs, semantic query, canonical body, origin/workspace) plus verified nonsecret principal identity; refuse changed binding before dispatch. Test process-kill restart target/principal drift with zero fetch/new mutations.",
+      "approved": true
+    },
+    {
+      "id": "R2-RV-02",
+      "severity": "High",
+      "affectedIssues": [
+        20,
+        38,
+        41,
+        44,
+        48
+      ],
+      "evidence": [
+        "plans/docs/r2-task-plans/issue-041.md:64-81",
+        "plans/docs/r2-task-plans/issue-044.md:66-72",
+        "source/src/workspace/idempotency.ts:6",
+        "source/src/workspace/idempotency.ts:31-38",
+        "source/test/workspace/idempotency.test.ts:101-114"
+      ],
+      "correction": "Persist conservative first-dispatch time and guaranteed replay horizon; stop redispatch when guarantee is expired/unknown or time continuity cannot be trusted, preserve unresolved intent and require authoritative reconciliation/manual decision. Never rekey automatically. Add outcome-expiry restart tests.",
+      "approved": true
+    },
+    {
+      "id": "R2-RV-03",
+      "severity": "Medium",
+      "affectedIssues": [
+        22,
+        39,
+        43,
+        46,
+        49
+      ],
+      "evidence": [
+        "plans/docs/r2-task-plans/issue-049.md:69-70",
+        "live-issues/issue-49.json body Proposed flow step4",
+        "source/src/workspace/commands.ts:44",
+        "source/src/recovery/controls.ts:49-51",
+        "source/src/outbox/dispatcher.ts:25"
+      ],
+      "correction": "Approved recommended sequence: historical no-redrive reconciliation and retirement/probe/cutover under existing closed gate; explicit shared-gate resume; fresh task/review afterwards. No separate dispatch-only hold design.",
+      "approved": true
+    },
+    {
+      "id": "R2-RV-04",
+      "severity": "Medium",
+      "affectedIssues": [
+        20,
+        21,
+        23,
+        24,
+        25,
+        26,
+        36,
+        37,
+        38,
+        40,
+        41,
+        42,
+        44,
+        45,
+        48,
+        50
+      ],
+      "evidence": [
+        "plans/docs/r2-task-plans/issue-023.md:13",
+        "plans/docs/r2-task-plans/issue-050.md:82",
+        "git ls-tree 38aa560ecc0eb6f61ee4427d8e558c8241d30f00 docs/r2-task-plans docs/superpowers/plans/261026-0727-r2-agent-handoff"
+      ],
+      "correction": "Replace ambiguous research references with immutable exact task19 commit/path links, identify historical snapshots as orientation and live issues as authority; do not import whole duplicate bundles into every branch.",
+      "approved": true
+    }
+  ],
+  "workflow": {
+    "id": "W1",
+    "source": "explicit owner request",
+    "change": "Portable actual installed AK workflow routing in common, no automatic execution"
+  },
+  "unchangedDecisions": [
+    "D1",
+    "D2",
+    "D3",
+    "D-HISTORY",
+    "D-JOURNAL"
+  ],
+  "unchangedGate": "#17 Verified R1; all existing typed edges",
+  "publication": "None yet; guarded append-only existing branches after fresh reviews; bounded issue49 body proposal separate"
+}

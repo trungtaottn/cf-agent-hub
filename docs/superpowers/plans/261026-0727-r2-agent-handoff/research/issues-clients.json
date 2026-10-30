@@ -1,0 +1,456 @@
+[
+  {
+    "author": {
+      "id": "U_kgDOCNDwxA",
+      "is_bot": false,
+      "login": "trungtaottn",
+      "name": "kaynt"
+    },
+    "body": "## Summary\n\nDefine exact import preview/apply/report contracts and bounded literal-search semantics. Consumers receive closed DTOs and negative fixtures rather than inventing source authority, reconciliation rules or query behavior.\n\n## Problem / motivation\n\nOriginal Task1 (`docs/superpowers/plans/2026-10-23-r2-durable-work.md:77–81`) specifies proposed import/search amendments. The implemented AES-GCM cursor (`src/http/cursors.ts:25–47`) already protects hidden frontiers; introducing readable HMAC pagination would regress confidentiality. Import source status and references must remain inert provenance.\n\n## Proposed flow\n\n1. Define ImportBatch with namespace/revision and ≤100 closed rows within the 65,536-byte envelope. Rows contain external_id, nullable UTC source_updated_at, title/description, project/work-role IDs, source_state and inert nullable source_ref.\n2. Define POST imports:preview, POST imports/{id}:apply and GET imports/{id}; human imports:manage plus tasks:read, apply additionally tasks:create, with CSRF/idempotency on POSTs.\n3. Define immutable version-1 previews with 15-minute expiry, canonical preview_sha256, row dispositions and exact counts; apply binds expected_import_version, digest and accept_rejected_rows, producing version-2 applied report.\n4. Define unique workspace/namespace/external-ID mapping: exact repeat unchanged, changed source conflict, valid new row Backlog without authority.\n5. Specify NFC literal case-sensitive search, 2,048 UTF-8-byte query, 256-code-point snippet and 2,000-candidate scan budget, using existing confidential continuation and global `(created_at,id)` order.\n\n## Scope\n\n**In scope**\n\n- Namespaces/external IDs ≤128 characters, revisions ≤256, source state ≤64 and source reference ≤2,048. Source references are never fetched. Envelope errors reject before preview; row errors retain index/code without inaccessible target details.\n- ImportPreview counts received/create/unchanged/conflict/rejected; ImportReport counts received/created/unchanged/conflict/rejected. GET uses a closed discriminated union. False partial acceptance with conflict/rejection returns INVALID_STATE; changed mapping/reference conflicts the entire apply.\n- Search applies underlying resource permissions before snippets and pagination, with no global total. Globally distinct searchable resource IDs avoid ambiguous kind ties.\n\n**Out of scope / non-goals**\n\n- No live connector, imported owners/credentials/grants/approval, executable source URL, local overwrite, regex/semantic/file-content search or visible hidden-frontier metadata.\n\n## Acceptance criteria\n\n- [ ] Schemas reject authority-bearing row fields and oversized envelopes; 100/101 rows and nullable/invalid UTC timestamps are explicit boundary fixtures.\n- [ ] Dispositions/counts reconcile exactly; every imported source state maps to Backlog and preserves source state only as provenance.\n- [ ] Preview expiry/digest mismatch/stale mapping and explicit partial acceptance have closed, non-overwriting semantics.\n- [ ] Percent/underscore/quotes and normalization are literal cases; confidential cursors may advance through bounded empty filtered pages without hidden IDs/counts.\n- [ ] Later run `npm test -- test/contracts/r2-import-search.test.ts` and `npm run check`; retain schema review evidence without claiming working endpoints.\n\n## Touchpoints\n\n- Existing: `spec/openapi.json`.\n- Existing: `docs/http-api.md`.\n- Existing: `docs/limits.md`.\n- Existing: `docs/data-model.md`.\n- Existing: `docs/security-model.md`.\n- Existing: `examples/http/fixture-map.json`.\n- Existing: `src/http/cursors.ts`.\n- Planned new: `spec/import-batch.schema.json`.\n- Planned new: `examples/imports/reconciliation.json`.\n- Planned new: `test/contracts/r2-import-search.test.ts`.\n\n## Notes\n\nPreserve closed Task DTOs: provenance belongs to import reports and permitted audit history. Coordinate shared OpenAPI and fixture-map writes with T01-A.\n\nParent: [R2](https://github.com/trungtaottn/cf-agent-hub/issues/4). Source: retained candidate `22226633284e6410b2724acfcbfe1fe32f9325cc`; original tasks R2-T01. Future verification only; no implementation or product test is claimed by this draft.\n\n- Hard dependency [R1-ACCEPT](https://github.com/trungtaottn/cf-agent-hub/issues/17): Verified R1 acceptance is required before any R2 implementation begins.\n- Hard dependency [R2-PLAN](https://github.com/trungtaottn/cf-agent-hub/issues/19): Resolve current schema and operation names before amending them.\n",
+    "comments": [],
+    "labels": [
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC-zrofA",
+        "name": "documentation",
+        "description": "Improvements or additions to documentation",
+        "color": "0075ca"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGhIA",
+        "name": "ai-handle",
+        "description": "Bounded task suitable for an agent once readiness and dependencies permit.",
+        "color": "0e8a16"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGnmg",
+        "name": "blocked",
+        "description": "Named prerequisite or owner/environment input is unmet.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHfAA",
+        "name": "priority:high",
+        "description": "High sequencing or correctness importance; does not imply readiness.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHjRw",
+        "name": "round:R2",
+        "description": "Work owned by the R2 roadmap round.",
+        "color": "1d76db"
+      }
+    ],
+    "number": 21,
+    "state": "OPEN",
+    "title": "[R2-T01-B] Specify bounded import plans and confidential literal search",
+    "url": "https://github.com/trungtaottn/cf-agent-hub/issues/21"
+  },
+  {
+    "author": {
+      "id": "U_kgDOCNDwxA",
+      "is_bot": false,
+      "login": "trungtaottn",
+      "name": "kaynt"
+    },
+    "body": "## Summary\n\nImplement bounded literal workspace search across authorized task, message and artifact metadata. Also own reusable two-workspace isolation fixtures needed by import and final matrix tests, without prematurely claiming comprehensive R2 isolation.\n\n## Problem / motivation\n\nThe R1 confidential cursor (`src/http/cursors.ts:25–47`) and resource-filtered message reads already provide a reusable boundary. Original Task8 (`docs/superpowers/plans/2026-10-23-r2-durable-work.md:191–206`) requires underlying read rights independent of search:read. Filtering snippets after pagination would disclose hidden records and incorrect totals.\n\n## Proposed flow\n\n1. Implement searchWorkspace with exact q/kind/limit/cursor DTOs, NFC normalization and case-sensitive literal substring comparison; parameterize SQL values.\n2. Scan at most 2,000 candidates in stable global created_at/id order, apply resource/current-association authorization before snippets/output and return ≤256-code-point snippets.\n3. Bind shared encrypted cursor to actor/workspace/auth lane/credential or session/query/kind/sort/high-water/frontier; encode/decode outside SQL and reauthorize within the actual query and after final awaits.\n4. Advance bounded hidden frontiers without exposing their IDs/counts; permit an empty filtered page with valid continuation and no global total.\n5. Build reusable foreign-workspace/project, restricted-grant, revoked-owner and synthetic disabled-feature fixtures for T09-A and the later full isolation gate.\n\n## Scope\n\n**In scope**\n\n- Query limit 2,048 UTF-8 bytes; `%`, `_`, quotes and punctuation are literal. Globally distinct resource IDs make cross-kind order unambiguous.\n- Search:read alone never grants task/message/artifact content; thread membership/reviewer semantics and artifact association rights still apply.\n- Cancelled tasks remain searchable when authorized. Artifact search is metadata-only, never byte content. Preserve existing cursor key separation and authenticated encryption.\n\n**Out of scope / non-goals**\n\n- No semantic/regex/file-content search, cross-workspace discovery, hidden totals, readable HMAC-only cursors, unbounded scan or adapter conformance claim.\n\n## Acceptance criteria\n\n- [ ] Search-only and foreign/project-restricted actors receive no hidden IDs/snippets/counts; message participation and artifact associations are checked before output.\n- [ ] NFC, punctuation, 2,048-byte boundary, 256-code-point snippets and 2,000-candidate stopping are exact, with bounded continuation through empty filtered pages.\n- [ ] High water excludes later records; query/kind/actor/workspace swaps, tampering and expiry reject cursors, and raw cursor bytes reveal no hidden frontier ID.\n- [ ] Revocation between pages removes visibility; authorized cancelled/history records remain traversable after restart.\n- [ ] Later run `npm run test:workers -- test/search/authorized-search.test.ts`; inspect query plans/scan counts and document limits. T08-B owns the complete matrix after imports/native transport exist.\n\n## Touchpoints\n\n- Existing: `src/http/cursors.ts`.\n- Existing: `src/http/read-routes.ts`.\n- Existing: `src/messages/reads.ts`.\n- Existing: `src/messages/references.ts`.\n- Existing: `src/audit/events.ts`.\n- Existing: `src/workspace/workspace-do.ts`.\n- Existing: `docs/security-model.md`.\n- Existing: `docs/limits.md`.\n- Existing: `test/acceptance/r1-isolation.test.ts`.\n- Existing: `test/helpers/auth.ts`.\n- Planned new: `src/search/query.ts`.\n- Planned new: `test/search/authorized-search.test.ts`.\n- Planned new: `test/helpers/r2-isolation.ts`.\n\n## Notes\n\nSeparating reusable fixtures from final evidence prevents the original Task8/Task9 dependency from becoming cyclic. Reuse the accepted AES-GCM codec rather than adding another cursor store.\n\nParent: [R2](https://github.com/trungtaottn/cf-agent-hub/issues/4). Source: retained candidate `22226633284e6410b2724acfcbfe1fe32f9325cc`; original tasks R2-T08. Future verification only; no implementation or product test is claimed by this draft.\n\n- Hard dependency [R2-T07-A](https://github.com/trungtaottn/cf-agent-hub/issues/35): Current task/result/artifact visibility and retained history exist.\n- Hard dependency [R2-T06-C](https://github.com/trungtaottn/cf-agent-hub/issues/34): Use complete message reference/attachment visibility.\n- Interface dependency [R2-T01-B](https://github.com/trungtaottn/cf-agent-hub/issues/21): Consume exact literal matching and query/scan bounds.\n",
+    "comments": [],
+    "labels": [
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC-zrojg",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGhIA",
+        "name": "ai-handle",
+        "description": "Bounded task suitable for an agent once readiness and dependencies permit.",
+        "color": "0e8a16"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGnmg",
+        "name": "blocked",
+        "description": "Named prerequisite or owner/environment input is unmet.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHfAA",
+        "name": "priority:high",
+        "description": "High sequencing or correctness importance; does not imply readiness.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHjRw",
+        "name": "round:R2",
+        "description": "Work owned by the R2 roadmap round.",
+        "color": "1d76db"
+      }
+    ],
+    "number": 36,
+    "state": "OPEN",
+    "title": "[R2-T08-A] Search authorized resources with bounded confidential continuation",
+    "url": "https://github.com/trungtaottn/cf-agent-hub/issues/36"
+  },
+  {
+    "author": {
+      "id": "U_kgDOCNDwxA",
+      "is_bot": false,
+      "login": "trungtaottn",
+      "name": "kaynt"
+    },
+    "body": "## Summary\n\nImplement immutable import preview, explicit atomic apply and retained provenance/report reads. Import creates only new Backlog work; repeated source IDs reconcile predictably without overwriting local edits or importing execution authority.\n\n## Problem / motivation\n\nOriginal Task9 (`docs/superpowers/plans/2026-10-23-r2-durable-work.md:207–222`) binds preview/apply to source hashes and versions. The R1 command wrapper already reauthorizes and persists sanitized outcomes atomically (`src/workspace/commands.ts:42–63`). Reimplementing import as a row-by-row HTTP loop would violate all-or-nothing apply and lost-response counts.\n\n## Proposed flow\n\n1. Validate the bounded envelope and closed rows; create an immutable 15-minute preview with canonical source hashes, versioned mappings, row dispositions/counts and preview digest. Preview persists plan/audit only, never tasks/mappings.\n2. Map unique workspace/namespace/external-ID to stable internal task plus source hash; unchanged is unchanged, changed is conflict, invalid/hidden references are rejected without target detail.\n3. Apply rechecks current human imports:manage/tasks:read/tasks:create, actual session/CSRF, preview owner/workspace/version/digest/expiry and every reference/mapping version.\n4. With explicit accept_rejected_rows, atomically create valid new Backlog tasks, mappings, report, event/outcome; no execution-time partial commit. Without the flag any conflict/rejected row denies.\n5. Expose preview/report and permitted provenance history through authorized reads, keeping closed Task DTO unchanged.\n\n## Scope\n\n**In scope**\n\n- Maximum 100 rows/65,536-byte envelope; duplicate external IDs conflict. Every source state becomes Backlog with no assignment/run/result/approval.\n- Preserve namespace/ID/revision/nullable UTC time/state/inert reference/source hash/import/task IDs. Never fetch source_ref or execute source text.\n- A changed local mapping/reference after preview conflicts whole apply, including when partial row acceptance was selected. Expired/stale previews require fresh review.\n\n**Out of scope / non-goals**\n\n- No live connector, overwrite/upsert of existing tasks, imported credentials/grants/owner, automatic conflict repair or new active authority.\n\n## Acceptance criteria\n\n- [ ] Dry run creates no task/mapping; exact repeat preserves internal IDs and changed external content never overwrites a locally edited task.\n- [ ] Authority fields reject rows; malformed/oversized envelope creates no preview; hidden project gives generic row code without identity leak.\n- [ ] False partial flag with rejected/conflict rows denies, true allows only reviewed valid rows, and stale/expired/digest-mismatched plans apply nothing.\n- [ ] Crash/response-loss same-key apply yields original report; received=created+unchanged+conflict+rejected and task/map increments equal created after restart.\n- [ ] Later run `npm run test:workers -- test/imports/reconciliation.test.ts`; T08-B repeats import cases in full isolation, and recovery includes these mappings/reports.\n\n## Touchpoints\n\n- Existing: `src/workspace/commands.ts`.\n- Existing: `src/audit/events.ts`.\n- Existing: `src/workspace/workspace-do.ts`.\n- Existing: `src/http/router.ts`.\n- Existing: `docs/http-api.md`.\n- Existing: `docs/data-model.md`.\n- Existing: `docs/backup-restore.md`.\n- Existing: `docs/limits.md`.\n- Planned new: `src/imports/commands.ts`.\n- Planned new: `src/imports/provenance.ts`.\n- Planned new: `test/imports/reconciliation.test.ts`.\n\n## Notes\n\nThe immutable preview and apply transaction remain one owner. Reconciliation of changed source content requires manually reviewed replacement work or a future separately designed command, never silent overwrite.\n\nParent: [R2](https://github.com/trungtaottn/cf-agent-hub/issues/4). Source: retained candidate `22226633284e6410b2724acfcbfe1fe32f9325cc`; original tasks R2-T09. Future verification only; no implementation or product test is claimed by this draft.\n\n- Interface dependency [R2-T01-B](https://github.com/trungtaottn/cf-agent-hub/issues/21): Consume closed import schemas, dispositions and expiry.\n- Hard dependency [R2-T03-A](https://github.com/trungtaottn/cf-agent-hub/issues/27): Create Backlog work through canonical task rules.\n- Hard dependency [R2-T05-B](https://github.com/trungtaottn/cf-agent-hub/issues/31): Preserve holds/history and never import active authority.\n- Interface dependency [R2-T08-A](https://github.com/trungtaottn/cf-agent-hub/issues/36): Reuse established isolation fixtures and current reference filtering.\n",
+    "comments": [],
+    "labels": [
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC-zrojg",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGhIA",
+        "name": "ai-handle",
+        "description": "Bounded task suitable for an agent once readiness and dependencies permit.",
+        "color": "0e8a16"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGnmg",
+        "name": "blocked",
+        "description": "Named prerequisite or owner/environment input is unmet.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHfAA",
+        "name": "priority:high",
+        "description": "High sequencing or correctness importance; does not imply readiness.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHjRw",
+        "name": "round:R2",
+        "description": "Work owned by the R2 roadmap round.",
+        "color": "1d76db"
+      }
+    ],
+    "number": 37,
+    "state": "OPEN",
+    "title": "[R2-T09-A] Apply reviewed import plans without overwriting local work",
+    "url": "https://github.com/trungtaottn/cf-agent-hub/issues/37"
+  },
+  {
+    "author": {
+      "id": "U_kgDOCNDwxA",
+      "is_bot": false,
+      "login": "trungtaottn",
+      "name": "kaynt"
+    },
+    "body": "## Summary\n\nAdd createNativeClient and exact enabled R1/R2 operation bindings over the existing HubClient transport. Preserve the browser cookie/CSRF lane and validation while adding explicit HTTPS origin, credential provider and runtime-proof transport for native callers.\n\n## Problem / motivation\n\nThe actual client is browser-only (`packages/client/src/client.ts:68–105`) with root-relative same-origin requests and per-call explicit idempotency keys. It validates canonical success data and errors (`client.ts:110–124`). Original Task10 (`docs/superpowers/plans/2026-10-23-r2-durable-work.md:223–238`) requires extension, not another fetch stack with divergent error/replay behavior.\n\n## Proposed flow\n\n1. Add explicit lane/configuration to the shared transport while preserving existing browser constructor/session behavior. Native configuration requires exact HTTPS origin/workspace and injected credential provider/fetch.\n2. Implement createNativeClient({origin,workspaceId,credentialProvider,fetch}) and typed call<K extends EnabledOperationId>(operation,request,options) checked against canonical enabled OpenAPI operations.\n3. Bind native credential/runtime-proof headers only on permitted operations; validate request/response/content-type/envelope and preserve request IDs, safe errors and finite timeout.\n4. Keep all mutation keys caller-owned; no blind unknown-outcome retry, replacement key after conflict or arbitrary RPC/state mutation.\n5. Expose exact read pagination and stream/upload/download hooks for CLI without buffering entire objects or leaking raw response secrets into diagnostics.\n\n## Scope\n\n**In scope**\n\n- Human-only admin/import/catalog/approval operations cannot be impersonated by native tokens; disabled R3 operation IDs remain unavailable.\n- Raw tokens/proofs exist only at credential-provider/request boundary, never URLs, logs, browser storage or ordinary returned diagnostic context.\n- Browser profile/readiness/workspace behavior remains covered, including unknown effective scopes and current-auth invalidation.\n\n**Out of scope / non-goals**\n\n- No new server auth lane, automatic native login, second transport/generator, server-state caching as authority or unbounded all-pages helper.\n\n## Acceptance criteria\n\n- [ ] Operation/request/response mappings match enabled OpenAPI; unknown/R3 operations fail locally without request.\n- [ ] Missing/ambiguous/non-HTTPS context fails before network; native headers cannot be sent to an arbitrary redirect or wrong origin.\n- [ ] Malformed success, unexpected content type, invalid request ID and wrong schema are errors, never success; native errors preserve server denial/request correlation.\n- [ ] Timeout retains caller intent/key, changed body/key does not auto-retry, and existing browser session/CSRF/client regressions remain covered.\n- [ ] Later run `npm test -- test/client/native-conformance.test.ts test/client/r1-client.test.ts` and `npm run typecheck`; real deployed conformance remains T10-D.\n\n## Touchpoints\n\n- Existing: `packages/client/src/client.ts`.\n- Existing: `packages/client/src/types.ts`.\n- Existing: `src/http/dto.ts`.\n- Existing: `src/http/generated/http-schemas.ts`.\n- Existing: `test/client/r1-client.test.ts`.\n- Existing: `docs/http-api.md`.\n- Existing: `docs/cli.md`.\n- Existing: `package.json`.\n- Planned new: `packages/client/src/native-client.ts`.\n- Planned new: `test/client/native-conformance.test.ts`.\n\n## Notes\n\nUse one canonical operation map for server/client/CLI checks; no hand-maintained second DTO family. This issue makes no package distribution or platform support claim.\n\nParent: [R2](https://github.com/trungtaottn/cf-agent-hub/issues/4). Source: retained candidate `22226633284e6410b2724acfcbfe1fe32f9325cc`; original tasks R2-T10. Future verification only; no implementation or product test is claimed by this draft.\n\n- Hard dependency [R2-T09-A](https://github.com/trungtaottn/cf-agent-hub/issues/37): Import/provenance operations are implemented; consume the remaining reviewed domain interfaces, with local and deployed conformance evidence required before acceptance.\n- Interface dependency [R2-T01-D](https://github.com/trungtaottn/cf-agent-hub/issues/23): Use the single generated enabled-operation/schema mapping.\n- Hard dependency [R2-T06-C](https://github.com/trungtaottn/cf-agent-hub/issues/34): Native R1 messaging must support implemented references consistently.\n",
+    "comments": [],
+    "labels": [
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC-zrojg",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGhIA",
+        "name": "ai-handle",
+        "description": "Bounded task suitable for an agent once readiness and dependencies permit.",
+        "color": "0e8a16"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGnmg",
+        "name": "blocked",
+        "description": "Named prerequisite or owner/environment input is unmet.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHfAA",
+        "name": "priority:high",
+        "description": "High sequencing or correctness importance; does not imply readiness.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHjRw",
+        "name": "round:R2",
+        "description": "Work owned by the R2 roadmap round.",
+        "color": "1d76db"
+      }
+    ],
+    "number": 38,
+    "state": "OPEN",
+    "title": "[R2-T10-A] Extend the existing transport with a typed native client facade",
+    "url": "https://github.com/trungtaottn/cf-agent-hub/issues/38"
+  },
+  {
+    "author": {
+      "id": "U_kgDOCNDwxA",
+      "is_bot": false,
+      "login": "trungtaottn",
+      "name": "kaynt"
+    },
+    "body": "## Summary\n\nOwn the full cross-resource R2 isolation evidence matrix after all relevant routes exist. Extend R1 fixtures and audit current authorization on reads, mutations, replay, pagination, byte finalization and background delivery.\n\n## Problem / motivation\n\nThe R1 isolation suite covers its own implemented surfaces, while original Task8 (`docs/superpowers/plans/2026-10-23-r2-durable-work.md:197–204`) explicitly expands to tasks/runs/agents/credentials/runtime proofs/artifacts/search/catalog/import. Search or a single foreign-ID check cannot prove embedded-reference and revocation behavior across all these paths.\n\n## Proposed flow\n\n1. Build a table-driven two-workspace/project matrix from T08-A fixtures for every enabled R1/R2 operation and actor lane, with source route/required grant documented.\n2. Exercise foreign resources both as path IDs and embedded references, including apparently own-workspace requests carrying foreign run/artifact/agent/import/catalog IDs.\n3. Revoke grants/session/credential between initial read and mutation, between cursor pages, during awaited byte verification and before successful replay/dispatch.\n4. Assert generic inaccessible outcomes and scan permitted outputs/events/cursor bytes for hidden IDs, snippets, counts and content.\n5. Keep unavailable adapter/R3 routes unavailable; record exact revision, runtime, case counts and skipped dependencies as incomplete evidence.\n\n## Scope\n\n**In scope**\n\n- Cover tasks/runs, human-only agent/credential management, exact runtime proof, fixed-participant messages, artifact metadata/content, search/events, catalog/import and encrypted cursors.\n- Null unrestricted projects versus [] no projects are distinct; multiple credentials may never combine scope/project ceilings.\n- Current principal/session/credential binding must survive asynchronous work and process/DO restart; replay does not bypass revocation.\n\n**Out of scope / non-goals**\n\n- No new domain behavior, permissive test-only auth bypass, simulated adapter implementation, public diagnostic disclosure or replacing live native conformance with mocks.\n\n## Acceptance criteria\n\n- [ ] Every enabled operation has authorized and wrong-workspace cases; new routes missing from the matrix fail an explicit coverage assertion.\n- [ ] Hidden embedded references return generic denial/not-found with no bytes/snippets/counts/cursor frontier leaks and no partial writes.\n- [ ] Revocation and session/credential expiry during awaits deny next publication/replay/dispatch; same-agent wrong-runtime proof fails.\n- [ ] R1 message/settings/session and recovery product-credential denial remain covered; R3/R4 unavailable routes never execute a fallback.\n- [ ] Later run `npm run test:workers -- test/acceptance/r2-isolation.test.ts`; attach exact case counts and unresolved prerequisites to R2-ACCEPT, without treating skipped cases as passes.\n\n## Touchpoints\n\n- Existing: `test/acceptance/r1-isolation.test.ts`.\n- Existing: `test/helpers/auth.ts`.\n- Existing: `src/auth/authorize.ts`.\n- Existing: `src/http/cursors.ts`.\n- Existing: `docs/security-model.md`.\n- Existing: `docs/testing.md`.\n- Planned new: `test/acceptance/r2-isolation.test.ts`.\n\n## Notes\n\nThis is an evidence owner, not a substitute authority implementation. T09-A depends on earlier fixture interfaces, not this later complete gate, avoiding a cycle.\n\nParent: [R2](https://github.com/trungtaottn/cf-agent-hub/issues/4). Source: retained candidate `22226633284e6410b2724acfcbfe1fe32f9325cc`; original tasks R2-T08. Future verification only; no implementation or product test is claimed by this draft.\n\n- Hard dependency [R2-T08-A](https://github.com/trungtaottn/cf-agent-hub/issues/36): Use reusable two-workspace fixtures and search behavior.\n- Hard dependency [R2-T09-A](https://github.com/trungtaottn/cf-agent-hub/issues/37): Include implemented imports in the full matrix.\n- Hard dependency [R2-T10-A](https://github.com/trungtaottn/cf-agent-hub/issues/38): Exercise canonical native calls as well as direct HTTP.\n- Hard dependency [R2-T06-C](https://github.com/trungtaottn/cf-agent-hub/issues/34): Cover embedded message references and current participant grants.\n",
+    "comments": [],
+    "labels": [
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGhIA",
+        "name": "ai-handle",
+        "description": "Bounded task suitable for an agent once readiness and dependencies permit.",
+        "color": "0e8a16"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGnmg",
+        "name": "blocked",
+        "description": "Named prerequisite or owner/environment input is unmet.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGv3A",
+        "name": "ci",
+        "description": "Verification, compatibility or release evidence gate.",
+        "color": "1d76db"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHfAA",
+        "name": "priority:high",
+        "description": "High sequencing or correctness importance; does not imply readiness.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHjRw",
+        "name": "round:R2",
+        "description": "Work owned by the R2 roadmap round.",
+        "color": "1d76db"
+      }
+    ],
+    "number": 40,
+    "state": "OPEN",
+    "title": "[R2-T08-B] Verify complete R2 workspace and current-authority isolation",
+    "url": "https://github.com/trungtaottn/cf-agent-hub/issues/40"
+  },
+  {
+    "author": {
+      "id": "U_kgDOCNDwxA",
+      "is_bot": false,
+      "login": "trungtaottn",
+      "name": "kaynt"
+    },
+    "body": "## Summary\n\nImplement crash-safe durable mutation intent and protected runtime proof storage for the native CLI. The exact operation/origin/workspace/body/key binding must be durable before any network dispatch, and one-time proof capture must complete before sanitized success output.\n\n## Problem / motivation\n\n`docs/cli.md:44–59` requires retained operation identity through timeout/restart. Original Task10 (`docs/superpowers/plans/2026-10-23-r2-durable-work.md:229–234`) distinguishes a durably recorded keyless intent from its later generated key. Existing protected I/O modules demonstrate exclusive private-file handling; the new journal must not become a plaintext token store.\n\n## Proposed flow\n\n1. Implement recordIntent with immutable operation/workspace/origin/canonicalBody and supplied key or null. Persist the intent before generating an interactive key.\n2. Implement atomic attachKey: bind only when null, return existing entry for the same key, reject a different key. No dispatch occurs until exact key/body binding is durable.\n3. Recover keyless intent by generating its first key; recover keyed intent only with stored key and exact body, even without response/outcome. Record redacted outcomes atomically.\n4. Implement SecretStore.putRuntimeProof binding origin/workspace/credential/runtime; choose and document a protected backend supported by the actual tested platform, failing closed if unavailable.\n5. Capture one-time proof securely before CLI success formatting; failed secure write reports uncertain enrollment and requires fresh enrollment without printing the token.\n\n## Scope\n\n**In scope**\n\n- Restrictive permissions, exclusive creation, symlink rejection, corruption handling and concurrent writers must prevent identity rebinding or secret exposure. Reuse appropriate existing protected primitives without coupling the product CLI to recovery credentials.\n- Journal may contain exact user task/message body needed for replay, so treat it as sensitive local data with documented path/permissions/retention; never copy it to audit/log/ordinary diagnostics. Tokens/proofs/auth headers never enter journal bodies/outcomes.\n- No server retry semantics are invented: same-key reconciliation remains subject to current authorization and retained-outcome lifetime.\n\n**Out of scope / non-goals**\n\n- No token flags/project config, plaintext fallback on secure-write failure, automatic new key after conflict, secret recovery from server replay or indefinite unbounded local history.\n\n## Acceptance criteria\n\n- [ ] Crash before key attachment sends nothing and recovers keyless intent; crash after attachment/before network reuses exact stored key/body.\n- [ ] Concurrent different-key attachment has one winner; corruption/partial write/symlink/insecure storage prevents dispatch rather than creating replacement intent.\n- [ ] Timeout and process restart preserve original origin/workspace/operation/body/key; redacted outcomes contain no token/proof/header.\n- [ ] Proof capture failure never prints initial secret and reports potentially committed enrollment; wrong binding cannot retrieve/use another runtime proof.\n- [ ] Later run `npm test -- test/cli/journal-recovery.test.ts test/cli/secret-store.test.ts`; document supported storage backend and measured crash behavior only for tested platforms.\n\n## Touchpoints\n\n- Existing: `scripts/lib/protected-io.mjs`.\n- Existing: `scripts/lib/recovery-io.mjs`.\n- Existing: `docs/cli.md`.\n- Existing: `docs/security-model.md`.\n- Existing: `vitest.config.ts`.\n- Existing: `package.json`.\n- Planned new: `packages/cli/src/journal.ts`.\n- Planned new: `packages/cli/src/secret-store.ts`.\n- Planned new: `test/cli/journal-recovery.test.ts`.\n- Planned new: `test/cli/secret-store.test.ts`.\n\n## Notes\n\nThe operation journal and secret store have different privacy contents and ownership. Storage failure is a meaningful local error, never permission to send an unjournaled mutation.\n\nParent: [R2](https://github.com/trungtaottn/cf-agent-hub/issues/4). Source: retained candidate `22226633284e6410b2724acfcbfe1fe32f9325cc`; original tasks R2-T10. Future verification only; no implementation or product test is claimed by this draft.\n\n- Hard dependency [R2-T10-A](https://github.com/trungtaottn/cf-agent-hub/issues/38): Use the exact operation/body/key transport contract.\n- Interface dependency [R2-T02-C](https://github.com/trungtaottn/cf-agent-hub/issues/26): Honor one-time runtime proof and binding semantics.\n",
+    "comments": [],
+    "labels": [
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC-zrojg",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGhIA",
+        "name": "ai-handle",
+        "description": "Bounded task suitable for an agent once readiness and dependencies permit.",
+        "color": "0e8a16"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGnmg",
+        "name": "blocked",
+        "description": "Named prerequisite or owner/environment input is unmet.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHfAA",
+        "name": "priority:high",
+        "description": "High sequencing or correctness importance; does not imply readiness.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHjRw",
+        "name": "round:R2",
+        "description": "Work owned by the R2 roadmap round.",
+        "color": "1d76db"
+      }
+    ],
+    "number": 41,
+    "state": "OPEN",
+    "title": "[R2-T10-B] Persist CLI mutation intent and runtime proofs before dispatch",
+    "url": "https://github.com/trungtaottn/cf-agent-hub/issues/41"
+  },
+  {
+    "author": {
+      "id": "U_kgDOCNDwxA",
+      "is_bot": false,
+      "login": "trungtaottn",
+      "name": "kaynt"
+    },
+    "body": "## Summary\n\nExtend the existing semantic HTML/plain TypeScript UI with six canonical task columns, authorized cancelled archive and task detail. Own read projections, navigation availability and honest source/loading/error states; commands follow in T11-B.\n\n## Problem / motivation\n\nR1 already has per-section ReadModel state and workspace effective-scope handling in `src/ui/app.ts` and independent settings state in `src/ui/settings.ts:49–62`. Original Task11 (`docs/superpowers/plans/2026-10-23-r2-durable-work.md:239–254`) requires reuse rather than a second client-side task database. `docs/kanban.md:28–36` distinguishes partial counts, runtime presence, task lease and historical result evidence.\n\n## Proposed flow\n\n1. Add /tasks or board navigation only through the reviewed supported route/return-path/profile availability contract; preserve unsupported default-view fallback and scope-aware navigation.\n2. Implement KanbanView with Backlog/Ready/Doing/Waiting/Review/Done and separately authorized cancelled archive using server Task versions and bounded pages.\n3. Implement TaskDetail from authorized task/latest-run and retained event/result evidence with separate source/time/loading/error provenance; do not invent Task fields.\n4. Distinguish stale runtime presence from expired execution lease, current versus historical result and displayed-page count versus workspace total.\n5. Extend the actual UI test server with bounded R2 fixtures and persist/reload/reconnect scenarios; retain preference drafts and existing settings behavior.\n\n## Scope\n\n**In scope**\n\n- Empty/loading/stale/partial/unavailable/forbidden are distinct. A failed section does not hide successful unrelated reads.\n- Waiting remains recognizable but request-decision/approval controls are visibly unavailable in R2; synthetic approved history never grants a working UI action.\n- Honor profile visible views/default preference availability while hiding the board does not stop engine/scheduler work. Escape task/artifact names and use text state cues, accessible headings and narrow-screen list layout.\n\n**Out of scope / non-goals**\n\n- No JSX/framework dependency, browser secret storage, local task authority, R3 composition/human decisions or unsupported drag transitions.\n\n## Acceptance criteria\n\n- [ ] Six canonical columns and cancelled archive show authorized persisted tasks after reload/restart, with no invented demo data.\n- [ ] Partial pages never claim workspace totals; task/run/history sections show independent source/error states and historical results are labeled.\n- [ ] Presence and lease freshness differ; Waiting clearly identifies unavailable R3 actions, and hidden board preference does not pause execution.\n- [ ] Foreign/revoked resources disappear according to current read authority; escaped artifact/task names cannot execute markup.\n- [ ] Later run `npm run test:ui -- test/ui/r2-kanban-read.spec.ts`; use real R2 test-server responses and retain accessibility/narrow-screen evidence beyond screenshots.\n\n## Touchpoints\n\n- Existing: `src/ui/app.ts`.\n- Existing: `src/ui/read-state.ts`.\n- Existing: `src/ui/dom.ts`.\n- Existing: `src/ui/styles.ts`.\n- Existing: `src/ui/settings.ts`.\n- Existing: `src/http/ui-routes.ts`.\n- Existing: `src/config/preferences.ts`.\n- Existing: `packages/client/src/client.ts`.\n- Existing: `docs/kanban.md`.\n- Existing: `test/helpers/ui.ts`.\n- Existing: `scripts/start-ui-test-server.mjs`.\n- Planned new: `src/ui/kanban.ts`.\n- Planned new: `src/ui/task-detail.ts`.\n- Planned new: `test/ui/r2-kanban-read.spec.ts`.\n\n## Notes\n\nCoordinate route availability with canonical auth return paths and the R1 navigation/preference fixes already tracked by root. UI source may consume completed client interfaces while deployed CLI evidence remains a final release prerequisite.\n\nParent: [R2](https://github.com/trungtaottn/cf-agent-hub/issues/4). Source: retained candidate `22226633284e6410b2724acfcbfe1fe32f9325cc`; original tasks R2-T11. Future verification only; no implementation or product test is claimed by this draft.\n\n- Hard dependency [R2-T10-A](https://github.com/trungtaottn/cf-agent-hub/issues/38): Use the shared canonical transport while retaining browser authentication.\n- Hard dependency [R2-T07-A](https://github.com/trungtaottn/cf-agent-hub/issues/35): Current results and independent acceptance history must exist.\n- Interface dependency [R2-T08-A](https://github.com/trungtaottn/cf-agent-hub/issues/36): Use scoped reads, pagination and authorized history semantics.\n",
+    "comments": [],
+    "labels": [
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC-zrojg",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGhIA",
+        "name": "ai-handle",
+        "description": "Bounded task suitable for an agent once readiness and dependencies permit.",
+        "color": "0e8a16"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGnmg",
+        "name": "blocked",
+        "description": "Named prerequisite or owner/environment input is unmet.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHfAA",
+        "name": "priority:high",
+        "description": "High sequencing or correctness importance; does not imply readiness.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHjRw",
+        "name": "round:R2",
+        "description": "Work owned by the R2 roadmap round.",
+        "color": "1d76db"
+      }
+    ],
+    "number": 42,
+    "state": "OPEN",
+    "title": "[R2-T11-A] Render the authorized task board and retained evidence honestly",
+    "url": "https://github.com/trungtaottn/cf-agent-hub/issues/42"
+  },
+  {
+    "author": {
+      "id": "U_kgDOCNDwxA",
+      "is_bot": false,
+      "login": "trungtaottn",
+      "name": "kaynt"
+    },
+    "body": "## Summary\n\nDeliver the thin native CLI with explicit context, bounded reads, durable mutation identity and safe artifact I/O. Own command parsing/build packaging/process output; server commands remain the only domain authority.\n\n## Problem / motivation\n\nThe CLI remains design-only (`docs/cli.md:3–5`), with exact mappings, output exception and exit codes at lines 19–57. Original Task10 requires runtime register/heartbeat, task/run lifecycle, messaging and artifacts; omitted accept-result/requeue mappings must be added explicitly. Existing root package has no CLI workspace/binary yet.\n\n## Proposed flow\n\n1. Add minimal package/workspace/build wiring using the locked toolchain; implement explicit HTTPS origin/workspace selection with context on stderr before interactive mutations.\n2. Map workspace/agents/runtime/tasks/runs/messages/inbox/threads/artifacts/events/search to exact enabled operation IDs. Include tasks accept-result and tasks requeue; mark request-decision and human-only administration unavailable.\n3. Validate local input before request, record/bind intent through T10-B, send once through T10-A and preserve same-key reconciliation on uncertainty.\n4. Keep --json stdout within the native envelope. After secure enrollment capture replace runtime_token with null and revealed with false; put progress/context on stderr and never log secrets.\n5. Stream uploads with local digest/stage/status reconciliation/commit; downloads use exclusive no-symlink output creation and verified size/digest. Expose --limit/--cursor with continuation; leave --all unavailable.\n\n## Scope\n\n**In scope**\n\n- Exit 0 validated success, 2 local input/config/no request, 3 auth denial, 4 state/version/idempotency conflict, 5 retryable/unknown outcome, 6 other nonretryable server rejection.\n- Failed heartbeat stops owner effects and requires current-authority reconciliation. Never automatically claim new work or create a replacement key.\n- Build artifacts/platform statements require actual inspection; no package publishing belongs here. Preserve R1 recovery CLI as a separate existing operator tool.\n\n**Out of scope / non-goals**\n\n- No native human impersonation, package publication, model launching, arbitrary remote command, automatic all-pages traversal or secret flags/browser storage.\n\n## Acceptance criteria\n\n- [ ] Command map matches enabled OpenAPI including accept/requeue; request-decision/admin commands fail locally as unavailable.\n- [ ] Exact exit codes, stdout envelopes/stderr context and malformed response handling are tested; no success is printed before validated response and secure proof capture.\n- [ ] Timeout/restart reuses journal intent; wrong workspace/runtime preserves server denial; heartbeat failure stops subsequent effects.\n- [ ] Download never overwrites an existing path or follows symlink; digest/length mismatch and interrupted upload preserve actionable state without committed-byte substitution.\n- [ ] Later run `npm test -- test/cli/command-behavior.test.ts test/client/native-conformance.test.ts` and `npm run typecheck`; inspect generated CLI artifact and update docs with tested usage/limitations.\n\n## Touchpoints\n\n- Existing: `docs/cli.md`.\n- Existing: `package.json`.\n- Existing: `package-lock.json`.\n- Existing: `scripts/lib/protected-io.mjs`.\n- Existing: `test/client/r1-client.test.ts`.\n- Planned new: `packages/cli/src/main.ts`.\n- Planned new: `packages/cli/package.json`.\n- Planned new: `packages/client/package.json`.\n- Planned new: `test/cli/command-behavior.test.ts`.\n\n## Notes\n\nLockfile/workspace changes are only those needed for the actual CLI build. Local mocks cannot satisfy F24; the next issue owns real HTTPS conformance.\n\nParent: [R2](https://github.com/trungtaottn/cf-agent-hub/issues/4). Source: retained candidate `22226633284e6410b2724acfcbfe1fe32f9325cc`; original tasks R2-T10. Future verification only; no implementation or product test is claimed by this draft.\n\n- Hard dependency [R2-T10-B](https://github.com/trungtaottn/cf-agent-hub/issues/41): Use durable intent and protected proof persistence before dispatch.\n- Hard dependency [R2-T10-A](https://github.com/trungtaottn/cf-agent-hub/issues/38): Use the canonical shared native transport.\n- Interface dependency [R2-T06-C](https://github.com/trungtaottn/cf-agent-hub/issues/34): Expose enabled messaging/reference behavior without another API.\n",
+    "comments": [],
+    "labels": [
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC-zrojg",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGhIA",
+        "name": "ai-handle",
+        "description": "Bounded task suitable for an agent once readiness and dependencies permit.",
+        "color": "0e8a16"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGnmg",
+        "name": "blocked",
+        "description": "Named prerequisite or owner/environment input is unmet.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHfAA",
+        "name": "priority:high",
+        "description": "High sequencing or correctness importance; does not imply readiness.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHjRw",
+        "name": "round:R2",
+        "description": "Work owned by the R2 roadmap round.",
+        "color": "1d76db"
+      }
+    ],
+    "number": 44,
+    "state": "OPEN",
+    "title": "[R2-T10-C] Implement explicit native CLI commands and safe artifact file handling",
+    "url": "https://github.com/trungtaottn/cf-agent-hub/issues/44"
+  },
+  {
+    "author": {
+      "id": "U_kgDOCNDwxA",
+      "is_bot": false,
+      "login": "trungtaottn",
+      "name": "kaynt"
+    },
+    "body": "## Summary\n\nImplement Ready, Cancel, Requeue and Accept-result UI intents with keyboard equivalents, server versions and preserved drafts. Consequential actions require a current authoritative read; reconnect or conflict cannot silently change the user's intended command.\n\n## Problem / motivation\n\n`src/ui/write-intent.ts:7–36` already retains one immutable settings intent and exact key/body through uncertainty. Original Task11 (`docs/superpowers/plans/2026-10-23-r2-durable-work.md:245–251`) extends that discipline to tasks. A drag that automatically retries using a newer version can accept different work or discard a user's reason after another actor changes state.\n\n## Proposed flow\n\n1. Add TaskCommandIntent with taskId, expectedVersion, readyTask/cancelTask/requeueTask/acceptTaskResult and required reason, mapped to exact DTOs through the shared transport.\n2. Gate affordances on current effective grants, task state and stable submitter exclusion, with unknown/stale authority disabled. Server validation remains authoritative.\n3. Permit only Backlog→Ready and eligible Review→Done drag transitions, each with equivalent keyboard menu and required dialogs. Never drag into Doing/Waiting to manufacture authority.\n4. Preserve draft reason/input on version conflict, fetch current state and require a deliberate new action; retain original key/body when outcome is uncertain.\n5. Refresh current access and state after reconnect before enabling actions; restore focus to the changed card and announce changes without live-update focus theft.\n\n## Scope\n\n**In scope**\n\n- Extend the existing intent abstraction deliberately without weakening settings replay/conflict behavior. Actual auth revocation invalidates protected state according to current R1 policy; ordinary version conflicts preserve drafts.\n- Clear readonly/unavailable explanations distinguish missing permission, self-review and R3 feature gates.\n- Text state cues, screen-reader names, narrow-screen keyboard path and escaped artifact labels are required; success follows server state only.\n\n**Out of scope / non-goals**\n\n- No generic state PATCH, human claim/run impersonation, approval/compose flow, optimistic fake success, automatic conflict rebase or secret persistence.\n\n## Acceptance criteria\n\n- [ ] Keyboard and drag issue identical version-bound Ready/Accept commands; cancelled/self-review/forbidden transitions are unavailable and server-denied if attempted directly.\n- [ ] Permission disappearing between render and command prevents success; reconnect keeps stale actions disabled until fresh authoritative reads finish.\n- [ ] Version conflict retains reason and shows current version for explicit review; lost response reconciles exact original key/body without duplicate transition.\n- [ ] Focus returns to updated card, live updates do not steal focus, and narrow-screen/screen-reader paths provide equivalent commands.\n- [ ] Later run `npm run test:ui -- test/ui/r2-kanban.spec.ts` plus the real T07 two-agent journey; retain actual persisted outcomes and supplementary screenshots only.\n\n## Touchpoints\n\n- Existing: `src/ui/write-intent.ts`.\n- Existing: `src/ui/read-state.ts`.\n- Existing: `src/ui/app.ts`.\n- Existing: `src/ui/dom.ts`.\n- Existing: `src/ui/settings.ts`.\n- Existing: `docs/kanban.md`.\n- Existing: `docs/design-guidelines.md`.\n- Existing: `test/helpers/ui.ts`.\n- Planned new: `src/ui/task-actions.ts`.\n- Planned new: `test/ui/r2-kanban.spec.ts`.\n\n## Notes\n\nCurrent-authority failure and ordinary domain conflict are different states. Do not broaden every local UI error into global invalidation, and do not suppress genuine server auth revocation.\n\nParent: [R2](https://github.com/trungtaottn/cf-agent-hub/issues/4). Source: retained candidate `22226633284e6410b2724acfcbfe1fe32f9325cc`; original tasks R2-T11. Future verification only; no implementation or product test is claimed by this draft.\n\n- Hard dependency [R2-T11-A](https://github.com/trungtaottn/cf-agent-hub/issues/42): Use actual board/read models and authorized detail views.\n- Interface dependency [R2-T10-A](https://github.com/trungtaottn/cf-agent-hub/issues/38): Send canonical commands through the same browser/native transport.\n- Interface dependency [R2-T07-A](https://github.com/trungtaottn/cf-agent-hub/issues/35): Use independent acceptance and retained submitter identity.\n",
+    "comments": [],
+    "labels": [
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC-zrojg",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGhIA",
+        "name": "ai-handle",
+        "description": "Bounded task suitable for an agent once readiness and dependencies permit.",
+        "color": "0e8a16"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGnmg",
+        "name": "blocked",
+        "description": "Named prerequisite or owner/environment input is unmet.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHfAA",
+        "name": "priority:high",
+        "description": "High sequencing or correctness importance; does not imply readiness.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHjRw",
+        "name": "round:R2",
+        "description": "Work owned by the R2 roadmap round.",
+        "color": "1d76db"
+      }
+    ],
+    "number": 45,
+    "state": "OPEN",
+    "title": "[R2-T11-B] Add accessible version-bound board commands and conflict recovery",
+    "url": "https://github.com/trungtaottn/cf-agent-hub/issues/45"
+  },
+  {
+    "author": {
+      "id": "U_kgDOCNDwxA",
+      "is_bot": false,
+      "login": "trungtaottn",
+      "name": "kaynt"
+    },
+    "body": "## Summary\n\nOwn the new test:native:r2 runner and real isolated deployment evidence for the built CLI. This is the Task10 evidence producer that Task12 reuses; it must not depend on a test first created by the final acceptance issue.\n\n## Problem / motivation\n\nThe root package has no test:native:r2 script, and `docs/cli.md:69–71` requires real native contract evidence before distribution. Original Task10 (`docs/superpowers/plans/2026-10-23-r2-durable-work.md:227–236`) makes a mock-only pass insufficient for F24 and requires explicit protected isolated configuration.\n\n## Proposed flow\n\n1. Add `npm run test:native:r2 -- --config <protected-isolated-config-path>` with a dedicated runner/config consumer; do not confuse protected input with Vitest configuration.\n2. Require exact isolated HTTPS origin/workspace IDs, protected credential-store references and bounded fixture budget. Reject missing config, production destinations, redirects and embedded secrets.\n3. Execute the built CLI to create Backlog, Ready, enroll runtime, Claim, upload/commit evidence, Submit to Review and accept through a distinct second agent.\n4. Exercise actual envelope/status/content-type/request-ID handling, wrong workspace/runtime proof, revocation and a controlled lost-response mutation recovered through persisted same-key journal.\n5. Record revision/build digest/runtime/target identity, command/case results, fixture cleanup and redacted receipts; link the evidence into R2-ACCEPT.\n\n## Scope\n\n**In scope**\n\n- Use real HTTPS requests/server state and bounded source-controlled fixture scenario; do not silently fall back to mock fetch or a production workspace.\n- Verify stdout redaction and native exit behavior through process invocation, not only helper-unit assertions.\n- Manage isolated fixtures explicitly and preserve evidence on partial failure; cleanup must not erase diagnostic history or issue new effects under uncertain outcome.\n\n**Out of scope / non-goals**\n\n- No production deployment, package publish, pretend credentials, mock evidence promotion or broader recovery rehearsal owned by T12.\n\n## Acceptance criteria\n\n- [ ] Missing/insecure/production config fails before any request; protected secrets never appear in args, stdout, stderr or receipts.\n- [ ] Two agents complete actual Review→Done through the built CLI, with committed artifact integrity and independent acceptance attribution.\n- [ ] Foreign workspace/runtime and revoked authority are denied by server; unknown outcome is reconciled using exactly the persisted key/body after process restart.\n- [ ] Expected JSON/status/content-type and exit behavior match local contract; skipped live cases keep F24 unverified.\n- [ ] Later run the newly added `npm run test:native:r2 -- --config <protected-isolated-config-path>` and record exact immutable revision/config identity and observed results.\n\n## Touchpoints\n\n- Existing: `package.json`.\n- Existing: `docs/cli.md`.\n- Existing: `docs/testing.md`.\n- Existing: `docs/release-checklist.md`.\n- Existing: `test/helpers/https-oidc-provider.ts`.\n- Existing: `scripts/lib/protected-io.mjs`.\n- Planned new: `scripts/test-native-r2.mjs`.\n- Planned new: `vitest.native.config.ts`.\n- Planned new: `test/acceptance/r2-native-conformance.test.ts`.\n- Planned new: `test/acceptance/r2-native-config.ts`.\n\n## Notes\n\nThis gate needs authorized isolated deployment and credential access when executed. Missing access keeps it blocked; no test or deployment was run during issue drafting.\n\nParent: [R2](https://github.com/trungtaottn/cf-agent-hub/issues/4). Source: retained candidate `22226633284e6410b2724acfcbfe1fe32f9325cc`; original tasks R2-T10. Future verification only; no implementation or product test is claimed by this draft.\n\n- Hard dependency [R2-T10-C](https://github.com/trungtaottn/cf-agent-hub/issues/44): Built CLI and command/intent behavior must exist.\n- Evidence dependency [R2-T08-B](https://github.com/trungtaottn/cf-agent-hub/issues/40): Complete local isolation evidence must precede deployed conformance.\n",
+    "comments": [],
+    "labels": [
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGnmg",
+        "name": "blocked",
+        "description": "Named prerequisite or owner/environment input is unmet.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGv3A",
+        "name": "ci",
+        "description": "Verification, compatibility or release evidence gate.",
+        "color": "1d76db"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHfAA",
+        "name": "priority:high",
+        "description": "High sequencing or correctness importance; does not imply readiness.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHjRw",
+        "name": "round:R2",
+        "description": "Work owned by the R2 roadmap round.",
+        "color": "1d76db"
+      }
+    ],
+    "number": 48,
+    "state": "OPEN",
+    "title": "[R2-T10-D] Prove native CLI conformance against a real isolated HTTPS deployment",
+    "url": "https://github.com/trungtaottn/cf-agent-hub/issues/48"
+  }
+]

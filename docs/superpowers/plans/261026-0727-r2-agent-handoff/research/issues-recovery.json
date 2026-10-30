@@ -1,0 +1,263 @@
+[
+  {
+    "number": 22,
+    "title": "[R2-T01-C] Define V2 recovery byte coverage and V1 compatibility",
+    "body": "## Summary\n\nAmend the existing authenticated recovery protocol for complete SQL plus committed artifact recovery, with a distinct V2 manifest and strict V1 compatibility. This issue owns schemas and compatibility decisions; runtime recovery remains separate.\n\n## Problem / motivation\n\n`src/recovery/manifest.ts:19–26` rejects artifact arrays and requires current registered SQL coverage. `src/recovery/protocol.ts:11–22` defines actual RecoveryContext/RecoveryWorkspace/CurrentLedger interfaces, rather than illustrative old-plan names. Original Task1 (`docs/superpowers/plans/2026-10-23-r2-durable-work.md:82–86`) specifies their bounded extension. Replacing the lane would lose accepted ledger, maintenance and operator controls.\n\n## Proposed flow\n\n1. Preserve the operator gateway, Access application-service verification with verified common_name, exact origin/workspace/environment allowlist and binding-only constructed context.\n2. Add closed format_version 2 preserving every R1 field and exact database checksum/byte_size/table_counts/chunk representation. Add artifact_id/object_key/recovery_object_key/byte_size/sha256 entries and bounded unfinished intent IDs.\n3. Extend RecoveryBudget max_artifacts to 0–1000; keep ≤1,000,000 rows, ≤268,435,456 total SQL-plus-artifact bytes, 200-row pages, 1-MiB SQL chunks, ≤256 chunks, 65,536-byte manifest and 10-MiB individual artifacts.\n4. Define typed table coverage, gateway-generated private binding keys, exact immutable generation coverage and restart receipts; complete requires every SQL chunk and committed byte verified.\n5. Document newer epoch/current-ledger overlay, session/runtime invalidation, conservative run holds, unresolved delivery effects, source retirement, fresh probe and explicit exclusive resume.\n\n## Scope\n\n**In scope**\n\n- Preserve canonical HMAC-SHA256 manifest authentication, separate AES-GCM file protection, exclusive 0600 outputs and redacted diagnostics.\n- V1 remains accepted only under its original empty-artifact and compatible R1-schema rules; it cannot claim recovered R2 artifact coverage.\n- Preserve registry completeness against sqlite_schema and typed parameterized restore. Control tables remain evidence-only where required; login/session records restore consumed/revoked. Approved JSON artifact bindings survive as disabled R3 compatibility.\n\n**Out of scope / non-goals**\n\n- No online capture, product-credential recovery route, arbitrary caller bucket/key/URL authority, truncation labeled complete, automatic cutover or source-retirement bypass.\n\n## Acceptance criteria\n\n- [ ] Fixtures cover valid V1/V2, incompatible V1 artifacts/schema, unknown fields, corrupt authentication, mismatched table counts and missing committed bytes.\n- [ ] Artifact/SQL budgets combine; excess rows/bytes/artifacts/manifest size fail completion instead of silently truncating.\n- [ ] Raw native/runtime proofs and service credentials appear in no exported rows, manifests or ordinary output.\n- [ ] Review maps old-plan function names to actual R1 extension points and confirms a complete capture receipt grants no admission.\n- [ ] Later run `npm test -- test/contracts/r2-recovery-amendment.test.ts`, `npm run verify:generated` and `npm run check`; record additive compatibility decisions.\n\n## Touchpoints\n\n- Existing: `spec/recovery-manifest.schema.json`.\n- Existing: `spec/recovery-command.schema.json`.\n- Existing: `spec/recovery-response.schema.json`.\n- Existing: `src/recovery/protocol.ts`.\n- Existing: `src/recovery/manifest.ts`.\n- Existing: `src/recovery/encoding.ts`.\n- Existing: `docs/backup-restore.md`.\n- Existing: `docs/limits.md`.\n- Existing: `docs/cli.md`.\n- Planned new: `examples/recovery/manifest-v2.json`.\n- Planned new: `test/contracts/r2-recovery-amendment.test.ts`.\n\n## Notes\n\nDo not rewrite R1 receipts or assert V2 restoration already works. Source-retirement failure leaves the target closed under the existing separately reviewed outage procedure.\n\nParent: [R2](https://github.com/trungtaottn/cf-agent-hub/issues/4). Source: retained candidate `22226633284e6410b2724acfcbfe1fe32f9325cc`; original tasks R2-T01. Future verification only; no implementation or product test is claimed by this draft.\n\n- Hard dependency [R1-ACCEPT](https://github.com/trungtaottn/cf-agent-hub/issues/17): Verified R1 acceptance is required before any R2 implementation begins.\n- Hard dependency [R2-PLAN](https://github.com/trungtaottn/cf-agent-hub/issues/19): Use actual RecoveryContext/CurrentLedger and operator CLI conventions.\n",
+    "labels": [
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC-zrofA",
+        "name": "documentation",
+        "description": "Improvements or additions to documentation",
+        "color": "0075ca"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGhIA",
+        "name": "ai-handle",
+        "description": "Bounded task suitable for an agent once readiness and dependencies permit.",
+        "color": "0e8a16"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGnmg",
+        "name": "blocked",
+        "description": "Named prerequisite or owner/environment input is unmet.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHfAA",
+        "name": "priority:high",
+        "description": "High sequencing or correctness importance; does not imply readiness.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHjRw",
+        "name": "round:R2",
+        "description": "Work owned by the R2 roadmap round.",
+        "color": "1d76db"
+      }
+    ],
+    "state": "OPEN",
+    "url": "https://github.com/trungtaottn/cf-agent-hub/issues/22"
+  },
+  {
+    "number": 39,
+    "title": "[R2-T12-A] Capture a complete V2 SQL and artifact recovery set under durable quiescence",
+    "body": "## Summary\n\nExtend actual R1 advanceCapture to produce an authenticated complete V2 SQL/artifact set under its durable barrier. Own capture completeness and byte inventory; isolated restore and operator orchestration have separate consumers.\n\n## Problem / motivation\n\nR1 already enters durable capturing state and exports registered SQL pages (`src/recovery/capture.ts:10–30`); manifest validation rejects any artifacts (`src/recovery/manifest.ts:19–26`). Original Task12 (`docs/superpowers/plans/2026-10-23-r2-durable-work.md:255–270`) requires adding in-flight artifact exclusion, not replacing the barrier with filesystem export or online copying.\n\n## Proposed flow\n\n1. Extend the existing authenticated RecoveryContext and capture state machine; persist closed admission before checkpoint and block mutations/new uploads/outbox dispatch/destructive cleanup.\n2. Drain or reconcile previously admitted artifact writes using immutable reservations/generations so no metadata commit crosses the recorded checkpoint.\n3. Enumerate every reviewed typed table in 200-row bounded pages with existing chunk encoding/checksums; preserve control-table capture modes and unfinished-intent records.\n4. Stream each referenced committed generation to operator-bound private recovery storage using gateway-generated keys, independently verifying exact digest/size and combined row/artifact/byte budgets.\n5. Finalize/sign only when SQL/table coverage and every committed artifact are complete; persist restart receipts and failed diagnostics, and release the barrier only deliberately under existing maintenance rules.\n\n## Scope\n\n**In scope**\n\n- Keep HMAC authentication, ≤1-MiB/256 SQL chunks, ≤65,536-byte manifest, ≤1,000,000 rows, ≤1,000 artifacts and ≤268,435,456 total SQL/artifact bytes. Bounds reject completeness rather than truncate.\n- No raw credentials/proofs/auth headers enter export or stdout. Preserve exact accepted-result and synthetic approved JSON-input binding.\n- Object-copy awaits stay outside SQL and are fenced on return; partial copy/response loss resumes using exact persisted digest identity.\n\n**Out of scope / non-goals**\n\n- No online capture, caller-chosen URL/key authority, replacing R1 logical export, automatic source resume, complete-on-metadata-only claim or production first rehearsal.\n\n## Acceptance criteria\n\n- [ ] Barrier survives restart and blocks admitted late metadata commit, new uploads, dispatch and cleanup before checkpoint; immutable generations reconcile without byte loss.\n- [ ] Registry-vs-sqlite_schema detects omitted table/column; all tasks/runs/identities/history/import/catalog/artifact rows and exact committed bytes are covered.\n- [ ] Missing/corrupt bytes, exceeded budget or failed copy produces no complete signed receipt; unfinished intents are separately bounded.\n- [ ] Repeated capture steps after interruption use original chunk/generation identities and no duplicate logical coverage; V1 never certifies artifacts.\n- [ ] Later run `npm run test:workers -- test/recovery/r2-capture.test.ts`; record table counts, artifact digest coverage and measured durations as observations only.\n\n## Touchpoints\n\n- Existing: `src/recovery/capture.ts`.\n- Existing: `src/recovery/jobs.ts`.\n- Existing: `src/recovery/manifest.ts`.\n- Existing: `src/recovery/table-registry.ts`.\n- Existing: `src/recovery/encoding.ts`.\n- Existing: `src/recovery/maintenance.ts`.\n- Existing: `src/recovery/protocol.ts`.\n- Existing: `src/workspace/workspace-do.ts`.\n- Existing: `src/outbox/dispatcher.ts`.\n- Existing: `docs/backup-restore.md`.\n- Planned new: `test/recovery/r2-capture.test.ts`.\n\n## Notes\n\nSource uses advanceCapture/RecoveryContext/CurrentLedger; old illustrative captureWorkspace names must not become a second API. Complete capture remains evidence, never admission or cutover authority.\n\nParent: [R2](https://github.com/trungtaottn/cf-agent-hub/issues/4). Source: retained candidate `22226633284e6410b2724acfcbfe1fe32f9325cc`; original tasks R2-T12. Future verification only; no implementation or product test is claimed by this draft.\n\n- Interface dependency [R2-T01-C](https://github.com/trungtaottn/cf-agent-hub/issues/22): Consume exact V2 manifest, budget and V1 compatibility.\n- Hard dependency [R2-T09-A](https://github.com/trungtaottn/cf-agent-hub/issues/37): Import/provenance persistence is implemented; consume the reviewed domain storage interfaces, with complete domain and recovery evidence required before acceptance.\n- Hard dependency [R2-T06-B](https://github.com/trungtaottn/cf-agent-hub/issues/33): Use immutable artifact generations and cleanup exclusion.\n- Interface dependency [R2-T02-A](https://github.com/trungtaottn/cf-agent-hub/issues/24): Use the complete reviewed typed table registry.\n",
+    "labels": [
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC-zrojg",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGhIA",
+        "name": "ai-handle",
+        "description": "Bounded task suitable for an agent once readiness and dependencies permit.",
+        "color": "0e8a16"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGnmg",
+        "name": "blocked",
+        "description": "Named prerequisite or owner/environment input is unmet.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHfAA",
+        "name": "priority:high",
+        "description": "High sequencing or correctness importance; does not imply readiness.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHjRw",
+        "name": "round:R2",
+        "description": "Work owned by the R2 roadmap round.",
+        "color": "1d76db"
+      }
+    ],
+    "state": "OPEN",
+    "url": "https://github.com/trungtaottn/cf-agent-hub/issues/39"
+  },
+  {
+    "number": 43,
+    "title": "[R2-T12-B] Restore V2 in isolation and invalidate all recovered execution authority",
+    "body": "## Summary\n\nExtend beginRestore/writeRestoreChunk/advanceVerify for V2 SQL and immutable artifact bytes on an empty isolated authority. Preserve current external revocations and permanently invalidate recovered sessions/runtime proofs/active runs before any explicit resume.\n\n## Problem / motivation\n\nThe actual R1 restore functions are `src/recovery/restore.ts:17,56,85`; current ledger authentication is enforced at `src/recovery/manifest.ts:30–36`. Original Task12 (`docs/superpowers/plans/2026-10-23-r2-durable-work.md:261–274`) rejects resuming historical ownership even if the old run was replay-safe. An older database cannot know all post-snapshot credentials or external effects.\n\n## Proposed flow\n\n1. Require authenticated complete manifest/byte coverage, compatible schema and an empty isolated target with private bucket, public admission and dispatch closed.\n2. Restore parameterized typed rows and exact committed generations using existing capture/table/chunk/digest receipts; identical retries are idempotent and changed bytes reject.\n3. Overlay current independently anchored ledger/membership restrictions/revocations and a deployment epoch newer than previous authority. Revoke restored sessions/runtime proofs; never reconstruct token secrets.\n4. Convert restored active runs to expired/ended with Backlog outcome_unknown, retaining latest-run pointer, retry count and full history even if prior classification was replay-safe. Preserve uncertainty/exhaustion and approved JSON-input bindings.\n5. Reconcile immutable delivery IDs through trusted receipts or permanent failure without redrive/ACK; retain source retirement, fresh probe and explicit exclusive cutover as prerequisites to resume.\n\n## Scope\n\n**In scope**\n\n- Current ledger verification after awaits is required; artifact bytes, relational invariants and exact registry coverage all gate completion.\n- Already terminal history, archived agents, rotated/revoked grants, import provenance and replay outcomes retain identity. Approved Ready intent remains disabled for R2 claims.\n- Missing/corrupt data or absent retirement/current ledger keeps isolated admission and delivery closed. Recovery receipts alone grant no authority.\n\n**Out of scope / non-goals**\n\n- No production overwrite, in-place active-run resume, restored proof reuse, inferred no-effect from missing receipt, automatic delivery retry or source-retirement bypass.\n\n## Acceptance criteria\n\n- [ ] Same manifest/chunk replay produces one logical restore; changed digest/table/schema/byte count rejects and leaves target closed.\n- [ ] Old owners, post-checkpoint credentials and restored proofs cannot renew/submit/replay; current revocation ceiling and higher epoch are applied.\n- [ ] Active runs become ended expired/Backlog unknown without budget reset; historical result/approval/import bindings and exact committed bytes remain intact.\n- [ ] Missing delivery receipt remains uncertain; explicit resolution causes no redrive/ACK mutation, and resume denies absent retirement/fresh probe/exclusive cutover.\n- [ ] Later run `npm run test:workers -- test/recovery/complete-restore.test.ts`; final acceptance adds real isolated restore followed by fresh enrollment/new task/independent review.\n\n## Touchpoints\n\n- Existing: `src/recovery/restore.ts`.\n- Existing: `src/recovery/manifest.ts`.\n- Existing: `src/recovery/controls.ts`.\n- Existing: `src/recovery/probes.ts`.\n- Existing: `src/recovery/protocol.ts`.\n- Existing: `src/recovery/table-registry.ts`.\n- Existing: `src/recovery/encoding.ts`.\n- Existing: `src/recovery/maintenance.ts`.\n- Existing: `src/workspace/workspace-do.ts`.\n- Existing: `docs/backup-restore.md`.\n- Existing: `docs/operations.md`.\n- Planned new: `test/recovery/complete-restore.test.ts`.\n\n## Notes\n\nEven previously replay-safe recovered active work is held because the restored snapshot cannot establish external outcome. Fresh reviewed replacement work preserves provenance; no hidden hold-clearing shortcut.\n\nParent: [R2](https://github.com/trungtaottn/cf-agent-hub/issues/4). Source: retained candidate `22226633284e6410b2724acfcbfe1fe32f9325cc`; original tasks R2-T12. Future verification only; no implementation or product test is claimed by this draft.\n\n- Hard dependency [R2-T12-A](https://github.com/trungtaottn/cf-agent-hub/issues/39): Use a verified complete V2 set and stable recovery receipts.\n- Interface dependency [R2-T05-B](https://github.com/trungtaottn/cf-agent-hub/issues/31): Preserve ended-run/hold/history semantics.\n- Interface dependency [R2-T02-C](https://github.com/trungtaottn/cf-agent-hub/issues/26): Invalidate exact credential-bound runtime authority.\n",
+    "labels": [
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC-zrojg",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGhIA",
+        "name": "ai-handle",
+        "description": "Bounded task suitable for an agent once readiness and dependencies permit.",
+        "color": "0e8a16"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGnmg",
+        "name": "blocked",
+        "description": "Named prerequisite or owner/environment input is unmet.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHfAA",
+        "name": "priority:high",
+        "description": "High sequencing or correctness importance; does not imply readiness.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHjRw",
+        "name": "round:R2",
+        "description": "Work owned by the R2 roadmap round.",
+        "color": "1d76db"
+      }
+    ],
+    "state": "OPEN",
+    "url": "https://github.com/trungtaottn/cf-agent-hub/issues/43"
+  },
+  {
+    "number": 46,
+    "title": "[R2-T12-C] Extend existing operator tooling for V2 recovery and explicit cutover",
+    "body": "## Summary\n\nExtend the existing operator recovery CLI/gateway with V2 artifact/table orchestration and protected outputs. Keep its eight subcommands, authentication, restart-safe receipts and deliberate cutover workflow; no second operator control plane is introduced.\n\n## Problem / motivation\n\n`scripts/recover-workspace.mjs:14–24` already accepts capture/restore/verify/probe/resolve-delivery/retire/resume/status with protected --input config. `src/recovery/operator.ts:55` verifies service identity. Original Task12 (`docs/superpowers/plans/2026-10-23-r2-durable-work.md:259–274`) expressly retains those names and keeps installation in the separate existing provisioning helper.\n\n## Proposed flow\n\n1. Extend existing closed operator config/command schemas and private binding mappings for V2 artifact streams, retaining exact allowlisted origin/environment/workspace/operation authority.\n2. Reuse Access application-service JWT verification, type=app and verified common_name; construct RecoveryContext only inside gateway, never from untrusted JSON.\n3. Drive bounded capture/restore/verify progression through existing protected transport and restart receipts; produce authenticated manifest plus separate AES-GCM recovery files with exclusive 0600 writes.\n4. Preserve resolve-delivery payload delivery_id/disposition confirmed_delivered|failed_without_redrive/evidence_sha256 and no-redrive/no-ACK behavior; keep explicit retire/probe/resume cutover.\n5. Update operational runbooks for V1/V2 selection, interrupted copies, missing artifact/current-ledger/retirement evidence and measured recovery observations.\n\n## Scope\n\n**In scope**\n\n- Missing/incorrect service identity, product credentials, cross-environment target, unsafe path/symlink and incomplete manifest fail closed.\n- Secrets remain in protected references/environment only, never command-line flags or ordinary output; stdout contains bounded sanitized receipts.\n- Compatible rollback and source failure preserve current authority fencing; failed restore stays isolated and paused. Installation remains `provision-static-credential.mjs install`, not a new recovery subcommand.\n\n**Out of scope / non-goals**\n\n- No replacement CLI/auth transport, production first rehearsal, arbitrary bucket URLs, automatic resume/redrive or secrets in exported manifests.\n\n## Acceptance criteria\n\n- [ ] Existing eight subcommands and protected input conventions remain compatible; install is not accepted by recovery CLI.\n- [ ] V2 files survive interrupted capture/restore and exact receipt replay; changed input/digest or insecure/symlink output is rejected without overwriting evidence.\n- [ ] Wrong service common_name/product credentials/origin/workspace/environment deny before DO recovery; no token/proof appears in stdout/logs.\n- [ ] Resolve-delivery records evidence or permanent failure only; missing retirement/current ledger/fresh probe keeps resume closed.\n- [ ] Later run `node --test test/cli/recovery-v2.test.mjs` and `npm run test:workers -- test/recovery/r2-operator.test.ts`; preserve existing operator/recovery CLI suites and update the exact operator runbook.\n\n## Touchpoints\n\n- Existing: `scripts/recover-workspace.mjs`.\n- Existing: `scripts/lib/recovery-client.mjs`.\n- Existing: `scripts/lib/recovery-config.mjs`.\n- Existing: `scripts/lib/recovery-transport.mjs`.\n- Existing: `scripts/lib/recovery-io.mjs`.\n- Existing: `scripts/lib/protected-io.mjs`.\n- Existing: `src/recovery/operator.ts`.\n- Existing: `src/recovery/protocol.ts`.\n- Existing: `workers/operator/src/index.ts`.\n- Existing: `workers/operator/wrangler.jsonc`.\n- Existing: `docs/backup-restore.md`.\n- Existing: `docs/operations.md`.\n- Existing: `docs/cli.md`.\n- Existing: `package.json`.\n- Planned new: `test/cli/recovery-v2.test.mjs`.\n- Planned new: `test/recovery/r2-operator.test.ts`.\n\n## Notes\n\nThe full real isolated rehearsal remains R2-ACCEPT. Operator authority and protected destination bindings are prerequisites when executed, not credentials to fabricate in fixtures or issue text.\n\nParent: [R2](https://github.com/trungtaottn/cf-agent-hub/issues/4). Source: retained candidate `22226633284e6410b2724acfcbfe1fe32f9325cc`; original tasks R2-T12. Future verification only; no implementation or product test is claimed by this draft.\n\n- Hard dependency [R2-T12-B](https://github.com/trungtaottn/cf-agent-hub/issues/43): Consume complete V2 restore/invalidation behavior.\n- Interface dependency [R2-T12-A](https://github.com/trungtaottn/cf-agent-hub/issues/39): Use bounded capture and manifest semantics.\n- Interface dependency [R2-PLAN](https://github.com/trungtaottn/cf-agent-hub/issues/19): Honor actual protected --input CLI and operator symbol mapping.\n",
+    "labels": [
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC-zrojg",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGhIA",
+        "name": "ai-handle",
+        "description": "Bounded task suitable for an agent once readiness and dependencies permit.",
+        "color": "0e8a16"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGnmg",
+        "name": "blocked",
+        "description": "Named prerequisite or owner/environment input is unmet.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHfAA",
+        "name": "priority:high",
+        "description": "High sequencing or correctness importance; does not imply readiness.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHjRw",
+        "name": "round:R2",
+        "description": "Work owned by the R2 roadmap round.",
+        "color": "1d76db"
+      }
+    ],
+    "state": "OPEN",
+    "url": "https://github.com/trungtaottn/cf-agent-hub/issues/46"
+  },
+  {
+    "number": 47,
+    "title": "[R2-T12-D] Extend the existing release verifier with additive R2 evidence gates",
+    "body": "## Summary\n\nAdd R2 support to the existing immutable-candidate release evidence controller before the final evidence gate. Own policy/schema/verifier extension, preserving R1 semantics; this issue produces no R2 acceptance or release claim.\n\n## Problem / motivation\n\nConcrete blocker: `scripts/verify-release.mjs:133` accepts only --round R1, and `scripts/lib/release-policy.mjs:1–5` hardcodes R1 features/operations/gates. Original Task12 asks for --round R2 (`docs/superpowers/plans/2026-10-23-r2-durable-work.md:259,270`), which cannot work on the retained candidate. Replacing the verifier or weakening its checks would discard exact-source provenance.\n\n## Proposed flow\n\n1. Review an additive versioned R2 evidence schema/policy delta, preserving historical R1 evidence acceptance unchanged and rejecting unrecognized round/version combinations.\n2. Add round-specific required features F11–F26/F29/F34/F40, enabled operation/authorization matrix, native CLI live conformance, artifact integrity/cleanup, isolation, accessible board and complete V2 restore gates. Retain applicable R1 evidence prerequisites.\n3. Extend the same verify:release CLI to --round R2 with exact candidate revision/tree/file modes/build/lock/configured environment identity and independently reviewed artifacts.\n4. Bind real recovery and native/browser receipts to that candidate; require complete byte/table coverage, current authority invalidation and explicit cutover evidence.\n5. Add negative fixtures for missing/skipped/stale/substituted/cross-round evidence and document the precise new invocation and status semantics.\n\n## Scope\n\n**In scope**\n\n- Preserve bounded protected artifact loading, canonical digests, clean committed candidate, no unreviewed bytes, redaction, command exit/case evidence and independent review checks.\n- Structural validation cannot replace inspection of actual runs or authorize deploy/merge. Feature status promotion remains explicit controller/owner action after evidence.\n- Tests for this issue exercise evidence fixtures only; final acceptance generates real receipts separately.\n\n**Out of scope / non-goals**\n\n- No second release verifier, rewritten historical receipts, treating skipped live checks as pass, relaxed source identity, production publication or automatic R3 readiness.\n\n## Acceptance criteria\n\n- [ ] Existing R1 positive/negative evidence fixtures retain behavior; --round R2 dispatches to explicit R2 policy and unknown rounds fail.\n- [ ] Missing native live/board/isolation/full V2 recovery evidence, stale revision/tree or substituted artifacts cause a failed gate.\n- [ ] Credential/private-origin leakage, uncommitted/unreviewed files, missing byte coverage and absent source-retirement/current-ledger proof remain failures.\n- [ ] R2 evidence cannot be relabeled R1 and R1 SQL-only recovery cannot certify F40 artifact/runtime recovery.\n- [ ] Later run `npm test -- test/acceptance/r2-release-evidence.test.ts test/acceptance/release-evidence.test.ts test/acceptance/release-manifest.test.ts` and `npm run typecheck`; add discovery if needed and record independent evidence-contract review.\n\n## Touchpoints\n\n- Existing: `scripts/verify-release.mjs`.\n- Existing: `scripts/verify-release.d.mts`.\n- Existing: `scripts/lib/release-policy.mjs`.\n- Existing: `scripts/lib/release-policy.d.mts`.\n- Existing: `validation/runtime-evidence.schema.json`.\n- Existing: `test/acceptance/release-evidence.test.ts`.\n- Existing: `test/acceptance/release-manifest.test.ts`.\n- Existing: `docs/release-checklist.md`.\n- Existing: `docs/feature-matrix.md`.\n- Existing: `docs/testing.md`.\n- Planned new: `test/acceptance/r2-release-evidence.test.ts`.\n\n## Notes\n\nThis separately owned prerequisite keeps R2-ACCEPT an evidence-only final gate. The script path remains unchanged; new round support is explicitly planned, not asserted to exist.\n\nParent: [R2](https://github.com/trungtaottn/cf-agent-hub/issues/4). Source: retained candidate `22226633284e6410b2724acfcbfe1fe32f9325cc`; original tasks R2-T12. Future verification only; no implementation or product test is claimed by this draft.\n\n- Hard dependency [R1-ACCEPT](https://github.com/trungtaottn/cf-agent-hub/issues/17): Verified R1 is a strict implementation entry gate, not only a later release evidence obligation.\n- Interface dependency [R2-T01-C](https://github.com/trungtaottn/cf-agent-hub/issues/22): Use reviewed V2 recovery receipts and compatibility requirements.\n- Interface dependency [R2-T10-A](https://github.com/trungtaottn/cf-agent-hub/issues/38): Use exact enabled R2 operation/actor-lane map.\n- Hard dependency [R2-PLAN](https://github.com/trungtaottn/cf-agent-hub/issues/19): Record actual R1-only controller baseline and approved additive evidence delta.\n",
+    "labels": [
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC-zrojg",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGhIA",
+        "name": "ai-handle",
+        "description": "Bounded task suitable for an agent once readiness and dependencies permit.",
+        "color": "0e8a16"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGnmg",
+        "name": "blocked",
+        "description": "Named prerequisite or owner/environment input is unmet.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHfAA",
+        "name": "priority:high",
+        "description": "High sequencing or correctness importance; does not imply readiness.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHjRw",
+        "name": "round:R2",
+        "description": "Work owned by the R2 roadmap round.",
+        "color": "1d76db"
+      }
+    ],
+    "state": "OPEN",
+    "url": "https://github.com/trungtaottn/cf-agent-hub/issues/47"
+  },
+  {
+    "number": 49,
+    "title": "[R2-ACCEPT] Close R2 on one reviewed candidate with real recovery and multi-agent evidence",
+    "body": "## Summary\n\nRun the final R2 evidence gate on one identified compatible reviewed candidate, with real isolated SQL/artifact recovery and two distinct agents completing Review→Done. Produce explicit R3 handoff contracts and truthful status; no merge, deployment promotion or release is authorized by this issue alone.\n\n## Problem / motivation\n\nOriginal Task12 and handoff (`docs/superpowers/plans/2026-10-23-r2-durable-work.md:255–290`) require all twelve task gates plus actual recovery. Local unit tests, a screenshot or schema-valid manifest cannot establish restored authority safety or CLI conformance. The current roadmap explicitly requires preceding-round evidence (`docs/roadmap.md:7`).\n\n## Proposed flow\n\n1. Reconcile every R2 child/source task and exact source/build/lock identity, independent reviews and unresolved findings; keep the candidate closed to partial public R2 exposure.\n2. Run complete local focused/aggregate/isolation/browser checks and reuse Task10-owned real native conformance on the same candidate; record exact commands/runtime/case counts, never skipped-as-pass.\n3. Rehearse real isolated capture/verify/restore with archived agents, rotated/revoked credentials, committed/uncommitted artifacts, imports, terminal/active runs, messages/outbox/replay history and synthetic disabled approval evidence.\n4. Prove all bytes/tables/digests, current ledger/new epoch, denied old owner, uncertain delivery handling, source retirement, fresh probe and explicit exclusive cutover. Keep delivery paused during task/review checks.\n5. Enroll fresh runtimes and perform new reviewed work through claim/committed evidence/Review/independent Done; record measured durations only as observations.\n6. Verify the immutable evidence bundle using the existing controller with its new R2 support, then update feature/roadmap/runbook status only to the level supported and deliver exact R3 entry contracts.\n\n## Scope\n\n**In scope**\n\n- Planned acceptance test covers the integrated journey, restart/response-loss and post-restore current authority. Evidence retains request IDs, result attribution, table counts, artifact coverage and bounded CLI output, without raw secrets/private deployment origins.\n- R3 handoff includes canonical DTO/state versions, stable submitter identity, immutable application/json input binding, approved-intent edit rejection, fresh-claim checks and available-but-disabled approval storage/schema.\n- Failure/missing deployment/operator access leaves R2 implemented-at-most and unreleased with a concrete blocked-evidence list.\n\n**Out of scope / non-goals**\n\n- No production overwrite first rehearsal, automatic delivery redrive, hold clearing, automatic cutover/release, R3 proposal activation, MCP/remote adapters, teams or live connectors.\n\n## Acceptance criteria\n\n- [ ] Every original R2 task has linked accepted source and test/review evidence on one compatible revision; unresolved Important/Critical findings block acceptance.\n- [ ] Real restore validates all SQL/artifact bytes, rejects old credential/runtime/run authority, retains holds/history and denies resume without current ledger/retirement/probe/cutover.\n- [ ] Two distinct agents complete the post-restore journey; alternate submitter credentials cannot self-accept, and ACK/delivery never imply completion.\n- [ ] Later run `npm run check`, `npm run test:workers -- test/acceptance/r2-durable-work.test.ts test/acceptance/r2-isolation.test.ts test/recovery/complete-restore.test.ts`, `npm run test:ui -- test/ui/r2-kanban.spec.ts test/ui/r2-kanban-read.spec.ts`, and `npm run test:native:r2 -- --config <protected-isolated-config-path>`.\n- [ ] After T12-D exists, run `npm run verify:release -- --round R2 --evidence <path>` against the exact committed candidate; record controller output and independent review, not just schema validity.\n- [ ] Update feature matrix/checklist/roadmap with linked Specified/Implemented/Verified/Released evidence and supply R3 contracts without starting R3 implementation.\n\n## Touchpoints\n\n- Existing: `docs/release-checklist.md`.\n- Existing: `docs/feature-matrix.md`.\n- Existing: `docs/roadmap.md`.\n- Existing: `docs/backup-restore.md`.\n- Existing: `docs/operations.md`.\n- Existing: `docs/testing.md`.\n- Existing: `validation/runtime-evidence.schema.json`.\n- Existing: `scripts/verify-release.mjs`.\n- Existing: `package.json`.\n- Planned new: `test/acceptance/r2-durable-work.test.ts`.\n\n## Notes\n\nFinal evidence gate only. All implementation prerequisites are separate children, including explicit R2 verifier support. Authorized isolated credentials/environments must exist when executed; this planning task ran none of these commands.\n\nParent: [R2](https://github.com/trungtaottn/cf-agent-hub/issues/4). Source: retained candidate `22226633284e6410b2724acfcbfe1fe32f9325cc`; original tasks R2-T12. Future verification only; no implementation or product test is claimed by this draft.\n\n- Evidence dependency [R1-ACCEPT](https://github.com/trungtaottn/cf-agent-hub/issues/17): Preceding-round acceptance remains required.\n- Evidence dependency [R2-T08-B](https://github.com/trungtaottn/cf-agent-hub/issues/40): Complete current-authority isolation matrix must pass.\n- Evidence dependency [R2-T10-D](https://github.com/trungtaottn/cf-agent-hub/issues/48): Real built-CLI HTTPS conformance must pass.\n- Evidence dependency [R2-T11-B](https://github.com/trungtaottn/cf-agent-hub/issues/45): Actual accessible version-bound board behavior must pass.\n- Hard dependency [R2-T12-C](https://github.com/trungtaottn/cf-agent-hub/issues/46): V2 capture/restore/operator source and runbook must be complete.\n- Hard dependency [R2-T12-D](https://github.com/trungtaottn/cf-agent-hub/issues/47): The existing controller must actually support R2 evidence.\n",
+    "labels": [
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGnmg",
+        "name": "blocked",
+        "description": "Named prerequisite or owner/environment input is unmet.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGv3A",
+        "name": "ci",
+        "description": "Verification, compatibility or release evidence gate.",
+        "color": "1d76db"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHfAA",
+        "name": "priority:high",
+        "description": "High sequencing or correctness importance; does not imply readiness.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHjRw",
+        "name": "round:R2",
+        "description": "Work owned by the R2 roadmap round.",
+        "color": "1d76db"
+      }
+    ],
+    "state": "OPEN",
+    "url": "https://github.com/trungtaottn/cf-agent-hub/issues/49"
+  },
+  {
+    "number": 50,
+    "title": "[R2-RELEASE] Prepare the reproducible R2 artifact and operator handoff after acceptance",
+    "body": "## Summary\n\nImplement orchestration O4 for R2: prepare a tagged reproducible artifact, release notes and operator handoff, with the owner’s explicit release authorization as the final publication step.\n\nParent: [R2](https://github.com/trungtaottn/cf-agent-hub/issues/4). Original plan coverage: R2-T12. Capability coverage: F41.\n\n## Problem / motivation\n\nThe original orchestration separates implementation, verification and publication. Completing R2-ACCEPT proves a candidate boundary but does not create a released artifact. The owner has reserved PR merging to himself; a future release issue must not convert backlog creation authorization into permission for merge or production promotion.\n\n## Proposed flow\n\n1. Identify the accepted source and complete manifest, compare the proposed artifact bytes and ensure operator documentation matches the selected deployment/rollback paths.\n2. Prepare concrete release metadata, version/tag proposal, verified capability list and known limitations. Scan the exact final Git tree and packaged archive for secrets, private identifiers and unreviewed assets; inspect dependencies/assets for complete MIT and third-party notices.\n3. Present the reviewable artifact and exact publication actions to the owner, resolve the explicit release decision, and publish only through the supported authorized workflow.\n4. Read back the resulting tag/release/artifact identity and update Released status only for what was actually published.\n\n## Scope\n\n**In scope**\n\nReproducible artifact packaging, release metadata, operator runbook handoff and explicit publication evidence.\n\n**Out of scope / non-goals**\n\nAutomatic merge, production deployment without separate authorization, changing an accepted artifact after review, or advertising later-round features/capacity.\n\n## Acceptance criteria\n\n- [ ] The proposed release is tied to the exact accepted source/build/evidence and contains no extra or missing shipped bytes.\n- [ ] Release notes distinguish implemented/verified/released scope and identify operational limitations and rollback requirements. The exact final tree/archive passes secret, private-identifier and unreviewed-asset review, with complete applicable third-party and asset license notices.\n- [ ] The owner’s concrete publication decision is recorded before the tag/release write; absence of authorization remains a blocker.\n- [ ] A fresh readback matches tag, artifact hashes and release metadata before any capability advances to Released.\n\n## Touchpoints\n\n- Existing candidate: `docs/superpowers/plans/2026-10-23-release-orchestration.md`.\n- Existing candidate: `docs/release-checklist.md`.\n- Existing candidate: `docs/deployment.md`.\n- Existing candidate: `LICENSE`.\n- Existing candidate: `README.md`.\n- Existing candidate: `CHANGELOG.md`.\n- Existing candidate: `package-manifest.json`.\n- Planned deliverable: `THIRD-PARTY-NOTICES.md` (does not exist in the inspected candidate).\n- Normative plan: `docs/superpowers/plans/2026-10-23-r2-durable-work.md`.\n\n## Notes\n\n### Dependencies and pickup\n\n- **hard**: [R2-ACCEPT](https://github.com/trungtaottn/cf-agent-hub/issues/49) — Only independently accepted R2 source/evidence can be promoted to a release.\n\nOwner/operator input is required; this is not an autonomous agent queue item.\n\n### Future verification\n\nReproduce the accepted build and compare the immutable manifest; verify tag/commit/release metadata after an authorized publication. No release is performed as part of backlog planning.\n\nProduct test execution is deferred in the backlog-creation session. These criteria are pending, not recorded passes. Source observations refer to retained candidate `22226633284e6410b2724acfcbfe1fe32f9325cc`, which is committed but not yet on GitHub. PR #1 still points to `dbb708b4318df6944519d6a2b19ada352aef488f` at planning time; inspect the actual published baseline at pickup. Do not invent a GitHub source link for the retained commit.\n\n\n",
+    "labels": [
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGnmg",
+        "name": "blocked",
+        "description": "Named prerequisite or owner/environment input is unmet.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGzcg",
+        "name": "operations",
+        "description": "Operator, environment or publication action.",
+        "color": "0052cc"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHfAA",
+        "name": "priority:high",
+        "description": "High sequencing or correctness importance; does not imply readiness.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHjRw",
+        "name": "round:R2",
+        "description": "Work owned by the R2 roadmap round.",
+        "color": "1d76db"
+      }
+    ],
+    "state": "OPEN",
+    "url": "https://github.com/trungtaottn/cf-agent-hub/issues/50"
+  }
+]

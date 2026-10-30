@@ -1,0 +1,197 @@
+[
+  {
+    "number": 20,
+    "title": "[R2-T01-A] Amend execution policy, catalog lifecycle and R2 scope contracts",
+    "body": "## Summary\n\nSpecify the closed, bounded R2 execution-policy and catalog-lifecycle amendment. Own normative schemas, fixtures and actor lanes; command implementation follows separately and preserves the R1 profile transport.\n\n## Problem / motivation\n\nOriginal Task1 (`docs/superpowers/plans/2026-10-23-r2-durable-work.md:64–94`) leaves these additions as proposed amendments. R1 already implements advisory profile preview and revision-bound PUT in `src/config/settings-service.ts`. A saved preview ID for ordinary profile saves would contradict that behavior; eligibility and remapping require their own explicit authority and concurrency contracts.\n\n## Proposed flow\n\n1. Add a reviewed R2 amendment identifier, preserving portable profile revision 0.1 and historical receipts.\n2. Define required ExecutionPolicy fields: version ≥1, WIP 1–100, retry limit 0–10, upload TTL 60–3600 seconds, exact tuple eligibility and operator-reviewed replay-safety rules.\n3. Define catalog preview/apply schemas and routes: human profile:edit, CSRF/idempotency, expected profile revision, immutable 15-minute plan and touched task/agent versions, at most 200 affected resources.\n4. Preserve advisory POST /profile:preview and complete-candidate PUT /profile; reject lifecycle bypass and archived-ID reactivation.\n5. Extend existing deployment/bootstrap scope allowlists for enabled R2 actor lanes, including human-only imports:manage; recognition alone never widens installed grants.\n\n## Scope\n\n**In scope**\n\n- Eligibility matches exact `(project_id,work_role_id)`; null is a value, not a wildcard. Distinct active agents and assigned-agent eligibility are mandatory. Replay-safe rules record policy/rule/evidence before execution; no match is unsafe, conflicting matches reject, unknown outcomes always win. Fixture WIP 1/retries 2/TTL 900 are selected test policy.\n- CatalogPreviewRequest includes expected_profile_revision, kind project/work_role, stable id, archive/remap operation, nullable replacement_id and reason. CatalogApplyRequest binds preview_id and expected revision. CatalogPlan includes changes with nullable named_record before/after, affected IDs and structured conflicts.\n- Archive retains historical references and blocks new selection/claim. Remap touches only Backlog/Ready without approved intent and explicitly listed agent roles; Doing/Waiting/Review or required policy rewrites reject. Task remaps additionally require tasks:edit, agent changes human agents:manage, and current visibility over every entity.\n\n**Out of scope / non-goals**\n\n- No policy editor, generic state PATCH, new Workspace fields, profile:apply, partial remap, automatic preset reactivation or R3 approval activation.\n\n## Acceptance criteria\n\n- [ ] Fixtures cover WIP 0/1/100/101, retries 0/10/11, TTL 59/60/3600/3601, unknown/missing fields and conflicting exact policy rules.\n- [ ] Catalog and advisory profile previews remain distinct; 200/201 resources, expired plans and stale entity versions have explicit atomic rejection semantics.\n- [ ] Native callers cannot receive human-only scopes; new scope recognition requires explicit higher-epoch operator grants.\n- [ ] Archive/remap and stable-ID omission semantics agree across OpenAPI, configuration, customization and lifecycle docs; duplicate names remain advisory while duplicate IDs reject.\n- [ ] Later run `npm test -- test/contracts/r2-policy-catalog.test.ts` and `npm run check`; record nonzero collection and focused contract review before consumers proceed.\n\n## Touchpoints\n\n- Existing: `spec/openapi.json`.\n- Existing: `spec/deployment-config.schema.json`.\n- Existing: `spec/r1-bootstrap.schema.json`.\n- Existing: `docs/configuration.md`.\n- Existing: `docs/customization.md`.\n- Existing: `docs/http-api.md`.\n- Existing: `docs/limits.md`.\n- Existing: `docs/adr/0003-leases-and-decisions.md`.\n- Existing: `src/config/settings-service.ts`.\n- Existing: `examples/http/fixture-map.json`.\n- Planned new: `spec/execution-policy.schema.json`.\n- Planned new: `examples/http/r2-contracts.json`.\n- Planned new: `test/contracts/r2-policy-catalog.test.ts`.\n\n## Notes\n\nIntegrate shared OpenAPI/config changes sequentially with other amendments. Missing policy is never unlimited execution. Preserve approval schemas as unavailable compatibility data.\n\nParent: [R2](https://github.com/trungtaottn/cf-agent-hub/issues/4). Source: retained candidate `22226633284e6410b2724acfcbfe1fe32f9325cc`; original tasks R2-T01. Future verification only; no implementation or product test is claimed by this draft.\n\n- Hard dependency [R1-ACCEPT](https://github.com/trungtaottn/cf-agent-hub/issues/17): Verified R1 acceptance is required before any R2 implementation begins.\n- Hard dependency [R2-PLAN](https://github.com/trungtaottn/cf-agent-hub/issues/19): Reconcile actual interfaces, grant scope lists and migration baseline.\n",
+    "labels": [
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC-zrofA",
+        "name": "documentation",
+        "description": "Improvements or additions to documentation",
+        "color": "0075ca"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGhIA",
+        "name": "ai-handle",
+        "description": "Bounded task suitable for an agent once readiness and dependencies permit.",
+        "color": "0e8a16"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGnmg",
+        "name": "blocked",
+        "description": "Named prerequisite or owner/environment input is unmet.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHfAA",
+        "name": "priority:high",
+        "description": "High sequencing or correctness importance; does not imply readiness.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHjRw",
+        "name": "round:R2",
+        "description": "Work owned by the R2 roadmap round.",
+        "color": "1d76db"
+      }
+    ],
+    "state": "OPEN",
+    "url": "https://github.com/trungtaottn/cf-agent-hub/issues/20"
+  },
+  {
+    "number": 23,
+    "title": "[R2-T01-D] Extend canonical R1 boundaries and discover R2 verification files",
+    "body": "## Summary\n\nMake accepted R2 schemas usable through the existing generator, command/auth/event/cursor infrastructure and test runners. Own shared boundary plumbing with unavailable unimplemented routes, not a second API or domain state engine.\n\n## Problem / motivation\n\n`scripts/generate-auth-contract.mjs:7–10` emits only R1 roots; Task/Run/Artifact aliases are absent. Event cases in `src/workspace/commands.ts:13` and `src/audit/events.ts:11–19`, and cursor operations at `src/http/cursors.ts:4`, are R1-closed. `vitest.workers.config.ts:5` omits new domain directories; `vitest.config.ts:2` omits TypeScript CLI tests. Without explicit discovery, future focused commands could collect no tests.\n\n## Proposed flow\n\n1. Extend the same generator roots/validators to exact canonical R2 schemas and byte rules. Add alias-only NativeDTO<K> and internal PageData<T>; HTTP alone wraps existing envelopes and encodes cursors.\n2. Extend closed event/cursor cases and documented domain hooks while preserving transaction-time current authorization, replay visibility, sanitized outcomes and synchronous guards. Unknown resource predicates deny.\n3. Establish thin R2 dispatch integration, remaining unavailable until domain commands and required safe transitions exist. Keep request-decision/approval routes unavailable.\n4. Add explicit correct-runtime test discovery for agents/runtimes/tasks/artifacts/search/imports/R2 acceptance and CLI tests, preserving R1 test ownership.\n5. Define serialized shared-file ownership for scope allowlists, event projections and resource predicates; use actual R1 context types including trusted sessionId.\n\n## Scope\n\n**In scope**\n\n- Existing human session and native credential lanes stay separate. Raw proofs never enter context or persisted outcomes.\n- Canonical event evidence can carry task version/run/fence through persisted joins; client-authored events and permissive fallback visibility remain forbidden. Domain owners implement their own current-resource predicates.\n- Crypto/fetch/object operations/cursor encoding remain outside SQL; final transaction reauthorizes after awaits. Globally distinct IDs and unchanged snake_case contracts avoid divergent client models.\n\n**Out of scope / non-goals**\n\n- No parallel transport/generator/event store/scheduler, broad permission fallback, generic state RPC or simulated route success.\n\n## Acceptance criteria\n\n- [ ] Generated Task/Run/Artifact/Agent/Credential/RuntimeIssue/SearchHit and amendment DTOs match OpenAPI; stale generated output fails existing freshness checks.\n- [ ] Unknown event/cursor/resource cases fail closed and current R1 message/session/replay behavior remains covered.\n- [ ] Every new domain suite is discovered by its intended runtime; focused commands record nonzero collected counts rather than accepting an empty pass.\n- [ ] Native scope claims cannot obtain human-only lanes; unavailable R3 branches still fail without creating approval/Waiting records.\n- [ ] Later run `npm test -- test/contracts/r2-shared-boundary.test.ts`, `npm run verify:generated`, `npm run typecheck` and explicit runner discovery checks for newly introduced suites.\n\n## Touchpoints\n\n- Existing: `scripts/generate-auth-contract.mjs`.\n- Existing: `scripts/generate-config-validators.mjs`.\n- Existing: `scripts/generate-operator-contract.mjs`.\n- Existing: `src/http/dto.ts`.\n- Existing: `src/http/generated/http-schemas.ts`.\n- Existing: `src/http/router.ts`.\n- Existing: `src/workspace/context.ts`.\n- Existing: `src/workspace/commands.ts`.\n- Existing: `src/audit/events.ts`.\n- Existing: `src/http/cursors.ts`.\n- Existing: `src/config/deployment.ts`.\n- Existing: `vitest.config.ts`.\n- Existing: `vitest.workers.config.ts`.\n- Existing: `test/contracts/http-dto-types.ts`.\n- Existing: `package.json`.\n- Planned new: `src/contracts/native.ts`.\n- Planned new: `src/contracts/r2.ts`.\n- Planned new: `src/http/r2-routes.ts`.\n- Planned new: `test/contracts/r2-shared-boundary.test.ts`.\n\n## Notes\n\nStorage adds persisted fields/registry entries; domain owners consume this reviewed interface. Shared-file edits are serialized. Generated checks alone are not R2 runtime acceptance.\n\nParent: [R2](https://github.com/trungtaottn/cf-agent-hub/issues/4). Source: retained candidate `22226633284e6410b2724acfcbfe1fe32f9325cc`; original tasks R2-T01. Future verification only; no implementation or product test is claimed by this draft.\n\n- Hard dependency [R1-ACCEPT](https://github.com/trungtaottn/cf-agent-hub/issues/17): Verified R1 is a strict implementation entry gate, not only a later release evidence obligation.\n- Interface dependency [R2-T01-A](https://github.com/trungtaottn/cf-agent-hub/issues/20): Consume reviewed policy/catalog and actor-lane contracts.\n- Interface dependency [R2-T01-B](https://github.com/trungtaottn/cf-agent-hub/issues/21): Consume import/search types and bounds.\n- Interface dependency [R2-T01-C](https://github.com/trungtaottn/cf-agent-hub/issues/22): Preserve accepted recovery and compatibility types.\n",
+    "labels": [
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC-zrojg",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGhIA",
+        "name": "ai-handle",
+        "description": "Bounded task suitable for an agent once readiness and dependencies permit.",
+        "color": "0e8a16"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGnmg",
+        "name": "blocked",
+        "description": "Named prerequisite or owner/environment input is unmet.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHfAA",
+        "name": "priority:high",
+        "description": "High sequencing or correctness importance; does not imply readiness.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHjRw",
+        "name": "round:R2",
+        "description": "Work owned by the R2 roadmap round.",
+        "color": "1d76db"
+      }
+    ],
+    "state": "OPEN",
+    "url": "https://github.com/trungtaottn/cf-agent-hub/issues/23"
+  },
+  {
+    "number": 24,
+    "title": "[R2-T02-A] Migrate R1 identity and the complete R2 storage boundary",
+    "body": "## Summary\n\nOwn the initial forward R2 schema and static identity adoption in one persistence change. Establish reviewed constraints and recovery coverage before domain commands. The planned 0008 path is conditional on unchanged allocation; later changes append migrations.\n\n## Problem / motivation\n\nThe candidate registers versions 1–7 (`src/storage/migrations.ts:1–12`; `src/storage/schema-version.ts:2–7`), with actual static agent IDs, credential hashes and retirement markers (`src/storage/migrations/0001-foundation.sql:14–20`). Original Task2 names obsolete version 0002. New durable state must preserve these identities and appear in the complete typed recovery registry; `docs/data-model.md:30–64` describes invariants, not executed tables.\n\n## Proposed flow\n\n1. Reconfirm allocation from R2-PLAN; append next unused version, using 0008-durable-work.sql only if 7 remains latest. Never edit historical migrations.\n2. Design scoped agent/credential metadata, runtimes/proof hashes, tasks/runs/results/acceptance history, artifact intents/generations/associations, message attachments, catalog/import plans and provenance mappings from reviewed contracts. Preserve disabled approval/history storage compatibility without exposing R3.\n3. Adopt static identities one-to-one, preserving token hashes, scope/project ceilings, retired/disabled records and historical references; reject collisions.\n4. Add active-run uniqueness, terminal ended_at and pointer constraints, task-local fences, due/order indexes and canonical event evidence fields.\n5. Update version bookkeeping, typed registry and restore modes in the same change; prove restart, collision and abort behavior on representative v7 snapshots.\n\n## Scope\n\n**In scope**\n\n- One owner handles initial schema/registry. Downstream commands consume it; corrections after integration require a separately allocated forward migration.\n- No raw native/runtime secrets enter storage. Recovery control tables retain appropriate evidence/invalidate/paused-effects semantics, and every table is registered.\n- Existing message/outbox identities, payload bytes, attempts, replay retention, catalog mapping and maintenance generations remain meaningful and retained.\n\n**Out of scope / non-goals**\n\n- No new grants by migration, erased revocations, data reset, parallel credential registry, endpoint exposure or restored proof secrets.\n\n## Acceptance criteria\n\n- [ ] Migrated snapshots retain IDs/hashes, disabled/expired/retired states, project_ids null versus [], messages, outbox bytes and outcomes.\n- [ ] Collision or injected failure rolls back the complete migration; restart neither duplicates entities nor partially advances schema bookkeeping.\n- [ ] Scoped active-run/provenance uniqueness and relational constraints reject invalid combinations; sqlite_schema exactly matches reviewed registry columns/types/modes.\n- [ ] Frozen maintenance still prevents unsupported upgrades; published migration files remain unchanged.\n- [ ] Later run `npm run test:workers -- test/storage/r2-durable-migration.test.ts test/storage/workspace-bootstrap.test.ts` and `npm run typecheck`; document query/index observations without capacity claims.\n\n## Touchpoints\n\n- Existing: `src/storage/migrations.ts`.\n- Existing: `src/storage/schema-version.ts`.\n- Existing: `src/storage/transaction.ts`.\n- Existing: `src/storage/migrations/0001-foundation.sql`.\n- Existing: `src/storage/migrations/0007-maintenance-generation.sql`.\n- Existing: `src/recovery/table-registry.ts`.\n- Existing: `src/recovery/encoding.ts`.\n- Existing: `src/config/bootstrap.ts`.\n- Existing: `docs/data-model.md`.\n- Existing: `test/storage/workspace-bootstrap.test.ts`.\n- Planned new: `src/storage/migrations/0008-durable-work.sql`.\n- Planned new: `test/storage/r2-durable-migration.test.ts`.\n\n## Notes\n\nThe full storage boundary permits archive/cancellation compatibility fixtures before execution routes exist. An empty table is not an enabled product feature. Synchronize table mode decisions with the recovery contract owner.\n\nParent: [R2](https://github.com/trungtaottn/cf-agent-hub/issues/4). Source: retained candidate `22226633284e6410b2724acfcbfe1fe32f9325cc`; original tasks R2-T02, R2-T03, R2-T04, R2-T06, R2-T07, R2-T09. Future verification only; no implementation or product test is claimed by this draft.\n\n- Hard dependency [R2-T01-D](https://github.com/trungtaottn/cf-agent-hub/issues/23): Canonical schemas and shared boundary must exist.\n- Hard dependency [R2-PLAN](https://github.com/trungtaottn/cf-agent-hub/issues/19): Allocate next unused migration and review actual registry/interface baseline.\n",
+    "labels": [
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC-zrojg",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGhIA",
+        "name": "ai-handle",
+        "description": "Bounded task suitable for an agent once readiness and dependencies permit.",
+        "color": "0e8a16"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGnmg",
+        "name": "blocked",
+        "description": "Named prerequisite or owner/environment input is unmet.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHfAA",
+        "name": "priority:high",
+        "description": "High sequencing or correctness importance; does not imply readiness.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHjRw",
+        "name": "round:R2",
+        "description": "Work owned by the R2 roadmap round.",
+        "color": "1d76db"
+      }
+    ],
+    "state": "OPEN",
+    "url": "https://github.com/trungtaottn/cf-agent-hub/issues/24"
+  },
+  {
+    "number": 25,
+    "title": "[R2-T02-B] Implement human-authorized agent and native credential lifecycle",
+    "body": "## Summary\n\nAdd durable agent create/edit/archive and one-time native credential issue/revoke under current human authority. Reuse migrated identity and the existing command/replay lane; metadata labels never grant permission.\n\n## Problem / motivation\n\nAuthentication (`src/auth/authorize.ts:10–15`) and background participant checks (`src/messages/references.ts:28–35`) currently join static_agents and installed grant epochs. R1 already verifies credential hashes (`src/auth/native.ts:8–21`). Original Task2 adds dynamic management; a second registry would leave delivery authorization inconsistent after archive/rotation.\n\n## Proposed flow\n\n1. Implement canonical agent/credential commands and bounded reads with current scope/project checks.\n2. Prepare 256-bit secret outside SQL; atomically store only its SHA-256 verification material and sanitized issuance outcome, reveal once in the initial response, and return null/false on replay.\n3. Enforce human-only administration, actual session/CSRF, caller grant ceiling, immutable IDs, expiry and current external epoch/revocation ceiling.\n4. Archive rejects active runs or unresolved assignments in any nonterminal state; successful archive revokes all credentials/proofs atomically while retaining identity/history. Separate credential revoke may invalidate an active owner immediately.\n5. Adapt authentication and background recipient/delivery joins to the canonical registry, preserving one coherent grant and current checks before replay/dispatch.\n\n## Scope\n\n**In scope**\n\n- Command status, event/outcome and revocations share one transaction. Rotation cannot transfer active work or widen projects/scopes.\n- Archived submitters remain resolvable for review attribution. Lost one-time response requires fresh explicit issuance; neither audit nor replay can recover the token.\n- Update docs for archive rejection, reassign/reconcile prerequisites and static-to-dynamic adoption.\n\n**Out of scope / non-goals**\n\n- No agent launcher, native human impersonation, token recovery, automatic workload inheritance or policy editor.\n\n## Acceptance criteria\n\n- [ ] Native callers with forged admin scope and humans overdelegating are denied; null and [] project grants remain distinct.\n- [ ] Initial response reveals once; same-key replay is sanitized and SQL/log/audit scans contain no token bytes.\n- [ ] Active-run/unresolved-assignment archive rejects; injected failure after status update rolls back credential/proof revocations.\n- [ ] Revoked/archived credentials fail current command, successful replay and dispatch; historical identity survives. T04-A adds both claim/archive race orders.\n- [ ] Later run `npm run test:workers -- test/agents/identity-lifecycle.test.ts` and `npm run typecheck`; review secret handling through entropy, SQL, replay, audit and export.\n\n## Touchpoints\n\n- Existing: `src/auth/native.ts`.\n- Existing: `src/auth/authorize.ts`.\n- Existing: `src/auth/context.ts`.\n- Existing: `src/messages/references.ts`.\n- Existing: `src/outbox/repository.ts`.\n- Existing: `src/config/bootstrap.ts`.\n- Existing: `src/workspace/commands.ts`.\n- Existing: `src/http/router.ts`.\n- Existing: `src/workspace/workspace-do.ts`.\n- Existing: `docs/agents.md`.\n- Existing: `docs/security-model.md`.\n- Planned new: `src/agents/commands.ts`.\n- Planned new: `src/auth/native-credentials.ts`.\n- Planned new: `test/agents/identity-lifecycle.test.ts`.\n\n## Notes\n\nExtend the existing wrapper only as required for initial one-time response separation; persisted outcomes must never contain the secret. R1 operator revocations remain an additional ceiling.\n\nParent: [R2](https://github.com/trungtaottn/cf-agent-hub/issues/4). Source: retained candidate `22226633284e6410b2724acfcbfe1fe32f9325cc`; original tasks R2-T02. Future verification only; no implementation or product test is claimed by this draft.\n\n- Hard dependency [R2-T02-A](https://github.com/trungtaottn/cf-agent-hub/issues/24): Use migrated identities and scoped persistence.\n- Interface dependency [R2-T01-A](https://github.com/trungtaottn/cf-agent-hub/issues/20): Use exact scope ceilings and human-only administration.\n",
+    "labels": [
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC-zrojg",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGhIA",
+        "name": "ai-handle",
+        "description": "Bounded task suitable for an agent once readiness and dependencies permit.",
+        "color": "0e8a16"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGnmg",
+        "name": "blocked",
+        "description": "Named prerequisite or owner/environment input is unmet.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHfAA",
+        "name": "priority:high",
+        "description": "High sequencing or correctness importance; does not imply readiness.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHjRw",
+        "name": "round:R2",
+        "description": "Work owned by the R2 roadmap round.",
+        "color": "1d76db"
+      }
+    ],
+    "state": "OPEN",
+    "url": "https://github.com/trungtaottn/cf-agent-hub/issues/25"
+  },
+  {
+    "number": 26,
+    "title": "[R2-T02-C] Enroll credential-bound runtimes and separate presence from leases",
+    "body": "## Summary\n\nImplement runtime enrollment and 90-second presence with exact credential-bound proof. Produce a server-only VerifiedRuntime for execution commands; readable IDs, agent labels and fences never authenticate an owner.\n\n## Problem / motivation\n\nR1 actors intentionally have runtimeId:null (`src/auth/authorize.ts:15,30`); enrollment does not exist. Original Task2 (`docs/superpowers/plans/2026-10-23-r2-durable-work.md:99–106`) requires enrollment to resolve the agent from the active credential and persist only hashes. Presence is separate from the 60-second execution lease.\n\n## Proposed flow\n\n1. Implement exact createRuntime/heartbeatRuntime bindings and requireRuntimeProof returning runtime, credential ID and authority epoch. Hash raw proof at ingress, never placing it in CommandContext or persisted outcomes.\n2. Generate a 256-bit proof before SQL; atomically persist hash/bindings plus sanitized outcome and reveal only in initial success.\n3. In every consuming transaction recheck issuing credential, agent/workspace/epoch, runtime status and trusted deadline, including after hashing awaits.\n4. Presence heartbeat may renew only unexpired runtime presence; it never renews task ownership or revives expired proof.\n5. Handle response loss/rotation with fresh enrollment and no inherited run, preserving old attribution.\n\n## Scope\n\n**In scope**\n\n- Consume canonical RuntimeIssue/Runtime and existing error envelopes; do not invent runtime-list routes.\n- Credential revoke/archive/epoch changes invalidate proof immediately. Wrong credential on the same agent is still wrong authority.\n- Preserve human lane separation and actual trusted session context. Recovery retains historical proof metadata but will invalidate all restored proof authority.\n\n**Out of scope / non-goals**\n\n- No process launch, automatic enrollment/transfer, proof recovery, browser token storage or presence-as-lease.\n\n## Acceptance criteria\n\n- [ ] Wrong credential/runtime/workspace/epoch and ID/fence-only requests fail even when agent IDs match.\n- [ ] Presence deadline−1 ms can renew; deadline and deadline+1 ms deny before cleanup; supplied client time cannot alter the result.\n- [ ] Heartbeat changes presence only, and revoke/rotation prevents old-proof replay or future owner mutation.\n- [ ] Lost enrollment response yields sanitized replay without proof; a fresh enrollment gets distinct authority and no active-run inheritance.\n- [ ] Later run `npm run test:workers -- test/runtimes/proof-lifecycle.test.ts` and `npm run typecheck`; retain restart, exact DTO and no-secret logging assertions.\n\n## Touchpoints\n\n- Existing: `src/auth/native.ts`.\n- Existing: `src/auth/authorize.ts`.\n- Existing: `src/workspace/context.ts`.\n- Existing: `src/workspace/commands.ts`.\n- Existing: `src/http/router.ts`.\n- Existing: `src/workspace/workspace-do.ts`.\n- Existing: `docs/agents.md`.\n- Existing: `docs/http-api.md`.\n- Existing: `docs/security-model.md`.\n- Planned new: `src/runtimes/commands.ts`.\n- Planned new: `src/auth/runtime-proof.ts`.\n- Planned new: `test/runtimes/proof-lifecycle.test.ts`.\n\n## Notes\n\nDownstream commands consume VerifiedRuntime and still revalidate at their actual transaction boundary. Do not relax refreshActor to trust a caller-authored runtime field.\n\nParent: [R2](https://github.com/trungtaottn/cf-agent-hub/issues/4). Source: retained candidate `22226633284e6410b2724acfcbfe1fe32f9325cc`; original tasks R2-T02. Future verification only; no implementation or product test is claimed by this draft.\n\n- Hard dependency [R2-T02-B](https://github.com/trungtaottn/cf-agent-hub/issues/25): Credential lifecycle must invalidate runtime authority consistently.\n- Interface dependency [R2-T02-A](https://github.com/trungtaottn/cf-agent-hub/issues/24): Consume runtime persistence and invalidation modes.\n",
+    "labels": [
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC-zrojg",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGhIA",
+        "name": "ai-handle",
+        "description": "Bounded task suitable for an agent once readiness and dependencies permit.",
+        "color": "0e8a16"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JGnmg",
+        "name": "blocked",
+        "description": "Named prerequisite or owner/environment input is unmet.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHfAA",
+        "name": "priority:high",
+        "description": "High sequencing or correctness importance; does not imply readiness.",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOVUfTzs8AAAAC_JHjRw",
+        "name": "round:R2",
+        "description": "Work owned by the R2 roadmap round.",
+        "color": "1d76db"
+      }
+    ],
+    "state": "OPEN",
+    "url": "https://github.com/trungtaottn/cf-agent-hub/issues/26"
+  }
+]
