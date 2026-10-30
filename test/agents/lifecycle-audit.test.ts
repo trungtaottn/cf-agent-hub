@@ -1,6 +1,7 @@
+import {identityFixture as settingsFixture} from '../helpers/identity';
 import {it,expect} from 'vitest';
 import {runInDurableObject} from 'cloudflare:test';
-import {settingsFixture,human} from '../helpers/settings';
+import {human} from '../helpers/settings';
 import {withTransaction} from '../../src/storage/transaction';
 import {resolveActor} from '../../src/auth/authorize';
 import {appendEvent,projectEvent,resourceEventVisibility} from '../../src/audit/events';

@@ -1,6 +1,7 @@
+import {identityFixture as settingsFixture} from '../helpers/identity';
 import {it,expect} from 'vitest';
 import {runInDurableObject} from 'cloudflare:test';
-import {settingsFixture,human,owned,commandContext} from '../helpers/settings';
+import {human,owned,commandContext} from '../helpers/settings';
 import {fixture} from '../helpers/environment';
 import {canonicalJson,sha256,prepareBootstrap,installConfiguration} from '../../src/config/bootstrap';
 import {withTransaction} from '../../src/storage/transaction';

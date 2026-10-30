@@ -1,3 +1,4 @@
+import {delegationCeiling} from '../auth/credential-authority';
 import type {WorkspaceTransaction,SqlValue} from '../storage/transaction';
 import type {ActorContext} from '../workspace/context';
 import type {Agent,Credential} from '../http/dto';
@@ -26,10 +27,11 @@ export function listAgents(tx:WorkspaceTransaction,actor:ActorContext,query:Iden
  return page<AgentRow,Agent>(tx,query,'static_agents','agent_id','workspace_id=?',[live.workspaceId],agentView);
 }
 export function listCredentials(tx:WorkspaceTransaction,actor:ActorContext,query:IdentityPageQuery):PageData<Credential>{
- const live=identityReadActor(tx,actor,'credentials',query.nowMs);
+ const live=identityReadActor(tx,actor,'credentials',query.nowMs),ceiling=delegationCeiling(tx,live.workspaceId,live.principalId);
+ if(!ceiling)throw new HttpError('FORBIDDEN',403);
  // Filter the complete grant in SQL before limit/lookahead. Hidden rows never establish continuation.
  const where=`workspace_id=? AND NOT EXISTS (SELECT 1 FROM json_each(native_credentials.scopes_json) s WHERE NOT EXISTS (SELECT 1 FROM json_each(?) a WHERE a.value=s.value))`+
-  (live.projectIds===null?'':` AND json_type(project_ids_json)='array' AND NOT EXISTS (SELECT 1 FROM json_each(native_credentials.project_ids_json) p WHERE NOT EXISTS (SELECT 1 FROM json_each(?) a WHERE a.value=p.value))`);
- const args:SqlValue[]=[live.workspaceId,JSON.stringify([...live.scopes]),...(live.projectIds===null?[]:[JSON.stringify(live.projectIds)])];
+  (ceiling.projects===null?'':` AND json_type(project_ids_json)='array' AND NOT EXISTS (SELECT 1 FROM json_each(native_credentials.project_ids_json) p WHERE NOT EXISTS (SELECT 1 FROM json_each(?) a WHERE a.value=p.value))`);
+ const args:SqlValue[]=[live.workspaceId,JSON.stringify(ceiling.scopes),...(ceiling.projects===null?[]:[JSON.stringify(ceiling.projects)])];
  return page<CredentialRow,Credential>(tx,query,'native_credentials','credential_id',where,args,row=>credentialView(row,query.nowMs));
 }

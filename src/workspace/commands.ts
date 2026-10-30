@@ -10,7 +10,7 @@ import {HttpError} from '../http/envelopes';
 export interface CommandOutcome<T>{status:number;data:T;}
 /** Internal owned context; never construct from HTTP JSON or serialize caller authority. */
 export interface CommandExecutionContext{workspace:AuthWorkspace;requestId:string;idempotencyKey:string;fingerprint:string;admissionEpoch:number;admissionGeneration:number;}
-export interface EventDraft{type:'message.accepted'|'message.acknowledged'|'profile.updated'|'preferences.updated'|'agent.created'|'agent.updated'|'agent.archived'|'credential.issued'|'credential.revoked';resourceType:'message'|'profile'|'preferences'|'agent'|'credential';resourceId:string;resourceVersion:number|null;threadId:string|null;}
+export interface EventDraft{type:'message.accepted'|'message.acknowledged'|'profile.updated'|'preferences.updated'|'agent.created'|'agent.updated'|'agent.archived'|'credential.issued'|'credential.revoked'|'runtime.enrolled'|'runtime.heartbeat';resourceType:'message'|'profile'|'preferences'|'agent'|'credential'|'runtime';resourceId:string;resourceVersion:number|null;threadId:string|null;}
 export interface CommandDescriptor<B,T>{
  operation:string;target:string;
  resource(tx:WorkspaceTransaction,ctx:CommandContext,body:B):ResourceAccess|undefined;

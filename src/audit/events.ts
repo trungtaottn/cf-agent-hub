@@ -5,7 +5,7 @@ import type {Event} from '../http/dto';
 import {validateEvent} from '../http/generated/auth-validators.js';
 import {canonicalJson} from '../config/bootstrap';
 import {authorize,refreshActor} from '../auth/authorize';
-import {grantsCover} from '../auth/credential-authority';
+import {grantsCover,delegationCeiling} from '../auth/credential-authority';
 import {HttpError} from '../http/envelopes';
 import {assertMessageVisible} from '../messages/references';
 export interface RedactedEventInput extends EventDraft{id:string;workspaceId:string;actor:ActorContext;requestId:string;nowMs:number;}
@@ -18,7 +18,9 @@ const definitions={
  'agent.updated':{resource:'agent',summary:'Agent updated.'},
  'agent.archived':{resource:'agent',summary:'Agent archived.'},
  'credential.issued':{resource:'credential',summary:'Credential issued.'},
- 'credential.revoked':{resource:'credential',summary:'Credential revoked.'}
+ 'credential.revoked':{resource:'credential',summary:'Credential revoked.'},
+ 'runtime.enrolled':{resource:'runtime',summary:'Runtime enrolled.'},
+ 'runtime.heartbeat':{resource:'runtime',summary:'Runtime presence refreshed.'}
 } as const;
 interface EventRow{id:string;workspace_id:string;sequence:number;type:string;actor_json:string;resource_type:Event['resource_type'];resource_id:string;resource_version:number|null;thread_id:string|null;request_id:string;occurred_at:number;summary:string;}
 function projection(row:EventRow):Event{
@@ -79,7 +81,8 @@ export const resourceEventVisibility:EventVisibility=(tx,actor,resource,event,no
    const row=tx.one<{scopes_json:string;project_ids_json:string}>('SELECT scopes_json,project_ids_json FROM native_credentials WHERE credential_id=? AND workspace_id=?',[resource.id,actor.workspaceId]);
    if(!row)return false;
    const scopes=JSON.parse(row.scopes_json) as string[],projects=JSON.parse(row.project_ids_json) as string[]|null;
-   return grantsCover([...actor.scopes],actor.projectIds,scopes,projects);
+   const ceiling=delegationCeiling(tx,actor.workspaceId,actor.principalId);
+   return !!ceiling&&grantsCover(ceiling.scopes,ceiling.projects,scopes,projects);
   }
   return settingsEventVisibility(tx,actor,resource,event,nowMs)===true;
  }catch(error){if(error instanceof HttpError&&error.code==='NOT_FOUND'||error instanceof Error&&'code' in error&&error.code==='FORBIDDEN')return false;throw error;}

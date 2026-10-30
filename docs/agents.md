@@ -61,3 +61,9 @@ After losing a command response, retry the same request with the same idempotenc
 ## Acceptance criteria
 
 Concurrent claims must produce one owner. A restarted instance must not inherit a different instance's fence. Revoked credentials and wrong-workspace requests must fail. Presence expiry must be distinguishable from task failure. Repeated delivery must not create duplicate task transitions. A forged work-role or model label must not widen access. Result acceptance must reject the submitting agent, and approval must require the current authorized human and matching proposal.
+
+## Local enrollment implementation (issue26)
+
+The local source implements credential-bound native enrollment and presence. Enroll with a fresh idempotency key and retain the first response's opaque runtime token securely. Use the same issuing bearer plus `X-Runtime-Token` for heartbeat; agent/runtime IDs and fences are not authentication. Sanitized replay does not recover a lost token: enroll a fresh runtime and do not assume it owns any prior run.
+
+Presence lasts 90 seconds and may renew only before its trusted deadline. It is separate from task execution leases. Revocation, archived identity, credential expiry or epoch change invalidates authority immediately, without waiting for cleanup. Human sessions cannot enroll. Source evidence is in the [issue26 ledger](r2-task-plans/issue-026-execution.md); run execution, restored-state acceptance and live deployment remain later work.
