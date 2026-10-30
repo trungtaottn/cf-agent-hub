@@ -42,6 +42,10 @@
         {
           "binding": "RECOVERY_BUCKET",
           "bucket_name": "cf-agent-hub-test-recovery"
+        },
+        {
+          "binding": "ARTIFACT_BUCKET",
+          "bucket_name": "cf-agent-hub-test-artifacts"
         }
       ]
     },

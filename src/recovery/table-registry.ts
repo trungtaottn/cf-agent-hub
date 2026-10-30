@@ -2751,6 +2751,13 @@ export const TABLE_REGISTRY = [
     "notNull": false,
     "defaultValue": null,
     "pk": 0
+   },
+   {
+    "name": "admission_generation",
+    "type": "INTEGER",
+    "notNull": false,
+    "defaultValue": null,
+    "pk": 0
    }
   ],
   "primaryKey": [
@@ -3062,6 +3069,20 @@ export const TABLE_REGISTRY = [
    {
     "name": "effect_drained_at",
     "type": "INTEGER",
+    "notNull": false,
+    "defaultValue": null,
+    "pk": 0
+   },
+   {
+    "name": "artifact_version",
+    "type": "INTEGER",
+    "notNull": false,
+    "defaultValue": null,
+    "pk": 0
+   },
+   {
+    "name": "upload_idempotency_sha256",
+    "type": "TEXT",
     "notNull": false,
     "defaultValue": null,
     "pk": 0

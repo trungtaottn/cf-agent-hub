@@ -1,3 +1,4 @@
+import {getArtifact} from '../artifacts/repository';
 import {assertAdmissionOpen} from '../recovery/maintenance';
 import {taskRecord,taskVisible,taskView} from '../tasks/repository';
 import type {WorkspaceTransaction} from '../storage/transaction';
@@ -33,6 +34,9 @@ const definitions={
  'task.failed':{resource:'task',summary:'Task attempt failed.'},
  'task.expired':{resource:'task',summary:'Task execution lease expired.'},
  'task.claimed':{resource:'task',summary:'Task claimed.'},
+ 'artifact.staged':{resource:'artifact',summary:'Artifact staged.'},
+ 'artifact.uploaded':{resource:'artifact',summary:'Artifact uploaded.'},
+ 'artifact.committed':{resource:'artifact',summary:'Artifact committed.'},
  'run.heartbeat':{resource:'run',summary:'Execution lease renewed.'}
 } as const;
 interface EventRow{id:string;workspace_id:string;sequence:number;type:string;actor_json:string;resource_type:Event['resource_type'];resource_id:string;resource_version:number|null;thread_id:string|null;request_id:string;occurred_at:number;summary:string;task_version?:number|null;run_id?:string|null;fence?:number|null;}
@@ -123,7 +127,8 @@ export function projectEvent(tx:WorkspaceTransaction,actor:ActorContext,id:strin
 export const resourceEventVisibility:EventVisibility=(tx,actor,resource,event,nowMs)=>{
  if(!validateEvent(event)||event.workspace_id!==actor.workspaceId||resource.id!==event.resource_id||resource.kind!==event.resource_type)return false;
  try{
-  authorize(tx,actor,'events:read',resource.kind==='credential'||resource.kind==='task'||resource.kind==='run'?undefined:resource,nowMs);
+  authorize(tx,actor,'events:read',resource.kind==='credential'||resource.kind==='task'||resource.kind==='run'||resource.kind==='artifact'?undefined:resource,nowMs);
+  if(resource.kind==='artifact'){getArtifact(tx,{actor,nowMs},event.resource_id);return true;}
   if(event.type==='message.accepted'||event.type==='message.acknowledged'){
    assertMessageVisible(tx,actor,event.resource_id,nowMs);return true;
   }

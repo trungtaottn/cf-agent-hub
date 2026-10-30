@@ -31,7 +31,7 @@ it('catalog_schema9_upgrade_preserves_all_existing_domain_bytes_and_registers_on
   const before=rows(state.storage),oldSchema=schema(state.storage),versions=state.storage.sql.exec('SELECT * FROM schema_migrations ORDER BY version').toArray();
   expect(()=>withTransaction(state.storage,assertCurrentSchema)).toThrow('UNSUPPORTED_SCHEMA');
   migrate(state.storage,v9);
-  expect(CURRENT_SCHEMA_VERSION).toBe(11);expect(rows(state.storage)).toEqual(before);
+  expect(CURRENT_SCHEMA_VERSION).toBe(12);expect(rows(state.storage)).toEqual(before);
   const afterSchema=schema(state.storage);expect(afterSchema.filter(x=>!['tasks_catalog_project','tasks_catalog_role'].includes(String(x.name)))).toEqual(oldSchema);
   expect(afterSchema.filter(x=>['tasks_catalog_project','tasks_catalog_role'].includes(String(x.name)))).toHaveLength(2);
   expect(state.storage.sql.exec('SELECT * FROM schema_migrations WHERE version<=8 ORDER BY version').toArray()).toEqual(versions);
@@ -62,7 +62,7 @@ it('current_schema_restart_is_idempotent_and_gapped_sequence_rejects',async()=>{
  await evictDurableObject(stub);
  await runInDurableObject(stub,(_o,state)=>{
   expect({schema:schema(state.storage),rows:rows(state.storage),versions:state.storage.sql.exec('SELECT * FROM schema_migrations ORDER BY version').toArray()}).toEqual(before);
-  expect(before.versions).toHaveLength(11);state.storage.sql.exec('DELETE FROM schema_migrations WHERE version=8');
+  expect(before.versions).toHaveLength(12);state.storage.sql.exec('DELETE FROM schema_migrations WHERE version=8');
   expect(()=>withTransaction(state.storage,assertCurrentSchema)).toThrow('UNSUPPORTED_SCHEMA');
   expect(()=>withTransaction(state.storage,inspectRegistry)).toThrow('RECOVERY_SCHEMA_MISMATCH');
  });
