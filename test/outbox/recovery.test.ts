@@ -48,7 +48,7 @@ it('crash_before_fetch_consumes_reserved_attempt',async()=>{
  await evictDurableObject(stub);
  await runInDurableObject(stub,async(_o,state)=>{
   now+=30000;const r=runtime(state.storage,name,()=>now);await r.scheduler.runDueWork(now);expect(row(state.storage)).toMatchObject({attempts:1,status:'pending',last_error:'outcome_unknown',next_due_at:now+4000});
-  withTransaction(state.storage,tx=>finishAttempt(tx,attempt.attemptId,{kind:'delivered',status:200},now,attempt.admissionFence));expect(row(state.storage).status).toBe('pending');
+  withTransaction(state.storage,tx=>finishAttempt(tx,attempt.deliveryId,attempt.attemptId,{kind:'delivered',status:200},now,attempt.admissionFence));expect(row(state.storage).status).toBe('pending');
   now+=4000;await r.scheduler.runDueWork(now);expect(row(state.storage).attempts).toBe(2);
  });
 });
@@ -98,12 +98,12 @@ it('exhausted_platform_retries_rearmed_by_sweep',async()=>{
  await sweepCatalog([{workspace_id:'ws_example',object_name:name}],{getByName:()=>stub});
  await runInDurableObject(stub,async(_o,state)=>{expect(await state.storage.getAlarm()).not.toBeNull();expect(row(state.storage).attempts).toBe(0);});
 });
-it('insertion_during_arming_cannot_clear_new_generation_and_stale_arm_reasserts_dirty',async()=>{
+it('insertion_during_arming_repairs_new_generation_before_returning',async()=>{
  const {stub,name,identity}=await messageFixture('outbox-arm-race');await runInDurableObject(stub,async(_o,state)=>{
   await send(state.storage,name,identity);let now=row(state.storage).next_due_at;const r=runtime(state.storage,name,()=>now);let entered!:()=>void,release!:()=>void;const start=new Promise<void>(r=>entered=r),gate=new Promise<void>(r=>release=r);
   const old=new OutboxScheduler(r.workspace,r.dispatcher,{setAlarm:async at=>{entered();await gate;await state.storage.setAlarm(at);},deleteAlarm:()=>state.storage.deleteAlarm()});
   const pending=old.repairSchedule();await start;await send(state.storage,name,identity,'inserted');withTransaction(state.storage,tx=>{tx.exec('UPDATE outbox SET next_due_at=?',[now-1000]);markSchedulerDirty(tx);});await r.scheduler.repairSchedule();release();await pending;
-  expect(state.storage.sql.exec('SELECT dirty FROM scheduler_state').one().dirty).toBe(1);await r.scheduler.repairSchedule();expect(state.storage.sql.exec('SELECT dirty FROM scheduler_state').one().dirty).toBe(0);expect(state.storage.sql.exec('SELECT next_due_at FROM scheduler_state').one().next_due_at).toBe(now-1000);
+  expect(state.storage.sql.exec('SELECT dirty FROM scheduler_state').one().dirty).toBe(0);expect(state.storage.sql.exec('SELECT next_due_at FROM scheduler_state').one().next_due_at).toBe(now-1000);expect(await state.storage.getAlarm()).toBe(now+1);
  });
 });
 it('arm_failure_keeps_acceptance_and_persisted_diagnostics',async()=>{
@@ -121,7 +121,7 @@ it('late_completion_cannot_overwrite_a_new_live_attempt_and_final_crash_exhausts
  const {stub,name,identity}=await messageFixture('outbox-late');await runInDurableObject(stub,async(_o,state)=>{
   await send(state.storage,name,identity);let now=row(state.storage).next_due_at;const old=withTransaction(state.storage,tx=>claimDue(tx,now,25))[0];
   now+=30000;withTransaction(state.storage,tx=>claimDue(tx,now,25));now=row(state.storage).next_due_at;const fresh=withTransaction(state.storage,tx=>claimDue(tx,now,25))[0];
-  withTransaction(state.storage,tx=>finishAttempt(tx,old.attemptId,{kind:'delivered',status:200},now,old.admissionFence));expect(row(state.storage)).toMatchObject({status:'in_flight',lease_token:fresh.attemptId,attempts:2});
+  withTransaction(state.storage,tx=>finishAttempt(tx,old.deliveryId,old.attemptId,{kind:'delivered',status:200},now,old.admissionFence));expect(row(state.storage)).toMatchObject({status:'in_flight',lease_token:fresh.attemptId,attempts:2});
   state.storage.sql.exec('UPDATE outbox SET attempts=6');now+=30000;withTransaction(state.storage,tx=>claimDue(tx,now,25));expect(row(state.storage)).toMatchObject({attempts:6,status:'exhausted',last_error:'outcome_unknown'});expect(withTransaction(state.storage,tx=>claimDue(tx,now+99999999,25))).toEqual([]);
  });
 });
@@ -141,7 +141,7 @@ it('legacy_null_routing_cancellation_preserves_transport_and_lease_history_acros
  await evictDurableObject(stub);
  await runInDurableObject(stub,async(_o,state)=>{
   let fetched=false;await runtime(state.storage,name,()=>now+9999999,async()=>{fetched=true;return new Response();}).scheduler.runDueWork(now+9999999);
-  withTransaction(state.storage,tx=>finishAttempt(tx,'legacy-spent-attempt',{kind:'delivered',status:200},now+1,assertAdmissionOpen(tx)));
+  withTransaction(state.storage,tx=>finishAttempt(tx,String(retained.id),'legacy-spent-attempt',{kind:'delivered',status:200},now+1,assertAdmissionOpen(tx)));
   expect(row(state.storage)).toEqual(retained);expect(fetched).toBe(false);console.info('LEGACY_NULL_INERT_HISTORY',JSON.stringify(retained));
  });
 });

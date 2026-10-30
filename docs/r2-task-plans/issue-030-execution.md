@@ -1,0 +1,55 @@
+# Issue 30 local execution ledger
+
+Status: Local implementation independently reviewed and verified within the exclusions below; live acceptance pending; no public execution ingress, live acceptance, release, deployment or remote publication is claimed.
+
+## Authority, scope and provenance
+
+The [published issue30 plan](issue-030.md) is retained from exact v3 commit `8b9ca0b026f95d8dff19530a334ab56309b6460e`. The [owner development amendment](owner-development-amendment-2026-10-26.md) supersedes its historical R1 acceptance start gate. Live issue/comments were reread before coding. Local base is issue29 `6362ebbd6b63acba02aab946a83fc43111167804`, tree `9e16c69740cefdd4759ec07631fa2ea9719b5fd5`, whose predecessor is `4677011e7332076827658063ca677af967b41572`. This is a review stack, not a claimed remote PR ancestry. Original #30 ancestry reconciliation and actual remote predecessor CI remain controller-owned gates before any GitHub write.
+
+Exact issue scope is failTask, conservative failed/expired attempts, captured safety/budget/holds, and the existing shared alarm. Issue31 owns completion/cancellation and public activation. No prior migration bytes, public DTOs, grants, notifications, hold-clear/reset operation or client system identity are changed. Current-schema operational recovery remains #39/#43 work, not covered by historical schema7 recovery fixtures.
+
+Installed AgentKit ak-vibe1.4.1 / CLI2.19.0 orchestrated actual plan validation/red-team, cook TDD, independent review, tests and docs. No invented ak-vibecode binary, --ship/--both, automatic publication or merge. Technical alternatives were selected under owner delegation, not claimed as individually approved product choices.
+
+## Research and plan gates
+
+[Actual GitHub comparison](../research/r2-failure-expiry.md) examined Cloudflare Agents shared lifecycle scheduling and BullMQ conditional stalled transitions before coding. Adopt one SQL-authoritative alarm and atomic ownership transition; reject Redis/Postgres mechanics and automatic unknown-outcome redrive. Sources were inspected branch snapshots, not falsely claimed immutable pins. Host SQLite microbenchmarks are distinguished from real Workers row-read measurements.
+
+Two independent plan reviewers checked ten factual claims each. Accepted corrections: no arbitrary private evidence-length cap; SQL returns only safe-classification metadata. Eviction alone does not repair alarms. Existing outbox query scans are not bounded by returned-row limits. Aggregate both lane failures before clearing the durable diagnostic. Whole-plan sweep reconciled phase files, bounded tests and live authority; AgentKit CLI format validation passed separately from semantic review.
+
+## Implementation and review checkpoints
+
+Failure uses exact active-run proof/owner/fence/deadline and expected task version. Replay rechecks original owner/current visibility without requiring the ended run to be active. Captured policy/rule/evidence alone classifies safety; explicit unknown wins, safe retry consumes at most one additional attempt, exhausted/unknown holds are preserved. Fixed trusted expiry event construction is separate from human/agent command actors and keeps event/history atomic. Private reason/evidence/proof never enters event/outcome.
+
+The scheduler reserves independent25 outbox and25 lease budgets, one synchronous transaction per expiry unit. Remaining work stays durably due on failure; notification processing continues and does not erase the lease diagnostic. Earliest shared deadlines, bounded exact repair, a final physical conservative wake and maintenance-fenced SQL protect late alarm effects. There is no new scheduler or in-memory wake authority.
+
+- Initial failure TDD: 26 collected, 14 failures/12 passes. One failure was an uppercase NaN fixture-name setup error, not behavior evidence; 13 failures were meaningful missing-engine assertions. First implementation25 passed/1 fixture failed, then fixture correction26 passed. Negative assertions were strengthened to exact error codes/statuses instead of counting stub exceptions as safety evidence.
+- Independent phase1 review found one Important issue: the shared definitions map could admit task.expired through a malformed ordinary descriptor despite TypeScript's closed union. A new runtime-spoof regression failed meaningfully (1 fail/26 pass); explicit runtime producer/actor rejection fixed it.
+- Scheduler TDD collected12 tests:11 meaningful missing-behavior failures/1 query-study pass. Actual Workers alarm+eviction cases are distinct from injected AlarmPort timing barriers.
+- Independent scheduler review found one Important second-maintenance-reconciliation race. Regression produced15 pass/1 fail; bounded final conservative wake fixed it and16 scheduler tests passed. No Critical/Important/Minor findings remained in that scoped review.
+- The inherited outbox race test now asserts immediate exact repair and actual earliest physical alarm, rather than expecting dirty state to remain after a successful current-generation repair. This strengthens wake correctness, not a skipped assertion.
+
+## Verification
+
+Fresh integrated verification passed generated freshness, five TypeScript projects, R1 route/grant/conflict checks, 813 Node tests, 891 Workers tests, 18 operator tests and 13 deployment-verifier tests. The aggregate exited1 at recovery CLI; it is not green. Pinned Node24.22.1 and task-local npm11.19.1 are used on nested-command PATH, isolated XDG state, metrics off. Dependency reuse is an independently copied installation, not a claimed npm ci: 4,136 file bytes/inodes/internal symlinks verified, lock SHA256 `8fa7894880bd0b77bfdf6fffe7e13fd8eb1a8b695b1316682dc33f7783873634` unchanged.
+
+Known environmental exclusions remain explicit: recovery CLI outside-checkout fixtures encounter protected host `/tmp/.git`; no guard bypass. The exact pinned Chromium download previously failed integrity after built-in retries; no replacement executable or fabricated browser result. Live acceptance remains deferred until the owner-selected post-R4 stage, not passed.
+
+## Handoff obligations
+
+Issue31 must integrate submission/cancellation, current-authority replay, expiry/cancel/submit races, and public claim/fail/run activation only after all producers are present. Preserve committed dirty scheduling plus shared postcommit repair before final sensitive response projection; do not await unrelated repair after projecting sensitive authority. Issue33 adds artifact deadlines to this same source merger. No unknown/exhausted task may be silently requeued; external reconciliation precedes reviewed replacement work. Future operational recovery must validate current schema/proof/fence/captured safety and due-work restoration.
+
+
+## Measured prerequisite amendment
+The larger actual Workers experiment at1,000/5,000/10,000 live outbox rows exposed backlog-proportional minimum/claim/completion queries. At10,000 rows they read10,004/17,002/5,001 respectively. Root explicitly granted the serialized schema-owner baton to fix this issue30 scheduler prerequisite: index-only forward migration10, split ordered pending/inflight seeks, bounded merge/hydration, and primary-key delivery lookup retaining exact attempt token/deadline/fence checks. All prior1–9 migration bytes remain immutable; historical V1schema7 remains separate. An independent original issue24 schema owner reviews this amendment. No current-schema recovery or public execution route activation follows from it.
+
+The pre-index fresh aggregate passed813 Node,864 Workers,18 operator and13 deployment-verifier checks plus generated freshness/types/R1 contracts, then failed the known protected recovery-CLI guard (8 pass/18 fail). Aggregate exit1 is not a pass. Schema/query changes invalidate affected runtime results and require the final rerun below.
+
+Schema/query amendment TDD: migration9fail/1pass before0010, then145 passing focused Workers checks after compatibility refinements. A separate future-schema regression first failed because unknown11 could fall through legacy bootstrap; compiled-sequence membership now rejects it. Genuine9→10 row preservation includes archived/revoked dynamic authority, actual0010-plus-fault rollback, frozen states and upgrade/restart idempotency. Production-bound tests first failed4/5 meaningfully after schema became consistent; an earlier all-fixture UNSUPPORTED_SCHEMA run is explicitly not TDD behavior evidence. Final seven production-query tests pass. An initial100-row budget assumption failed at101 because SQLite's exact BINARY outer merge counts derived reads; tracing proved constant76 candidate/derived plus25 hydrations, leading to a justified conservative125 ceiling and query-plan/size/single-source assertions. [Research evidence](../research/r2-failure-expiry.md) records actual read and statement counts.
+
+
+The first post-index full run collected891 Workers tests:887 passed and4 failed because three older test files still hardcoded schema9/version-row costs. Production schema10 behavior was correct: authority reads increased exactly one migration row, registry/operations reported10. Tests now derive compiled migration count with a separate exact total schema-row accounting assertion and retain the fixed non-schema/credential-work bounds; the two diagnostic expectations use CURRENT_SCHEMA_VERSION. This is a compatibility-test correction, not weakened authority or skipped assertions. The fresh full rerun passed all891 Workers checks; the failed run remains in evidence.
+
+
+Final CLI inspection caught a fourth old schema-version expectation in the current-runtime smoke test. It now imports CURRENT_SCHEMA_VERSION without changing denial/no-effects assertions. The subsequent CLI-only rerun remains8 pass/18 fail, now reaching RECOVERY_INPUT_REJECTED through protected input/directory checks rather than failing the version assertion. Host `/tmp/.git` makes the synthetic outside-checkout artifact directories invalid; no guard or fixture security bypass was attempted. The current-runtime HTTPS denial journey is therefore not established by this run. The aggregate log predates this test-only correction; the CLI rerun covers the exact corrected consumer.
+
+UI production build and schema10 runtime boot smoke passed. Documentation and implementation-plan validators passed (114 Markdown documents,169 JSON files,1374 local links;636 plan checks); diff whitespace check passed. Browser executable availability was checked and the exact pinned Chromium was absent: browser assertions were not run. Independent final integration/simplifier/query/security reviews leave zero unresolved Critical/Important findings; original schema owner independently ran20/20 migration tests and reviewed the final version-consumer corrections. Two Important implementation findings (ordinary expiry-producer spoofing and second-maintenance alarm repair) were fixed with meaningful red-to-green tests. Evidence, exact commands, failed intermediate runs, review receipts and immutable file hashes are retained in the local handoff bundle, not represented as live acceptance.

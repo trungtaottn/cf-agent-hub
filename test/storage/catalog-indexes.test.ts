@@ -13,7 +13,9 @@ import m5 from '../../src/storage/migrations/0005-cursor-retention.sql';
 import m6 from '../../src/storage/migrations/0006-outbox-scheduler-diagnostics.sql';
 import m7 from '../../src/storage/migrations/0007-maintenance-generation.sql';
 import m8 from '../../src/storage/migrations/0008-durable-work.sql';
+import m9 from '../../src/storage/migrations/0009-catalog-reference-indexes.sql';
 const v8=[m1,m2,m3,m4,m5,m6,m7,m8].map((sql,i)=>({version:i+1,sql}));
+const v9=[...v8,{version:9,sql:m9}];
 const target=(name:string)=>env.WORKSPACE.getByName('catalog_indexes_'+name);
 const schema=(s:DurableObjectStorage)=>s.sql.exec('SELECT type,name,tbl_name,sql FROM sqlite_schema ORDER BY type,name').toArray();
 const rows=(s:DurableObjectStorage)=>Object.fromEntries(TABLE_REGISTRY.filter(t=>t.name!=='schema_migrations').map(t=>[t.name,s.sql.exec('SELECT * FROM '+t.name).toArray()]));
@@ -28,13 +30,13 @@ it('catalog_schema9_upgrade_preserves_all_existing_domain_bytes_and_registers_on
   state.storage.sql.exec("INSERT INTO idempotency_outcomes VALUES('human_synthetic','domain.profile:edit','catalog:preview','key','ws_example','fingerprint',200,'{ \"retained\": true }','request',NULL,1,86400001)");
   const before=rows(state.storage),oldSchema=schema(state.storage),versions=state.storage.sql.exec('SELECT * FROM schema_migrations ORDER BY version').toArray();
   expect(()=>withTransaction(state.storage,assertCurrentSchema)).toThrow('UNSUPPORTED_SCHEMA');
-  migrate(state.storage);
-  expect(CURRENT_SCHEMA_VERSION).toBe(9);expect(rows(state.storage)).toEqual(before);
+  migrate(state.storage,v9);
+  expect(CURRENT_SCHEMA_VERSION).toBe(10);expect(rows(state.storage)).toEqual(before);
   const afterSchema=schema(state.storage);expect(afterSchema.filter(x=>!['tasks_catalog_project','tasks_catalog_role'].includes(String(x.name)))).toEqual(oldSchema);
   expect(afterSchema.filter(x=>['tasks_catalog_project','tasks_catalog_role'].includes(String(x.name)))).toHaveLength(2);
   expect(state.storage.sql.exec('SELECT * FROM schema_migrations WHERE version<=8 ORDER BY version').toArray()).toEqual(versions);
-  expect(withTransaction(state.storage,inspectRegistry).schemaVersion).toBe(9);
-  expect(()=>withTransaction(state.storage,assertCurrentSchema)).not.toThrow();
+  expect(()=>withTransaction(state.storage,tx=>assertSchemaVersion(tx,9))).not.toThrow();
+  expect(()=>withTransaction(state.storage,assertCurrentSchema)).toThrow('UNSUPPORTED_SCHEMA');
   expect(()=>withTransaction(state.storage,tx=>assertSchemaVersion(tx,7))).toThrow('UNSUPPORTED_SCHEMA');
   expect(state.storage.sql.exec('PRAGMA foreign_key_check').toArray()).toEqual([]);
  });
@@ -43,7 +45,7 @@ it.each(['capturing','captured','restoring','restored','retired'])('catalog_sche
  const stub=await old8('frozen_'+status);await runInDurableObject(stub,(_o,state)=>{
   state.storage.sql.exec('INSERT INTO maintenance_state(id,state,authority_epoch,updated_at,generation) VALUES(1,?,0,1,4)',status);
   const before={schema:schema(state.storage),rows:rows(state.storage),versions:state.storage.sql.exec('SELECT * FROM schema_migrations').toArray()};
-  expect(()=>migrate(state.storage)).toThrow('FROZEN_SCHEMA_MIGRATION');
+  expect(()=>migrate(state.storage,v9)).toThrow('FROZEN_SCHEMA_MIGRATION');
   expect({schema:schema(state.storage),rows:rows(state.storage),versions:state.storage.sql.exec('SELECT * FROM schema_migrations').toArray()}).toEqual(before);
  });
 });
@@ -52,15 +54,15 @@ it('catalog_schema9_index_creation_failure_rolls_back_ddl_and_version',async()=>
   seedTask(state.storage,'task_retained');const before={schema:schema(state.storage),rows:rows(state.storage),versions:state.storage.sql.exec('SELECT * FROM schema_migrations').toArray()};
   expect(()=>migrate(state.storage,[...v8,{version:9,sql:'CREATE INDEX tasks_catalog_project ON tasks(workspace_id,project_id,id); INSERT INTO missing_catalog_fault VALUES(1);'}])).toThrow();
   expect({schema:schema(state.storage),rows:rows(state.storage),versions:state.storage.sql.exec('SELECT * FROM schema_migrations').toArray()}).toEqual(before);
-  migrate(state.storage);expect(withTransaction(state.storage,inspectRegistry).schemaVersion).toBe(9);
+  migrate(state.storage,v9);expect(()=>withTransaction(state.storage,tx=>assertSchemaVersion(tx,9))).not.toThrow();
  });
 });
-it('catalog_schema9_restart_is_idempotent_and_gapped_sequence_rejects',async()=>{
+it('current_schema_restart_is_idempotent_and_gapped_sequence_rejects',async()=>{
  const stub=target('restart'),before=await runInDurableObject(stub,(_o,state)=>{seedTask(state.storage,'task_restart');migrate(state.storage);return {schema:schema(state.storage),rows:rows(state.storage),versions:state.storage.sql.exec('SELECT * FROM schema_migrations ORDER BY version').toArray()};});
  await evictDurableObject(stub);
  await runInDurableObject(stub,(_o,state)=>{
   expect({schema:schema(state.storage),rows:rows(state.storage),versions:state.storage.sql.exec('SELECT * FROM schema_migrations ORDER BY version').toArray()}).toEqual(before);
-  expect(before.versions).toHaveLength(9);state.storage.sql.exec('DELETE FROM schema_migrations WHERE version=8');
+  expect(before.versions).toHaveLength(10);state.storage.sql.exec('DELETE FROM schema_migrations WHERE version=8');
   expect(()=>withTransaction(state.storage,assertCurrentSchema)).toThrow('UNSUPPORTED_SCHEMA');
   expect(()=>withTransaction(state.storage,inspectRegistry)).toThrow('RECOVERY_SCHEMA_MISMATCH');
  });
@@ -80,10 +82,10 @@ it.each(['maintenance','retired'])('catalog_schema9_upgrade_preserves_%s_admissi
  const stub=await old8('admission_'+admission);await runInDurableObject(stub,(_o,state)=>{
   state.storage.sql.exec("INSERT INTO workspace_metadata(id,workspace_id,object_name,config_epoch,config_digest,installation_digest,config_json,bundle_json,installed_at,admission_state) VALUES(1,'ws_example','synthetic',1,'digest','installation','{}','{}',1,?)",admission);
   const before={schema:schema(state.storage),rows:rows(state.storage)};
-  expect(()=>migrate(state.storage)).toThrow('FROZEN_SCHEMA_MIGRATION');expect({schema:schema(state.storage),rows:rows(state.storage)}).toEqual(before);
+  expect(()=>migrate(state.storage,v9)).toThrow('FROZEN_SCHEMA_MIGRATION');expect({schema:schema(state.storage),rows:rows(state.storage)}).toEqual(before);
  });
 });
-it('catalog_schema9_remains_unavailable_to_v1_recovery_before_effects',async()=>{
+it('current_schema_remains_unavailable_to_v1_recovery_before_effects',async()=>{
  const {assertRecoveryContext}=await import('../../src/recovery/protocol');
  const {systemClock,systemEntropy}=await import('../../src/workspace/context');
  await runInDurableObject(target('recovery_unavailable'),(_o,state)=>{

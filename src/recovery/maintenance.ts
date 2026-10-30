@@ -13,7 +13,7 @@ export function maintenanceRow(tx:WorkspaceTransaction):MaintenanceRow|null {
 export function maintenanceClosed(tx:WorkspaceTransaction):boolean {
  try {const row=maintenanceRow(tx);return row!==null&&row.state!=='open';}catch{return true;}
 }
-export function readAdmissionFence(tx:WorkspaceTransaction,schemaVersion:7|8|9=CURRENT_SCHEMA_VERSION):AdmissionFence {
+export function readAdmissionFence(tx:WorkspaceTransaction,schemaVersion:7|8|9|10=CURRENT_SCHEMA_VERSION):AdmissionFence {
  assertSchemaVersion(tx,schemaVersion);
  const epoch=tx.one<{config_epoch:number}>('SELECT config_epoch FROM workspace_metadata WHERE id=1')?.config_epoch??0;
  const row=maintenanceRow(tx);
@@ -21,15 +21,15 @@ export function readAdmissionFence(tx:WorkspaceTransaction,schemaVersion:7|8|9=C
  return {authorityEpoch:epoch,maintenanceGeneration:row?.generation??0};
 }
 export function sameFence(a:AdmissionFence,b:AdmissionFence):boolean {return a.authorityEpoch===b.authorityEpoch&&a.maintenanceGeneration===b.maintenanceGeneration;}
-export function assertFence(tx:WorkspaceTransaction,expected:AdmissionFence,schemaVersion:7|8|9=CURRENT_SCHEMA_VERSION):AdmissionFence {
+export function assertFence(tx:WorkspaceTransaction,expected:AdmissionFence,schemaVersion:7|8|9|10=CURRENT_SCHEMA_VERSION):AdmissionFence {
  const actual=readAdmissionFence(tx,schemaVersion);if(!sameFence(actual,expected))throw Error('STALE_ADMISSION_FENCE');return actual;
 }
-export function assertAdmissionOpen(tx:WorkspaceTransaction,expected?:AdmissionFence,schemaVersion:7|8|9=CURRENT_SCHEMA_VERSION):AdmissionFence {
+export function assertAdmissionOpen(tx:WorkspaceTransaction,expected?:AdmissionFence,schemaVersion:7|8|9|10=CURRENT_SCHEMA_VERSION):AdmissionFence {
  const actual=readAdmissionFence(tx,schemaVersion);
  if(tx.one<{admission_state:string}>('SELECT admission_state FROM workspace_metadata WHERE id=1')?.admission_state!=='installed'||maintenanceClosed(tx))throw Error('ADMISSION_CLOSED');
  if(expected&&!sameFence(actual,expected))throw Error('STALE_ADMISSION_FENCE');return actual;
 }
-export function admissionOpen(tx:WorkspaceTransaction,expected?:AdmissionFence,schemaVersion:7|8|9=CURRENT_SCHEMA_VERSION):boolean {try{assertAdmissionOpen(tx,expected,schemaVersion);return true;}catch{return false;}}
+export function admissionOpen(tx:WorkspaceTransaction,expected?:AdmissionFence,schemaVersion:7|8|9|10=CURRENT_SCHEMA_VERSION):boolean {try{assertAdmissionOpen(tx,expected,schemaVersion);return true;}catch{return false;}}
 /** Called only by a guarded installation transaction. Never deletes or resets the generation. */
 export function retainOpenMaintenance(tx:WorkspaceTransaction,epoch:number,nowMs:number):void {
  const row=maintenanceRow(tx);if(row&&row.state!=='open')throw Error('ADMISSION_CLOSED');

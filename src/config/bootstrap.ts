@@ -1,3 +1,4 @@
+import {EXPECTED_SCHEMA_VERSIONS,hasR2AuthoritySchema} from '../storage/schema-version.ts';
 import {maintenanceClosed,retainOpenMaintenance} from '../recovery/maintenance.ts';
 import { parseDeployment, resolveWorkspace, type DeploymentConfig } from './deployment.ts';
 import { validateBundle, type VerificationBundle } from './generated/validators.js';
@@ -58,7 +59,8 @@ export function restoreAuthorityOverlay(tx:WorkspaceTransaction,input:ValidatedB
 function applyAuthorityRows(tx:WorkspaceTransaction,config:DeploymentConfig,input:ValidatedBootstrap,nowMs:number):void {
  const {workspaceId,bundle}=input;
  const schemaVersion=tx.one<{version:number}>('SELECT MAX(version) AS version FROM schema_migrations')?.version;
- const r2=schemaVersion===8||schemaVersion===9;
+ if(!EXPECTED_SCHEMA_VERSIONS.some(version=>version===schemaVersion))throw Error('UNSUPPORTED_SCHEMA');
+ const r2=hasR2AuthoritySchema(schemaVersion);
  if(r2){
   for(const agent of config.static_participants.filter(x=>x.workspace_id===workspaceId)){
    const prior=tx.one<{workspace_id:string;origin:string}>('SELECT workspace_id,origin FROM static_agents WHERE agent_id=?',[agent.agent_id]);

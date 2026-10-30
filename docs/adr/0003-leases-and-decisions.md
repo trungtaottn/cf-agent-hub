@@ -29,3 +29,9 @@ Required evidence covers claim races, WIP contention, stale submission, decision
 ## Issue 29 implementation boundary
 
 The local staged engine adopts conditional ownership checks after comparing [pinned open-source implementations](../research/r2-claim-leases.md). It reuses the workspace SQLite transaction rather than a distributed lock, a second scheduler or PostgreSQL locking syntax. Agent WIP includes unswept active attempts, including expired leases. The scoped run read is a domain interface, not public route activation. Claims stay unavailable until the issue 30/31 expiry and settlement owners integrate. Local source tests cannot establish deployed acceptance or external exactly-once effects.
+
+## Issue 30 conservative failure/expiry implementation
+
+[Open-source comparison and experiments](../research/r2-failure-expiry.md) support extending the existing SQL-authoritative alarm, not importing another scheduler or Redis/PostgreSQL lock semantics. Captured preexecution safety is immutable evidence; current policy or runtime assertions cannot manufacture it. Unknown overrides safe classification; a safe transition consumes fixed remaining budget atomically, never resumes an ended run. The dedicated expiry producer constructs a fixed system identity itself; ordinary command event construction rejects expiry/system injection at runtime.
+
+Alarm projection uses bounded exact repair followed by a durable conservative wake under repeated generation or maintenance changes. Frozen maintenance SQL is never altered by stale continuation. The measured inherited outbox query gap is corrected by forward index-only migration10, bounded source selection and exact keyed completion, rather than hidden by LIMIT. Prior migration bytes remain unchanged and historical schema7 recovery stays separate. [Issue 30 evidence](../r2-task-plans/issue-030-execution.md) distinguishes internal source verification from still-closed public ingress and deferred acceptance.

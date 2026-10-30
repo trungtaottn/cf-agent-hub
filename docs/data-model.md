@@ -1,6 +1,6 @@
 # Data model
 
-Status: R2 schema 9 and identity/credential source implemented locally · Contract revision 0.1 · Other domain commands and live acceptance pending.
+Status: R2 schema 10 and identity/credential source implemented locally · Contract revision 0.1 · Other domain commands and live acceptance pending.
 
 This page defines conceptual ownership and invariants. The issue24 storage implementation is described below; issue25 adds the identity/credential commands only. Other conceptual behavior is not automatically an enabled command. JSON field spelling and request schemas are defined in [HTTP API](http-api.md) and [OpenAPI](../spec/openapi.json). Database table/index design must preserve these invariants while being verified against the chosen runtime.
 
@@ -101,7 +101,7 @@ Schema8 operational recovery is deliberately unavailable until #39/#43 implement
 
 The legacy-named `static_agents` remains the single identity registry, with immutable `operator_static | human_managed` provenance and versioned metadata. `native_credentials` retains immutable identity/hash binding, provenance, issuing human and independent local revocation. No parallel identity/grant store or new migration is introduced. Legacy empty static labels are projected safely as “Operator credential” without rewriting migration history.
 
-Agent archive never deletes attribution: it rejects active runs or nonterminal assignments, then atomically archives the identity and revokes all credentials/proofs alongside event and sanitized outcome. Credential revocation can invalidate an active owner without changing its task/run history. Higher-epoch installation and restore overlay invalidate dynamic credentials/proofs, retain identities and preserve archived/local-revoked state. Same-epoch same-digest ordinary install remains a no-op. The current schema 9 operational recovery interface remains unavailable pending #39/#43; overlay source behavior is not complete recovery acceptance.
+Agent archive never deletes attribution: it rejects active runs or nonterminal assignments, then atomically archives the identity and revokes all credentials/proofs alongside event and sanitized outcome. Credential revocation can invalidate an active owner without changing its task/run history. Higher-epoch installation and restore overlay invalidate dynamic credentials/proofs, retain identities and preserve archived/local-revoked state. Same-epoch same-digest ordinary install remains a no-op. The current schema 10 operational recovery interface remains unavailable pending #39/#43; overlay source behavior is not complete recovery acceptance.
 
 Credential DTOs contain metadata only. Raw bearer bytes exist only in private first-response preparation; SQL holds SHA-256 verification material, and replay outcomes always retain `token: null`/`revealed: false`. Current scope/project disclosure checks cover both the current row and original replay metadata. See [agents](agents.md) and [security model](security-model.md) for the authority ceilings and replacement procedure.
 
@@ -116,3 +116,10 @@ Task listing merges seven fixed-state indexed seek streams in ascending created_
 Forward migration 0009 adds only `tasks_catalog_project(workspace_id,project_id,id)` and `tasks_catalog_role(workspace_id,work_role_id,id)`. Historical migration 0008 and its manifest remain unchanged; table rows, foreign keys and domain semantics are preserved. Current admission, bootstrap identity adoption and registry checks recognize schema 9. Explicit V1 / schema 7 recovery stays isolated; schema 9 operational capture/restore remains unavailable pending #39/#43.
 
 `catalog_plans` stores the creator principal, exact profile revision, trusted creation/expiry, immutable public plan and private request/complete task-agent version evidence. Only status changes on apply. Terminal tasks and archived agents bind the snapshot but are retained unchanged. A new or removed reference invalidates apply. Original mutation-derived extra scopes survive in private evidence and are required for replay even after references move. The complete current Task/result visibility predicate applies before exposing catalog task IDs. Catalog preview/apply events have fixed summaries, profile resource identity/version, and no task content or reason text. SQL commit includes metadata, profile, plan status, event and sanitized outcome.
+
+
+## Shared scheduler index-only schema 10 — local issue 30
+
+Forward0010 adds only `outbox_pending_order(status,next_due_at,id)` and `outbox_lease_order(status,lease_expires_at,id)`. Prior0001–0009 SQL and the historical schema8 manifest are unchanged. The registry uses the compiled current sequence; bootstrap's named R2 capability requires membership in that supported sequence and rejects unknown future versions rather than falling back to legacy identity semantics. Genuine9→10 tests preserve all domain rows, including archived/revoked human-managed authority, and cover frozen migration denial, actual-DDL rollback and restart idempotency.
+
+These indexes support bounded ordered candidate subqueries; they do not alone cure the former OR/CASE scan. Split selection retains exact SQLite BINARY ordering and NULL behavior; completion seeks known delivery ID while retaining token/lease/fence checks. Current schema10 operational recovery/probe remains unavailable pending39/43, and schema7 historical receipts remain historical. [Issue30 execution evidence](r2-task-plans/issue-030-execution.md) records review and local checks.

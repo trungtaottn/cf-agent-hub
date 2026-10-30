@@ -1,3 +1,4 @@
+import {assertAdmissionOpen} from '../recovery/maintenance';
 import {taskRecord,taskVisible,taskView} from '../tasks/repository';
 import type {WorkspaceTransaction} from '../storage/transaction';
 import type {ActorContext,ResourceAccess} from '../workspace/context';
@@ -27,6 +28,8 @@ const definitions={
  'task.created':{resource:'task',summary:'Task created.'},
  'task.updated':{resource:'task',summary:'Task metadata updated.'},
  'task.ready':{resource:'task',summary:'Task scheduled Ready.'},
+ 'task.failed':{resource:'task',summary:'Task attempt failed.'},
+ 'task.expired':{resource:'task',summary:'Task execution lease expired.'},
  'task.claimed':{resource:'task',summary:'Task claimed.'},
  'run.heartbeat':{resource:'run',summary:'Execution lease renewed.'}
 } as const;
@@ -37,7 +40,7 @@ function projection(row:EventRow):Event{
 /** Handler supplies stable resource fields only. The wrapper supplies actor, ID, time and request correlation. */
 export function appendEvent(tx:WorkspaceTransaction,event:RedactedEventInput):{id:string;sequence:number}{
  const definition=definitions[event.type];
- if(!definition||event.resourceType!==definition.resource||event.workspaceId!==event.actor.workspaceId||
+ if(!definition||(event.type as string)==='task.expired'||!['human','agent'].includes(event.actor.kind)||event.resourceType!==definition.resource||event.workspaceId!==event.actor.workspaceId||
   (event.resourceType==='profile'||event.resourceType==='preferences'||event.resourceType==='agent'||event.resourceType==='credential')&&event.actor.kind!=='human'||
   event.resourceType==='profile'&&event.resourceId!==event.workspaceId)throw new HttpError('INTERNAL_ERROR',500);
  const row:EventRow={id:event.id,workspace_id:event.workspaceId,sequence:1,type:event.type,actor_json:canonicalJson({kind:event.actor.kind,principal_id:event.actor.principalId,agent_id:event.actor.agentId}),resource_type:event.resourceType,resource_id:event.resourceId,resource_version:event.resourceVersion,thread_id:event.threadId,request_id:event.requestId,occurred_at:event.nowMs,summary:definition.summary};
@@ -50,14 +53,34 @@ export function appendEvent(tx:WorkspaceTransaction,event:RedactedEventInput):{i
   if(task.active_run_id!==run.id||task.state!=='doing')throw new HttpError('INTERNAL_ERROR',500);
   historyTaskId=task.id;row.task_version=task.task_version;row.run_id=run.id;row.fence=run.fence;
  }
+ if(event.type==='task.failed'){
+  const task=taskRecord(tx,event.workspaceId,event.resourceId);
+  const run=tx.one<{id:string;agent_id:string;credential_id:string;fence:number;ended_at:number}>("SELECT id,agent_id,credential_id,fence,ended_at FROM runs WHERE workspace_id=? AND task_id=? AND id=? AND status='failed'",[event.workspaceId,task.id,task.latest_run_id]);
+  if(!run||task.active_run_id!==null||event.actor.kind!=='agent'||event.actor.agentId!==run.agent_id||event.actor.credentialId!==run.credential_id||run.ended_at!==event.nowMs)throw new HttpError('INTERNAL_ERROR',500);
+  row.run_id=run.id;row.fence=run.fence;
+ }
+ return persistEvent(tx,row,historyTaskId);
+}
+function persistEvent(tx:WorkspaceTransaction,row:EventRow,historyTaskId:string|null):{id:string;sequence:number}{
  if(!validateEvent(projection(row)))throw new HttpError('INTERNAL_ERROR',500);
  tx.exec('INSERT INTO events (id,workspace_id,type,actor_json,resource_type,resource_id,resource_version,thread_id,request_id,occurred_at,summary) VALUES (?,?,?,?,?,?,?,?,?,?,?)',[row.id,row.workspace_id,row.type,row.actor_json,row.resource_type,row.resource_id,row.resource_version,row.thread_id,row.request_id,row.occurred_at,row.summary]);
  if(historyTaskId!==null){
-  tx.exec('UPDATE events SET task_version=?,run_id=?,fence=? WHERE id=?',[row.task_version!,row.run_id??null,row.fence??null,event.id]);
-  tx.exec('INSERT INTO task_history(id,workspace_id,event_id,task_id,task_version,run_id,kind,created_at) VALUES(?,?,?,?,?,?,?,?)',[event.id,event.workspaceId,event.id,historyTaskId,row.task_version!,row.run_id??null,event.type,event.nowMs]);
+  tx.exec('UPDATE events SET task_version=?,run_id=?,fence=? WHERE id=?',[row.task_version!,row.run_id??null,row.fence??null,row.id]);
+  tx.exec('INSERT INTO task_history(id,workspace_id,event_id,task_id,task_version,run_id,kind,created_at) VALUES(?,?,?,?,?,?,?,?)',[row.id,row.workspace_id,row.id,historyTaskId,row.task_version!,row.run_id??null,row.type,row.occurred_at]);
  }
  const stored=tx.one<{sequence:number}>('SELECT sequence FROM events WHERE id=?',[row.id])!;
  return {id:row.id,sequence:stored.sequence};
+}
+/** Trusted expiry producer: identity and correlation are server-created, never a caller ActorContext. */
+export function appendRunExpiryEvent(tx:WorkspaceTransaction,runId:string,nowMs:number):{id:string;sequence:number}{
+ assertAdmissionOpen(tx);
+ const workspaceId=tx.one<{workspace_id:string}>('SELECT workspace_id FROM workspace_metadata WHERE id=1')!.workspace_id;
+ const run=tx.one<{task_id:string;fence:number;ended_at:number;lease_expires_at:number}>("SELECT task_id,fence,ended_at,lease_expires_at FROM runs WHERE workspace_id=? AND id=? AND status='expired'",[workspaceId,runId]);
+ if(!run||run.ended_at!==nowMs||run.lease_expires_at>nowMs)throw new HttpError('INTERNAL_ERROR',500);
+ const task=taskRecord(tx,workspaceId,run.task_id);
+ if(task.active_run_id!==null||task.latest_run_id!==runId)throw new HttpError('INTERNAL_ERROR',500);
+ const id='event_'+crypto.randomUUID();
+ return persistEvent(tx,{id,workspace_id:workspaceId,sequence:1,type:'task.expired',actor_json:canonicalJson({kind:'system',principal_id:'system:lease-expiry',agent_id:null}),resource_type:'task',resource_id:task.id,resource_version:null,thread_id:null,request_id:crypto.randomUUID(),occurred_at:nowMs,summary:definitions['task.expired'].summary,task_version:task.task_version,run_id:runId,fence:run.fence},task.id);
 }
 export type EventVisibility=(tx:WorkspaceTransaction,actor:ActorContext,resource:ResourceAccess,event:Event,nowMs:number)=>boolean;
 /** Resource predicate must join current persisted resources/owners; false yields no event ID or summary.
@@ -92,6 +115,13 @@ export const resourceEventVisibility:EventVisibility=(tx,actor,resource,event,no
   authorize(tx,actor,'events:read',resource.kind==='credential'||resource.kind==='task'||resource.kind==='run'?undefined:resource,nowMs);
   if(event.type==='message.accepted'||event.type==='message.acknowledged'){
    assertMessageVisible(tx,actor,event.resource_id,nowMs);return true;
+  }
+  if(event.type==='task.failed'||event.type==='task.expired'){
+   if(resource.kind!=='task'||event.run_id===null||event.fence===null||event.task_version===null)return false;
+   const run=tx.one<{task_id:string;fence:number;agent_id:string;status:string;ended_at:number}>('SELECT task_id,fence,agent_id,status,ended_at FROM runs WHERE workspace_id=? AND id=?',[actor.workspaceId,event.run_id]);
+   if(!run||run.task_id!==resource.id||run.fence!==event.fence||run.status!==(event.type==='task.failed'?'failed':'expired')||new Date(run.ended_at).toISOString()!==event.occurred_at)return false;
+   if(event.type==='task.expired'?(event.actor.kind!=='system'||event.actor.principal_id!=='system:lease-expiry'||event.actor.agent_id!==null):(event.actor.kind!=='agent'||event.actor.agent_id!==run.agent_id))return false;
+   const task=taskRecord(tx,actor.workspaceId,run.task_id);if(!taskVisible(actor,task)||event.task_version>task.task_version)return false;taskView(tx,actor,task,nowMs);return true;
   }
   if(resource.kind==='run'||event.type==='task.claimed'){
    if(event.run_id===null||event.fence===null||event.task_version===null)return false;
