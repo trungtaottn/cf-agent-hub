@@ -197,3 +197,45 @@ for example `domain.runtimes:manage` with target `runtimes:create`, or
 runtime and task HTTP creation regressions now join the actual outcome, event and
 history keys. The correction changes neither SQL queries nor query/byte limits;
 prior synthetic evidence remains historical, not retroactively authentic.
+
+## Complete remote original transport
+
+The complete-profile signed-original codec has its own Ed25519 domain and closed
+slot/run envelopes. It preserves the earlier static v2 codec unchanged. Fixed
+source tables admit only typed remote observations, supported control
+acknowledgments, per-process scan/summary statements and the three run-scoped
+scan/roster families. Host-local configuration, custody, prepared subjects,
+verification, harness and assembly records cannot be remotely re-signed here;
+private raw SQL and credential-bearing transport are not exportable aliases.
+
+Per-role byte ceilings come from the frozen fixture arithmetic, including the
+measured per-step control and summary limits. Whole-wire admission includes
+canonical JSON punctuation, base64 and signatures before payload decoding. The
+signature binds the exact selected profile, policy, descriptor, run, slot or run
+scope, preparation where applicable, request and record identities. Both profiles
+retain the explicit unsupported-tuple denial; the required profile does not
+silently accept omitted slots.
+
+Verification establishes a **signed byte statement only**. It returns neither
+installed authority nor native conformance. Payload schema/current-state/causal
+validation, real producer availability, trusted key installation and cumulative
+release admission remain mandatory composition responsibilities. In particular,
+a correctly signed arbitrary payload does not satisfy a case, and unresolved
+control-reference role mappings cannot be replaced with sizing specimens.
+
+## Private product attachment
+
+The private source attachment now executes submitter enrollment, reviewer
+enrollment and task creation through the unchanged `WorkspaceDO.fetch` route.
+Actual local Workers tests exercise genuine credential authentication, issued
+runtime proofs and independently selected bounded SQL before/after captures.
+Registration and capture identities are immutable. Three private capture subjects
+reserve at most 3,072 bytes of separate internal working metadata (1,024 each),
+not additional release originals or borrowed transport/body allowances.
+
+Stream and cancellation ownership, closed inputs, expiry, failure poisoning and
+actual task/runtime DTO agreement with SQL are checked. This internal producer is
+not a selectable subset profile, deployed endpoint, installed authority or full
+R2 producer completion. Fault HOLD and the remaining required producer families
+are not implemented by these three slots. Deferred tuple cases remain unverified,
+not passed.
