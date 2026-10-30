@@ -92,3 +92,20 @@ and owned cleanup; pure native-source tests alone do not select this integration
 The job cap, per-operation limits, read-only workflow permissions and custody guards
 remain unchanged. Actual CI execution must be checked before claiming coverage.
 This remains synthetic local source assurance, not installed/native acceptance.
+
+
+## Fixed complete-host artifact gate
+
+`npm run check:native-host` builds the actual fixed source graph twice in memory, requires byte-identical bundles and matching canonical source inventories, then imports the exact built bytes as an ES module. It checks the three fixed exports, version and frozen inventory; it **never calls the executor**, installs authority, or writes a release artifact. The separate five-minute `native-build` CI job includes pinned-toolchain setup and dependency installation without extending aggregate or per-test timeouts. The existing release verifier depends on this source gate as well.
+
+`npm run build:native-host` separately writes the two existing reader artifacts and complete host artifact/manifest into `dist/native-host/` for development packaging. It is not installation or acceptance. The checker keeps the existing 4 MiB artifact/inventory and 2,048-row limits. Source inventory commits original captured compiler-input bytes; the bundle digest commits transformed output. Synthetic checker tests only prove consistency rejection; actual CI build/import success proves importability for that exact checkout, not protected execution, full native conformance, or issue completion. Import errors return a fixed diagnostic without dumping data-URL source stacks.
+
+
+## Fixed local service source gate
+
+The separate `native-service` job runs the dedicated `tsconfig.native-service.json` type check and `npm run test:native:r2:service-source`. The script pins six files (owned key, Worker import, Worker entry, ingress, service core and complete service schedule) with `--test-concurrency=1`; it does not expand to every fixture or start installed-host execution. Governance tests require the exact allowlist.
+
+The five-minute job budget remains bounded; combined runtime including dependency setup must be measured in CI, not assumed from individual local passes. Actual Worker entry fixtures use a test-driver service binding to preserve genuine Request URL/Host semantics; this is not external HTTPS ingress proof. Source schedule failures remain failures until corrected and rerun. The release verifier depends on this source gate, but a green result does not establish installed authority, full native conformance or acceptance of deferred cases.
+
+
+The `native-service` job also runs two finite Worker regression configurations serially after the six-file Node suite: `test:native:r2:required-controller` selects only `test/native-fixture/native-required-controller.test.ts`, and `test:native:r2:service-sources` selects only `test/native-fixture/native-service-sources.test.ts`. Both retain `fileParallelism: false`. These files are not selected by the ordinary runtime suite; explicit steps prevent an accidental coverage omission. The five-minute combined job budget, including setup, still requires CI measurement.

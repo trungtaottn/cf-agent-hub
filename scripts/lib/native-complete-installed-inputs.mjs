@@ -6,6 +6,9 @@ import {canonicalCaseSubject as canonical} from './r2-case-policy.mjs';
 import {validateCompleteConfig} from './native-complete-config.mjs';
 import {snapshotCompleteValue as snapshot,completeKeys as keys,completeCheck as check,completeDigest as digest,freezeCompleteValue as freeze} from './native-complete-protocol.mjs';
 export const COMPLETE_PRIVATE_LIMITS=Object.freeze({inputs:2280,client:220,human:123,credential:43});
+// Full canonical wrapper2280 + fixture_facts key17 + bounded facts1149.
+// ASCII source grammars forbid JSON escape expansion. Legacy cap stays unchanged.
+export const COMPLETE_FIXTURE_INPUT_LIMIT=3446;
 const hash=b=>createHash('sha256').update(b).digest('hex');
 const reject=()=>{throw Error('NATIVE_COMPLETE_PRIVATE_INPUT_REJECTED');};
 const id=v=>check(typeof v==='string'&&/^[A-Za-z0-9_-]{1,64}$/.test(v));
@@ -37,4 +40,36 @@ export function parseCompleteClientAuth(input){try{
  const der=canonicalBase64(v.private_key_pkcs8_base64,48),privateKey=createPrivateKey({key:der,format:'der',type:'pkcs8'});check(privateKey.asymmetricKeyType==='ed25519'&&privateKey.export({type:'pkcs8',format:'der'}).equals(der));
  const spki=createPublicKey(privateKey).export({type:'spki',format:'der'}),pinned=canonicalBase64(a.publicKeySpkiBase64,44);check(spki.equals(pinned)&&hash(spki)===v.key_id);
  return Object.freeze({key_id:v.key_id,privateKey});
+ }catch{reject();}}
+
+/** Strict additive fixed-fixture input. Existing2280 syntax remains separately
+ * parseable, but cannot silently stand in for these signed installed facts.
+ * Values are expectations, not proof of current SQL, ordinary auth or freshness.
+ * Initial G-row digest is canonical ROW OBJECT, with actual guarded token SHA,
+ * these version/expiry/epoch facts, and fixture source scopes/static constants;
+ * never substitute a scopes digest or selected row-array digest for that join.
+ */
+export function parseCompleteFixtureInputs(input){try{
+ const a=args(input,['wire','config','authRef']),{value:v}=parsed(a.wire,COMPLETE_FIXTURE_INPUT_LIMIT);
+ keys(v,'type version profile credentials stores human fixture_facts');
+ const {fixture_facts:f,...legacy}=v;
+ parseCompletePrivateInputs({wire:Buffer.from(canonical(legacy)),config:a.config,authRef:a.authRef});
+ const config=validateCompleteConfig(a.config);
+ const integer=(value,min=0)=>check(Number.isSafeInteger(value)&&!Object.is(value,-0)&&value>=min);
+ const origin=value=>{check(typeof value==='string'&&value.length<=128&&!/[^\x21-\x7e]|["\\]/.test(value));const u=new URL(value);check(u.protocol==='https:'&&u.origin===value&&u.href===value+'/'&&!u.username&&!u.password&&!u.port&&u.hostname.includes('.')&&!u.hostname.endsWith('.')&&!/^[\d.]+$|:|(^|\.)localhost(?:\.|$)/.test(u.hostname));};
+ keys(f,'config_epoch config_sha256 audience human workspaces credentials');integer(f.config_epoch,1);digest(f.config_sha256);id(f.audience);
+ // Workspace deployment epoch is not the root statement signing epoch.
+ keys(f.human,'issuer subject');origin(f.human.issuer);origin(config.origin);id(f.human.subject);
+ check(Array.isArray(f.workspaces)&&f.workspaces.length===2);
+ for(const [i,role]of ['primary','foreign'].entries()){
+  const w=f.workspaces[i];keys(w,'role object_name installation_sha256 generation');check(w.role===role&&typeof w.object_name==='string'&&/^[A-Za-z0-9_-]{1,96}$/.test(w.object_name));digest(w.installation_sha256);integer(w.generation);
+ }
+ check(f.workspaces[0].object_name!==f.workspaces[1].object_name);
+ check(Array.isArray(f.credentials)&&f.credentials.length===3);
+ for(const [i,role]of ['S','R','X'].entries()){
+  const c=f.credentials[i];keys(c,'role credential_version expires_at');check(c.role===role&&c.credential_version===1);integer(c.expires_at);
+  // Exact source deployment grammar is a four-digit-year24-byte ISO instant.
+  check(c.expires_at<=253402300799999&&new Date(c.expires_at).toISOString().length===24);
+ }
+ return freeze(v);
  }catch{reject();}}

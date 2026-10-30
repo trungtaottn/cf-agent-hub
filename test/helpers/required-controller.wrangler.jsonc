@@ -1,0 +1,9 @@
+{
+ "name":"required-fixture-controller-test",
+ "main":"required-controller-worker.ts",
+ "compatibility_date":"2026-10-19",
+ "durable_objects":{"bindings":[{"name":"WORKSPACE","class_name":"WorkspaceDO"},{"name":"CONTROLLER","class_name":"RequiredFixtureController"}]},
+ "migrations":[{"tag":"v1","new_sqlite_classes":["WorkspaceDO","RequiredFixtureController"]}],
+ "r2_buckets":[{"binding":"ARTIFACT_BUCKET","bucket_name":"required-local-artifacts"},{"binding":"RECOVERY_BUCKET","bucket_name":"required-local-recovery"}],
+ "vars":{"RECOVERY_ANCHOR_BINDING_ID":"recovery_anchor_test_v1"}
+}

@@ -89,5 +89,5 @@ export function createCompleteCallOwner(tag){
   try{return await Promise.race([terminal,new Promise(resolve=>{timer=setTimeout(()=>{if(cleanupState!=='closed')cleanupState='cleanup-unknown';resolve(Object.freeze({status:'cleanup-unknown'}));},1000);})]);}
   finally{clearTimeout(timer);}
  }
- return Object.freeze({execute,close,snapshot:()=>Object.freeze({scope:'source-lifecycle-only',calls,completed,failed,closing,closeAttempted,pending:(active?1:0)+(cleanupActual?1:0),cleanup:cleanupState,installedAuthority:false,native_conformance:false})});
+ return Object.freeze({execute,close,poison(){failed=true;},snapshot:()=>Object.freeze({scope:'source-lifecycle-only',calls,completed,failed,closing,closeAttempted,pending:(active?1:0)+(cleanupActual?1:0),cleanup:cleanupState,installedAuthority:false,native_conformance:false})});
 }

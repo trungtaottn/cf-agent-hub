@@ -1,17 +1,29 @@
 # Native R2 conformance runner
 
-Status: **source development; live conformance blocked**. A passing source test, protected JSON file, HTTPS URL or synthetic receipt does not verify F24. Formal acceptance remains deferred until after R4. Issue40 independent signoff and the complete issue47 regression are still pending.
+Status: (2026-10-30) **reviewed fixed-entry source implementation; full integration and live conformance pending and incomplete**. A passing source test, protected JSON file, HTTPS URL or synthetic receipt does not verify F24. Formal acceptance remains deferred until after R4. Owner authorization for issue40 is not a completed independent security scan; neither that review nor the complete issue47 acceptance evidence is certified by this document.
 
 ## Commands
 
 - `npm run test:native:r2:source` checks source contracts with synthetic data and bounded local subprocess negatives. It makes no live acceptance claim.
-- `npm run test:native:r2 -- --config <absolute-protected-config-path>` is a dedicated protected-input consumer, not a Vitest `--config` alias. Missing/unsafe input exits2 before any request. No trusted live authority/observer/control adapter is bundled; valid protected input exits3 with an explicit blocked message, not a pretend pass.
+- `npm run build:native-host` builds the two reader bundles plus the self-contained `dist/native-host/host-v2.mjs` and its source-inventory manifest. It does not install them or provision trust/credentials.
+- `npm run check:native-host` rebuilds twice and checks deterministic bytes, the bounded fixed exports and actual bundle import. It does not call the executor, install files or prove runtime conformance.
+- `npm run test:native:r2 -- --config <absolute-protected-config-path>` consumes protected input itself, never as Vitest's `--config`. Invalid/unsafe input exits 2 before requests. **Legacy version 1** retains its source-readiness diagnostic and exit 3. **Version 2 `native-r2-required-prepared-v1`** routes through the fixed guarded loader, config-only host factory and output publisher. Unavailable profile/installed authority/custody exits 3; incomplete execution or output publication exits 5. Exit 0 requires the structurally validated report and closed publication of 493 files (491 originals, report and native fragment), not native acceptance. The full 68 profile remains unavailable; it is not silently reduced at runtime.
+
+## Current source checkpoint — 2026-10-30
+
+The fixed factory/entry, reproducible bundle, required-profile preparation/readers, signed service protocol, report 2 assembly and fixed output publisher now exist in source. The required profile explicitly selects 62 steps plus two external requirements; three slot/generation/principal tuple obligations remain **unverified and deferred to R4**, not passing observations. The full 68 profile still fails closed.
+
+The factory's 22 focused tests include synthetic bootstrap/store/native originals, genuine ephemeral control-signature verification and the first process preparation ACK, then stop **before spawn**. Separate local workerd entry and ingress-ownership suites pass 6 and 5 tests. The required-profile local service schedule now also passes 5 tests without skips: all 64 slots, 53 synthetic process carriers, 51 application HTTP requests in process phases plus 6 auxiliary requests, 42 typed reads, inventory generation 15, final scan and closed cleanup. That fixture exercises the real local Worker/DO, product authorization/SQL, E1/E2, human revocation and a one-second unpublished HOLD. CLI execution, process custody, protected stores, Journal and artifact-retention observations remain synthetic; this is not a full protected factory run or installed native acceptance. See [the service attachment and validation boundary](native-complete-service.md) and [the issue48 execution plan](r2-task-plans/issue-048.md).
+
+Actual protected runtime ownership and an operator-installed authority remain absent from this evidence. The fixed custody reader requires the canonical protected `/etc/agenthub-native/complete-authority.json`, bound through its exact byte SHA in config and the root-signed installation's full config commitment; configured hashes or descriptor freshness alone cannot grant authority. Current guards reread the admitted authority, and the factory forwards its verified receipt without extending expiry. Building or importing the code does not create that installation.
 
 The source API separates structural configuration, independently authorized host integration, immutable executable custody, owned-process execution, bounded scenario steps and typed observation assembly. Supplying an adapter object is not proof of its authenticity. A deployment operator must review and provision that integration independently before enabling any execution path; config cannot name arbitrary modules or shell commands.
 
 ## Protected configuration
 
-Version1 has closed keys: `candidate_sha`, `candidate_tree_sha`, `composition_sha256`, `node` and `build` path/SHA pairs, an exact HTTPS `origin`, distinct primary/foreign `workspaces`, native `actors`, explicit `fixture_stores`, `fixture_directory`, `output_directory`, `authority_record_sha256` and finite `budgets`. Paths and origins are private execution input. Do not put actual config, stores, tokens, runtime proofs or original transcripts in a repository, PR or public evidence bundle.
+Legacy version 1 has closed keys: `candidate_sha`, `candidate_tree_sha`, `composition_sha256`, `node` and `build` path/SHA pairs, an exact HTTPS `origin`, distinct primary/foreign `workspaces`, native `actors`, explicit `fixture_stores`, `fixture_directory`, `output_directory`, `authority_record_sha256` and finite `budgets`. Paths and origins are private execution input. Do not put actual config, stores, tokens, runtime proofs or original transcripts in a repository, PR or public evidence bundle.
+
+Version 2 adds an explicit selected profile and fixture/family-ledger commitments through its separate closed schema; it is not a version 1 cast or fallback. Both paths retain the protected-input rules below.
 
 Actors have `id`, equal native `principal_id`/`agent_id` and an existing protected `state_directory`. Independent actors have different principal/agent/store identities. Alternate credentials for one agent need separate explicitly authorized controls; inventing another principal is not equivalent. Credentials must already be provisioned through the approved protected-store procedure. The runner does not import tokens from configuration or argv.
 
@@ -41,11 +53,11 @@ Readback and intent inspection do not settle the retained journal, release uncer
 
 The host composition API is a bounded execution framework, not a complete deployed evidence producer. Its public return is a `producer-fragment` with external inspection pending. Protected observation references are bound to controller-owned invocation/process/source/config/actor/workspace facts; they are not authenticated live evidence or all 380 preparation records. Opt-in recording can assemble a scoped native37 structural fragment only when all required actual originals are supplied. A trusted deployment integration must still provide those originals with independently inspected custody.
 
-The scenario separately identifies local wrong-target/runtime/proof-store no-send checks and the separately authorized **server** foreign-workspace producer definition and still-unimplemented server runtime-proof denial producer. These are different claims. Even if all currently executable source steps complete, those external requirements and live authority keep issue48 incomplete. Do not close issue48 from this source checkpoint.
+The scenario separately identifies local wrong-target/runtime/proof-store no-send checks and the separately authorized **server** foreign-workspace and runtime-proof denial producers. Their closed source composers and fixed service routes now exist; full authentic end-to-end producer execution remains unverified. These are different claims. Even if all currently executable source steps complete, those external requirements and live authority keep issue48 incomplete. Do not close issue48 from this source checkpoint.
 
-The fixture declarations are closed to `swap-slot`, `swap-generation`, `swap-principal` and `server-foreign-workspace`, each tied to the submitter role and its separately admitted current native principal/store. The full scenario requires all four before any effect. They are pre-provisioned authorized isolated fixtures, not permission to mutate the main store.
+The fixture declarations are closed to `swap-slot`, `swap-generation`, `swap-principal` and `server-foreign-workspace`, each tied to the submitter role and its separately admitted current native principal/store. The legacy/full 68 scenario requires all four before any effect; the explicit required 62 profile uses its separately committed roster and does not count the deferred three tuple obligations as passed. They are pre-provisioned authorized isolated fixtures, not permission to mutate the main store.
 
-The server foreign-workspace source scenario uses a separate imported-but-unenrolled store: foreign GET 401, then same-credential own GET 200. Independently observed null binding/no runtime proof, unchanged credential slot/generation/principal/current own read grant, and foreign resource existence/non-admission are required. The negative no-effect/no-leak observation precedes the positive control. This source definition does not provision the store or authorize either request. Live execution and actual observer integration remain pending.
+The server foreign-workspace source scenario uses a separate imported-but-unenrolled store: foreign GET 401, then same-credential own GET 200. Independently observed null binding/no runtime proof, unchanged credential slot/generation/principal/current own read grant, and foreign resource existence/non-admission are required. The negative no-effect/no-leak observation precedes the positive control. This source definition does not provision the store or authorize either request. Authentic deployed execution and independently inspected observer custody remain pending.
 
 Controller observations bind the exact nullable `httpStatus` to the source scenario, so a foreign 403 cannot masquerade as the required 401. Null means no observed final HTTP response for local/no-response steps, not numeric status zero. This controller metadata is distinct from closed issue47 typed observations, whose retained/no-send rows omit HTTP status entirely.
 
@@ -61,7 +73,7 @@ The scoped projector checks per-operation native conformance and the explicitly 
 
 ## Opt-in owned recording
 
-The controller accepts an optional, closed third-argument evidence context (`environment_id`, `config_epoch`, `observer_id`, `source_inventory`). Its run ID is generated by the controller. This mode requires explicit trusted-host `describeEvidence`, `prepareEvidence`, `observeEvidence`, `observeAuxiliaryEvidence` and `observeDisableEvidence` methods before admission. The default command installs none of them and grants no authority.
+The controller accepts an optional, closed third-argument evidence context (`environment_id`, `config_epoch`, `observer_id`, `source_inventory`). Its run ID is generated by the controller. This mode requires explicit trusted-host `describeEvidence`, `prepareEvidence`, `observeEvidence`, `observeAuxiliaryEvidence` and `observeDisableEvidence` methods before admission. The legacy version 1 command installs none of them. The required version 2 command uses the fixed factory only after guarded installation/custody admission; the command itself grants no authority.
 
 `prepareEvidence` supplies only an independently observed subject and its source record ID. The controller derives and retains the exact source-built argv snapshot it executes, invocation digest and actual preparation/wrapper times. Typed retrieval methods return closed `{record: {id, sha256, bytes}, usage}`; the recorder joins it to the existing generic observation and the actual protected child-process originals. It does not accept caller-selected success, timestamps or wrapper exit codes. Operation-inapplicable keys/proofs and incomplete current runtime bindings fail before preparation is emitted.
 
@@ -85,7 +97,7 @@ Controls advance the registry only after existing generic and optional typed obs
 
 This is deliberately **not complete request authority**. The controller now admits an owned raw input snapshot, validates source-known body resource relationships and supplies its digest to the CLI same-buffer gate described below. A path or prepared digest alone still cannot prove that a failed invocation reached that gate, authenticate host intent, or establish full external consumption provenance. Output mismatch detection cannot undo a prior effect. Lists are bounded pages, not complete workspace enumeration. Local wrong-runtime/foreign/swap probes retain their deliberate mismatches and cannot update successful resource bindings or substitute for server-denial cases.
 
-The missing concrete host adapter, command-entry orchestration, server wrong-runtime-proof producer and authenticated global380 composition remain explicit source/integration work. Their interfaces and operator questions are recorded in the [issue48 plan](r2-task-plans/issue-048.md). The protected runtime guard, root2/root3 evidence dispatch, native37 roster and post-R4 acceptance boundary are unchanged.
+The concrete fixed host factory, command-entry orchestration and server wrong-runtime-proof producer are implemented source components, not proof of a complete installed run. Full protected factory/service execution and authenticated global 380 composition remain unverified. Their interfaces and operator questions are recorded in the [issue48 plan](r2-task-plans/issue-048.md). The protected runtime guard, root2/root3 evidence dispatch, native 37 roster and post-R4 acceptance boundary are unchanged.
 
 Typed recording finishes before the mandatory resource binding is promoted. If that later binding check fails, protected diagnostic records may retain the already completed scoped per-case wrapper. The controller still returns incomplete, does not include the failed step in its completed count, and never runs final scenario assembly. Wrapper presence alone must not be treated as controller/scenario completion or reused to manufacture complete evidence.
 
@@ -171,7 +183,7 @@ selected SQL observations and configuration-disable control. It exercises
 actual server handlers directly, not a built CLI child or network TLS. Its
 closed local report and exit status never satisfy this native evidence contract.
 See [local sandbox scope, commands and limits](local-native-sandbox.md). Default
-protected `--config` conformance remains blocked without its real host adapter.
+protected execution still requires an actual authorized installation; the required version 2 fixed source route is described above.
 
 ## Source-owned request preparation
 
@@ -191,15 +203,17 @@ Publication failure stops before process dispatch and retains protected files.
 A same-UID hostile writer is not contained by this mechanism; the pin still
 matters and no authenticated consumption claim is inferred from publication.
 
-The protected entry still lacks its real host adapter. The bounded
-[producer integration design](native-host-producer-design.md) distinguishes code
-we still must implement from the small set of operator trust/capability choices;
-it does not install a service or fabricate authority.
+The protected entry now has a fixed required-profile source adapter. The earlier
+[producer integration design](native-host-producer-design.md) is design history,
+not the current implementation inventory; the checkpoint above and current
+[service attachment](native-complete-service.md) distinguish implemented source
+from the still-unverified authorized installation and full execution.
 
 ## Protected-entry source/config readiness diagnostic
 
-A valid protected `--config` input now emits bounded diagnostic JSON on stdout
-and retains exit 3 plus the blocked stderr summary. Invalid or unsafe input still
+For **legacy version 1 only**, a valid protected `--config` input emits bounded
+diagnostic JSON on stdout and retains exit 3 plus the blocked stderr summary.
+The required version 2 execution/publication route above does not use this diagnostic. Invalid or unsafe input still
 has empty stdout and exits 2. The JSON type is `native-r2-source-readiness`, not a
 release evidence receipt or preflight authorization. It is deterministic, at most
 16 KiB, and does not echo supplied paths, principals, origins or credential data.
@@ -207,7 +221,7 @@ release evidence receipt or preflight authorization. It is deterministic, at mos
 The diagnostic joins the actual fixed scenario's actor roles and explicitly
 required fixture stores with the supplied configuration. It identifies absent
 roles/stores and source-known insufficient command, mutation, artifact and output
-budgets. Current necessary lower bounds are 68 command reservations, 34 mutation
+budgets. This legacy diagnostic's necessary lower bounds are 68 command reservations, 34 mutation
 reservations, 2 artifact bytes across two separately reserved steps, and 56 output
 bytes across non-control steps. These are only necessary minima, not useful
 execution budgets or full admission: observer, control and evidence costs remain
@@ -225,8 +239,8 @@ Executable/store custody, installed authority, network observation, subprocess
 execution, full budget admission and native acceptance remain unperformed.
 There is no partial execution, extra secret lookup, installer or configurable
 module loader. Source classification failure remains blocked with no raw errors.
-The diagnostic improves actionable failure information; it does not complete
-the still-missing fixed native host adapter or authorize real fixture effects.
+The legacy diagnostic improves actionable failure information; it neither invokes
+the required version 2 factory nor authorizes real fixture effects.
 
 ### Captured-output verification boundary
 
@@ -277,6 +291,13 @@ This is local source evidence, not a native CLI stdout scan or installed observe
 authority, and does not resolve the three tuple-only obligations.
 
 ### V2 host source integration in progress
+
+> Historical building-block checkpoint, retained on 2026-10-30. The following
+> sections through controller session ownership record earlier implementation
+> stages and their limitations, not the current fixed-entry capability inventory.
+> Claims below that factory/entry/producers are missing are superseded by the
+> dated current checkpoint above. Historical failures, partial receipts and
+> unchanged custody/acceptance restrictions remain relevant.
 
 The fixed host work now includes a guarded Journal inspection producer and a
 pure signed-installation-statement verifier. Neither is an installed host adapter.

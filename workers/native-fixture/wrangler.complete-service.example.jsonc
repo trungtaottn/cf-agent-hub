@@ -1,0 +1,16 @@
+{
+  // Source template only. No default authority, public route or deployment.
+  // The operator must select isolated resource names and supply the signed
+  // bindings described in docs/native-complete-service.md before any execution.
+  "name": "agenthub-private-native-fixture",
+  "main": "complete-service.ts",
+  "compatibility_date": "2026-10-19",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "durable_objects": {"bindings": [
+    {"name":"COMPLETE_SERVICE","class_name":"CompleteFixtureService"},
+    {"name":"CONTROLLER","class_name":"RequiredFixtureController"},
+    {"name":"WORKSPACE","class_name":"WorkspaceDO"}
+  ]},
+  "migrations": [{"tag":"private-native-v1","new_sqlite_classes":["CompleteFixtureService","RequiredFixtureController","WorkspaceDO"]}]
+}

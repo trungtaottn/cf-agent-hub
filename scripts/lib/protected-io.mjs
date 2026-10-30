@@ -2,7 +2,6 @@ import {constants,openSync,closeSync,fstatSync,lstatSync,readSync,writeSync,fchm
 import {dirname,resolve,relative,isAbsolute,join} from 'node:path';
 import {randomBytes} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
-const repository=resolve(fileURLToPath(new URL('../../',import.meta.url)));
 export const fail=()=>{throw Error('OPERATOR_INPUT_REJECTED');};
 function protectedStat(stat) {
  if(!stat.isFile()||stat.uid!==process.getuid()||(stat.mode&0o077)!==0||stat.nlink!==1)fail();
@@ -38,6 +37,7 @@ export function validateRevealFd(fd) {
  return stat;
 }
 function outputParent(path) {
+ const repository=resolve(fileURLToPath(new URL('../../',import.meta.url)));
  const absolute=resolve(path),parent=dirname(absolute);
  noSymlink(parent);const directory=lstatSync(parent);
  if(!directory.isDirectory()||directory.uid!==process.getuid()||(directory.mode&0o077)!==0)fail();

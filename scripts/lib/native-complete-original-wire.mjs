@@ -3,6 +3,7 @@
  */
 import {createHash,createPublicKey,sign,verify,KeyObject} from 'node:crypto';
 import {types} from 'node:util';
+import {isOwnedEd25519PrivateKey} from './native-owned-ed25519-key.mjs';
 import {canonicalCaseSubject} from './r2-case-policy.mjs';
 import {selectCompleteProfile} from './native-profile-selection.mjs';
 import caps from './native-complete-original-caps.json' with {type:'json'};
@@ -67,8 +68,8 @@ function wireLimit(m,cap){
  if(max.invocation_id!==undefined&&max.invocation_id!==null)max.invocation_id='z'.repeat(128);
  return Buffer.byteLength(canonicalCaseSubject(max))+4*Math.ceil(cap/3);
 }
-const keyType=Object.getOwnPropertyDescriptor(KeyObject.prototype,'type').get;
-function privateKey(v){check(v&&!types.isProxy(v)&&v instanceof KeyObject);const ds=Object.getOwnPropertyDescriptors(v);check(!['type','asymmetricKeyType','export'].some(k=>Object.hasOwn(ds,k)));check(keyType.call(v)==='private'&&createPublicKey(v).asymmetricKeyType==='ed25519');return v;}
+const keyType=Object.getOwnPropertyDescriptor(KeyObject.prototype,'type')?.get;
+function privateKey(v){if(isOwnedEd25519PrivateKey(v))return v;check(v&&!types.isProxy(v)&&v instanceof KeyObject&&typeof keyType==='function');const ds=Object.getOwnPropertyDescriptors(v);check(!['type','asymmetricKeyType','export'].some(k=>Object.hasOwn(ds,k)));check(keyType.call(v)==='private'&&createPublicKey(v).asymmetricKeyType==='ed25519');return v;}
 const signed=v=>Buffer.from(domain+canonicalCaseSubject(v));
 export function encodeCompleteOriginal(input){
  try{

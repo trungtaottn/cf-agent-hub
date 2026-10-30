@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {CASE_OPERATIONS} from '../../scripts/lib/r2-case-policy.mjs';
 import {getNativeScenario} from '../../scripts/lib/native-r2-scenario.mjs';
 import {getCompleteProfile} from '../../scripts/lib/native-complete-profile.mjs';
 import {validateCompletePreparation} from '../../scripts/lib/native-complete-preparation.mjs';
@@ -18,7 +19,7 @@ function preparation(step){
  if(step.kind==='local'&&step.id!=='prepare/retain-artifact')value.journal={kind:'intent-dispatch',intent_id:'intent',expected_request_sha256:h,expected_principal_sha256:h,key_sha256:h,expected_state:step.id==='case/settled-no-send'?'settled':'reconciliation-required',original_invocation_id:'inv_prior'};
  else if(step.id==='case/lost-response-retained')value.journal={kind:'new-uncertain-intent',key_sha256:h,semantic_request_sha256:h,fault_ack_sha256:h};
  else if(step.id==='probe/wrong-runtime')value.journal={kind:'new-unsent-intent',key_sha256:h,semantic_request_sha256:h};
- if(bindingBefore.get(step.id)){value.store_binding.runtime_id='runtime_current';value.store_binding.proof_sha256=h;if(value.subject){value.subject.runtime_id='runtime_current';value.subject.proof_sha256=h;}}
+ if(bindingBefore.get(step.id)){value.store_binding.runtime_id='runtime_current';value.store_binding.proof_sha256=h;if(value.subject){value.subject.runtime_id='runtime_current';value.subject.proof_sha256=CASE_OPERATIONS[step.operation??'createTask'].runtimeProof?h:null;}}
  return value;
 }
 for(const step of steps.filter(s=>s.kind!=='control'&&!s.id.startsWith('probe/swapped-')))test(`fixed preparation ${step.id} matches source applicability`,()=>{
@@ -90,4 +91,19 @@ test('all53 retained required process bodies preserve existing preparation predi
  const {getRequiredScenario}=await import('../../scripts/lib/native-required-profile.mjs');
  const rows=getRequiredScenario().steps.filter(s=>s.kind!=='control');assert.equal(rows.length,53);
  for(const step of rows){const p=preparation(step);assert.deepEqual(validateCompletePreparation(p,{kind:'process',id:step.id},'native-r2-required-prepared-v1'),p);}
+});
+
+test('enrolled revoke-positive read preserves active store proof but sends no operation proof',()=>{
+ const step=steps.find(s=>s.id==='prepare/revoke-own-positive'),p=preparation(step);p.subject.proof_sha256=null;
+ assert.equal(p.store_binding.proof_sha256,h);
+ assert.deepEqual(validateCompletePreparation(p,{kind:'process',id:step.id}),p);
+});
+test('non-proof operation cannot present retained store proof as an operation proof',()=>{
+ const step=steps.find(s=>s.id==='prepare/revoke-own-positive'),p=preparation(step);p.subject.proof_sha256=h;
+ assert.throws(()=>validateCompletePreparation(p,{kind:'process',id:step.id}));
+});
+test('runtime-proof operation must still match actual retained active proof',()=>{
+ const step=steps.find(s=>s.operation==='claimTask'),p=preparation(step);
+ for(const proof of [null,'b'.repeat(64)])assert.throws(()=>validateCompletePreparation({...p,subject:{...p.subject,proof_sha256:proof}},{kind:'process',id:step.id}));
+ assert.deepEqual(validateCompletePreparation(p,{kind:'process',id:step.id}),p);
 });

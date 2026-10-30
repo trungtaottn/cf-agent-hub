@@ -1,3 +1,7 @@
+import {createCompleteCaseRecords} from './native-complete-case-records.mjs';
+import {snapshotCompletePreSpawnHook,validateCompletePreSpawnAck} from './native-complete-pre-spawn.mjs';
+import {loadNativeOriginals} from './native-r2-evidence.mjs';
+import {freezeCompleteValue} from './native-complete-protocol.mjs';
 import {selectNativeExecutionProfile} from './native-execution-profile.mjs';
 import {requireCompleteCapabilities} from './native-complete-profile.mjs';
 import {snapshotNativeSessionAdapter,createNativeRunContext,createCompleteNativeRunContext,validateNativeSessionPlan,reserveNativeCombinedBudget,createNativeSessionOwner} from './native-r2-session.mjs';
@@ -102,6 +106,7 @@ async function executeNativeScenarioOwned(input,adapter,evidenceContext,lifetime
  const methods=['authorize','describe','prepare','control','observe'];
  if(!adapter||(typeof adapter!=='object'&&typeof adapter!=='function'))throw Error('NATIVE_AUTHORITY_UNAVAILABLE');
  const sessionAdapter=snapshotNativeSessionAdapter(adapter);
+ const beforeNativeProcess=complete?snapshotCompletePreSpawnHook(adapter):null;
  if(complete&&!sessionAdapter)throw Error('NATIVE_SESSION_REJECTED');
  if(methods.some(name=>typeof adapter[name]!=='function'))throw Error('NATIVE_AUTHORITY_UNAVAILABLE');
  const initial=complete?selected.config:validateNativeConfig(input),budget=createNativeBudget(initial.budgets);
@@ -157,7 +162,13 @@ async function executeNativeScenarioOwned(input,adapter,evidenceContext,lifetime
    if(step.kind==='control'){
     const bindingToken=bindings.prepare(step.id);
     const disableToken=recorder&&step.id==='control/revoke-submitter'?recorder.beginDisable():null;
-    const result=snapshotNativeGenericReceipt('control',await bounded(signal=>adapter.control(structuredClone(step),{runId,cost:structuredClone(cost),remainingMs:budget.remainingMs(),completed:[...completed],...(disableToken?{captureFacts:recorder.captureFacts(disableToken)}:{}),signal})));
+    const result=snapshotNativeGenericReceipt('control',await bounded(async signal=>{
+     // Pure read of already-issued originals under the preceding authority check;
+     // it grants no fresh authorization and adds no HTTP or recorder operation.
+     const caseRecords=complete&&recorder&&step.id==='control/observe-success-coverage'?createCompleteCaseRecords({profile:config.profile,readRecords:()=>recorder.readProtectedRecords(),signal,remainingMs:()=>budget.remainingMs()}):null;
+     try{return await adapter.control(structuredClone(step),{runId,cost:structuredClone(cost),remainingMs:budget.remainingMs(),completed:[...completed],...(disableToken?{captureFacts:recorder.captureFacts(disableToken)}:{}),...(caseRecords?{readProtectedCaseRecords:caseRecords.read}:{}),signal});}
+     finally{caseRecords?.revoke();}
+    }));
     // A host receipt is custody input, not a generic boolean proof of isolation.
     if(!result||Object.keys(result).sort().join(',')!=='authorityRecordSha256,configSha256,recordSha256,scenarioSha256,status,stepId,usage'||result.status!=='observed'||!accounted(result.usage,cost)||result.stepId!==step.id||result.configSha256!==configSha256||result.scenarioSha256!==plan.scenarioSha256||result.authorityRecordSha256!==config.authority_record_sha256||typeof result.recordSha256!=='string'||!/^[a-f0-9]{64}$/.test(result.recordSha256))throw Error('NATIVE_OBSERVER_INCOMPLETE');
     if(disableToken){
@@ -197,6 +208,18 @@ async function executeNativeScenarioOwned(input,adapter,evidenceContext,lifetime
    }
    const invocationId='inv_'+randomUUID().replaceAll('-',''),directory=join(config.output_directory,invocationId);mkdirSync(directory,{mode:0o700});
    if(casePreparation)caseToken=step.caseId?recorder.begin(step.id):recorder.beginAuxiliary(step.id);
+   if(complete){
+    // Hand off the actual allocated invocation only after input/native preparation
+    // custody. The fixed adapter opens the scheduled service phase before spawn.
+    const nativeRecord=casePreparation?recorder.readProtectedRecords().find(row=>row.id===casePreparation.recordId):null;
+    const nativePreparation=nativeRecord?loadNativeOriginals([nativeRecord]).get(nativeRecord.id).value:null;
+    const invocation=ownedInvocation??{nodeSha256:config.node.sha256,entrySha256:config.build.sha256,args:[...args],cwd:dirname(config.build.path),env:{TZ:'UTC',LANG:'C.UTF-8'}};
+    const handoff=freezeCompleteValue(structuredClone({profile:config.profile,stepId:step.id,runContext,invocationId,invocation,refs,pin,requestInput,inputPublication:writer.readProtectedSummary().records.find(row=>row.stepId===step.id)??null,inputAdmission:inputs.readProtectedSummary().records.find(row=>row.stepId===step.id)??null,nativePreparation}));
+    const ack=await bounded(async signal=>await beforeNativeProcess(structuredClone(step),{...handoff,nativePreparationRecord:nativeRecord?{...nativeRecord,bytes:Buffer.from(nativeRecord.bytes)}:null,captureFacts:caseToken?recorder.captureFacts(caseToken):null,signal}));
+    validateCompletePreSpawnAck(ack,handoff);
+    budget.remainingMs();await currentAuthority();
+    inspectNativeDirectory(config.output_directory);inspectNativeDirectory(actor.state_directory);inspectNativeDirectory(directory);
+   }
    const processResult=await runOwnedProcess({nodePath:config.node.path,entryPath:config.build.path,args:[...args],cwd:ownedInvocation?.cwd??dirname(config.build.path),env:ownedInvocation?.env??{TZ:'UTC',LANG:'C.UTF-8'},receiptDirectory:directory,timeoutMs:Math.max(1,Math.floor(Math.min(300000,budget.remainingMs()))),maxOutputBytes:cost.output_bytes,invocationId,nodeSha256:config.node.sha256,entrySha256:config.build.sha256,subjects});
    protectedResults.push({stepId:step.id,invocationId,process:processResult});
    if(processResult.status!=='terminal'||processResult.reason!=='exit'||processResult.exitCode!==step.expectedExit||processResult.truncated)throw Error('NATIVE_PROCESS_UNCERTAIN');

@@ -1,6 +1,6 @@
 /** Exact per-step preparation shape. Authentic custody/causality joins are separate. */
 import Ajv from 'ajv';
-import {caseSchemas} from './r2-case-policy.mjs';
+import {caseSchemas,CASE_OPERATIONS} from './r2-case-policy.mjs';
 import {getNativeScenario} from './native-r2-scenario.mjs';
 import {selectCompleteProfile} from './native-profile-selection.mjs';
 import {getCompleteProfile} from './native-complete-profile.mjs';
@@ -107,7 +107,10 @@ export function validateCompletePreparation(value,slot,tag){
   if(!typed(step))check(p.subject===null);
   else{
    check(validSubject(p.subject)&&p.subject.actor_kind==='native'&&p.subject.foreign_runs===null);
-   for(const key of ['principal_id','agent_id','credential_id','workspace_id','runtime_id','proof_sha256','authority_epoch'])check(p.subject[key]===p.store_binding[key]);
+   for(const key of ['principal_id','agent_id','credential_id','workspace_id','runtime_id','authority_epoch'])check(p.subject[key]===p.store_binding[key]);
+   // Stored active proof and proof presented by this operation are distinct.
+   const operation=CASE_OPERATIONS[step.operation??'createTask'];check(!!operation);
+   check(operation.runtimeProof?p.subject.proof_sha256===p.store_binding.proof_sha256:p.subject.proof_sha256===null);
   }
   return freeze(p);
  }catch{throw Error('NATIVE_COMPLETE_PREPARATION_REJECTED');}
