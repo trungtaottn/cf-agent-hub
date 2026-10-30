@@ -26,8 +26,8 @@ it('unknown_event_resource_and_missing_producer_deny_even_with_permissive_hook',
 });
 it('r3_and_unimplemented_r2_routes_remain_unavailable_without_durable_writes',async()=>{
  const {stub}=await setup('r2-unavailable');
- // Runtime enrollment and task metadata are now owned by #26/#27; catalog by #28 and execution/cancellation by #29–31; valid-body old-R1 denial is covered in r1-isolation.
- const paths=['tasks/task_a:request-decision','tasks/task_a:submit-result','tasks/task_a:accept-result','approvals','approvals/approval_a:approve','artifacts','search','imports:preview'];
+ // Runtime enrollment and task metadata are now owned by #26/#27; catalog by #28 and execution/cancellation by #29–31, artifacts by composed #32/#33; valid-body old-R1 denial is covered in r1-isolation.
+ const paths=['tasks/task_a:request-decision','tasks/task_a:submit-result','tasks/task_a:accept-result','approvals','approvals/approval_a:approve','search','imports:preview'];
  const snapshot=()=>runInDurableObject(stub,(_o,state)=>({events:state.storage.sql.exec('SELECT * FROM events').toArray(),outcomes:state.storage.sql.exec('SELECT * FROM idempotency_outcomes').toArray(),scheduler:state.storage.sql.exec('SELECT * FROM scheduler_state').toArray(),tables:state.storage.sql.exec("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").toArray()}));
  const before=await snapshot();
  for(const path of paths){

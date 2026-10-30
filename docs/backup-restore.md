@@ -1,8 +1,8 @@
 # Backup and restore
 
-Status: Historical R1/schema7 recovery retained · Current schema8 operational recovery unavailable · Deployed rehearsal pending.
+Status: Historical R1/schema7 recovery retained · Current schema13 operational recovery unavailable · Deployed rehearsal pending.
 
-**Current development boundary:** issue24 advances ordinary workspace storage to schema8. All current operational recovery commands reject before replay, maintenance checkpoints, SQL changes, object IO or alarms. No schema8 backup/restore/probe success is claimed. V1 manifests/chunks remain pinned to the historical schema7 registry; schema8 cannot be silently serialized as V1. Issue39/#43 own activation with complete runtime-proof invalidation, run holds, artifact bytes and composite relationship verification. Local tests distinguish historical schema7 storage from current WorkspaceDO; do not deploy this intermediate stack expecting working recovery.
+**Current development boundary:** issues24–33 advance ordinary workspace storage through schema13. All current operational recovery commands reject before replay, maintenance checkpoints, SQL changes, object IO or alarms. No current schema13 backup/restore/probe success is claimed. V1 manifests/chunks remain pinned to the historical schema7 registry; current-schema storage cannot be silently serialized as V1. Issue39/#43 own activation with complete runtime-proof invalidation, run holds, artifact bytes and composite relationship verification. Local tests distinguish historical schema7 storage from current WorkspaceDO; do not deploy this intermediate stack expecting working recovery.
 
 R1 implements bounded logical SQL capture and typed restore through a separate authenticated operator gateway. The first rehearsal must use disposable isolated source and target authorities. Actual deployed rehearsal remains a release gate; local Workers results do not satisfy it. Operators define retention, recovery point and recovery time objectives for their own deployment; no achieved objective is promised here.
 
@@ -65,3 +65,9 @@ A recovery receipt must name the manifest, verifier, compatible version, validat
 ## R2 recovery contract boundary
 
 The [issue #22 recovery decision](adr/r2-recovery-contract.md) defines the closed V1/V2 envelope, simultaneous SQL-plus-artifact bounds, trusted private bindings and bounded future restart state. This is a contract, not enabled V2 recovery. Current runtime remains V1-only; nonzero artifact capture budgets and V2 restore are unavailable. No new CLI command or caller-selected bucket/key/URL is added. Existing protected files, HMAC authentication, separate AES-GCM file protection, operator Access identity, current ledger, maintenance and explicit resume remain required.
+
+## Artifact exclusion barrier integration required by39/43
+
+Issue33 implements a shared current-schema drain guard, not capture/restore activation. Closing admission invalidates new reservations/dispatch. Capture completion, restored/retired completion and closed→open resume reject persisted artifact `in_flight` or `uncertain` effects. Original trusted terminal callbacks may settle exact slots after close; a reserved but never-dispatched call must reacquire current authority after resume. The shared transition helper preserves only the explicitly verified contiguous schema7 legacy no-artifact policy; schema8–12, future or gapped sequences cannot use that bypass.
+
+Future recovery must establish drain **before recording** its coherent checkpoint, authenticate exact committed generations, and protect source/destination immutable inventories. The new cursor/due/fence fields must be included in a reviewed current schema wire representation and invalidated/rebound on restore; exporting them does not restore authority. Current runtime still refuses schema13 recovery before replay/effects. No complete capture was produced by these local interleaving tests. Historical V1 codec/fixtures and migration1–12 bytes are unchanged; use reviewed forward repair rather than a binary downgrade.

@@ -1,0 +1,11 @@
+# Issue 33 stack reconciliation
+
+Status: Source-equivalent draft preparation; remote checks and live acceptance pending. No released capability.
+
+The immutable implementation `ea9f22c8c696e26a75c08066a7cf4b3964ba9957` is reconciled onto actual issue 32 PR107 head `c8461e66cc98e1ab72e3610bc66d0dedfb968477`. Original issue 33 planning tip `456d8168d813bc513573e68348014f6c5d5b5594` remains the second parent. Its plan and corrected predecessor plans are preserved. The issue-only patch applies without product, test, schema or lockfile edits. This document records publication ancestry, not a second implementation.
+
+The implementation adds permanent SQL tombstones, generation-qualified delete exclusion, exact terminal-effect bookkeeping, bounded resumable inventory and shared scheduler integration. Forward migration 0013 preserves historical migrations and adds independent cleanup scheduling/fence evidence. Conditional source ingress requires explicitly configured distinct trusted artifact and recovery bindings; opaque handles do not prove physical bucket mapping. Default development remains unbound, and publication provisions no resources or credentials.
+
+The original source checkpoint passed 818 Node, 1074 Workers, 18 operator and 13 deployment-verifier tests. The original aggregate was not green: protected recovery CLI fixtures reported 8 passed and 18 failed, and browser tests had 34 collected with zero assertions because pinned Chromium was unavailable. Fresh reconciliation checks, independent source-equivalence review and exact remote CI are reported separately in the draft PR. The original dependency audit applies only to that historical snapshot; no fresh audit is claimed.
+
+Unknown external PUT or DELETE effects remain holds. Object presence, absence, elapsed time or another request cannot prove an earlier effect drained. Current generation-aware recovery remains closed pending its owning later tasks; accepted-result and proposal fixtures demonstrate retention, not implementation of those later features. The owner permits source work and stacked draft PR publication while live acceptance is deferred until after R4. This does not close issue 33, accept R1 issue 17, merge, deploy or release a capability.

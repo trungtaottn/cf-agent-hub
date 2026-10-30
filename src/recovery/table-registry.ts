@@ -2758,6 +2758,13 @@ export const TABLE_REGISTRY = [
     "notNull": false,
     "defaultValue": null,
     "pk": 0
+   },
+   {
+    "name": "expiry_check_at",
+    "type": "INTEGER",
+    "notNull": false,
+    "defaultValue": null,
+    "pk": 0
    }
   ],
   "primaryKey": [
@@ -3083,6 +3090,34 @@ export const TABLE_REGISTRY = [
    {
     "name": "upload_idempotency_sha256",
     "type": "TEXT",
+    "notNull": false,
+    "defaultValue": null,
+    "pk": 0
+   },
+   {
+    "name": "cleanup_next_at",
+    "type": "INTEGER",
+    "notNull": false,
+    "defaultValue": null,
+    "pk": 0
+   },
+   {
+    "name": "cleanup_error_code",
+    "type": "TEXT",
+    "notNull": false,
+    "defaultValue": null,
+    "pk": 0
+   },
+   {
+    "name": "delete_admission_epoch",
+    "type": "INTEGER",
+    "notNull": false,
+    "defaultValue": null,
+    "pk": 0
+   },
+   {
+    "name": "delete_admission_generation",
+    "type": "INTEGER",
     "notNull": false,
     "defaultValue": null,
     "pk": 0
@@ -3641,6 +3676,79 @@ export const TABLE_REGISTRY = [
     "NONE"
    ]
   ]
+ },
+ {
+  "name": "artifact_inventory_state",
+  "mode": "evidence",
+  "columns": [
+   {
+    "name": "id",
+    "type": "INTEGER",
+    "notNull": false,
+    "defaultValue": null,
+    "pk": 1
+   },
+   {
+    "name": "workspace_id",
+    "type": "TEXT",
+    "notNull": true,
+    "defaultValue": null,
+    "pk": 0
+   },
+   {
+    "name": "cursor",
+    "type": "TEXT",
+    "notNull": false,
+    "defaultValue": null,
+    "pk": 0
+   },
+   {
+    "name": "generation",
+    "type": "INTEGER",
+    "notNull": true,
+    "defaultValue": "0",
+    "pk": 0
+   },
+   {
+    "name": "next_due_at",
+    "type": "INTEGER",
+    "notNull": true,
+    "defaultValue": null,
+    "pk": 0
+   },
+   {
+    "name": "last_scan_at",
+    "type": "INTEGER",
+    "notNull": false,
+    "defaultValue": null,
+    "pk": 0
+   },
+   {
+    "name": "observed_objects",
+    "type": "INTEGER",
+    "notNull": true,
+    "defaultValue": "0",
+    "pk": 0
+   },
+   {
+    "name": "orphan_observations",
+    "type": "INTEGER",
+    "notNull": true,
+    "defaultValue": "0",
+    "pk": 0
+   },
+   {
+    "name": "last_error_code",
+    "type": "TEXT",
+    "notNull": false,
+    "defaultValue": null,
+    "pk": 0
+   }
+  ],
+  "primaryKey": [
+   "id"
+  ],
+  "foreignKeys": []
  }
 ] as const satisfies readonly RegistryTable[];
 export type RecoveryTableName=(typeof TABLE_REGISTRY)[number]['name'];

@@ -64,7 +64,7 @@ it('v1_sessions_and_attempts_migrate_invalid_and_remain_invalid_after_restart',a
  });
  await evictDurableObject(stub);
  const migrated=await runInDurableObject(stub,(_o,state)=>({session:state.storage.sql.exec('SELECT auth_epoch FROM sessions').one().auth_epoch,attempt:state.storage.sql.exec('SELECT auth_epoch,return_path FROM login_attempts').one(),versions:state.storage.sql.exec('SELECT version FROM schema_migrations ORDER BY version').toArray()}));
- expect(migrated).toEqual({session:0,attempt:{auth_epoch:0,return_path:'/'},versions:[{version:1},{version:2},{version:3},{version:4},{version:5},{version:6},{version:7},{version:8},{version:9},{version:10},{version:11},{version:12}]});
+ expect(migrated).toEqual({session:0,attempt:{auth_epoch:0,return_path:'/'},versions:[{version:1},{version:2},{version:3},{version:4},{version:5},{version:6},{version:7},{version:8},{version:9},{version:10},{version:11},{version:12},{version:13}]});
  const denied=await stub.fetch(request('session','GET',undefined,'cfhub_session='+token));expect(denied.status).toBe(401);await denied.text();
  const oldAttempt=await stub.fetch(request('callback?code=unused&state='+token,'GET',undefined,'cfhub_login='+token));expect(oldAttempt.status).toBe(401);await oldAttempt.text();
  await evictDurableObject(stub);

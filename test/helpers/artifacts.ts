@@ -9,10 +9,10 @@ import {stageArtifactCommand} from '../../src/artifacts/commands';
 import type {ArtifactStageRequest} from '../../src/http/dto';
 import type {ArtifactOperationContext} from '../../src/artifacts/content';
 export const artifactBucket=()=> (env as unknown as {ARTIFACT_BUCKET:R2Bucket}).ARTIFACT_BUCKET;
-export async function artifactFixture(name:string){
+export async function artifactFixture(name:string,extraScopes:('messages:read'|'messages:send')[]=[]){
  const raw=await fixture(name);
  raw.config.human_grants[0].scopes=[...new Set([...raw.config.human_grants[0].scopes,'tasks:read','tasks:create','tasks:edit','tasks:schedule','tasks:cancel','artifacts:read','artifacts:write'] as const)];
- const scopes=['workspace:read','events:read','tasks:read','tasks:claim','tasks:execute','runtimes:manage','artifacts:read','artifacts:write'] as const;
+ const scopes=['workspace:read','events:read','tasks:read','tasks:claim','tasks:execute','runtimes:manage','artifacts:read','artifacts:write',...extraScopes] as const;
  const cred={...raw.config.static_credential_refs[0],scopes:[...scopes]};
  raw.config.static_participants.push({workspace_id:'ws_example',agent_id:'agent_other',display_name:'Other synthetic agent'});
  raw.config.static_credential_refs=[cred,{...cred,credential_id:'credential_research_2'},{...cred,credential_id:'credential_other',agent_id:'agent_other'}];

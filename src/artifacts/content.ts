@@ -54,7 +54,7 @@ export async function uploadArtifactContent(ctx:ArtifactOperationContext,id:stri
   if(prior){if(prior.artifact_id!==id||prior.state==='tombstoned'||prior.effect_kind!=='put'||prior.effect_state!=='drained'||prior.observed_sha256!==row.sha256||prior.observed_byte_size!==row.byte_size)throw new HttpError('DEPENDENCY_UNAVAILABLE',503);if(mismatchedLength(row))throw new HttpError('IDEMPOTENCY_CONFLICT',409);return {row,generation:prior,write:false,replay:false};}
   if(mismatchedLength(row))throw new HttpError('INVALID_REQUEST',400);
   const objectKey='artifacts/'+encodeURIComponent(c.actor.workspaceId)+'/'+encodeURIComponent(id)+'/'+generationId+'/'+row.sha256;
-  tx.exec(`INSERT INTO artifact_generations(id,workspace_id,artifact_id,object_key,expected_sha256,expected_byte_size,state,admission_epoch,admission_generation,expires_at,created_at,updated_at,effect_operation_id,effect_kind,effect_state,artifact_version,upload_idempotency_sha256) VALUES(?,?,?,?,?,?,'reserved',?,?,?,?,?,?,'put','reserved',?,?)`,[generationId,c.actor.workspaceId,id,objectKey,row.sha256,row.byte_size,ctx.admission.authorityEpoch,ctx.admission.maintenanceGeneration,row.expires_at,c.nowMs,c.nowMs,'put_'+generationId,row.artifact_version,uploadHash]);
+  tx.exec(`INSERT INTO artifact_generations(id,workspace_id,artifact_id,object_key,expected_sha256,expected_byte_size,state,admission_epoch,admission_generation,expires_at,created_at,updated_at,effect_operation_id,effect_kind,effect_state,artifact_version,upload_idempotency_sha256,cleanup_next_at) VALUES(?,?,?,?,?,?,'reserved',?,?,?,?,?,?,'put','reserved',?,?,?)`,[generationId,c.actor.workspaceId,id,objectKey,row.sha256,row.byte_size,ctx.admission.authorityEpoch,ctx.admission.maintenanceGeneration,row.expires_at,c.nowMs,c.nowMs,'put_'+generationId,row.artifact_version,uploadHash,row.expires_at]);
   return {row,generation:generationRecord(tx,c.actor.workspaceId,id,generationId),write:true,replay:false};
  });
  let observed:ByteIdentity;
@@ -101,8 +101,8 @@ export async function commitArtifact(ctx:ArtifactOperationContext,id:string,inpu
  return executeCommand(execution(ctx,fingerprint),ctx.identity,mutationCommand(ctx,id,'commit',(tx,c)=>{
   const row=artifactRecord(tx,c.actor.workspaceId,id);assertArtifactWritable(tx,c,row,proof(tx,c,ctx));const g=selectedGeneration(tx,row);
   if(!start||row.artifact_version!==input.expected_artifact_version||g.id!==start.generation.id||g.object_key!==start.generation.object_key||g.admission_epoch!==ctx.admission.authorityEpoch||g.admission_generation!==ctx.admission.maintenanceGeneration||g.expires_at<=c.nowMs)throw new HttpError('VERSION_CONFLICT',409);
-  tx.exec("UPDATE artifact_generations SET state='committed',updated_at=? WHERE workspace_id=? AND id=? AND state='uploaded'",[c.nowMs,c.actor.workspaceId,g.id]);
-  tx.exec("UPDATE artifacts SET status='committed',artifact_version=?,committed_generation_id=?,committed_at=?,expires_at=NULL WHERE workspace_id=? AND id=? AND status='uploaded'",[nextArtifactVersion(row.artifact_version),g.id,c.nowMs,c.actor.workspaceId,id]);
+  tx.exec("UPDATE artifact_generations SET state='committed',cleanup_next_at=NULL,cleanup_error_code=NULL,updated_at=? WHERE workspace_id=? AND id=? AND state='uploaded'",[c.nowMs,c.actor.workspaceId,g.id]);
+  tx.exec("UPDATE artifacts SET status='committed',artifact_version=?,committed_generation_id=?,committed_at=?,expires_at=NULL,expiry_check_at=NULL WHERE workspace_id=? AND id=? AND status='uploaded'",[nextArtifactVersion(row.artifact_version),g.id,c.nowMs,c.actor.workspaceId,id]);
   const data=artifactView(artifactRecord(tx,c.actor.workspaceId,id));return {outcome:{status:200,data},event:{type:'artifact.committed',resourceType:'artifact',resourceId:id,resourceVersion:null,threadId:null}};
  }),null).data;
 }

@@ -97,6 +97,13 @@ export function appendRunExpiryEvent(tx:WorkspaceTransaction,runId:string,nowMs:
  const id='event_'+crypto.randomUUID();
  return persistEvent(tx,{id,workspace_id:workspaceId,sequence:1,type:'task.expired',actor_json:canonicalJson({kind:'system',principal_id:'system:lease-expiry',agent_id:null}),resource_type:'task',resource_id:task.id,resource_version:null,thread_id:null,request_id:crypto.randomUUID(),occurred_at:nowMs,summary:definitions['task.expired'].summary,task_version:task.task_version,run_id:runId,fence:run.fence},task.id);
 }
+/** Trusted artifact expiry producer; no caller-controlled actor or raw cleanup detail. */
+export function appendArtifactExpiryEvent(tx:WorkspaceTransaction,artifactId:string,nowMs:number):{id:string;sequence:number}{
+ assertAdmissionOpen(tx);const workspaceId=tx.one<{workspace_id:string}>('SELECT workspace_id FROM workspace_metadata WHERE id=1')!.workspace_id;
+ const artifact=tx.one<{artifact_version:number;expires_at:number}>("SELECT artifact_version,expires_at FROM artifacts WHERE workspace_id=? AND id=? AND status='expired' AND committed_generation_id IS NULL",[workspaceId,artifactId]);
+ if(!artifact||artifact.expires_at>nowMs)throw new HttpError('INTERNAL_ERROR',500);
+ return persistEvent(tx,{id:'event_'+crypto.randomUUID(),workspace_id:workspaceId,sequence:1,type:'artifact.expired',actor_json:canonicalJson({kind:'system',principal_id:'system:artifact-expiry',agent_id:null}),resource_type:'artifact',resource_id:artifactId,resource_version:null,thread_id:null,request_id:crypto.randomUUID(),occurred_at:nowMs,summary:'Artifact upload intent expired.'},null);
+}
 export type EventVisibility=(tx:WorkspaceTransaction,actor:ActorContext,resource:ResourceAccess,event:Event,nowMs:number)=>boolean;
 /** Resource predicate must join current persisted resources/owners; false yields no event ID or summary.
  * Task6 supplies the preferences stable owner predicate. No permissive default exists. */

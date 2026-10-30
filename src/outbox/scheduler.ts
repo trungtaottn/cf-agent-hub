@@ -1,3 +1,4 @@
+import {expireArtifactIntents,cleanupArtifactGenerations,reconcileArtifactObjects,nextArtifactDue,ensureArtifactInventory} from '../artifacts/reconcile';
 import {expireDueRuns,nextRunDue} from '../tasks/failure';
 import type {AuthWorkspace} from '../auth/context';
 import type {WorkspaceTransaction} from '../storage/transaction';
@@ -8,22 +9,22 @@ import {claimDue,finishAttempt,nextOutboxDue} from './repository';
 import {DeliveryDispatcher} from './dispatcher';
 export interface ScheduleReceipt{armed:boolean;nextDueAt:number|null;generation:number;dirty:boolean;}
 export interface AlarmPort{setAlarm(time:number):Promise<void>;deleteAlarm():Promise<void>;}
-function nextDue(tx:WorkspaceTransaction):number|null{
- const outbox=nextOutboxDue(tx),lease=nextRunDue(tx);
- return outbox===null?lease:lease===null?outbox:Math.min(outbox,lease);
+function nextDue(tx:WorkspaceTransaction,artifacts=false):number|null{
+ const values=[nextOutboxDue(tx),nextRunDue(tx),artifacts?nextArtifactDue(tx):null].filter((value):value is number=>value!==null);return values.length?Math.min(...values):null;
 }
 export class OutboxScheduler{
  private readonly alarms:AlarmPort;
- constructor(readonly workspace:AuthWorkspace,private readonly dispatcher:DeliveryDispatcher,alarms?:AlarmPort){this.alarms=alarms??workspace.storage;}
+ constructor(readonly workspace:AuthWorkspace,private readonly dispatcher:DeliveryDispatcher,alarms?:AlarmPort,private readonly artifactBucket?:R2Bucket){this.alarms=alarms??workspace.storage;}
  async repairSchedule():Promise<ScheduleReceipt>{return this.#repairSchedule(true);}
  async #repairSchedule(reconcile:boolean,retry=true):Promise<ScheduleReceipt>{
   const {workspace}=this;
   const captured=withTransaction(workspace.storage,tx=>{
    if(!admissionOpen(tx)){const state=tx.one<{generation:number;dirty:number;next_due_at:number|null}>('SELECT generation,dirty,next_due_at FROM scheduler_state WHERE id=1');return {fence:null,generation:state?.generation??0,due:state?.next_due_at??null,dirty:state?.dirty===1};}
    const fence=assertAdmissionOpen(tx);
+   if(this.artifactBucket)ensureArtifactInventory(tx,this.workspace.workspaceId,Math.min(8640000000000000,this.workspace.clock.nowMs()+300000));
    tx.exec('INSERT OR IGNORE INTO scheduler_state (id,dirty,generation) VALUES (1,0,0)');
    const generation=tx.one<{generation:number}>('SELECT generation FROM scheduler_state WHERE id=1')!.generation;
-   return {fence,generation,due:nextDue(tx),dirty:true};
+   return {fence,generation,due:nextDue(tx,this.artifactBucket!==undefined),dirty:true};
   });
   if(!captured.fence)return {armed:false,nextDueAt:captured.due,generation:captured.generation,dirty:captured.dirty};
   let success=false;
@@ -56,7 +57,7 @@ export class OutboxScheduler{
   const receipt=withTransaction(this.workspace.storage,tx=>{
    const state=tx.one<{generation:number;dirty:number;next_due_at:number|null}>('SELECT generation,dirty,next_due_at FROM scheduler_state WHERE id=1');
    if(!admissionOpen(tx,fence)){stale=true;return {armed:false,nextDueAt:state?.next_due_at??null,generation:state?.generation??0,dirty:state?.dirty===1};}
-   const due=nextDue(tx);
+   const due=nextDue(tx,this.artifactBucket!==undefined);
    tx.exec("UPDATE scheduler_state SET dirty=1,next_due_at=?,last_error_code=CASE WHEN ?=0 THEN 'ALARM_ARM_FAILED' ELSE last_error_code END WHERE id=1",[due,Number(armed)]);
    return {armed,nextDueAt:due,generation:state!.generation,dirty:true};
   });
@@ -71,11 +72,20 @@ export class OutboxScheduler{
   const changed=withTransaction(this.workspace.storage,tx=>!sameFence(readAdmissionFence(tx),current.fence));
   if(changed)await this.#repairSchedule(false);
  }
+ async #runArtifacts(fence:AdmissionFence):Promise<void>{
+  const workspace=this.workspace,bucket=this.artifactBucket!;let failed=false;
+  // Independent bounded transactions; a poisoned artifact does not prevent outbox/lease work.
+  for(let i=0;i<25;i++)try{const processed=withTransaction(workspace.storage,tx=>{assertAdmissionOpen(tx,fence);const result=expireArtifactIntents(tx,workspace.clock.nowMs(),1);return result.tombstonedIds.length;});if(processed===0)break;}catch{failed=true;break;}
+  try{await cleanupArtifactGenerations({workspace,bucket,admission:fence},25);}catch{failed=true;}
+  try{const due=withTransaction(workspace.storage,tx=>{assertAdmissionOpen(tx,fence);return tx.one<{next_due_at:number}>('SELECT next_due_at FROM artifact_inventory_state WHERE id=1 AND workspace_id=?',[workspace.workspaceId])?.next_due_at;});if(due!==undefined&&due<=workspace.clock.nowMs())await reconcileArtifactObjects({workspace,bucket,admission:fence},25);}catch{failed=true;}
+  if(failed)throw Error('ARTIFACT_CLEANUP_FAILED');
+ }
  async runDueWork(nowMs:number):Promise<void>{
   let fence:AdmissionFence|null=null,failed=false;
   try{
    fence=withTransaction(this.workspace.storage,tx=>{
     if(!admissionOpen(tx))return null;const current=assertAdmissionOpen(tx);
+    if(this.artifactBucket)ensureArtifactInventory(tx,this.workspace.workspaceId,Math.min(8640000000000000,this.workspace.clock.nowMs()+300000));
     tx.exec('INSERT INTO scheduler_state (id,last_run_at,dirty,generation) VALUES (1,?,1,1) ON CONFLICT(id) DO UPDATE SET last_run_at=excluded.last_run_at',[nowMs]);return current;
    });
    if(!fence)return;
@@ -93,11 +103,13 @@ export class OutboxScheduler{
     }catch{failed=true;break;}
    }
    if(!withTransaction(this.workspace.storage,tx=>admissionOpen(tx,fence!)))return;
-   const completed=await Promise.allSettled(attempts.map(async attempt=>{
+   const notifications=Promise.allSettled(attempts.map(async attempt=>{
     const result=await this.dispatcher.dispatchAttempt(attempt);
     withTransaction(this.workspace.storage,tx=>finishAttempt(tx,attempt.deliveryId,attempt.attemptId,result,this.workspace.clock.nowMs(),attempt.admissionFence));
    }));
-   failed ||= completed.some(result=>result.status==='rejected');
+   const artifactWork=this.artifactBucket?this.#runArtifacts(fence):Promise.resolve();
+   const [completed,artifactResult]=await Promise.all([notifications,artifactWork.then(()=>true,()=>false)]);
+   failed ||= !artifactResult||completed.some(result=>result.status==='rejected');
    withTransaction(this.workspace.storage,tx=>{
     if(!admissionOpen(tx,fence!))return;
     if(failed){markSchedulerDirty(tx);tx.exec("UPDATE scheduler_state SET last_error_code='DUE_WORK_FAILED' WHERE id=1");}
