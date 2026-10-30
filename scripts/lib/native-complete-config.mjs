@@ -4,7 +4,8 @@
 import {types} from 'node:util';
 import {isAbsolute,normalize} from 'node:path';
 import {isIP} from 'node:net';
-import {getCompleteProfile,getCompleteCommitments,validateCompleteBudget} from './native-complete-profile.mjs';
+import {validateCompleteBudget} from './native-complete-profile.mjs';
+import {selectCompleteProfile} from './native-profile-selection.mjs';
 const fail=()=>{throw Error('NATIVE_COMPLETE_CONFIG_REJECTED');};
 function snapshot(input){
  let nodes=0,bytes=0;
@@ -36,7 +37,7 @@ const digest=(v,n=64)=>{if(typeof v!=='string'||!(new RegExp(`^[a-f0-9]{${n}}$`)
 const path=v=>{if(typeof v!=='string'||v.length>4096||v==='/'||!isAbsolute(v)||normalize(v)!==v||/[\x00-\x1f\x7f]/.test(v))fail();};
 export function validateCompleteConfig(input){
  try{
-  const c=snapshot(input),p=getCompleteProfile(),commitments=getCompleteCommitments();
+  const c=snapshot(input),selected=selectCompleteProfile(c.profile),p=selected.profile,commitments=selected.commitments;
   keys(c,'version profile fixture_sha256 family_ledger_sha256 candidate_sha candidate_tree_sha composition_sha256 node build origin workspaces actors fixture_stores fixture_directory output_directory authority_record_sha256 budgets');
   if(c.version!==2||c.profile!==p.profile||c.fixture_sha256!==commitments.fixture_sha256||c.family_ledger_sha256!==commitments.family_ledger_sha256)fail();
   digest(c.candidate_sha,40);digest(c.candidate_tree_sha,40);digest(c.composition_sha256);digest(c.authority_record_sha256);
@@ -58,6 +59,12 @@ export function validateCompleteConfig(input){
   path(c.fixture_directory);path(c.output_directory);
   const dirs=[submitter.state_directory,reviewer.state_directory,foreign.state_directory,c.fixture_directory,c.output_directory];
   for(let i=0;i<dirs.length;i++)for(let j=i+1;j<dirs.length;j++)if(dirs[i]===dirs[j]||dirs[i].startsWith(dirs[j]+'/')||dirs[j].startsWith(dirs[i]+'/'))fail();
-  c.budgets=validateCompleteBudget(c.budgets);return c;
+  if(p.profile==='native-r2-complete-prepared-v1')c.budgets=validateCompleteBudget(c.budgets);
+  else{
+   keys(c.budgets,'commands mutations artifact_bytes output_bytes duration_ms');
+   for(const [k,value] of Object.entries(p.reservation))if(c.budgets[k]!==value)fail();
+   const duration=c.budgets.duration_ms;if(!Number.isSafeInteger(duration)||duration<1||duration>300000)fail();
+   c.budgets=Object.freeze({...c.budgets});
+  }return c;
  }catch{fail();}
 }

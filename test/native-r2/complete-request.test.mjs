@@ -34,3 +34,17 @@ const privateInputs=()=>({credentials:['S','R','X'].map((role,i)=>({role,token:B
 const provision=()=>request('execute-control',{slot:{kind:'control',id:'control/provision'},preparation_sha256:h,private_inputs:privateInputs()});
 test('only fixed provision carries five canonical private values with exact ordered roles',()=>{const r=provision();assert.deepEqual(validateCompleteRequest(r,policy,options),r);});
 for(const [name,change] of Object.entries({roles:r=>r.payload.private_inputs.credentials.reverse(),extraRole:r=>r.payload.private_inputs.credentials.push({role:'other',token:'x'}),extraSecret:r=>r.payload.private_inputs.human.password='synthetic',wrongLane:r=>r.payload.slot.id='control/authorize',missingHuman:r=>delete r.payload.private_inputs.human,noncanonical:r=>{const row=r.payload.private_inputs.credentials[0];row.token=row.token.slice(0,-1)+'B';}}))test(`private provision rejects ${name}`,()=>{const r=provision();change(r);assert.throws(()=>validateCompleteRequest(r,policy,options));});
+
+test('required request dispatch binds policy profile and exact346 boundary',async()=>{
+ const {getRequiredCommitments,getRequiredProfile}=await import('../../scripts/lib/native-required-profile.mjs');
+ const c=getRequiredCommitments(),p=structuredClone(policy),o=structuredClone(options);
+ p.profile=getRequiredProfile().profile;p.family_ledger_sha256=c.family_ledger_sha256;p.run_context.scenarioSha256=c.scenario_sha256;o.context.scenarioSha256=c.scenario_sha256;
+ p.coverage=completeSlotRegistry(p.profile).map(row=>({...row,supported:false,producer_id:null}));
+ const r=scan();r.profile=p.profile;r.policy_sha256=completePolicyDigest(p);assert.deepEqual(validateCompleteRequest(r,p,o),r);
+ assert.throws(()=>validateCompleteRequest({...r,profile:policy.profile},p,o));
+ assert.throws(()=>validateCompleteRequest({...r,sequence:347},p,o));
+ const close={...r,operation:'close-run',payload:{},sequence:346};assert.deepEqual(validateCompleteRequest(close,p,o),close);
+ for(const id of ['control/prepare-swap-slot','probe/swapped-generation'])assert.throws(()=>validateCompleteRequest({...r,payload:{...r.payload,slot:{kind:id.startsWith('control')?'control':'process',id}}},p,o));
+ const preflight={...r,operation:'preflight',payload:{policy_sha256:r.policy_sha256,family_ledger_sha256:c.family_ledger_sha256,slot_roster_sha256:hash(canonicalCaseSubject(completeSlotRegistry(p.profile)))}};
+ assert.deepEqual(validateCompleteRequest(preflight,p,o),preflight);
+});

@@ -148,3 +148,52 @@ review or CI, and does not establish native or global release acceptance. Any
 reduced required R2 execution plan must be explicitly reviewed and documented
 before implementation; this documentation change does not enable such a run.
 Ordered merging remains conditional on completing those remaining obligations.
+
+## Required R2 execution profile
+
+The separately compiled `native-r2-required-prepared-v1` discriminator implements
+the dated decision above. It removes exactly the three tuple controls and their
+three associated local probes. The full `native-r2-complete-prepared-v1` profile
+and its 68-step acceptance scenario remain unchanged for R4.
+
+The required profile has 62 steps, 53 processes, 27 input files, all 37 native
+cases and both external obligations. Its only retained dependency change puts
+`control/observe-settled-intent` after `prepare/runtime-own-after`; the second
+external observation still follows that positive runtime control. There is no
+caller-supplied skip list. The six deferred slots cannot be offered to its fixed
+lifecycle. Three explicit report descriptors remain **unverified**, with the
+2026-10-30 decision date and R4 acceptance target; they are not original records.
+
+Config, policy, request, preparation and lifecycle select the exact compiled tag.
+The run context commits the selected DAG, while the selected ledger separately
+pins the full acceptance scenario. The physical fixture recipe and its hash are
+unchanged; that shared hash alone cannot select or authorize a profile. Unknown
+tags, cross-profile ledger or DAG substitution and arbitrary exclusions reject.
+
+Exact required action reservations are 459 logical commands, 43 mutation attempts,
+346 service calls and 2,201 private SELECT admissions. The retained original roster
+has 491 records. Byte reservations intentionally retain the conservative full
+profile ceilings, plus a report-only 2,048-byte allowance for the complete added
+deferral member and punctuation. Thus logical output is bounded by 22,892,715
+bytes and the release package by 11,021,644 bytes, still subject to the unchanged
+16 MiB joint cap and 65,536-byte per-original cap. These are reservation ceilings,
+not measured output, peak memory, or evidence that every independent maximum can
+occur together. The selected request-row sum is 1,203,074 bytes; the larger prior
+request allocation is conservatively retained, with per-envelope caps unchanged.
+
+This closes structural profile dispatch, not installed execution. An empty list
+of impossible required tuple capabilities does not mean remaining producer code
+or installation is ready. The complete private attachment, authenticated service,
+fixed host factory, real original resolution and report assembly still need their
+implemented and independently verified composition. Runtime custody, installed
+trust and authentic operator authority remain separate fail-closed requirements.
+
+## Actual product outcome keys
+
+Private selected-state bindings use the product's stored `domain.`-prefixed scope,
+for example `domain.runtimes:manage` with target `runtimes:create`, or
+`domain.tasks:create` with target `tasks:create`. The earlier synthetic
+`domain.createTask` test value did not prove real outcome lookup. Genuine normal
+runtime and task HTTP creation regressions now join the actual outcome, event and
+history keys. The correction changes neither SQL queries nor query/byte limits;
+prior synthetic evidence remains historical, not retroactively authentic.

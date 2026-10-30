@@ -59,7 +59,7 @@ export function completePhaseReservation(stepId:unknown,phase:unknown):Limits{re
 function snapshotBindings(value:unknown):Readonly<Binding>{
  const v=closed(value,['W','C','human','principal','operation','target','key']);
  for(const k of ['W','C','human','principal'])requireValue(typeof v[k]==='string'&&v[k].length>0&&v[k].length<=96&&!/[^A-Za-z0-9_-]/.test(v[k]));
- requireValue(typeof v.operation==='string'&&v.operation.length<=32&&/^domain\.[A-Za-z][A-Za-z0-9]*$/.test(v.operation));
+ requireValue(typeof v.operation==='string'&&v.operation.length<=32&&/^domain\.[a-z]+:[a-z]+$/.test(v.operation)&&!/[\r\n]/.test(v.operation));
  requireValue(typeof v.target==='string'&&v.target.length>0&&v.target.length<=192&&!/[^A-Za-z0-9_/:.-]/.test(v.target));
  requireValue(typeof v.key==='string'&&/^r2_[a-f0-9]{32}$/.test(v.key));return Object.freeze(v) as Readonly<Binding>;
 }

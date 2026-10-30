@@ -1,12 +1,12 @@
 /** Closed wire requests. Parsing never authenticates a caller or executes a step. */
 import {createHash} from 'node:crypto';
-import {getNativeScenario} from './native-r2-scenario.mjs';
+import {selectCompleteProfile} from './native-profile-selection.mjs';
 import {canonicalCaseSubject} from './r2-case-policy.mjs';
-import {getCompleteProfile,getCompleteCommitments} from './native-complete-profile.mjs';
+import {getCompleteProfile} from './native-complete-profile.mjs';
 import {completeSlotRegistry,completePolicyDigest,validateCompletePolicy,snapshotCompleteValue as snapshot,completeKeys as keys,completeCheck as check,completeId as id,completeDigest as digest,completeInteger as integer,freezeCompleteValue as freeze} from './native-complete-protocol.mjs';
 import {validateCompletePreparation} from './native-complete-preparation.mjs';
 import wireRows from './native-complete-request-limits.json' with {type:'json'};
-const profile=getCompleteProfile(),scenario=getNativeScenario();
+const profile=getCompleteProfile();
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
 const hash=value=>sha(canonicalCaseSubject(value));
 const empty=sha('');
@@ -17,8 +17,8 @@ check(wire.size===370&&wireRows.reduce((sum,row)=>sum+row.request_bytes,0)===pro
 const typed=s=>!!s?.caseId||['prepare/fail-create','prepare/revoke-own-positive'].includes(s?.id);
 const familyCaps={'process-custody':8192,'process-output-verification':4096,'independent-observation':9960,'disable-acknowledgment':9960,'external-observation':16384,'final-output-scan':1188};
 function ref(value,family){keys(value,'record_id family sha256 byte_size');check(value.family===family);id(value.record_id);digest(value.sha256);integer(value.byte_size,1,familyCaps[family]);}
-function slot(value,kind){
- keys(value,'kind id');const fixed=completeSlotRegistry().find(row=>row.kind===value.kind&&row.id===value.id);check(fixed&&(!kind||fixed.kind===kind));
+function profileSlot(value,kind,tag){
+ keys(value,'kind id');const fixed=completeSlotRegistry(tag).find(row=>row.kind===value.kind&&row.id===value.id);check(fixed&&(!kind||fixed.kind===kind));
  check(!profile.unavailable.includes(fixed.id)&&!fixed.id.startsWith('probe/swapped-'));return fixed;
 }
 function stream(value,cap,raw){
@@ -39,11 +39,12 @@ function privateProvision(value){
  * separately enforces current expiry/deadline for every actual operation. */
 export function validateCompleteRequest(input,policy,options){
  try{
-  const p=validateCompletePolicy(policy,options),r=snapshot(input,45543);
+  const p=validateCompletePolicy(policy,options),r=snapshot(input,45543),selection=selectCompleteProfile(p.profile),profile=selection.profile,scenario=selection.scenario;
+  const slot=(value,kind)=>profileSlot(value,kind,p.profile);
   keys(r,'type version profile service_id instance_id run_id descriptor_sha256 policy_sha256 sequence request_id operation payload');
   check(r.type==='native-complete-request'&&r.version===2&&r.profile===profile.profile);
   for(const key of ['service_id','instance_id','run_id','descriptor_sha256'])check(r[key]===p[key]);
-  check(r.policy_sha256===completePolicyDigest(p));integer(r.sequence,1,370);id(r.request_id);
+  check(r.policy_sha256===completePolicyDigest(p));integer(r.sequence,1,profile.limits.service_calls);id(r.request_id);
   const v=r.payload;let selected=null,pass=null;
   // Bound the selected wire before allocating any decoded private/stream bytes.
   check(typeof r.operation==='string'&&v&&typeof v==='object'&&!Array.isArray(v));
@@ -54,10 +55,10 @@ export function validateCompleteRequest(input,policy,options){
   check(Number.isSafeInteger(wireCap)&&Buffer.byteLength(canonicalCaseSubject(r))<=wireCap);
   switch(r.operation){
    case 'preflight':
-    keys(v,'policy_sha256 family_ledger_sha256 slot_roster_sha256');check(v.policy_sha256===r.policy_sha256&&v.family_ledger_sha256===getCompleteCommitments().family_ledger_sha256&&v.slot_roster_sha256===hash(completeSlotRegistry()));break;
+    keys(v,'policy_sha256 family_ledger_sha256 slot_roster_sha256');check(v.policy_sha256===r.policy_sha256&&v.family_ledger_sha256===selection.commitments.family_ledger_sha256&&v.slot_roster_sha256===hash(completeSlotRegistry(p.profile)));break;
    case 'bind-run':keys(v,'policy_sha256');check(v.policy_sha256===r.policy_sha256);break;
    case 'prepare-slot':
-    keys(v,'slot preparation');selected=slot(v.slot);v.preparation=validateCompletePreparation(v.preparation,v.slot);break;
+    keys(v,'slot preparation');selected=slot(v.slot);v.preparation=validateCompletePreparation(v.preparation,v.slot,p.profile);break;
    case 'execute-control':
     selected=slot(v?.slot,'control');keys(v,selected.id==='control/provision'?'slot preparation_sha256 private_inputs':'slot preparation_sha256');digest(v.preparation_sha256);if(selected.id==='control/provision')privateProvision(v.private_inputs);break;
    case 'execute-external':keys(v,'slot preparation_sha256');selected=slot(v.slot,'external');digest(v.preparation_sha256);break;

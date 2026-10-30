@@ -106,7 +106,7 @@ it('workspace-wide HG detects an actual second principal installed through norma
 it('workspace-wide HG observes a different foreign principal rather than claiming no grants',async()=>{
  const {f,expected}=await installed('fixture-admission-foreign-human',config=>{config.human_grants.push({...config.human_grants[0],workspace_id:F,principal_id:'human_foreign',subject:'foreign-subject'});});
  await runInDurableObject(f,(_i,state)=>{
-  const a=expected.actors.X,reader=createCompleteSelectedState(state.storage,{W:F,C:a.credential_id,human:expected.human.principal_id,principal:a.agent_id,operation:'domain.createTask',target:F,key:'r2_'+'0'.repeat(32)});
+  const a=expected.actors.X,reader=createCompleteSelectedState(state.storage,{W:F,C:a.credential_id,human:expected.human.principal_id,principal:a.agent_id,operation:'domain.tasks:create',target:'tasks:create',key:'r2_'+'0'.repeat(32)});
   const rows=reader.readPhase({stepId:'control/provision',phase:'foreign'}).originals.find(r=>r.selector==='HG')!;
   expect(JSON.parse(rows.canonical)).toHaveLength(1);expect(rows.canonical).toContain('human_foreign');
  });
@@ -115,4 +115,30 @@ it('workspace-wide HG observes a different foreign principal rather than claimin
 it('keeps the source fixture recipe immutable across importing modules',()=>{
  expect(Object.isFrozen(manifest)).toBe(true);const scopes=manifest.configuration_constraints.native_scopes.S;expect(Object.isFrozen(scopes)).toBe(true);
  const before=[...scopes];expect(()=>scopes.push('workspace:write')).toThrow();expect(scopes).toEqual(before);
+});
+it('observes actual route-created prefixed runtime/task outcomes and their event/history joins',async()=>{
+ const {p,expected}=await installed('fixture-real-domain-tuples');
+ const requests=[
+  {step:'prepare/submitter-enrollment',path:'runtimes',operation:'domain.runtimes:manage',target:'runtimes:create',body:{label:'Native scenario submitter'},key:'r2_'+'3'.repeat(32)},
+  {step:'success/createTask',path:'tasks',operation:'domain.tasks:create',target:'tasks:create',body:{title:'Native scenario main',description:'Synthetic isolated conformance fixture'},key:'r2_'+'4'.repeat(32)}
+ ];
+ for(const r of requests){
+  const response=await p.fetch(new Request('https://hub.example.invalid/v2/workspaces/'+P+'/'+r.path,{method:'POST',headers:{authorization:'Bearer '+'A'.repeat(43),'content-type':'application/json','idempotency-key':r.key},body:JSON.stringify(r.body)}));
+  expect(response.status).toBe(201);await response.json();
+ }
+ await runInDurableObject(p,(_i,state)=>{
+  for(const r of requests){
+   const reader=createCompleteSelectedState(state.storage,{W:P,C:'cred_s',human:expected.human.principal_id,principal:'agent_research',operation:r.operation,target:r.target,key:r.key});
+   const capture=reader.readPhase({stepId:r.step,phase:'after'});
+   const rows=(selector:string)=>JSON.parse(capture.originals.find(x=>x.selector===selector)!.canonical);
+   const outcome=rows('I');expect(outcome).toHaveLength(1);expect(outcome[0].operation).toBe(r.operation);expect(outcome[0].target).toBe(r.target);
+   const events=rows('EK');expect(events).toHaveLength(1);expect(events[0].id).toBe(outcome[0].event_id);
+   if(r.path==='tasks'){const history=rows('HK');expect(history).toHaveLength(1);expect(history[0].event_id).toBe(events[0].id);}
+   reader.close();
+  }
+  const r=requests[0],reader=createCompleteSelectedState(state.storage,{W:P,C:'cred_s',human:expected.human.principal_id,principal:'agent_research',operation:r.operation,target:r.target,key:r.key});
+  const capture=reader.readPhase({stepId:'control/provision',phase:'primary'});
+  expect(JSON.parse(capture.originals.find(x=>x.selector==='IW')!.canonical)).toHaveLength(2);
+  expect(capture.originals.filter(x=>x.selector==='I')).toHaveLength(2);reader.close();
+ });
 });

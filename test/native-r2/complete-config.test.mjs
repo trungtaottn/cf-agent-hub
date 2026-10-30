@@ -28,3 +28,14 @@ test('compiled fixture pins actual selected-state and request preparation source
   assert.equal(createHash('sha256').update(bytes).digest('hex'),row.sha256);
  }
 });
+
+test('explicit required R2 tag validates only its compiled ledger and budget, not a full-profile relabel',async()=>{
+ const {getRequiredProfile,getRequiredCommitments}=await import('../../scripts/lib/native-required-profile.mjs');
+ const p=getRequiredProfile(),c=configuration(),commitments=getRequiredCommitments();
+ c.profile=p.profile;c.family_ledger_sha256=commitments.family_ledger_sha256;c.budgets={...p.reservation,duration_ms:60000};
+ assert.deepEqual(validateCompleteConfig(c),c);
+ assert.throws(()=>validateCompleteConfig({...c,profile:getCompleteProfile().profile}));
+ assert.throws(()=>validateCompleteConfig({...c,family_ledger_sha256:getCompleteCommitments().family_ledger_sha256}));
+ assert.throws(()=>validateCompleteConfig({...configuration(),profile:p.profile}));
+ assert.throws(()=>validateCompleteConfig({...c,skip:['probe/swapped-slot']}));
+});

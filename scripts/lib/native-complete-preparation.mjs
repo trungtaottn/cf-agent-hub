@@ -2,6 +2,7 @@
 import Ajv from 'ajv';
 import {caseSchemas} from './r2-case-policy.mjs';
 import {getNativeScenario} from './native-r2-scenario.mjs';
+import {selectCompleteProfile} from './native-profile-selection.mjs';
 import {getCompleteProfile} from './native-complete-profile.mjs';
 import {snapshotCompleteValue as snapshot,completeKeys as keys,completeCheck as check,completeId as id,completeDigest as digest,completeInteger as integer,freezeCompleteValue as freeze} from './native-complete-protocol.mjs';
 const scenario=getNativeScenario(),steps=scenario.steps,profile=getCompleteProfile();
@@ -91,9 +92,10 @@ function control(p,step){
  if(step.id==='control/observe-server-foreign-fixture')check(value.primary_workspace_id!==value.foreign_workspace_id);
 }
 
-export function validateCompletePreparation(value,slot){
+export function validateCompletePreparation(value,slot,tag){
  try{
-  const p=snapshot(value),s=snapshot(slot,1024);keys(s,'kind id');
+  const selected=selectCompleteProfile(tag),p=snapshot(value),s=snapshot(slot,1024);keys(s,'kind id');
+  check(s.kind==='external'?selected.scenario.externalRequirements.some(row=>row.id===s.id):selected.scenario.steps.some(row=>row.id===s.id));
   if(s.kind==='external'){external(p,s);return freeze(p);}
   const step=steps.find(row=>row.id===s.id);
   if(s.kind==='control'){check(step&&step.kind==='control');control(p,step);return freeze(p);}

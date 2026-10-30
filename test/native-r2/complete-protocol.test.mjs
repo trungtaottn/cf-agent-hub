@@ -32,3 +32,15 @@ test('supported non-tuple enum is structurally accepted without manufacturing pr
  const p=policy(),row=p.coverage.find(x=>x.id==='success/getWorkspace');row.supported=true;row.producer_id='native-complete-process';
  const parsed=validateCompletePolicy(p,options());assert.equal(parsed.coverage.find(x=>x.id===row.id).supported,true);assert.equal(parsed.authorized,undefined);
 });
+
+test('required policy binds exact reduced DAG and rejects full-policy substitution',async()=>{
+ const {getRequiredProfile,getRequiredCommitments}=await import('../../scripts/lib/native-required-profile.mjs');
+ const tag=getRequiredProfile().profile,c=getRequiredCommitments(),p=policy(),o=options();
+ p.profile=tag;p.family_ledger_sha256=c.family_ledger_sha256;p.run_context.scenarioSha256=c.scenario_sha256;o.context.scenarioSha256=c.scenario_sha256;
+ p.coverage=completeSlotRegistry(tag).map(row=>({...row,supported:false,producer_id:null}));
+ assert.equal(p.coverage.length,64);assert.deepEqual(validateCompletePolicy(p,o),p);
+ const full=policy();assert.throws(()=>validateCompletePolicy({...p,coverage:full.coverage},o));
+ assert.throws(()=>validateCompletePolicy({...p,run_context:full.run_context},o));
+ assert.throws(()=>validateCompletePolicy({...p,profile:full.profile},o));
+ assert.throws(()=>completeSlotRegistry('unknown'));
+});

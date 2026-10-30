@@ -2,12 +2,12 @@
  * The transport separately counts received requests and owns request bodies.
  */
 import {types} from 'node:util';
-import {getNativeScenario} from './native-r2-scenario.mjs';
-import {getCompleteProfile} from './native-complete-profile.mjs';
+import {selectCompleteProfile} from './native-profile-selection.mjs';
 const fail=()=>{throw Error('NATIVE_COMPLETE_SEQUENCE_REJECTED');};
 const check=x=>{if(!x)fail();};
 const freeze=x=>{if(x&&typeof x==='object'){for(const v of Object.values(x))freeze(v);Object.freeze(x);}return x;};
-const scenario=getNativeScenario(),rows=[];
+function makeSchedule(tag){
+const selected=selectCompleteProfile(tag),scenario=selected.scenario,rows=[];
 const add=(operation,slot=null,pass=null)=>rows.push({sequence:rows.length+1,operation,slot,pass});
 const auxiliary=new Set(['prepare/fail-create','prepare/revoke-own-positive']);
 const externalAfter=new Map([
@@ -29,17 +29,17 @@ for(const step of scenario.steps){
 add('seal-scan-inventory');
 for(const step of scenario.steps.filter(s=>s.kind!=='control'))add('scan-process-output',{kind:'process',id:step.id},'final');
 add('finalize-run-scan');add('read-run-original');add('close-run');
-check(rows.length===getCompleteProfile().limits.service_calls);
-const schedule=freeze(rows);
-export function completeCallSchedule(){return schedule;}
+check(rows.length===selected.profile.limits.service_calls);return freeze(rows);
+}
+export function completeCallSchedule(tag){return makeSchedule(tag);}
 function data(value,names){
  check(value&&typeof value==='object'&&!types.isProxy(value)&&Object.getPrototypeOf(value)===Object.prototype);
  const keys=Reflect.ownKeys(value);check(keys.length===names.length&&keys.every(k=>names.includes(k)));const out={};
  for(const k of names){const d=Object.getOwnPropertyDescriptor(value,k);check(d?.enumerable&&Object.hasOwn(d,'value'));out[k]=d.value;}return out;
 }
-function metadata(value){
+function metadata(value,max){
  const r=data(value,['sequence','request_id','operation','slot','pass']);
- check(Number.isSafeInteger(r.sequence)&&r.sequence>=1&&r.sequence<=370&&typeof r.request_id==='string'&&/^[A-Za-z0-9_-]{1,128}$/.test(r.request_id)&&typeof r.operation==='string');
+ check(Number.isSafeInteger(r.sequence)&&r.sequence>=1&&r.sequence<=max&&typeof r.request_id==='string'&&/^[A-Za-z0-9_-]{1,128}$/.test(r.request_id)&&typeof r.operation==='string');
  if(r.slot!==null){r.slot=data(r.slot,['kind','id']);check(typeof r.slot.kind==='string'&&typeof r.slot.id==='string');}
  check(r.pass===null||r.pass==='immediate'||r.pass==='final');return r;
 }
@@ -49,16 +49,17 @@ const equalSlot=(a,b)=>a===null?b===null:b!==null&&a.kind===b.kind&&a.id===b.id;
  * Cleanup must return exact {status:closed} only after validating its backend
  * receipt/correlation. Fulfilled unknown or malformed results remain unknown.
  */
-export function createCompleteCallOwner(){
+export function createCompleteCallOwner(tag){
+ const schedule=makeSchedule(tag);
  let calls=0,completed=0,failed=false,closing=false,closeAttempted=false,active=null,cleanupActual=null,cleanupState='not-started';
  const seen=new Set();
  const reject=()=>{failed=true;return fail();};
  const callable=fn=>check(typeof fn==='function'&&!types.isProxy(fn));
  function admit(request,allowFailureClose=false){
-  const r=metadata(request);check(r.sequence===calls+1&&!seen.has(r.request_id));
+  const r=metadata(request,schedule.length);check(r.sequence===calls+1&&!seen.has(r.request_id));
   if(allowFailureClose){check(r.operation==='close-run'&&r.slot===null&&r.pass===null);}
   else{const expected=schedule[calls];check(expected&&r.operation===expected.operation&&r.pass===expected.pass&&equalSlot(r.slot,expected.slot)&&r.operation!=='close-run');}
-  check(calls<370);seen.add(r.request_id);calls++;return r;
+  check(calls<schedule.length);seen.add(r.request_id);calls++;return r;
  }
  async function execute(request,dispatch){
   let owned=null;

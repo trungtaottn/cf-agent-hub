@@ -4,7 +4,7 @@ import {runInDurableObject} from 'cloudflare:test';
 import {fixture,operator} from '../helpers/environment';
 import {prepareBootstrap,sha256,canonicalJson} from '../../src/config/bootstrap';
 import {createCompleteSelectedState,decodeCompleteRows,completePhaseReservation} from '../../workers/native-fixture/selected-state';
-const bindings={W:'ws_example',C:'cred_research',human:'human_owner',principal:'agent_research',operation:'domain.createTask',target:'ws_example',key:'r2_'+ '1'.repeat(32)};
+const bindings={W:'ws_example',C:'cred_research',human:'human_owner',principal:'agent_research',operation:'domain.tasks:create',target:'tasks:create',key:'r2_'+ '1'.repeat(32)};
 async function workspace(name:string){
  const {config,bundle}=await fixture(name);
  // HG now observes every workspace grant; install the admitted narrow fixture
@@ -138,5 +138,15 @@ it('source-fake swallowed poison during cursor acquisition stops before the next
   reader=createCompleteSelectedState(owned,bindings);
   expect(()=>reader.readPhase({stepId:'success/getWorkspace',phase:'before'})).toThrow();
   expect(calls).toBe(1);expect(reader.snapshot().actualQueries).toBe(1);expect(reader.snapshot().failed).toBe(true);
+ });
+});
+it('admits only complete stored domain scope operations, not CLI names or aliases',async()=>{
+ const stub=await workspace('complete-selected-operation-grammar');
+ await runInDurableObject(stub,(_i,state)=>{
+  for(const operation of ['domain.createTask','tasks:create','domain.Tasks:create','domain.tasks:create\n','domain.tasks:create:extra'])
+   expect(()=>createCompleteSelectedState(state.storage,{...bindings,operation})).toThrow();
+  for(const operation of ['domain.tasks:create','domain.runtimes:manage']){
+   const reader=createCompleteSelectedState(state.storage,{...bindings,operation});expect(reader.snapshot().actualQueries).toBe(0);reader.close();
+  }
  });
 });

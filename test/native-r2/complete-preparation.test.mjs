@@ -79,3 +79,15 @@ test('static before/after enrollment and foreign-store runtime applicability can
   assert.throws(()=>validateCompletePreparation(p,{kind:'process',id:sid}));
  }
 });
+
+test('preparation selected-profile dispatch rejects unknown tag before accepting retained slot',()=>{
+ const step=steps.find(s=>s.id==='success/getWorkspace'),p=preparation(step),slot={kind:'process',id:step.id};
+ assert.deepEqual(validateCompletePreparation(p,slot,'native-r2-required-prepared-v1'),p);
+ assert.throws(()=>validateCompletePreparation(p,slot,'unknown'));
+});
+
+test('all53 retained required process bodies preserve existing preparation predicates',async()=>{
+ const {getRequiredScenario}=await import('../../scripts/lib/native-required-profile.mjs');
+ const rows=getRequiredScenario().steps.filter(s=>s.kind!=='control');assert.equal(rows.length,53);
+ for(const step of rows){const p=preparation(step);assert.deepEqual(validateCompletePreparation(p,{kind:'process',id:step.id},'native-r2-required-prepared-v1'),p);}
+});

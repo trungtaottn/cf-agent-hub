@@ -56,3 +56,16 @@ test('cleanup promise remains counted after deadline until actual terminal recei
  assert.equal(result.status,'cleanup-unknown');assert.equal(owner.snapshot().pending,1);
  release({status:'closed'});await tick();assert.equal(owner.snapshot().pending,0);assert.equal(owner.snapshot().cleanup,'closed');
 });
+
+test('required lifecycle has346 exact calls and cannot execute owner-deferred slots',async()=>{
+ const tag='native-r2-required-prepared-v1',s=completeCallSchedule(tag);
+ assert.equal(s.length,346);assert.equal(s.filter(r=>r.operation==='scan-process-output').length,106);
+ assert.equal(s.filter(r=>r.operation==='read-original').length,42);
+ assert.ok(!s.some(r=>/swap/.test(r.slot?.id??'')));
+ const owner=createCompleteCallOwner(tag);let effects=0;
+ for(const row of s.slice(0,-1))await owner.execute(request(row),async()=>{effects++;});
+ await owner.close(request(s.at(-1)),async()=>{effects++;return {status:'closed'};});assert.equal(effects,346);
+ assert.equal(completeCallSchedule().length,370);assert.throws(()=>createCompleteCallOwner('unknown'));
+ const rejected=createCompleteCallOwner(tag);let forbidden=0;
+ await assert.rejects(rejected.execute({...request(s[0]),slot:{kind:'control',id:'control/prepare-swap-slot'}},async()=>{forbidden++;}));assert.equal(forbidden,0);
+});

@@ -61,7 +61,7 @@ export async function admitCompleteFixture(storage:DurableObjectStorage,input:un
   const e=expected(input),w=e.workspaces[e.role],actor=e.actors[e.role==='primary'?'S':'X'];let captureStartedAt=0,captureEndedAt=0,transactions=0;
   // Static source-owned wrapper records time in the very transaction doing reads.
   const timed={sql:storage.sql,transactionSync:(callback:()=>unknown)=>storage.transactionSync(()=>{check(++transactions===1);captureStartedAt=Date.now();try{return callback();}finally{captureEndedAt=Date.now();}})} as unknown as DurableObjectStorage;
-  const limits=completePhaseReservation('control/provision',e.role),reader=createCompleteSelectedState(timed,{W:w.id,C:actor.credential_id,human:e.human.principal_id,principal:actor.agent_id,operation:'domain.createTask',target:w.id,key:'r2_'+'0'.repeat(32)},limits);
+  const limits=completePhaseReservation('control/provision',e.role),reader=createCompleteSelectedState(timed,{W:w.id,C:actor.credential_id,human:e.human.principal_id,principal:actor.agent_id,operation:'domain.tasks:create',target:'tasks:create',key:'r2_'+'0'.repeat(32)},limits);
   let capture:ReturnType<typeof reader.readPhase>;try{capture=reader.readPhase({stepId:'control/provision',phase:e.role});}finally{reader.close();}
   check(transactions===1&&captureStartedAt<=captureEndedAt);const rows:Record<string,Row[]>={};for(const r of capture.originals){check(!Object.hasOwn(rows,r.selector));rows[r.selector]=JSON.parse(r.canonical) as Row[];}
   check(capture.originals.length===31);check(rows.S.length===16&&rows.S.every((r,i)=>r.version===i+1));

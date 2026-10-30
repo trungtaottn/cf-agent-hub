@@ -3,16 +3,15 @@
  */
 import {types} from 'node:util';
 import {createHash} from 'node:crypto';
-import {getNativeScenario} from './native-r2-scenario.mjs';
+import {selectCompleteProfile} from './native-profile-selection.mjs';
 import {canonicalCaseSubject} from './r2-case-policy.mjs';
-import {getCompleteProfile,getCompleteCommitments} from './native-complete-profile.mjs';
+
 const fail=()=>{throw Error('NATIVE_COMPLETE_PROTOCOL_REJECTED');};
 const check=value=>{if(!value)fail();};
 const freeze=value=>{if(value&&typeof value==='object'){for(const child of Object.values(value))freeze(child);Object.freeze(value);}return value;};
 const sha=value=>createHash('sha256').update(canonicalCaseSubject(value)).digest('hex');
-const scenario=getNativeScenario(),profile=getCompleteProfile();
-const slots=freeze([...scenario.steps.map(step=>({kind:step.kind==='control'?'control':'process',id:step.id,requirements:[...step.requires]})),...scenario.externalRequirements.map(step=>({kind:'external',id:step.id,requirements:[...step.requires]}))]);
-const unavailable=new Set([...profile.unavailable,...['slot','generation','principal'].map(d=>'probe/swapped-'+d)]);
+function selectedSlots(scenario){return freeze([...scenario.steps.map(step=>({kind:step.kind==='control'?'control':'process',id:step.id,requirements:[...step.requires]})),...scenario.externalRequirements.map(step=>({kind:'external',id:step.id,requirements:[...step.requires]}))]);}
+const unavailable=new Set(['slot','generation','principal'].flatMap(d=>['control/prepare-swap-'+d,'probe/swapped-'+d]));
 const contextKeys='version runId configSha256 scenarioSha256 candidateSha candidateTreeSha compositionSha256 nodeSha256 buildSha256 authorityRecordSha256';
 function keys(value,names){check(value&&typeof value==='object'&&!Array.isArray(value));const expected=names?names.split(' '):[],actual=Object.keys(value);check(actual.length===expected.length&&actual.every(k=>expected.includes(k)));}
 const id=value=>check(typeof value==='string'&&/^[A-Za-z0-9_-]{1,128}$/.test(value));
@@ -35,17 +34,17 @@ function snapshot(value,maxBytes=65536){
  }
  return copy(value);
 }
-export function completeSlotRegistry(){return slots;}
-function context(value){keys(value,contextKeys);check(value.version===2);id(value.runId);for(const key of contextKeys.split(' ').filter(k=>!['version','runId'].includes(k)))digest(value[key],['candidateSha','candidateTreeSha'].includes(key)?40:64);check(value.scenarioSha256===sha(scenario));return value;}
+export function completeSlotRegistry(tag){return selectedSlots(selectCompleteProfile(tag).scenario);}
+function context(value,scenario){keys(value,contextKeys);check(value.version===2);id(value.runId);for(const key of contextKeys.split(' ').filter(k=>!['version','runId'].includes(k)))digest(value[key],['candidateSha','candidateTreeSha'].includes(key)?40:64);check(value.scenarioSha256===sha(scenario));return value;}
 export function validateCompletePolicy(input,options){
  try{
-  const p=snapshot(input),o=snapshot(options,4096);keys(o,'context now operationalMs');const expected=context(o.context);integer(o.now);integer(o.operationalMs,1,300000);
+  const p=snapshot(input),o=snapshot(options,4096),selected=selectCompleteProfile(p.profile),profile=selected.profile,scenario=selected.scenario,slots=selectedSlots(scenario);keys(o,'context now operationalMs');const expected=context(o.context,scenario);integer(o.now);integer(o.operationalMs,1,300000);
   keys(p,'type version profile assurance service_id instance_id run_id descriptor_sha256 run_context actors_sha256 workspaces_sha256 fixture_stores_sha256 source_inventory_sha256 family_ledger_sha256 coverage expires_at');
   check(p.type==='native-complete-run-policy'&&p.version===2&&p.profile===profile.profile&&['source-test-only','installed'].includes(p.assurance));
   for(const key of ['service_id','instance_id','run_id'])id(p[key]);
   for(const key of ['descriptor_sha256','actors_sha256','workspaces_sha256','fixture_stores_sha256','source_inventory_sha256','family_ledger_sha256'])digest(p[key]);
-  check(p.family_ledger_sha256===getCompleteCommitments().family_ledger_sha256);
-  context(p.run_context);check(p.run_id===expected.runId&&canonicalCaseSubject(p.run_context)===canonicalCaseSubject(expected));
+  check(p.family_ledger_sha256===selected.commitments.family_ledger_sha256);
+  context(p.run_context,scenario);check(p.run_id===expected.runId&&canonicalCaseSubject(p.run_context)===canonicalCaseSubject(expected));
   integer(p.expires_at,1);check(p.expires_at-o.now>=o.operationalMs+1000&&p.expires_at-o.now<=300000);
   check(Array.isArray(p.coverage)&&p.coverage.length===slots.length);
   for(let i=0;i<slots.length;i++){
