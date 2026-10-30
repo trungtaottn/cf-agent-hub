@@ -1,14 +1,16 @@
 # Backup and restore
 
-Status: R1 logical SQL recovery implemented in the candidate · Deployed rehearsal pending; R2 artifact recovery unavailable.
+Status: Historical R1/schema7 recovery retained · Current schema8 operational recovery unavailable · Deployed rehearsal pending.
+
+**Current development boundary:** issue24 advances ordinary workspace storage to schema8. All current operational recovery commands reject before replay, maintenance checkpoints, SQL changes, object IO or alarms. No schema8 backup/restore/probe success is claimed. V1 manifests/chunks remain pinned to the historical schema7 registry; schema8 cannot be silently serialized as V1. Issue39/#43 own activation with complete runtime-proof invalidation, run holds, artifact bytes and composite relationship verification. Local tests distinguish historical schema7 storage from current WorkspaceDO; do not deploy this intermediate stack expecting working recovery.
 
 R1 implements bounded logical SQL capture and typed restore through a separate authenticated operator gateway. The first rehearsal must use disposable isolated source and target authorities. Actual deployed rehearsal remains a release gate; local Workers results do not satisfy it. Operators define retention, recovery point and recovery time objectives for their own deployment; no achieved objective is promised here.
 
-## Executable R1 recovery boundary
+## Historical schema7 R1 recovery boundary
 
 Follow the [R1 recovery runbook](runbooks/r1-recovery.md) for protected input formats and the eight commands: `capture`, `restore`, `verify`, `probe`, `resolve-delivery`, `retire`, `resume` and `status`. Installation remains the separate static credential helper. Commands use exact-target HTTPS and service authentication, encrypted local recovery material and secret file descriptors; no SQL text, catalog override or plaintext secret is accepted in a command flag.
 
-Capture enters persistent maintenance and freezes the authoritative SQL projection. It is an exclusive recovery/cutover workflow, not an online backup that automatically reopens the source. The retained generation fences requests already in flight. The compiled registry covers all 21 application tables plus the event sequence high-water metadata. Every chunk contains typed values, at most 200 rows and at most 1 MiB; the manifest authenticates the exact ordered bytes, schema, environment, mapping and checkpoint. Private R2 writes happen outside SQL transactions, with durable continuation/reservation state for reconciliation after a lost response.
+Capture enters persistent maintenance and freezes the authoritative SQL projection. It is an exclusive recovery/cutover workflow, not an online backup that automatically reopens the source. The retained generation fences requests already in flight. The frozen schema7 registry covers all 21 application tables plus the event sequence high-water metadata. Every chunk contains typed values, at most 200 rows and at most 1 MiB; the manifest authenticates the exact ordered bytes, schema, environment, mapping and checkpoint. Private R2 writes happen outside SQL transactions, with durable continuation/reservation state for reconciliation after a lost response.
 
 Restore imports only into an empty isolated target. Each chunk and its receipt commit together. The separately authenticated current ledger must match the operator's independent current anchor and install a greater authority epoch. Imported domain history is retained; imported operator outcomes do not become live operator authority. Old sessions and login attempts are invalidated. The target stays in maintenance with uncertain notifications paused, preserving attempts and due history.
 

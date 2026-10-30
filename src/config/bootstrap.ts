@@ -57,6 +57,19 @@ export function restoreAuthorityOverlay(tx:WorkspaceTransaction,input:ValidatedB
 }
 function applyAuthorityRows(tx:WorkspaceTransaction,config:DeploymentConfig,input:ValidatedBootstrap,nowMs:number):void {
  const {workspaceId,bundle}=input;
+ const r2=tx.one<{version:number}>('SELECT MAX(version) AS version FROM schema_migrations')?.version===8;
+ if(r2){
+  for(const agent of config.static_participants.filter(x=>x.workspace_id===workspaceId)){
+   const prior=tx.one<{workspace_id:string;origin:string}>('SELECT workspace_id,origin FROM static_agents WHERE agent_id=?',[agent.agent_id]);
+   if(prior&&(prior.workspace_id!==workspaceId||prior.origin!=='operator_static'))throw Error('R2_IDENTITY_COLLISION');
+  }
+  for(const credential of [...config.static_credential_refs,...bundle.retired_credentials].filter(x=>x.workspace_id===workspaceId)){
+   const prior=tx.one<{workspace_id:string;origin:string}>('SELECT workspace_id,origin FROM native_credentials WHERE credential_id=?',[credential.credential_id]);
+   if(prior&&(prior.workspace_id!==workspaceId||prior.origin!=='operator_static'))throw Error('R2_IDENTITY_COLLISION');
+  }
+ }
+ const priorAgents=r2?new Set(tx.all<{agent_id:string}>('SELECT agent_id FROM static_agents').map(x=>x.agent_id)):new Set<string>();
+ const priorCredentials=r2?new Set(tx.all<{credential_id:string}>('SELECT credential_id FROM native_credentials').map(x=>x.credential_id)):new Set<string>();
  const keyed=(workspace:string,credential:string)=>JSON.stringify([workspace,credential]);
  const hashes=new Map(bundle.credentials.map(x=>[keyed(x.workspace_id,x.credential_id),x]));
  const retired=new Map(bundle.retired_credentials.map(x=>[keyed(x.workspace_id,x.credential_id),x]));
@@ -92,4 +105,11 @@ function applyAuthorityRows(tx:WorkspaceTransaction,config:DeploymentConfig,inpu
   tx.exec('INSERT INTO native_credentials (credential_id,workspace_id,agent_id,token_sha256,scopes_json,project_ids_json,expires_at,enabled,config_epoch,retired_at_epoch) VALUES (?,?,?,?,?,?,?,?,?,NULL) ON CONFLICT(credential_id) DO UPDATE SET scopes_json=excluded.scopes_json,project_ids_json=excluded.project_ids_json,expires_at=excluded.expires_at,enabled=excluded.enabled,config_epoch=excluded.config_epoch',[ref.credential_id,workspaceId,ref.agent_id,hashes.get(keyed(workspaceId,ref.credential_id))!.token_sha256,canonicalJson(ref.scopes),canonicalJson(ref.project_ids),Date.parse(ref.expires_at),Number(ref.enabled),config.config_epoch]);
  for(const item of bundle.retired_credentials.filter(x=>x.workspace_id===workspaceId))
   tx.exec("INSERT INTO native_credentials (credential_id,workspace_id,agent_id,token_sha256,scopes_json,project_ids_json,expires_at,enabled,config_epoch,retired_at_epoch) VALUES (?,?,?,?,'[]','null',0,0,?,?) ON CONFLICT(credential_id) DO UPDATE SET enabled=0,config_epoch=excluded.config_epoch,retired_at_epoch=excluded.retired_at_epoch",[item.credential_id,workspaceId,item.agent_id,item.token_sha256,config.config_epoch,item.retired_at_epoch]);
+ if(r2){
+  for(const agent of config.static_participants.filter(x=>x.workspace_id===workspaceId)){
+   if(!priorAgents.has(agent.agent_id))tx.exec('UPDATE static_agents SET created_at=?,updated_at=? WHERE agent_id=?',[nowMs,nowMs,agent.agent_id]);
+   else tx.exec('UPDATE static_agents SET updated_at=? WHERE agent_id=?',[nowMs,agent.agent_id]);
+  }
+  for(const credential of tx.all<{credential_id:string}>('SELECT credential_id FROM native_credentials'))if(!priorCredentials.has(credential.credential_id))tx.exec('UPDATE native_credentials SET created_at=? WHERE credential_id=?',[nowMs,credential.credential_id]);
+ }
 }

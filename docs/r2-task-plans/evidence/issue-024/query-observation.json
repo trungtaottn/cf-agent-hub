@@ -1,0 +1,108 @@
+{
+  "environment": "local isolated Workers SQLite",
+  "schema": 8,
+  "fixture_rows": 0,
+  "observations": [
+    {
+      "query": "SELECT id FROM tasks WHERE workspace_id='ws_example' AND state='ready' ORDER BY created_at,id LIMIT 20",
+      "indexed": [
+        {
+          "id": 4,
+          "parent": 0,
+          "notused": 53,
+          "detail": "SEARCH tasks USING COVERING INDEX tasks_state_order (workspace_id=? AND state=?)"
+        }
+      ],
+      "forced_scan": [
+        {
+          "id": 4,
+          "parent": 0,
+          "notused": 216,
+          "detail": "SCAN tasks"
+        },
+        {
+          "id": 20,
+          "parent": 0,
+          "notused": 0,
+          "detail": "USE TEMP B-TREE FOR ORDER BY"
+        }
+      ]
+    },
+    {
+      "query": "SELECT id FROM runs WHERE workspace_id='ws_example' AND status='active' AND lease_expires_at<100 ORDER BY lease_expires_at,id LIMIT 20",
+      "indexed": [
+        {
+          "id": 4,
+          "parent": 0,
+          "notused": 46,
+          "detail": "SEARCH runs USING COVERING INDEX runs_lease_due (workspace_id=? AND status=? AND lease_expires_at<?)"
+        }
+      ],
+      "forced_scan": [
+        {
+          "id": 4,
+          "parent": 0,
+          "notused": 216,
+          "detail": "SCAN runs"
+        },
+        {
+          "id": 22,
+          "parent": 0,
+          "notused": 0,
+          "detail": "USE TEMP B-TREE FOR ORDER BY"
+        }
+      ]
+    },
+    {
+      "query": "SELECT id FROM artifacts WHERE workspace_id='ws_example' AND status='staged' AND expires_at<100 ORDER BY expires_at,id LIMIT 20",
+      "indexed": [
+        {
+          "id": 4,
+          "parent": 0,
+          "notused": 46,
+          "detail": "SEARCH artifacts USING COVERING INDEX artifacts_expiry_due (workspace_id=? AND status=? AND expires_at<?)"
+        }
+      ],
+      "forced_scan": [
+        {
+          "id": 4,
+          "parent": 0,
+          "notused": 216,
+          "detail": "SCAN artifacts"
+        },
+        {
+          "id": 22,
+          "parent": 0,
+          "notused": 0,
+          "detail": "USE TEMP B-TREE FOR ORDER BY"
+        }
+      ]
+    },
+    {
+      "query": "SELECT id FROM task_results WHERE workspace_id='ws_example' AND task_id='task_one' AND submission_sequence>0 ORDER BY submission_sequence LIMIT 20",
+      "indexed": [
+        {
+          "id": 5,
+          "parent": 0,
+          "notused": 50,
+          "detail": "SEARCH task_results USING INDEX results_task_order (workspace_id=? AND task_id=? AND submission_sequence>?)"
+        }
+      ],
+      "forced_scan": [
+        {
+          "id": 4,
+          "parent": 0,
+          "notused": 216,
+          "detail": "SCAN task_results"
+        },
+        {
+          "id": 22,
+          "parent": 0,
+          "notused": 0,
+          "detail": "USE TEMP B-TREE FOR ORDER BY"
+        }
+      ]
+    }
+  ],
+  "limitation": "Empty-table query planning only; not latency, throughput, scaling, authority or deployed acceptance."
+}

@@ -1,14 +1,14 @@
 import {withTransaction,type WorkspaceTransaction} from '../storage/transaction';
 import {canonicalJson} from '../config/bootstrap';
 import {markSchedulerDirty} from '../outbox/scheduler-state';
-import {maintenanceRow,transitionMaintenance} from './maintenance';
+import {maintenanceRow,transitionMaintenance} from './maintenance-v1';
 import {canonicalBytes,digestBytes} from './encoding';
 import {signRecord,verifyCurrentLedger,verifyRetirement,verifyCutover} from './manifest';
 import {assertRecoveryContext,priorOperation,storeOperation,type RecoveryContext,type RecoveryWorkspace,type RecoveryReceipt,type RetirementReceipt,type ResumeReceipt,type CurrentLedger,type CutoverRecord} from './protocol';
 import {validateRecoveryReceipt,validateRetirementReceipt,validateResumeReceipt} from './generated/recovery-validators.js';
 import {captureJob,assertJob,unresolvedSummary,unresolvedEffectCount,type RecoveryJob} from './jobs';
 import {readStoredProbe,PROBE_MAX_AGE_MS} from './probes';
-import {RECOVERY_SCHEMA_VERSION} from './table-registry';
+import {RECOVERY_SCHEMA_VERSION} from './table-registry-v1';
 function controlJob(tx:WorkspaceTransaction,w:RecoveryWorkspace,ctx:RecoveryContext):RecoveryJob {
  assertRecoveryContext(tx,w,ctx);const found=captureJob(tx,ctx.captureId!);if(!found)throw Error('RECOVERY_JOB_CONFLICT');const job=assertJob(tx,w,ctx,found.id);
  const maintenance=maintenanceRow(tx);if(job.state!=='complete'||job.details.receipt?.status!=='complete'||!maintenance||maintenance.capture_id!==ctx.captureId||!['captured','restored'].includes(maintenance.state))throw Error('RECOVERY_CONTROL_CONFLICT');return job;

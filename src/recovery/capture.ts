@@ -1,7 +1,7 @@
 import {withTransaction,type WorkspaceTransaction,type SqlValue} from '../storage/transaction';
 import {canonicalJson} from '../config/bootstrap';
-import {TABLE_REGISTRY,inspectRegistry,type RecoveryTableName} from './table-registry';
-import {assertAdmissionOpen,maintenanceRow,transitionMaintenance} from './maintenance';
+import {TABLE_REGISTRY,inspectRegistry,type RecoveryTableName} from './table-registry-v1';
+import {assertAdmissionOpen,maintenanceRow,transitionMaintenance} from './maintenance-v1';
 import {canonicalBytes,digestBytes,encodeChunk,primaryKey,sqlCell,CHUNK_LIMIT,type RecoveryChunk,type SqlCell} from './encoding';
 import {assertRecoveryContext,priorOperation,storeOperation,type RecoveryContext,type RecoveryWorkspace,type RecoveryJobProgress,type RecoveryManifest,type ChunkMetadata} from './protocol';
 import {validateRecoveryJobProgress} from './generated/recovery-validators.js';

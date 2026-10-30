@@ -1,0 +1,4354 @@
+{
+  "schema_version": 8,
+  "historical_schema_version": 7,
+  "contract_revision": "0.1",
+  "tables": [
+    {
+      "name": "schema_migrations",
+      "mode": "evidence",
+      "columns": [
+        {
+          "name": "version",
+          "type": "INTEGER",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 1
+        },
+        {
+          "name": "applied_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        }
+      ],
+      "primaryKey": [
+        "version"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "workspace_metadata",
+      "mode": "evidence",
+      "columns": [
+        {
+          "name": "id",
+          "type": "INTEGER",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 1
+        },
+        {
+          "name": "workspace_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "object_name",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "config_epoch",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "config_digest",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "installation_digest",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "config_json",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "bundle_json",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "installed_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "admission_state",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": "'installed'",
+          "pk": 0
+        },
+        {
+          "name": "message_retained_after_created_at",
+          "type": "INTEGER",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "message_retained_after_id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "event_retained_after_sequence",
+          "type": "INTEGER",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "human_grants",
+      "mode": "restore",
+      "columns": [
+        {
+          "name": "principal_id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 1
+        },
+        {
+          "name": "workspace_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "issuer",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "subject",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "scopes_json",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "project_ids_json",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "enabled",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "config_epoch",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        }
+      ],
+      "primaryKey": [
+        "principal_id"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "static_agents",
+      "mode": "restore",
+      "columns": [
+        {
+          "name": "agent_id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 1
+        },
+        {
+          "name": "workspace_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "display_name",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "config_epoch",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "origin",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": "'operator_static'",
+          "pk": 0
+        },
+        {
+          "name": "agent_version",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": "1",
+          "pk": 0
+        },
+        {
+          "name": "description",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": "''",
+          "pk": 0
+        },
+        {
+          "name": "work_role_ids_json",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": "'[]'",
+          "pk": 0
+        },
+        {
+          "name": "framework",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "model",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": "'active'",
+          "pk": 0
+        },
+        {
+          "name": "created_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": "0",
+          "pk": 0
+        },
+        {
+          "name": "updated_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": "0",
+          "pk": 0
+        }
+      ],
+      "primaryKey": [
+        "agent_id"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "native_credentials",
+      "mode": "restore",
+      "columns": [
+        {
+          "name": "credential_id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 1
+        },
+        {
+          "name": "workspace_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "agent_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "token_sha256",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "scopes_json",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "project_ids_json",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "expires_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "enabled",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "config_epoch",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "retired_at_epoch",
+          "type": "INTEGER",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "origin",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": "'operator_static'",
+          "pk": 0
+        },
+        {
+          "name": "credential_version",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": "1",
+          "pk": 0
+        },
+        {
+          "name": "label",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": "''",
+          "pk": 0
+        },
+        {
+          "name": "created_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": "0",
+          "pk": 0
+        },
+        {
+          "name": "revoked_at",
+          "type": "INTEGER",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "issued_by_principal_id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        }
+      ],
+      "primaryKey": [
+        "credential_id"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "login_attempts",
+      "mode": "invalidate",
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 1
+        },
+        {
+          "name": "workspace_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "state_digest",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "nonce",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "pkce_verifier",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "cookie_digest",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "redirect_uri",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "created_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "expires_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "consumed_at",
+          "type": "INTEGER",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "auth_epoch",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": "0",
+          "pk": 0
+        },
+        {
+          "name": "return_path",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": "'/'",
+          "pk": 0
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "sessions",
+      "mode": "invalidate",
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 1
+        },
+        {
+          "name": "workspace_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "principal_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "token_digest",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "csrf_digest",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "issuer",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "subject",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "created_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "expires_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "revoked_at",
+          "type": "INTEGER",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "auth_epoch",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": "0",
+          "pk": 0
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "profiles",
+      "mode": "restore",
+      "columns": [
+        {
+          "name": "workspace_id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 1
+        },
+        {
+          "name": "version",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "document_json",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "updated_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "updated_by",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        }
+      ],
+      "primaryKey": [
+        "workspace_id"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "preferences",
+      "mode": "restore",
+      "columns": [
+        {
+          "name": "principal_id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 1
+        },
+        {
+          "name": "workspace_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "version",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "document_json",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "updated_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "record_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        }
+      ],
+      "primaryKey": [
+        "principal_id"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "threads",
+      "mode": "restore",
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 1
+        },
+        {
+          "name": "workspace_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "subject",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "created_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "thread_participants",
+      "mode": "restore",
+      "columns": [
+        {
+          "name": "thread_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 1
+        },
+        {
+          "name": "participant_kind",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 2
+        },
+        {
+          "name": "participant_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 3
+        }
+      ],
+      "primaryKey": [
+        "thread_id",
+        "participant_kind",
+        "participant_id"
+      ],
+      "foreignKeys": [
+        [
+          0,
+          0,
+          "threads",
+          "thread_id",
+          "id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ]
+      ]
+    },
+    {
+      "name": "messages",
+      "mode": "restore",
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 1
+        },
+        {
+          "name": "workspace_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "thread_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "sender_kind",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "sender_principal_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "sender_agent_id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "body",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "refs_json",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "created_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [
+        [
+          0,
+          0,
+          "threads",
+          "thread_id",
+          "id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ]
+      ]
+    },
+    {
+      "name": "inbox",
+      "mode": "restore",
+      "columns": [
+        {
+          "name": "message_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 1
+        },
+        {
+          "name": "recipient_agent_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 2
+        },
+        {
+          "name": "workspace_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "created_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "acknowledged_at",
+          "type": "INTEGER",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        }
+      ],
+      "primaryKey": [
+        "message_id",
+        "recipient_agent_id"
+      ],
+      "foreignKeys": [
+        [
+          0,
+          0,
+          "messages",
+          "message_id",
+          "id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ]
+      ]
+    },
+    {
+      "name": "events",
+      "mode": "restore",
+      "columns": [
+        {
+          "name": "sequence",
+          "type": "INTEGER",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 1
+        },
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "workspace_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "type",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "actor_json",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "resource_type",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "resource_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "resource_version",
+          "type": "INTEGER",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "thread_id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "request_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "occurred_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "summary",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "task_version",
+          "type": "INTEGER",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "run_id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "fence",
+          "type": "INTEGER",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        }
+      ],
+      "primaryKey": [
+        "sequence"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "idempotency_outcomes",
+      "mode": "domain-outcomes",
+      "columns": [
+        {
+          "name": "principal_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 1
+        },
+        {
+          "name": "operation",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 2
+        },
+        {
+          "name": "target",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 3
+        },
+        {
+          "name": "key",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 4
+        },
+        {
+          "name": "workspace_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "fingerprint",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "status",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "outcome_json",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "original_request_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "event_id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "created_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "expires_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        }
+      ],
+      "primaryKey": [
+        "principal_id",
+        "operation",
+        "target",
+        "key"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "outbox",
+      "mode": "paused-effects",
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 1
+        },
+        {
+          "name": "workspace_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "message_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "destination_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "notification_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "payload_json",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "attempts",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": "0",
+          "pk": 0
+        },
+        {
+          "name": "next_due_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "retry_multiplier",
+          "type": "REAL",
+          "notNull": true,
+          "defaultValue": "1",
+          "pk": 0
+        },
+        {
+          "name": "lease_token",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "lease_expires_at",
+          "type": "INTEGER",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "last_status",
+          "type": "INTEGER",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "last_error",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "created_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "updated_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "destination_snapshot_json",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "scheduler_state",
+      "mode": "evidence",
+      "columns": [
+        {
+          "name": "id",
+          "type": "INTEGER",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 1
+        },
+        {
+          "name": "next_due_at",
+          "type": "INTEGER",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "armed_at",
+          "type": "INTEGER",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "last_run_at",
+          "type": "INTEGER",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "dirty",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": "0",
+          "pk": 0
+        },
+        {
+          "name": "generation",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": "0",
+          "pk": 0
+        },
+        {
+          "name": "last_error_code",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "maintenance_state",
+      "mode": "evidence",
+      "columns": [
+        {
+          "name": "id",
+          "type": "INTEGER",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 1
+        },
+        {
+          "name": "state",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "barrier_id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "authority_epoch",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "capture_id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "updated_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "generation",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": "0",
+          "pk": 0
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "recovery_jobs",
+      "mode": "evidence",
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 1
+        },
+        {
+          "name": "workspace_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "operation",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "state",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "authority_epoch",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "capture_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "manifest_digest",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "created_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "updated_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "details_json",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "recovery_chunks",
+      "mode": "evidence",
+      "columns": [
+        {
+          "name": "job_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 1
+        },
+        {
+          "name": "chunk_index",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 2
+        },
+        {
+          "name": "table_name",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "sha256",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "byte_size",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "row_count",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "object_key",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        }
+      ],
+      "primaryKey": [
+        "job_id",
+        "chunk_index"
+      ],
+      "foreignKeys": [
+        [
+          0,
+          0,
+          "recovery_jobs",
+          "job_id",
+          "id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ]
+      ]
+    },
+    {
+      "name": "probe_receipts",
+      "mode": "evidence",
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 1
+        },
+        {
+          "name": "workspace_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "authority_epoch",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "request_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "checked_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "receipt_json",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "runtimes",
+      "mode": "invalidate",
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 1
+        },
+        {
+          "name": "workspace_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "agent_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "credential_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "authority_epoch",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "proof_sha256",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "runtime_version",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "label",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "created_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "last_seen_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "presence_expires_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "revoked_at",
+          "type": "INTEGER",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [
+        [
+          0,
+          0,
+          "static_agents",
+          "workspace_id",
+          "workspace_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          0,
+          1,
+          "static_agents",
+          "agent_id",
+          "agent_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          1,
+          0,
+          "native_credentials",
+          "workspace_id",
+          "workspace_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          1,
+          1,
+          "native_credentials",
+          "agent_id",
+          "agent_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          1,
+          2,
+          "native_credentials",
+          "credential_id",
+          "credential_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ]
+      ]
+    },
+    {
+      "name": "tasks",
+      "mode": "restore",
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 1
+        },
+        {
+          "name": "workspace_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "title",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "description",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "state",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "task_version",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "proposal_version",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "project_id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "work_role_id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "assigned_agent_id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "active_run_id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "latest_run_id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "approval_id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "current_result_id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "retry_count",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "retry_limit",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "flags_json",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "next_fence",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": "1",
+          "pk": 0
+        },
+        {
+          "name": "next_result_sequence",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": "1",
+          "pk": 0
+        },
+        {
+          "name": "created_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "updated_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [
+        [
+          0,
+          0,
+          "task_results",
+          "workspace_id",
+          "workspace_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          0,
+          1,
+          "task_results",
+          "id",
+          "task_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          0,
+          2,
+          "task_results",
+          "current_result_id",
+          "id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          1,
+          0,
+          "runs",
+          "workspace_id",
+          "workspace_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          1,
+          1,
+          "runs",
+          "id",
+          "task_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          1,
+          2,
+          "runs",
+          "latest_run_id",
+          "id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          2,
+          0,
+          "runs",
+          "workspace_id",
+          "workspace_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          2,
+          1,
+          "runs",
+          "id",
+          "task_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          2,
+          2,
+          "runs",
+          "active_run_id",
+          "id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          3,
+          0,
+          "static_agents",
+          "workspace_id",
+          "workspace_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          3,
+          1,
+          "static_agents",
+          "assigned_agent_id",
+          "agent_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ]
+      ]
+    },
+    {
+      "name": "runs",
+      "mode": "restore",
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 1
+        },
+        {
+          "name": "workspace_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "task_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "agent_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "runtime_instance_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "credential_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "authority_epoch",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "run_version",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "fence",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "lease_expires_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "started_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "ended_at",
+          "type": "INTEGER",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "replay_policy_version",
+          "type": "INTEGER",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "replay_rule_id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "replay_evidence_ref",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [
+        [
+          0,
+          0,
+          "runtimes",
+          "workspace_id",
+          "workspace_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          0,
+          1,
+          "runtimes",
+          "agent_id",
+          "agent_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          0,
+          2,
+          "runtimes",
+          "credential_id",
+          "credential_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          0,
+          3,
+          "runtimes",
+          "runtime_instance_id",
+          "id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          1,
+          0,
+          "tasks",
+          "workspace_id",
+          "workspace_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          1,
+          1,
+          "tasks",
+          "task_id",
+          "id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ]
+      ]
+    },
+    {
+      "name": "task_results",
+      "mode": "restore",
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 1
+        },
+        {
+          "name": "workspace_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "task_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "run_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "submission_sequence",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "submitted_kind",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "submitted_principal_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "submitted_agent_id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "summary",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "created_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [
+        [
+          0,
+          0,
+          "static_agents",
+          "workspace_id",
+          "workspace_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          0,
+          1,
+          "static_agents",
+          "submitted_agent_id",
+          "agent_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          1,
+          0,
+          "runs",
+          "workspace_id",
+          "workspace_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          1,
+          1,
+          "runs",
+          "task_id",
+          "task_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          1,
+          2,
+          "runs",
+          "run_id",
+          "id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ]
+      ]
+    },
+    {
+      "name": "task_acceptances",
+      "mode": "restore",
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 1
+        },
+        {
+          "name": "workspace_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "task_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "result_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "run_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "task_version",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "reviewer_principal_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "reviewer_agent_id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "reason",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "created_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [
+        [
+          0,
+          0,
+          "static_agents",
+          "workspace_id",
+          "workspace_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          0,
+          1,
+          "static_agents",
+          "reviewer_agent_id",
+          "agent_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          1,
+          0,
+          "task_results",
+          "workspace_id",
+          "workspace_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          1,
+          1,
+          "task_results",
+          "task_id",
+          "task_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          1,
+          2,
+          "task_results",
+          "run_id",
+          "run_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          1,
+          3,
+          "task_results",
+          "result_id",
+          "id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ]
+      ]
+    },
+    {
+      "name": "task_history",
+      "mode": "restore",
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 1
+        },
+        {
+          "name": "workspace_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "event_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "task_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "task_version",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "run_id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "kind",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "created_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [
+        [
+          0,
+          0,
+          "runs",
+          "workspace_id",
+          "workspace_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          0,
+          1,
+          "runs",
+          "task_id",
+          "task_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          0,
+          2,
+          "runs",
+          "run_id",
+          "id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          1,
+          0,
+          "tasks",
+          "workspace_id",
+          "workspace_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          1,
+          1,
+          "tasks",
+          "task_id",
+          "id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          2,
+          0,
+          "events",
+          "workspace_id",
+          "workspace_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          2,
+          1,
+          "events",
+          "event_id",
+          "id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ]
+      ]
+    },
+    {
+      "name": "artifacts",
+      "mode": "restore",
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 1
+        },
+        {
+          "name": "workspace_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "task_id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "run_id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "owner_kind",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "owner_principal_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "owner_agent_id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "creator_credential_id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "creator_runtime_id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "authority_epoch",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "artifact_version",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "filename",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "media_type",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "byte_size",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "sha256",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "active_generation_id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "committed_generation_id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "created_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "committed_at",
+          "type": "INTEGER",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "expires_at",
+          "type": "INTEGER",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [
+        [
+          0,
+          0,
+          "artifact_generations",
+          "workspace_id",
+          "workspace_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          0,
+          1,
+          "artifact_generations",
+          "id",
+          "artifact_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          0,
+          2,
+          "artifact_generations",
+          "committed_generation_id",
+          "id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          1,
+          0,
+          "artifact_generations",
+          "workspace_id",
+          "workspace_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          1,
+          1,
+          "artifact_generations",
+          "id",
+          "artifact_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          1,
+          2,
+          "artifact_generations",
+          "active_generation_id",
+          "id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          2,
+          0,
+          "runtimes",
+          "workspace_id",
+          "workspace_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          2,
+          1,
+          "runtimes",
+          "creator_runtime_id",
+          "id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          3,
+          0,
+          "native_credentials",
+          "workspace_id",
+          "workspace_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          3,
+          1,
+          "native_credentials",
+          "creator_credential_id",
+          "credential_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          4,
+          0,
+          "static_agents",
+          "workspace_id",
+          "workspace_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          4,
+          1,
+          "static_agents",
+          "owner_agent_id",
+          "agent_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          5,
+          0,
+          "runs",
+          "workspace_id",
+          "workspace_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          5,
+          1,
+          "runs",
+          "task_id",
+          "task_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          5,
+          2,
+          "runs",
+          "run_id",
+          "id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          6,
+          0,
+          "tasks",
+          "workspace_id",
+          "workspace_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          6,
+          1,
+          "tasks",
+          "task_id",
+          "id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ]
+      ]
+    },
+    {
+      "name": "artifact_generations",
+      "mode": "paused-effects",
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 1
+        },
+        {
+          "name": "workspace_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "artifact_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "object_key",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "expected_sha256",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "expected_byte_size",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "observed_sha256",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "observed_byte_size",
+          "type": "INTEGER",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "state",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "admission_epoch",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "admission_generation",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "expires_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "created_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "updated_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "effect_operation_id",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "effect_kind",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "effect_state",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": "'none'",
+          "pk": 0
+        },
+        {
+          "name": "effect_started_at",
+          "type": "INTEGER",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "effect_drained_at",
+          "type": "INTEGER",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [
+        [
+          0,
+          0,
+          "artifacts",
+          "workspace_id",
+          "workspace_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          0,
+          1,
+          "artifacts",
+          "artifact_id",
+          "id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ]
+      ]
+    },
+    {
+      "name": "result_artifacts",
+      "mode": "restore",
+      "columns": [
+        {
+          "name": "workspace_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 1
+        },
+        {
+          "name": "result_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 2
+        },
+        {
+          "name": "artifact_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 3
+        },
+        {
+          "name": "ordinal",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        }
+      ],
+      "primaryKey": [
+        "workspace_id",
+        "result_id",
+        "artifact_id"
+      ],
+      "foreignKeys": [
+        [
+          0,
+          0,
+          "artifacts",
+          "workspace_id",
+          "workspace_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          0,
+          1,
+          "artifacts",
+          "artifact_id",
+          "id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          1,
+          0,
+          "task_results",
+          "workspace_id",
+          "workspace_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          1,
+          1,
+          "task_results",
+          "result_id",
+          "id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ]
+      ]
+    },
+    {
+      "name": "artifact_associations",
+      "mode": "restore",
+      "columns": [
+        {
+          "name": "workspace_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 1
+        },
+        {
+          "name": "artifact_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 2
+        },
+        {
+          "name": "resource_kind",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 3
+        },
+        {
+          "name": "resource_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 4
+        }
+      ],
+      "primaryKey": [
+        "workspace_id",
+        "artifact_id",
+        "resource_kind",
+        "resource_id"
+      ],
+      "foreignKeys": [
+        [
+          0,
+          0,
+          "artifacts",
+          "workspace_id",
+          "workspace_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          0,
+          1,
+          "artifacts",
+          "artifact_id",
+          "id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ]
+      ]
+    },
+    {
+      "name": "message_artifacts",
+      "mode": "restore",
+      "columns": [
+        {
+          "name": "workspace_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 1
+        },
+        {
+          "name": "message_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 2
+        },
+        {
+          "name": "artifact_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 3
+        },
+        {
+          "name": "ordinal",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        }
+      ],
+      "primaryKey": [
+        "workspace_id",
+        "message_id",
+        "artifact_id"
+      ],
+      "foreignKeys": [
+        [
+          0,
+          0,
+          "artifacts",
+          "workspace_id",
+          "workspace_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          0,
+          1,
+          "artifacts",
+          "artifact_id",
+          "id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          1,
+          0,
+          "messages",
+          "workspace_id",
+          "workspace_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          1,
+          1,
+          "messages",
+          "message_id",
+          "id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ]
+      ]
+    },
+    {
+      "name": "catalog_plans",
+      "mode": "restore",
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 1
+        },
+        {
+          "name": "workspace_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "actor_principal_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "profile_revision",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "expires_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "plan_json",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "touched_versions_json",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "created_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "import_plans",
+      "mode": "restore",
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 1
+        },
+        {
+          "name": "workspace_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "actor_principal_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "namespace",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "profile_revision",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "preview_json",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "source_rows_json",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "touched_versions_json",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "source_digest",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "report_json",
+          "type": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "expires_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "created_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "import_mappings",
+      "mode": "restore",
+      "columns": [
+        {
+          "name": "workspace_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 1
+        },
+        {
+          "name": "namespace",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 2
+        },
+        {
+          "name": "external_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 3
+        },
+        {
+          "name": "task_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "source_sha256",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "mapping_version",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "source_version",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "import_id",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "provenance_json",
+          "type": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "created_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        },
+        {
+          "name": "updated_at",
+          "type": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "pk": 0
+        }
+      ],
+      "primaryKey": [
+        "workspace_id",
+        "namespace",
+        "external_id"
+      ],
+      "foreignKeys": [
+        [
+          0,
+          0,
+          "tasks",
+          "workspace_id",
+          "workspace_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          0,
+          1,
+          "tasks",
+          "task_id",
+          "id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          1,
+          0,
+          "import_plans",
+          "workspace_id",
+          "workspace_id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ],
+        [
+          1,
+          1,
+          "import_plans",
+          "import_id",
+          "id",
+          "NO ACTION",
+          "NO ACTION",
+          "NONE"
+        ]
+      ]
+    }
+  ],
+  "sqlite_schema": [
+    {
+      "type": "index",
+      "name": "agents_workspace_identity",
+      "table": "static_agents",
+      "sql": "CREATE UNIQUE INDEX agents_workspace_identity ON static_agents(workspace_id,agent_id)"
+    },
+    {
+      "type": "index",
+      "name": "artifact_generations_due",
+      "table": "artifact_generations",
+      "sql": "CREATE INDEX artifact_generations_due ON artifact_generations(workspace_id,state,expires_at,id)"
+    },
+    {
+      "type": "index",
+      "name": "artifacts_expiry_due",
+      "table": "artifacts",
+      "sql": "CREATE INDEX artifacts_expiry_due ON artifacts(workspace_id,status,expires_at,id)"
+    },
+    {
+      "type": "index",
+      "name": "credentials_agent_binding",
+      "table": "native_credentials",
+      "sql": "CREATE UNIQUE INDEX credentials_agent_binding ON native_credentials(workspace_id,agent_id,credential_id)"
+    },
+    {
+      "type": "index",
+      "name": "credentials_workspace_identity",
+      "table": "native_credentials",
+      "sql": "CREATE UNIQUE INDEX credentials_workspace_identity ON native_credentials(workspace_id,credential_id)"
+    },
+    {
+      "type": "index",
+      "name": "events_sequence",
+      "table": "events",
+      "sql": "CREATE UNIQUE INDEX events_sequence ON events(sequence)"
+    },
+    {
+      "type": "index",
+      "name": "events_workspace_identity",
+      "table": "events",
+      "sql": "CREATE UNIQUE INDEX events_workspace_identity ON events(workspace_id,id)"
+    },
+    {
+      "type": "index",
+      "name": "import_plans_expiry",
+      "table": "import_plans",
+      "sql": "CREATE INDEX import_plans_expiry ON import_plans(workspace_id,status,expires_at,id)"
+    },
+    {
+      "type": "index",
+      "name": "inbox_recipient_order",
+      "table": "inbox",
+      "sql": "CREATE INDEX inbox_recipient_order ON inbox(recipient_agent_id,acknowledged_at,created_at,message_id)"
+    },
+    {
+      "type": "index",
+      "name": "login_attempts_expiry",
+      "table": "login_attempts",
+      "sql": "CREATE INDEX login_attempts_expiry ON login_attempts(expires_at)"
+    },
+    {
+      "type": "index",
+      "name": "messages_thread_order",
+      "table": "messages",
+      "sql": "CREATE INDEX messages_thread_order ON messages(thread_id,created_at,id)"
+    },
+    {
+      "type": "index",
+      "name": "messages_workspace_identity",
+      "table": "messages",
+      "sql": "CREATE UNIQUE INDEX messages_workspace_identity ON messages(workspace_id,id)"
+    },
+    {
+      "type": "index",
+      "name": "outbox_due",
+      "table": "outbox",
+      "sql": "CREATE INDEX outbox_due ON outbox(status,next_due_at)"
+    },
+    {
+      "type": "index",
+      "name": "preferences_record_id",
+      "table": "preferences",
+      "sql": "CREATE UNIQUE INDEX preferences_record_id ON \"preferences\"(record_id)"
+    },
+    {
+      "type": "index",
+      "name": "results_task_order",
+      "table": "task_results",
+      "sql": "CREATE INDEX results_task_order ON task_results(workspace_id,task_id,submission_sequence)"
+    },
+    {
+      "type": "index",
+      "name": "runs_active_owner",
+      "table": "runs",
+      "sql": "CREATE UNIQUE INDEX runs_active_owner ON runs(workspace_id,task_id) WHERE status='active'"
+    },
+    {
+      "type": "index",
+      "name": "runs_agent_status",
+      "table": "runs",
+      "sql": "CREATE INDEX runs_agent_status ON runs(workspace_id,agent_id,status)"
+    },
+    {
+      "type": "index",
+      "name": "runs_lease_due",
+      "table": "runs",
+      "sql": "CREATE INDEX runs_lease_due ON runs(workspace_id,status,lease_expires_at,id)"
+    },
+    {
+      "type": "index",
+      "name": "runtimes_presence_due",
+      "table": "runtimes",
+      "sql": "CREATE INDEX runtimes_presence_due ON runtimes(workspace_id,status,presence_expires_at,id)"
+    },
+    {
+      "type": "index",
+      "name": "sessions_expiry",
+      "table": "sessions",
+      "sql": "CREATE INDEX sessions_expiry ON sessions(expires_at)"
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_artifact_associations_1",
+      "table": "artifact_associations",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_artifact_generations_1",
+      "table": "artifact_generations",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_artifact_generations_2",
+      "table": "artifact_generations",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_artifact_generations_3",
+      "table": "artifact_generations",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_artifact_generations_4",
+      "table": "artifact_generations",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_artifact_generations_5",
+      "table": "artifact_generations",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_artifacts_1",
+      "table": "artifacts",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_artifacts_2",
+      "table": "artifacts",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_catalog_plans_1",
+      "table": "catalog_plans",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_catalog_plans_2",
+      "table": "catalog_plans",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_events_1",
+      "table": "events",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_human_grants_1",
+      "table": "human_grants",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_human_grants_2",
+      "table": "human_grants",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_idempotency_outcomes_1",
+      "table": "idempotency_outcomes",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_import_mappings_1",
+      "table": "import_mappings",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_import_plans_1",
+      "table": "import_plans",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_import_plans_2",
+      "table": "import_plans",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_inbox_1",
+      "table": "inbox",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_login_attempts_1",
+      "table": "login_attempts",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_login_attempts_2",
+      "table": "login_attempts",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_message_artifacts_1",
+      "table": "message_artifacts",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_message_artifacts_2",
+      "table": "message_artifacts",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_messages_1",
+      "table": "messages",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_native_credentials_1",
+      "table": "native_credentials",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_outbox_1",
+      "table": "outbox",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_outbox_2",
+      "table": "outbox",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_preferences_1",
+      "table": "preferences",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_probe_receipts_1",
+      "table": "probe_receipts",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_profiles_1",
+      "table": "profiles",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_recovery_chunks_1",
+      "table": "recovery_chunks",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_recovery_jobs_1",
+      "table": "recovery_jobs",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_result_artifacts_1",
+      "table": "result_artifacts",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_result_artifacts_2",
+      "table": "result_artifacts",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_runs_1",
+      "table": "runs",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_runs_2",
+      "table": "runs",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_runs_3",
+      "table": "runs",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_runs_4",
+      "table": "runs",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_runtimes_1",
+      "table": "runtimes",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_runtimes_2",
+      "table": "runtimes",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_runtimes_3",
+      "table": "runtimes",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_sessions_1",
+      "table": "sessions",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_sessions_2",
+      "table": "sessions",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_static_agents_1",
+      "table": "static_agents",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_task_acceptances_1",
+      "table": "task_acceptances",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_task_acceptances_2",
+      "table": "task_acceptances",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_task_acceptances_3",
+      "table": "task_acceptances",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_task_history_1",
+      "table": "task_history",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_task_history_2",
+      "table": "task_history",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_task_history_3",
+      "table": "task_history",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_task_results_1",
+      "table": "task_results",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_task_results_2",
+      "table": "task_results",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_task_results_3",
+      "table": "task_results",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_task_results_4",
+      "table": "task_results",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_task_results_5",
+      "table": "task_results",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_task_results_6",
+      "table": "task_results",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_tasks_1",
+      "table": "tasks",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_tasks_2",
+      "table": "tasks",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_thread_participants_1",
+      "table": "thread_participants",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_threads_1",
+      "table": "threads",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "sqlite_autoindex_workspace_metadata_1",
+      "table": "workspace_metadata",
+      "sql": null
+    },
+    {
+      "type": "index",
+      "name": "task_history_order",
+      "table": "task_history",
+      "sql": "CREATE INDEX task_history_order ON task_history(workspace_id,task_id,task_version,id)"
+    },
+    {
+      "type": "index",
+      "name": "tasks_state_order",
+      "table": "tasks",
+      "sql": "CREATE INDEX tasks_state_order ON tasks(workspace_id,state,created_at,id)"
+    },
+    {
+      "type": "index",
+      "name": "threads_created",
+      "table": "threads",
+      "sql": "CREATE INDEX threads_created ON threads(created_at,id)"
+    },
+    {
+      "type": "table",
+      "name": "artifact_associations",
+      "table": "artifact_associations",
+      "sql": "CREATE TABLE artifact_associations (\n workspace_id TEXT NOT NULL,artifact_id TEXT NOT NULL,resource_kind TEXT NOT NULL CHECK(resource_kind IN ('task','run','message','result','checkpoint')),resource_id TEXT NOT NULL,\n PRIMARY KEY(workspace_id,artifact_id,resource_kind,resource_id),FOREIGN KEY(workspace_id,artifact_id) REFERENCES artifacts(workspace_id,id)\n)"
+    },
+    {
+      "type": "table",
+      "name": "artifact_generations",
+      "table": "artifact_generations",
+      "sql": "CREATE TABLE artifact_generations (\n id TEXT PRIMARY KEY NOT NULL,workspace_id TEXT NOT NULL,artifact_id TEXT NOT NULL,object_key TEXT NOT NULL,\n expected_sha256 TEXT NOT NULL CHECK(length(expected_sha256)=64 AND expected_sha256 NOT GLOB '*[^0-9a-f]*'),expected_byte_size INTEGER NOT NULL CHECK(expected_byte_size>=0),\n observed_sha256 TEXT CHECK(observed_sha256 IS NULL OR (length(observed_sha256)=64 AND observed_sha256 NOT GLOB '*[^0-9a-f]*')),observed_byte_size INTEGER CHECK(observed_byte_size IS NULL OR observed_byte_size>=0),\n state TEXT NOT NULL CHECK(state IN ('reserved','uploaded','committed','tombstoned')),admission_epoch INTEGER NOT NULL CHECK(admission_epoch>=1),admission_generation INTEGER NOT NULL CHECK(admission_generation>=0),\n expires_at INTEGER NOT NULL,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,\n effect_operation_id TEXT,effect_kind TEXT CHECK(effect_kind IN ('put','delete')),effect_state TEXT NOT NULL DEFAULT 'none' CHECK(effect_state IN ('none','reserved','in_flight','drained','uncertain')),\n effect_started_at INTEGER,effect_drained_at INTEGER,\n UNIQUE(workspace_id,id),UNIQUE(workspace_id,artifact_id,id),UNIQUE(object_key),UNIQUE(workspace_id,effect_operation_id),\n CHECK((observed_sha256 IS NULL)=(observed_byte_size IS NULL)),\n CHECK(state NOT IN ('uploaded','committed') OR (observed_sha256=expected_sha256 AND observed_byte_size=expected_byte_size AND observed_sha256 IS NOT NULL)),\n CHECK((effect_state='none' AND effect_operation_id IS NULL AND effect_kind IS NULL AND effect_started_at IS NULL AND effect_drained_at IS NULL) OR (effect_state<>'none' AND effect_operation_id IS NOT NULL AND effect_kind IS NOT NULL)),\n CHECK(effect_state NOT IN ('in_flight','drained','uncertain') OR effect_started_at IS NOT NULL),\n CHECK((effect_state='drained')=(effect_drained_at IS NOT NULL)),\n FOREIGN KEY(workspace_id,artifact_id) REFERENCES artifacts(workspace_id,id)\n)"
+    },
+    {
+      "type": "table",
+      "name": "artifacts",
+      "table": "artifacts",
+      "sql": "CREATE TABLE artifacts (\n id TEXT PRIMARY KEY NOT NULL,workspace_id TEXT NOT NULL,task_id TEXT,run_id TEXT,\n owner_kind TEXT NOT NULL CHECK(owner_kind IN ('human','agent','system')),owner_principal_id TEXT NOT NULL,owner_agent_id TEXT,\n creator_credential_id TEXT,creator_runtime_id TEXT,authority_epoch INTEGER NOT NULL CHECK(authority_epoch>=1),\n artifact_version INTEGER NOT NULL CHECK(artifact_version>=1),filename TEXT NOT NULL,media_type TEXT NOT NULL,byte_size INTEGER NOT NULL CHECK(byte_size>=0),\n sha256 TEXT NOT NULL CHECK(length(sha256)=64 AND sha256 NOT GLOB '*[^0-9a-f]*'),status TEXT NOT NULL CHECK(status IN ('staged','uploaded','committed','expired')),\n active_generation_id TEXT,committed_generation_id TEXT,created_at INTEGER NOT NULL,committed_at INTEGER,expires_at INTEGER,\n UNIQUE(workspace_id,id),CHECK(run_id IS NULL OR task_id IS NOT NULL),\n CHECK(status NOT IN ('staged','uploaded') OR expires_at IS NOT NULL),CHECK((status='committed')=(committed_at IS NOT NULL)),CHECK(status<>'committed' OR (committed_generation_id IS NOT NULL AND expires_at IS NULL)),\n FOREIGN KEY(workspace_id,task_id) REFERENCES tasks(workspace_id,id),FOREIGN KEY(workspace_id,task_id,run_id) REFERENCES runs(workspace_id,task_id,id),\n FOREIGN KEY(workspace_id,owner_agent_id) REFERENCES static_agents(workspace_id,agent_id),\n FOREIGN KEY(workspace_id,creator_credential_id) REFERENCES native_credentials(workspace_id,credential_id),\n FOREIGN KEY(workspace_id,creator_runtime_id) REFERENCES runtimes(workspace_id,id),\n FOREIGN KEY(workspace_id,id,active_generation_id) REFERENCES artifact_generations(workspace_id,artifact_id,id),\n FOREIGN KEY(workspace_id,id,committed_generation_id) REFERENCES artifact_generations(workspace_id,artifact_id,id)\n)"
+    },
+    {
+      "type": "table",
+      "name": "catalog_plans",
+      "table": "catalog_plans",
+      "sql": "CREATE TABLE catalog_plans (\n id TEXT PRIMARY KEY NOT NULL,workspace_id TEXT NOT NULL,actor_principal_id TEXT NOT NULL,profile_revision INTEGER NOT NULL CHECK(profile_revision>=1),expires_at INTEGER NOT NULL,\n plan_json TEXT NOT NULL CHECK(json_valid(plan_json)),touched_versions_json TEXT NOT NULL CHECK(json_valid(touched_versions_json)),\n status TEXT NOT NULL CHECK(status IN ('previewed','applied','expired')),created_at INTEGER NOT NULL,UNIQUE(workspace_id,id)\n)"
+    },
+    {
+      "type": "table",
+      "name": "events",
+      "table": "events",
+      "sql": "CREATE TABLE events (\n sequence INTEGER PRIMARY KEY AUTOINCREMENT,id TEXT NOT NULL UNIQUE,workspace_id TEXT NOT NULL,type TEXT NOT NULL,\n actor_json TEXT NOT NULL CHECK(json_valid(actor_json)),resource_type TEXT NOT NULL,resource_id TEXT NOT NULL,\n resource_version INTEGER,thread_id TEXT,request_id TEXT NOT NULL,occurred_at INTEGER NOT NULL,summary TEXT NOT NULL\n, task_version INTEGER CHECK(task_version IS NULL OR task_version>=1), run_id TEXT, fence INTEGER CHECK(fence IS NULL OR fence>=1))"
+    },
+    {
+      "type": "table",
+      "name": "human_grants",
+      "table": "human_grants",
+      "sql": "CREATE TABLE human_grants (\n principal_id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL, issuer TEXT NOT NULL, subject TEXT NOT NULL,\n scopes_json TEXT NOT NULL CHECK(json_valid(scopes_json)), project_ids_json TEXT NOT NULL CHECK(json_valid(project_ids_json)),\n enabled INTEGER NOT NULL CHECK(enabled IN (0,1)), config_epoch INTEGER NOT NULL, UNIQUE(issuer,subject)\n)"
+    },
+    {
+      "type": "table",
+      "name": "idempotency_outcomes",
+      "table": "idempotency_outcomes",
+      "sql": "CREATE TABLE idempotency_outcomes (\n principal_id TEXT NOT NULL,operation TEXT NOT NULL,target TEXT NOT NULL,key TEXT NOT NULL,workspace_id TEXT NOT NULL,\n fingerprint TEXT NOT NULL,status INTEGER NOT NULL,outcome_json TEXT NOT NULL CHECK(json_valid(outcome_json)),\n original_request_id TEXT NOT NULL,event_id TEXT,created_at INTEGER NOT NULL,expires_at INTEGER NOT NULL,\n PRIMARY KEY(principal_id,operation,target,key),CHECK(expires_at>=created_at+86400000)\n)"
+    },
+    {
+      "type": "table",
+      "name": "import_mappings",
+      "table": "import_mappings",
+      "sql": "CREATE TABLE import_mappings (\n workspace_id TEXT NOT NULL,namespace TEXT NOT NULL,external_id TEXT NOT NULL,task_id TEXT NOT NULL,source_sha256 TEXT NOT NULL CHECK(length(source_sha256)=64 AND source_sha256 NOT GLOB '*[^0-9a-f]*'),\n mapping_version INTEGER NOT NULL CHECK(mapping_version>=1),source_version TEXT NOT NULL,import_id TEXT NOT NULL,provenance_json TEXT NOT NULL CHECK(json_valid(provenance_json)),created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,\n PRIMARY KEY(workspace_id,namespace,external_id),FOREIGN KEY(workspace_id,import_id) REFERENCES import_plans(workspace_id,id),FOREIGN KEY(workspace_id,task_id) REFERENCES tasks(workspace_id,id)\n)"
+    },
+    {
+      "type": "table",
+      "name": "import_plans",
+      "table": "import_plans",
+      "sql": "CREATE TABLE import_plans (\n id TEXT PRIMARY KEY NOT NULL,workspace_id TEXT NOT NULL,actor_principal_id TEXT NOT NULL,namespace TEXT NOT NULL,profile_revision INTEGER NOT NULL CHECK(profile_revision>=1),\n preview_json TEXT NOT NULL CHECK(json_valid(preview_json)),source_rows_json TEXT NOT NULL CHECK(json_valid(source_rows_json)),touched_versions_json TEXT NOT NULL CHECK(json_valid(touched_versions_json)),\n source_digest TEXT NOT NULL CHECK(length(source_digest)=64 AND source_digest NOT GLOB '*[^0-9a-f]*'),report_json TEXT CHECK(report_json IS NULL OR json_valid(report_json)),\n status TEXT NOT NULL CHECK(status IN ('previewed','applied','expired')),expires_at INTEGER NOT NULL,created_at INTEGER NOT NULL,UNIQUE(workspace_id,id),CHECK((status='applied')=(report_json IS NOT NULL))\n)"
+    },
+    {
+      "type": "table",
+      "name": "inbox",
+      "table": "inbox",
+      "sql": "CREATE TABLE inbox (\n message_id TEXT NOT NULL,recipient_agent_id TEXT NOT NULL,workspace_id TEXT NOT NULL,created_at INTEGER NOT NULL,\n acknowledged_at INTEGER,PRIMARY KEY(message_id,recipient_agent_id),FOREIGN KEY(message_id) REFERENCES messages(id)\n)"
+    },
+    {
+      "type": "table",
+      "name": "login_attempts",
+      "table": "login_attempts",
+      "sql": "CREATE TABLE login_attempts (\n id TEXT PRIMARY KEY,workspace_id TEXT NOT NULL,state_digest TEXT NOT NULL UNIQUE,nonce TEXT NOT NULL,\n pkce_verifier TEXT NOT NULL,cookie_digest TEXT NOT NULL,redirect_uri TEXT NOT NULL,created_at INTEGER NOT NULL,\n expires_at INTEGER NOT NULL,consumed_at INTEGER, auth_epoch INTEGER NOT NULL DEFAULT 0 CHECK(auth_epoch>=0 AND auth_epoch<=9007199254740991), return_path TEXT NOT NULL DEFAULT '/' CHECK(return_path IN ('/','/overview','/inbox','/activity','/settings')), CHECK(expires_at>created_at)\n)"
+    },
+    {
+      "type": "table",
+      "name": "maintenance_state",
+      "table": "maintenance_state",
+      "sql": "CREATE TABLE maintenance_state (\n id INTEGER PRIMARY KEY CHECK(id=1),state TEXT NOT NULL,barrier_id TEXT,authority_epoch INTEGER NOT NULL,\n capture_id TEXT,updated_at INTEGER NOT NULL\n, generation INTEGER NOT NULL DEFAULT 0\n CHECK(typeof(generation)='integer' AND generation>=0 AND generation<=9007199254740991))"
+    },
+    {
+      "type": "table",
+      "name": "message_artifacts",
+      "table": "message_artifacts",
+      "sql": "CREATE TABLE message_artifacts (\n workspace_id TEXT NOT NULL,message_id TEXT NOT NULL,artifact_id TEXT NOT NULL,ordinal INTEGER NOT NULL CHECK(ordinal>=0),\n PRIMARY KEY(workspace_id,message_id,artifact_id),UNIQUE(workspace_id,message_id,ordinal),\n FOREIGN KEY(workspace_id,message_id) REFERENCES messages(workspace_id,id),FOREIGN KEY(workspace_id,artifact_id) REFERENCES artifacts(workspace_id,id)\n)"
+    },
+    {
+      "type": "table",
+      "name": "messages",
+      "table": "messages",
+      "sql": "CREATE TABLE messages (\n id TEXT PRIMARY KEY,workspace_id TEXT NOT NULL,thread_id TEXT NOT NULL,sender_kind TEXT NOT NULL CHECK(sender_kind IN ('human','agent')),\n sender_principal_id TEXT NOT NULL,sender_agent_id TEXT,body TEXT NOT NULL CHECK(length(CAST(body AS BLOB))<=32768),\n refs_json TEXT NOT NULL CHECK(json_valid(refs_json)),created_at INTEGER NOT NULL,FOREIGN KEY(thread_id) REFERENCES threads(id)\n)"
+    },
+    {
+      "type": "table",
+      "name": "native_credentials",
+      "table": "native_credentials",
+      "sql": "CREATE TABLE native_credentials (\n credential_id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL, agent_id TEXT NOT NULL, token_sha256 TEXT NOT NULL,\n scopes_json TEXT NOT NULL CHECK(json_valid(scopes_json)), project_ids_json TEXT NOT NULL CHECK(json_valid(project_ids_json)),\n expires_at INTEGER NOT NULL, enabled INTEGER NOT NULL CHECK(enabled IN (0,1)), config_epoch INTEGER NOT NULL,\n retired_at_epoch INTEGER, origin TEXT NOT NULL DEFAULT 'operator_static' CHECK(origin IN ('operator_static','human_managed')), credential_version INTEGER NOT NULL DEFAULT 1 CHECK(credential_version>=1), label TEXT NOT NULL DEFAULT '', created_at INTEGER NOT NULL DEFAULT 0, revoked_at INTEGER, issued_by_principal_id TEXT, CHECK(retired_at_epoch IS NULL OR enabled=0)\n)"
+    },
+    {
+      "type": "table",
+      "name": "outbox",
+      "table": "outbox",
+      "sql": "CREATE TABLE \"outbox\" (\n id TEXT PRIMARY KEY,workspace_id TEXT NOT NULL,message_id TEXT NOT NULL,destination_id TEXT NOT NULL,\n notification_id TEXT NOT NULL UNIQUE,payload_json TEXT NOT NULL CHECK(json_valid(payload_json)),\n status TEXT NOT NULL CHECK(status IN ('pending','in_flight','succeeded','exhausted','cancelled','suppressed')),\n attempts INTEGER NOT NULL DEFAULT 0 CHECK(attempts BETWEEN 0 AND 6),next_due_at INTEGER NOT NULL,\n retry_multiplier REAL NOT NULL DEFAULT 1 CHECK(retry_multiplier BETWEEN 0.8 AND 1.0),\n lease_token TEXT,lease_expires_at INTEGER,last_status INTEGER,last_error TEXT,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,\n destination_snapshot_json TEXT CHECK(destination_snapshot_json IS NULL OR json_valid(destination_snapshot_json))\n)"
+    },
+    {
+      "type": "table",
+      "name": "preferences",
+      "table": "preferences",
+      "sql": "CREATE TABLE \"preferences\" (\n principal_id TEXT PRIMARY KEY,workspace_id TEXT NOT NULL,version INTEGER NOT NULL CHECK(version>0),\n document_json TEXT NOT NULL CHECK(json_valid(document_json)),updated_at INTEGER NOT NULL,\n record_id TEXT NOT NULL CHECK(length(record_id)=37 AND substr(record_id,1,5)='pref_' AND substr(record_id,6) NOT GLOB '*[^a-f0-9]*')\n)"
+    },
+    {
+      "type": "table",
+      "name": "probe_receipts",
+      "table": "probe_receipts",
+      "sql": "CREATE TABLE probe_receipts (\n id TEXT PRIMARY KEY,workspace_id TEXT NOT NULL,authority_epoch INTEGER NOT NULL,request_id TEXT NOT NULL,\n checked_at INTEGER NOT NULL,receipt_json TEXT NOT NULL CHECK(json_valid(receipt_json))\n)"
+    },
+    {
+      "type": "table",
+      "name": "profiles",
+      "table": "profiles",
+      "sql": "CREATE TABLE profiles (\n workspace_id TEXT PRIMARY KEY,version INTEGER NOT NULL CHECK(version>0),document_json TEXT NOT NULL CHECK(json_valid(document_json)),\n updated_at INTEGER NOT NULL,updated_by TEXT NOT NULL\n)"
+    },
+    {
+      "type": "table",
+      "name": "recovery_chunks",
+      "table": "recovery_chunks",
+      "sql": "CREATE TABLE recovery_chunks (\n job_id TEXT NOT NULL,chunk_index INTEGER NOT NULL CHECK(chunk_index>=0),table_name TEXT NOT NULL,\n sha256 TEXT NOT NULL,byte_size INTEGER NOT NULL CHECK(byte_size BETWEEN 0 AND 1048576),row_count INTEGER NOT NULL,\n object_key TEXT NOT NULL,PRIMARY KEY(job_id,chunk_index),FOREIGN KEY(job_id) REFERENCES recovery_jobs(id)\n)"
+    },
+    {
+      "type": "table",
+      "name": "recovery_jobs",
+      "table": "recovery_jobs",
+      "sql": "CREATE TABLE recovery_jobs (\n id TEXT PRIMARY KEY,workspace_id TEXT NOT NULL,operation TEXT NOT NULL,state TEXT NOT NULL,authority_epoch INTEGER NOT NULL,\n capture_id TEXT NOT NULL,manifest_digest TEXT,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,details_json TEXT NOT NULL CHECK(json_valid(details_json))\n)"
+    },
+    {
+      "type": "table",
+      "name": "result_artifacts",
+      "table": "result_artifacts",
+      "sql": "CREATE TABLE result_artifacts (\n workspace_id TEXT NOT NULL,result_id TEXT NOT NULL,artifact_id TEXT NOT NULL,ordinal INTEGER NOT NULL CHECK(ordinal BETWEEN 0 AND 4),\n PRIMARY KEY(workspace_id,result_id,artifact_id),UNIQUE(workspace_id,result_id,ordinal),\n FOREIGN KEY(workspace_id,result_id) REFERENCES task_results(workspace_id,id),FOREIGN KEY(workspace_id,artifact_id) REFERENCES artifacts(workspace_id,id)\n)"
+    },
+    {
+      "type": "table",
+      "name": "runs",
+      "table": "runs",
+      "sql": "CREATE TABLE runs (\n id TEXT PRIMARY KEY NOT NULL,workspace_id TEXT NOT NULL,task_id TEXT NOT NULL,agent_id TEXT NOT NULL,runtime_instance_id TEXT NOT NULL,credential_id TEXT NOT NULL,\n authority_epoch INTEGER NOT NULL CHECK(authority_epoch>=1),status TEXT NOT NULL CHECK(status IN ('active','paused','submitted','failed','expired','cancelled')),\n run_version INTEGER NOT NULL CHECK(run_version>=1),fence INTEGER NOT NULL CHECK(fence>=1),lease_expires_at INTEGER NOT NULL,started_at INTEGER NOT NULL,ended_at INTEGER,\n replay_policy_version INTEGER CHECK(replay_policy_version IS NULL OR replay_policy_version>=1),replay_rule_id TEXT,replay_evidence_ref TEXT,\n UNIQUE(workspace_id,id),UNIQUE(workspace_id,task_id,id),UNIQUE(workspace_id,task_id,fence),\n CHECK((status='active')=(ended_at IS NULL)),\n CHECK((replay_policy_version IS NULL AND replay_rule_id IS NULL AND replay_evidence_ref IS NULL) OR (replay_policy_version IS NOT NULL AND replay_rule_id IS NOT NULL AND replay_evidence_ref IS NOT NULL)),\n FOREIGN KEY(workspace_id,task_id) REFERENCES tasks(workspace_id,id),\n FOREIGN KEY(workspace_id,agent_id,credential_id,runtime_instance_id) REFERENCES runtimes(workspace_id,agent_id,credential_id,id)\n)"
+    },
+    {
+      "type": "table",
+      "name": "runtimes",
+      "table": "runtimes",
+      "sql": "CREATE TABLE runtimes (\n id TEXT PRIMARY KEY NOT NULL, workspace_id TEXT NOT NULL, agent_id TEXT NOT NULL, credential_id TEXT NOT NULL,\n authority_epoch INTEGER NOT NULL CHECK(authority_epoch>=1), proof_sha256 TEXT NOT NULL CHECK(length(proof_sha256)=64 AND proof_sha256 NOT GLOB '*[^0-9a-f]*'),\n runtime_version INTEGER NOT NULL CHECK(runtime_version>=1), label TEXT NOT NULL, status TEXT NOT NULL CHECK(status IN ('online','expired')),\n created_at INTEGER NOT NULL,last_seen_at INTEGER NOT NULL,presence_expires_at INTEGER NOT NULL,revoked_at INTEGER,\n UNIQUE(workspace_id,id), UNIQUE(workspace_id,agent_id,credential_id,id),\n FOREIGN KEY(workspace_id,agent_id,credential_id) REFERENCES native_credentials(workspace_id,agent_id,credential_id),\n FOREIGN KEY(workspace_id,agent_id) REFERENCES static_agents(workspace_id,agent_id)\n)"
+    },
+    {
+      "type": "table",
+      "name": "scheduler_state",
+      "table": "scheduler_state",
+      "sql": "CREATE TABLE scheduler_state (id INTEGER PRIMARY KEY CHECK(id=1),next_due_at INTEGER,armed_at INTEGER,last_run_at INTEGER, dirty INTEGER NOT NULL DEFAULT 0 CHECK(dirty IN (0,1)), generation INTEGER NOT NULL DEFAULT 0 CHECK(generation>=0 AND typeof(generation)='integer'), last_error_code TEXT CHECK(last_error_code IS NULL OR last_error_code IN ('ALARM_ARM_FAILED','DUE_WORK_FAILED')))"
+    },
+    {
+      "type": "table",
+      "name": "schema_migrations",
+      "table": "schema_migrations",
+      "sql": "CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY, applied_at INTEGER NOT NULL)"
+    },
+    {
+      "type": "table",
+      "name": "sessions",
+      "table": "sessions",
+      "sql": "CREATE TABLE sessions (\n id TEXT PRIMARY KEY,workspace_id TEXT NOT NULL,principal_id TEXT NOT NULL,token_digest TEXT NOT NULL UNIQUE,\n csrf_digest TEXT NOT NULL,issuer TEXT NOT NULL,subject TEXT NOT NULL,created_at INTEGER NOT NULL,\n expires_at INTEGER NOT NULL,revoked_at INTEGER, auth_epoch INTEGER NOT NULL DEFAULT 0 CHECK(auth_epoch>=0 AND auth_epoch<=9007199254740991),CHECK(expires_at>created_at)\n)"
+    },
+    {
+      "type": "table",
+      "name": "sqlite_sequence",
+      "table": "sqlite_sequence",
+      "sql": "CREATE TABLE sqlite_sequence(name,seq)"
+    },
+    {
+      "type": "table",
+      "name": "static_agents",
+      "table": "static_agents",
+      "sql": "CREATE TABLE static_agents (agent_id TEXT PRIMARY KEY,workspace_id TEXT NOT NULL,display_name TEXT NOT NULL,config_epoch INTEGER NOT NULL, origin TEXT NOT NULL DEFAULT 'operator_static' CHECK(origin IN ('operator_static','human_managed')), agent_version INTEGER NOT NULL DEFAULT 1 CHECK(agent_version>=1), description TEXT NOT NULL DEFAULT '', work_role_ids_json TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(work_role_ids_json) AND json_type(work_role_ids_json)='array'), framework TEXT, model TEXT, status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','archived')), created_at INTEGER NOT NULL DEFAULT 0, updated_at INTEGER NOT NULL DEFAULT 0)"
+    },
+    {
+      "type": "table",
+      "name": "task_acceptances",
+      "table": "task_acceptances",
+      "sql": "CREATE TABLE task_acceptances (\n id TEXT PRIMARY KEY NOT NULL,workspace_id TEXT NOT NULL,task_id TEXT NOT NULL,result_id TEXT NOT NULL,run_id TEXT NOT NULL,\n task_version INTEGER NOT NULL CHECK(task_version>=1),reviewer_principal_id TEXT NOT NULL,reviewer_agent_id TEXT,reason TEXT NOT NULL,created_at INTEGER NOT NULL,\n UNIQUE(workspace_id,id),UNIQUE(workspace_id,task_id,task_version),\n FOREIGN KEY(workspace_id,task_id,run_id,result_id) REFERENCES task_results(workspace_id,task_id,run_id,id),\n FOREIGN KEY(workspace_id,reviewer_agent_id) REFERENCES static_agents(workspace_id,agent_id)\n)"
+    },
+    {
+      "type": "table",
+      "name": "task_history",
+      "table": "task_history",
+      "sql": "CREATE TABLE task_history (\n id TEXT PRIMARY KEY NOT NULL,workspace_id TEXT NOT NULL,event_id TEXT NOT NULL,task_id TEXT NOT NULL,task_version INTEGER NOT NULL CHECK(task_version>=1),run_id TEXT,kind TEXT NOT NULL,created_at INTEGER NOT NULL,\n UNIQUE(workspace_id,id),UNIQUE(workspace_id,event_id),\n FOREIGN KEY(workspace_id,event_id) REFERENCES events(workspace_id,id),FOREIGN KEY(workspace_id,task_id) REFERENCES tasks(workspace_id,id),\n FOREIGN KEY(workspace_id,task_id,run_id) REFERENCES runs(workspace_id,task_id,id)\n)"
+    },
+    {
+      "type": "table",
+      "name": "task_results",
+      "table": "task_results",
+      "sql": "CREATE TABLE task_results (\n id TEXT PRIMARY KEY NOT NULL,workspace_id TEXT NOT NULL,task_id TEXT NOT NULL,run_id TEXT NOT NULL,\n submission_sequence INTEGER NOT NULL CHECK(submission_sequence>=1),submitted_kind TEXT NOT NULL CHECK(submitted_kind IN ('human','agent','system')),\n submitted_principal_id TEXT NOT NULL,submitted_agent_id TEXT,summary TEXT NOT NULL,created_at INTEGER NOT NULL,\n UNIQUE(workspace_id,id),UNIQUE(workspace_id,task_id,id),UNIQUE(workspace_id,task_id,run_id,id),UNIQUE(workspace_id,task_id,submission_sequence),UNIQUE(workspace_id,run_id),\n FOREIGN KEY(workspace_id,task_id,run_id) REFERENCES runs(workspace_id,task_id,id),\n FOREIGN KEY(workspace_id,submitted_agent_id) REFERENCES static_agents(workspace_id,agent_id)\n)"
+    },
+    {
+      "type": "table",
+      "name": "tasks",
+      "table": "tasks",
+      "sql": "CREATE TABLE tasks (\n id TEXT PRIMARY KEY NOT NULL,workspace_id TEXT NOT NULL,title TEXT NOT NULL,description TEXT NOT NULL,\n state TEXT NOT NULL CHECK(state IN ('backlog','ready','doing','waiting','review','done','cancelled')),\n task_version INTEGER NOT NULL CHECK(task_version>=1),proposal_version INTEGER NOT NULL CHECK(proposal_version>=0),\n project_id TEXT,work_role_id TEXT,assigned_agent_id TEXT,active_run_id TEXT,latest_run_id TEXT,approval_id TEXT,current_result_id TEXT,\n retry_count INTEGER NOT NULL CHECK(retry_count>=0),retry_limit INTEGER NOT NULL CHECK(retry_limit>=0),\n flags_json TEXT NOT NULL CHECK(json_valid(flags_json) AND json_type(flags_json)='array'),\n next_fence INTEGER NOT NULL DEFAULT 1 CHECK(next_fence>=1),next_result_sequence INTEGER NOT NULL DEFAULT 1 CHECK(next_result_sequence>=1),\n created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,UNIQUE(workspace_id,id),\n CHECK((state='doing')=(active_run_id IS NOT NULL)),\n FOREIGN KEY(workspace_id,assigned_agent_id) REFERENCES static_agents(workspace_id,agent_id),\n FOREIGN KEY(workspace_id,id,active_run_id) REFERENCES runs(workspace_id,task_id,id),\n FOREIGN KEY(workspace_id,id,latest_run_id) REFERENCES runs(workspace_id,task_id,id),\n FOREIGN KEY(workspace_id,id,current_result_id) REFERENCES task_results(workspace_id,task_id,id)\n)"
+    },
+    {
+      "type": "table",
+      "name": "thread_participants",
+      "table": "thread_participants",
+      "sql": "CREATE TABLE \"thread_participants\" (\n thread_id TEXT NOT NULL,participant_kind TEXT NOT NULL CHECK(participant_kind IN ('human','agent')),\n participant_id TEXT NOT NULL,PRIMARY KEY(thread_id,participant_kind,participant_id),\n FOREIGN KEY(thread_id) REFERENCES threads(id)\n)"
+    },
+    {
+      "type": "table",
+      "name": "threads",
+      "table": "threads",
+      "sql": "CREATE TABLE threads (id TEXT PRIMARY KEY,workspace_id TEXT NOT NULL,subject TEXT NOT NULL,created_at INTEGER NOT NULL)"
+    },
+    {
+      "type": "table",
+      "name": "workspace_metadata",
+      "table": "workspace_metadata",
+      "sql": "CREATE TABLE workspace_metadata (\n id INTEGER PRIMARY KEY CHECK(id=1), workspace_id TEXT NOT NULL UNIQUE, object_name TEXT NOT NULL,\n config_epoch INTEGER NOT NULL CHECK(config_epoch>0), config_digest TEXT NOT NULL, installation_digest TEXT NOT NULL,\n config_json TEXT NOT NULL CHECK(json_valid(config_json)), bundle_json TEXT NOT NULL CHECK(json_valid(bundle_json)),\n installed_at INTEGER NOT NULL,\n admission_state TEXT NOT NULL DEFAULT 'installed' CHECK(admission_state IN ('installed','maintenance','retired'))\n, message_retained_after_created_at INTEGER CHECK(message_retained_after_created_at IS NULL OR (typeof(message_retained_after_created_at)='integer' AND message_retained_after_created_at>=0)), message_retained_after_id TEXT CHECK(message_retained_after_id IS NULL OR length(message_retained_after_id)>0), event_retained_after_sequence INTEGER CHECK(event_retained_after_sequence IS NULL OR (typeof(event_retained_after_sequence)='integer' AND event_retained_after_sequence>=0)))"
+    },
+    {
+      "type": "trigger",
+      "name": "preferences_owner_immutable",
+      "table": "preferences",
+      "sql": "CREATE TRIGGER preferences_owner_immutable BEFORE UPDATE ON preferences\nWHEN NEW.principal_id IS NOT OLD.principal_id OR NEW.workspace_id IS NOT OLD.workspace_id OR NEW.record_id IS NOT OLD.record_id\nBEGIN SELECT RAISE(ABORT,'IMMUTABLE_PREFERENCE_OWNER'); END"
+    },
+    {
+      "type": "trigger",
+      "name": "preferences_owner_retained",
+      "table": "preferences",
+      "sql": "CREATE TRIGGER preferences_owner_retained BEFORE DELETE ON preferences\nBEGIN SELECT RAISE(ABORT,'IMMUTABLE_PREFERENCE_OWNER'); END"
+    }
+  ],
+  "command_guards": [
+    "active pointer status",
+    "monotonic task fence and result sequence",
+    "immutable origin and provenance",
+    "actor/creator binding",
+    "polymorphic resource workspace relationship",
+    "committed artifact eligibility",
+    "independent acceptance",
+    "serialized generation effect slot; no overwrite while uncertain/in_flight"
+  ]
+}

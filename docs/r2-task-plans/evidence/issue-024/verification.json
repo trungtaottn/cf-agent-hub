@@ -1,0 +1,38 @@
+{
+  "schema_version": 8,
+  "base": "3ea0fbf9a2d541919b611ac1e299b069e0bbb2c2",
+  "migration_sha256": "dd8c050997774cf3259f2ef453812b99bbe94818d32b366d18e54b5ebefeb0f8",
+  "toolchain": {
+    "node": "24.22.1",
+    "npm": "11.19.1",
+    "lock_sha256": "8fa7894880bd0b77bfdf6fffe7e13fd8eb1a8b695b1316682dc33f7783873634"
+  },
+  "checks": {
+    "npm run check": {
+      "exit": 1,
+      "node": 798,
+      "workers": 492,
+      "operator": 18,
+      "deployment": 13,
+      "recovery_cli_pass": 8,
+      "recovery_cli_fail": 18
+    },
+    "storage_focused": {
+      "exit": 0,
+      "tests": 49,
+      "files": 3
+    },
+    "runtime_boot": {
+      "exit": 0,
+      "schema": 8
+    },
+    "docs": {
+      "exit": 0
+    },
+    "historical_plan_validator": {
+      "exit": 0,
+      "checks": 636
+    }
+  },
+  "limitation": "Recovery CLI protected /tmp/.git outside-checkout guard prevents transport; no aggregate green or deployed acceptance. Schema8 operational recovery unavailable until #39/#43."
+}

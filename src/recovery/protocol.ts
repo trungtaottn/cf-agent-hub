@@ -3,7 +3,7 @@ import type {Clock,Entropy} from '../workspace/context';
 import type {RecoveryCommand,RecoveryManifest,RecoveryReceipt,RecoveryJobProgress,CurrentLedger,ProbeReceipt,ResumeReceipt,RetirementReceipt,CutoverRecord,ChunkMetadata} from './generated/recovery-validators.js';
 import {validateRecoveryJobProgress,validateRecoveryReceipt,validateProbeReceipt,validateResumeReceipt,validateRetirementReceipt} from './generated/recovery-validators.js';
 import {canonicalBytes,closed,isSlug,CONTROL_LIMIT} from './encoding';
-import {readAdmissionFence,assertFence,type AdmissionFence} from './maintenance';
+import {readAdmissionFence,assertFence,type AdmissionFence} from './maintenance-v1';
 export type {RecoveryCommand,RecoveryManifest,RecoveryReceipt,RecoveryJobProgress,CurrentLedger,ProbeReceipt,ResumeReceipt,RetirementReceipt,CutoverRecord,ChunkMetadata};
 export type RecoveryOperation=Exclude<RecoveryCommand['operation'],'install'>;
 export type RecoveryRequest=Exclude<RecoveryCommand,{operation:'install'}>;
@@ -29,6 +29,9 @@ export function validateRecoveryContext(ctx:unknown):asserts ctx is RecoveryCont
 /** The expected installed epoch check always precedes replay for non-install requests. */
 export function assertRecoveryContext(tx:WorkspaceTransaction,w:RecoveryWorkspace,ctx:RecoveryContext,expected?:AdmissionFence):AdmissionFence {
  validateRecoveryContext(ctx);
+ // V1 recovery cannot serialize or restore the schema8 authority/artifact boundary.
+ const versions=tx.all<{version:number}>('SELECT version FROM schema_migrations ORDER BY version');
+ if(versions.length!==7||versions.some((row,i)=>row.version!==i+1))throw Error('RECOVERY_FORMAT_UNAVAILABLE');
  if(ctx.proofExpiresAt<=w.clock.nowMs())throw Error('OPERATOR_PROOF_EXPIRED');
  if(ctx.workspaceId!==w.workspaceId||ctx.objectName!==w.objectName||ctx.environmentId!==w.environmentId)throw Error('WORKSPACE_IDENTITY_MISMATCH');
  const metadata=tx.one<{workspace_id:string;object_name:string;config_epoch:number;installation_digest:string}>('SELECT workspace_id,object_name,config_epoch,installation_digest FROM workspace_metadata WHERE id=1');

@@ -1,3 +1,4 @@
+import {resetLegacyAuthorityFixture} from '../helpers/legacy-migration-fixture';
 import {validateEvent} from '../../src/http/generated/auth-validators.js';
 import {migrate,FOUNDATION_SQL} from '../../src/storage/migrations';
 import {it,expect,vi} from 'vitest';
@@ -163,8 +164,8 @@ it('failure_after_event_insertion_rolls_back_settings_revision_event_and_outcome
 
 it('forward_migration_backfills_unique_opaque_owners_atomically_and_preserves_legacy_revisions',async()=>{
  const {stub}=await settingsFixture('settings-owner-migration');
- await runInDurableObject(stub,(_o,state)=>{
-  state.storage.sql.exec('DROP TABLE preferences');state.storage.sql.exec(FOUNDATION_SQL.match(/CREATE TABLE preferences \([\s\S]*?\n\);/)![0]);for(const table of ['thread_participants','outbox','scheduler_state']){state.storage.sql.exec('DROP TABLE '+table);state.storage.sql.exec(FOUNDATION_SQL.match(new RegExp(String.raw`CREATE TABLE ${table} \([\s\S]*?\);`))![0]);} for(const column of ['message_retained_after_id','message_retained_after_created_at','event_retained_after_sequence'])state.storage.sql.exec('ALTER TABLE workspace_metadata DROP COLUMN '+column);state.storage.sql.exec('ALTER TABLE maintenance_state DROP COLUMN generation');state.storage.sql.exec('DELETE FROM schema_migrations WHERE version>=3');
+ await runInDurableObject(stub,async(_o,state)=>{
+  await resetLegacyAuthorityFixture(state.storage,2);
   for(const [id,version]of [['legacy_owner_a',4],['legacy_owner_b',8]] as const)state.storage.sql.exec('INSERT INTO preferences (principal_id,workspace_id,version,document_json,updated_at) VALUES (?,?,?,?,?)',id,'ws_example',version,JSON.stringify(preference),1);
   const before=state.storage.sql.exec('SELECT * FROM preferences ORDER BY principal_id').toArray(),events=state.storage.sql.exec('SELECT * FROM events').toArray();
   const entropy=vi.spyOn(crypto,'randomUUID').mockReturnValue('11111111-1111-4111-8111-111111111111');
@@ -174,8 +175,8 @@ it('forward_migration_backfills_unique_opaque_owners_atomically_and_preserves_le
   expect(rows.map(x=>x.version)).toEqual([4,8]);expect(new Set(rows.map(x=>x.record_id)).size).toBe(2);for(const row of rows){expect(row.record_id).toMatch(/^pref_[a-f0-9]{32}$/);expect(row.record_id).not.toContain(row.principal_id);}
   expect(()=>state.storage.sql.exec('UPDATE preferences SET workspace_id=? WHERE principal_id=?','foreign','legacy_owner_a')).toThrow();expect(()=>state.storage.sql.exec('INSERT INTO preferences (principal_id,workspace_id,version,document_json,updated_at,record_id) VALUES (?,?,?,?,?,?)','third','ws_example',1,JSON.stringify(preference),1,rows[0].record_id)).toThrow();
   expect(()=>state.storage.sql.exec('INSERT INTO preferences (principal_id,workspace_id,version,document_json,updated_at) VALUES (?,?,?,?,?)','third','ws_example',1,JSON.stringify(preference),1)).toThrow();
-  expect(state.storage.sql.exec('SELECT * FROM events').toArray()).toEqual(events);
- });await evictDurableObject(stub);await runInDurableObject(stub,(_o,state)=>{expect(state.storage.sql.exec('SELECT version FROM schema_migrations ORDER BY version').toArray()).toEqual([{version:1},{version:2},{version:3},{version:4},{version:5},{version:6},{version:7}]);expect(state.storage.sql.exec('SELECT record_id FROM preferences').toArray()).toHaveLength(2);});
+  expect(state.storage.sql.exec('SELECT * FROM events').toArray()).toEqual(events.map(row=>({...row,task_version:null,run_id:null,fence:null})));
+ });await evictDurableObject(stub);await runInDurableObject(stub,(_o,state)=>{expect(state.storage.sql.exec('SELECT version FROM schema_migrations ORDER BY version').toArray()).toEqual([{version:1},{version:2},{version:3},{version:4},{version:5},{version:6},{version:7},{version:8}]);expect(state.storage.sql.exec('SELECT record_id FROM preferences').toArray()).toHaveLength(2);});
 });
 it('owner_event_projection_rechecks_current_scopes_and_session_before_projection',async()=>{
  const {stub,name}=await settingsFixture('settings-event-authority');await runInDurableObject(stub,async(_o,state)=>{const id=human(state.storage),a=actor(state.storage,id),body={expected_preferences_revision:0,preferences:preference};executeCommand(await commandContext(state.storage,name,body,'event'),id,preferencesCommand('pref_'+'7'.repeat(32)),body);

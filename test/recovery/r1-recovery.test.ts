@@ -1,3 +1,4 @@
+import {resetLegacyAuthorityFixture} from '../helpers/legacy-migration-fixture';
 import {migrate} from '../../src/storage/migrations';
 import {describe,it,expect} from 'vitest';
 import {env} from 'cloudflare:workers';
@@ -18,7 +19,7 @@ describe('R1 recovery registry and durable admission',()=>{
   await runInDurableObject(stub,(_instance,state)=>{
    const names=state.storage.sql.exec<{name:string}>("SELECT name FROM sqlite_schema WHERE type='table' ORDER BY name").toArray().map(x=>x.name);
    expect(names).toEqual([...TABLE_REGISTRY.map(x=>x.name),'sqlite_sequence'].sort());
-   expect(withTransaction(state.storage,inspectRegistry)).toEqual({schemaVersion:7,eventSequence:1,tables:22});
+   expect(withTransaction(state.storage,inspectRegistry)).toEqual({schemaVersion:8,eventSequence:1,tables:36});
   });
  });
  it('fails closed when a durable maintenance fence is present',async()=>{
@@ -80,9 +81,8 @@ describe('R1 recovery registry and durable admission',()=>{
 
 it('does not migrate a legacy non-open fence when metadata still says installed',async()=>{
  const stub=await installed('recovery_legacy_frozen');
- await runInDurableObject(stub,(_instance,state)=>{
-  state.storage.sql.exec('ALTER TABLE maintenance_state DROP COLUMN generation');
-  state.storage.sql.exec('DELETE FROM schema_migrations WHERE version=7');
+ await runInDurableObject(stub,async(_instance,state)=>{
+  await resetLegacyAuthorityFixture(state.storage,6);
   state.storage.sql.exec("UPDATE maintenance_state SET state='capturing' WHERE id=1");
   const before=state.storage.sql.exec("SELECT sql FROM sqlite_schema WHERE name='maintenance_state'").one();
   expect(()=>migrate(state.storage)).toThrow('FROZEN_SCHEMA_MIGRATION');

@@ -14,10 +14,10 @@ The [R2 Workers API](https://developers.cloudflare.com/r2/api/workers/workers-ap
 
 | Input | Format/semantic contract | Current runtime |
 | --- | --- | --- |
-| V1, schema7, original empty artifact arrays | Existing HMAC, SQL representation and complete registered table coverage | Existing recovery lane |
+| V1, schema7, original empty artifact arrays | Existing HMAC, SQL representation and complete registered table coverage | Frozen codec/registry; legacy harness exercises schema7. Current WorkspaceDO upgrades open storage to8. |
 | V1 with artifacts, unknown fields or incompatible schema | Reject | Reject before writes |
 | V2, schema7 synthetic format fixture | Bounded envelope only; schema7 has no committed-artifact metadata table | `RECOVERY_FORMAT_UNAVAILABLE` |
-| V2 future R2 schema | Requires #24-reviewed exact versioned typed registry/schema extension | Unavailable until #39/#43 |
+| V1 or V2, schema8 | Issue24 complete typed registry exists, but operational semantics are not implemented | Unavailable before side effects until #39/#43 |
 
 `validateManifestShape` validates the envelope's declarations; `verifyRecord` authenticates canonical bytes. Neither proves bytes exist or grants admission. `verifyManifest` preserves its signature but rejects V2 explicitly. Capture rejects nonzero artifact budgets before workspace access. Thus a widened future-facing schema does not silently activate runtime recovery. Existing V1 fixtures and historical receipts remain unchanged. No generic V1-to-R2 restore mapping is invented.
 
@@ -40,3 +40,7 @@ All ceilings apply together: 1000 artifacts, 10 MiB each, 256 MiB combined SQL+a
 D1 remains the reviewed single provenance registry decision: preserve identity and historical metadata within snapshot coverage; newer current ledger/epoch revokes old human-managed credentials and runtime proofs, including credentials absent from the old snapshot. Only independently anchored current static grants activate. Retained active dynamic identity advances to the new epoch without resurrecting archived identity or granting scopes; fresh human issuance uses the current operator ceiling. #24/#26/#43 own implementation and negative/fresh-issuance tests.
 
 Restore consumes/revokes login/session records, leaves R3 approval JSON disabled, holds uncertain runs/effects, and never auto-resumes/redrives. Current ledger, source retirement, fresh probe, reconciled effects and explicit exclusive resume remain necessary. A complete capture receipt is not admission. After explicit resume only, perform fresh task/review acceptance. Real acceptance remains deferred to the owner's post-R4 stage, never waived.
+
+## Issue24 compatibility implementation
+
+The current typed registry covers schema8; table-registry-v1.ts freezes historical wire meaning. The shared fence algorithm accepts a closed explicit version policy: ordinary callers default to8, and only the V1 recovery lane supplies7. Its central context check rejects any sequence except exact1–7 before replay/effects. Current production recovery therefore fails closed. Frozen/non-open7 cannot be auto-upgraded; the original migration gate remains. The test-only historical storage/scheduler harness is explicitly not production WorkspaceDO. It preserves original migration bytes and tests real SQLite/eviction, not a deployment or current-runtime recovery-success claim.

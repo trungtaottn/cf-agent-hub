@@ -2,12 +2,12 @@ import {it,expect} from 'vitest';
 import {readinessFromResponse,assertCompatibleRollback,assertDeployedBuild} from '../../src/health/promotion';
 import {recoveryFixture,captureFixture,restoreFixture,withRecoveryWorkspace,recoveryContext,fixtureIntegrity} from '../helpers/recovery-fixture';
 import {withTransaction} from '../../src/storage/transaction';
-import {assertAdmissionOpen} from '../../src/recovery/maintenance';
+import {assertAdmissionOpen} from '../../src/recovery/maintenance-v1';
 import {recordProbe} from '../../src/recovery/probes';
 import {resolveDelivery,retireWorkspace,resumeWorkspace} from '../../src/recovery/controls';
 import {signRecord} from '../../src/recovery/manifest';
 import type {CutoverRecord} from '../../src/recovery/protocol';
-import {origin} from '../helpers/auth';
+
 const now=Date.parse('2026-10-25T05:00:00.000Z');
 function ready(){return {request_id:'synthetic_readiness',data:{observed_at:new Date(now).toISOString(),ready:true,checks:[
  ...['schema','configuration','authentication_keys','cursor_key','recovery_binding','admission','storage_probe','scheduler_probe','scheduler','delivery'].map(name=>({name,status:'pass',code:name.endsWith('_probe')?'PROBE_CONFIRMED':'OBSERVED',checked_at:new Date(now-1000).toISOString()})),
@@ -20,7 +20,7 @@ it('rollback_rejects_incompatible_schema',()=>{for(const code of [{minimum_schem
 it('rollback_never_reduces_live_authority_epoch',()=>{expect(()=>assertCompatibleRollback({minimum_schema:7,maximum_schema:7,authority_contract:1},{schema_version:7,authority_contract:1,config_epoch:4},3)).toThrow();});
 it('compatible_previous_code_preserves_live_schema_and_epoch',()=>{expect(()=>assertCompatibleRollback({minimum_schema:7,maximum_schema:7,authority_contract:1},{schema_version:7,authority_contract:1,config_epoch:4},4)).not.toThrow();});
 it('deployed_bytes_match_reviewed_candidate',()=>{expect(()=>assertDeployedBuild('a'.repeat(64),'b'.repeat(64))).toThrow();expect(()=>assertDeployedBuild('claimed','claimed')).toThrow();expect(()=>assertDeployedBuild('a'.repeat(64),'a'.repeat(64))).not.toThrow();});
-it('restored_authority_is_not_resurrected_after_actual_retirement_and_resume',async()=>{
+it('historical_schema7_restored_authority_is_not_resurrected_after_retirement_and_resume',async()=>{
  const f=await recoveryFixture('promotion_authority');
  const oldFence=await withRecoveryWorkspace(f,'source',w=>withTransaction(w.storage,tx=>assertAdmissionOpen(tx)));
  const capture=await captureFixture(f,{evict:true}),restored=await restoreFixture(f,capture,{evict:true});
@@ -40,10 +40,8 @@ it('restored_authority_is_not_resurrected_after_actual_retirement_and_resume',as
    expect(tx.one<{revoked_at:number|null}>('SELECT revoked_at FROM sessions WHERE id=?',['session_fixture'])!.revoked_at).not.toBeNull();
   });
  });
- // Admission is now open: these denials prove current authority, rather than
- // merely relying on the temporary maintenance barrier to hide old tokens.
- const base=origin+'/v2/workspaces/ws_example';
- expect((await f.target.fetch(new Request(base,{headers:{authorization:'Bearer '+'A'.repeat(43)}}))).status).toBe(401);
- expect((await f.target.fetch(new Request(base+'/auth/session',{headers:{cookie:'cfhub_session='+'A'.repeat(43)}}))).status).toBe(401);
+ // Historical SQL authority is disabled after reopening admission, as asserted above.
+ // Current schema8 authentication correctly rejects schema7 before credential checks;
+ // no native/session HTTP revocation traversal is claimed by this historical fixture.
  await withRecoveryWorkspace(f,'source',w=>withTransaction(w.storage,tx=>expect(()=>assertAdmissionOpen(tx)).toThrow('ADMISSION_CLOSED')));
 },60000);

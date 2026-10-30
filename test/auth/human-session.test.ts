@@ -1,3 +1,4 @@
+import {resetLegacyAuthorityFixture} from '../helpers/legacy-migration-fixture';
 import { it,expect,beforeEach } from 'vitest';
 import { env } from 'cloudflare:workers';
 import { runInDurableObject,evictDurableObject } from 'cloudflare:test';
@@ -56,18 +57,14 @@ import { afterEach,vi } from 'vitest';
 afterEach(()=>vi.useRealTimers());
 it('v1_sessions_and_attempts_migrate_invalid_and_remain_invalid_after_restart',async()=>{
  const name='legacy-session',{stub}=await installed(name),token='A'.repeat(43),digest=await sha256(token),now=Date.now();
- await runInDurableObject(stub,(_o,state)=>{
-  state.storage.sql.exec('DROP TABLE sessions');state.storage.sql.exec('DROP TABLE login_attempts');
-  state.storage.sql.exec(FOUNDATION_SQL.match(/CREATE TABLE sessions \([\s\S]*?\n\);/)![0]);
-  state.storage.sql.exec(FOUNDATION_SQL.match(/CREATE TABLE login_attempts \([\s\S]*?\n\);/)![0]);
-  state.storage.sql.exec('DROP TABLE preferences');state.storage.sql.exec(FOUNDATION_SQL.match(/CREATE TABLE preferences \([\s\S]*?\n\);/)![0]);
-  for(const table of ['thread_participants','outbox','scheduler_state']){state.storage.sql.exec('DROP TABLE '+table);state.storage.sql.exec(FOUNDATION_SQL.match(new RegExp(String.raw`CREATE TABLE ${table} \([\s\S]*?\);`))![0]);} for(const column of ['message_retained_after_id','message_retained_after_created_at','event_retained_after_sequence'])state.storage.sql.exec('ALTER TABLE workspace_metadata DROP COLUMN '+column);state.storage.sql.exec('ALTER TABLE maintenance_state DROP COLUMN generation');state.storage.sql.exec('DELETE FROM schema_migrations WHERE version>=2');
+ await runInDurableObject(stub,async(_o,state)=>{
+  await resetLegacyAuthorityFixture(state.storage,1);
   state.storage.sql.exec('INSERT INTO sessions (id,workspace_id,principal_id,token_digest,csrf_digest,issuer,subject,created_at,expires_at) VALUES (?,?,?,?,?,?,?,?,?)','legacy','ws_example','human_operator',digest,'','https://identity.example.invalid','synthetic-subject',now,now+60000);
   state.storage.sql.exec('INSERT INTO login_attempts (id,workspace_id,state_digest,nonce,pkce_verifier,cookie_digest,redirect_uri,created_at,expires_at) VALUES (?,?,?,?,?,?,?,?,?)','legacy','ws_example',digest,'unused','unused',digest,'https://hub.example.invalid/v2/workspaces/ws_example/auth/callback',now,now+60000);
  });
  await evictDurableObject(stub);
  const migrated=await runInDurableObject(stub,(_o,state)=>({session:state.storage.sql.exec('SELECT auth_epoch FROM sessions').one().auth_epoch,attempt:state.storage.sql.exec('SELECT auth_epoch,return_path FROM login_attempts').one(),versions:state.storage.sql.exec('SELECT version FROM schema_migrations ORDER BY version').toArray()}));
- expect(migrated).toEqual({session:0,attempt:{auth_epoch:0,return_path:'/'},versions:[{version:1},{version:2},{version:3},{version:4},{version:5},{version:6},{version:7}]});
+ expect(migrated).toEqual({session:0,attempt:{auth_epoch:0,return_path:'/'},versions:[{version:1},{version:2},{version:3},{version:4},{version:5},{version:6},{version:7},{version:8}]});
  const denied=await stub.fetch(request('session','GET',undefined,'cfhub_session='+token));expect(denied.status).toBe(401);await denied.text();
  const oldAttempt=await stub.fetch(request('callback?code=unused&state='+token,'GET',undefined,'cfhub_login='+token));expect(oldAttempt.status).toBe(401);await oldAttempt.text();
  await evictDurableObject(stub);

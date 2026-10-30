@@ -127,7 +127,7 @@ it('ack_200_unique_ids_commits_atomically_and_failed_event_or_outcome_rolls_back
 it('same_agent_other_credential_cannot_reuse_cursor_or_broaden_actual_read_grant',async()=>{
  const {stub,name,identity}=await messageFixture('read-credential');await runInDurableObject(stub,async(_o,state)=>{
   await send(state.storage,name,identity,'a');await send(state.storage,name,identity,'b');const first=await (await get(state.storage,name,'/inbox?limit=1')).json<any>(),digest=await sha256('E'.repeat(43));
-  state.storage.sql.exec("INSERT INTO native_credentials SELECT 'other_credential',workspace_id,agent_id,?,scopes_json,project_ids_json,expires_at,enabled,config_epoch,retired_at_epoch FROM native_credentials",digest);
+  state.storage.sql.exec("INSERT INTO native_credentials (credential_id,workspace_id,agent_id,token_sha256,scopes_json,project_ids_json,expires_at,enabled,config_epoch,retired_at_epoch) SELECT 'other_credential',workspace_id,agent_id,?,scopes_json,project_ids_json,expires_at,enabled,config_epoch,retired_at_epoch FROM native_credentials",digest);
   const other=new Request(root+'/inbox?limit=1&cursor='+first.page.next_cursor,{headers:{authorization:'Bearer '+'E'.repeat(43)}});expect((await messageRoutes(other,workspace(state.storage,name))).status).toBe(400);
   state.storage.sql.exec("UPDATE native_credentials SET scopes_json='[]' WHERE credential_id='credential_research_1'");expect((await get(state.storage,name,'/inbox?limit=1&cursor='+first.page.next_cursor)).status).toBe(403);
  });

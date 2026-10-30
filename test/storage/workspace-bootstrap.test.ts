@@ -75,7 +75,7 @@ describe('actual workerd SQLite authority',()=>{
  });
  it('migration_restart_no_duplicate_schema',async()=>{
   const name='restart',input=await prepared(name),receipt=await stub(name).reconcileConfiguration(operator(),input);
-  const before=await snapshot(name);expect(before.migrations).toHaveLength(7);expect(before.grants).toHaveLength(1);
+  const before=await snapshot(name);expect(before.migrations).toHaveLength(8);expect(before.grants).toHaveLength(1);
   await evictDurableObject(stub(name));
   expect(await stub(name).reconcileConfiguration(operator(1,input.installationDigest),input)).toEqual(receipt);
   expect(await snapshot(name)).toEqual(before);
@@ -146,7 +146,7 @@ describe('transaction and authority hardening',()=>{
  it('all_required_tables_and_ordering_indexes_exist',async()=>{
   await runInDurableObject(stub('schema-complete'),(_object,state)=>{
    const tables=state.storage.sql.exec<{name:string}>("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%'").toArray().map(x=>x.name).sort();
-   expect(tables).toEqual(['schema_migrations','workspace_metadata','human_grants','static_agents','native_credentials','login_attempts','sessions','profiles','preferences','threads','thread_participants','messages','inbox','events','idempotency_outcomes','outbox','scheduler_state','maintenance_state','recovery_jobs','recovery_chunks','probe_receipts'].sort());
+   expect(tables).toEqual(['schema_migrations','workspace_metadata','human_grants','static_agents','native_credentials','login_attempts','sessions','profiles','preferences','threads','thread_participants','messages','inbox','events','idempotency_outcomes','outbox','scheduler_state','maintenance_state','recovery_jobs','recovery_chunks','probe_receipts','runtimes','tasks','runs','task_results','task_acceptances','task_history','artifacts','artifact_generations','result_artifacts','artifact_associations','message_artifacts','catalog_plans','import_plans','import_mappings'].sort());
    for(const [index,columns]of Object.entries({threads_created:['created_at','id'],inbox_recipient_order:['recipient_agent_id','acknowledged_at','created_at','message_id'],events_sequence:['sequence'],outbox_due:['status','next_due_at'],login_attempts_expiry:['expires_at']}))
     expect(state.storage.sql.exec<{name:string}>('PRAGMA index_info('+index+')').toArray().map(x=>x.name)).toEqual(columns);
   });

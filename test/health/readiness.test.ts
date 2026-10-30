@@ -93,38 +93,39 @@ it('health_never_discloses_catalog_or_secrets',async()=>{
 });
 async function probed(name:string,seed=false){
  const f=await recoveryFixture('health_'+name,{disableCredential:false,seed});
- const signed=await login(f.source);expect(signed.response.status).toBe(302);
  const receipt=await withRecoveryWorkspace(f,'source',async workspace=>recordProbe(workspace,await recoveryContext(workspace,'probe',{},null)));
  expect(receipt.checks.every(check=>check.passed)).toBe(true);
- return {f,cookie:signed.cookie,receipt};
+ return {f,receipt};
 }
-async function diagnostics(f:Awaited<ReturnType<typeof probed>>,path='/readiness'){
- const response=await f.f.source.fetch(new Request(root+path,{headers:{cookie:f.cookie}}));
- expect(response.status).toBe(200);return await response.json() as ReadinessResponse;
+// Historical schema7 projection only. Current production HTTP/auth tests above remain schema8.
+async function diagnostics(f:Awaited<ReturnType<typeof probed>>){
+ const data=await withRecoveryWorkspace(f.f,'source',w=>withTransaction(w.storage,tx=>projectReadiness(tx,{...w,secrets:env as unknown as Record<string,unknown>},Date.now())));
+ return {request_id:'historical_projection',data};
 }
-it('actual_probe_allows_readiness_without_an_artifact_roundtrip_claim',async()=>{
+it('historical_schema7_probe_is_retained_without_claiming_current_schema8_readiness',async()=>{
  const f=await probed('actual');
- const body=await diagnostics(f);expect(body.data.ready).toBe(true);
+ const body=await diagnostics(f);expect(body.data.ready).toBe(false);
+ expect(body.data.checks).toContainEqual(expect.objectContaining({name:'schema',status:'fail',code:'SCHEMA_MISMATCH'}));
  expect(body.data.checks).toContainEqual(expect.objectContaining({name:'storage_probe',status:'pass',code:'PROBE_CONFIRMED',checked_at:f.receipt.checked_at}));
  expect(body.data.checks).toContainEqual({name:'r2_artifacts',status:'unknown',code:'CAPABILITY_UNAVAILABLE_R1',checked_at:null});
 });
-it('stale_probe_becomes_unknown_without_refreshing_its_timestamp',async()=>{
+it('historical_schema7_stale_probe_becomes_unknown_without_refreshing_its_timestamp',async()=>{
  const f=await probed('stale');
  const report=await withRecoveryWorkspace(f.f,'source',w=>withTransaction(w.storage,tx=>projectReadiness(tx,{...w,secrets:env as unknown as Record<string,unknown>},Date.parse(f.receipt.checked_at)+PROBE_MAX_AGE_MS+1)));
  expect(report.ready).toBe(false);
  expect(report.checks).toContainEqual(expect.objectContaining({name:'storage_probe',status:'unknown',code:'PROBE_STALE',checked_at:f.receipt.checked_at}));
 });
-it('diagnostic_reads_do_not_repair_dirty_scheduling_or_publish_new_probe_evidence',async()=>{
+it('historical_schema7_readiness_projection_does_not_repair_dirty_scheduling_or_publish_new_probe_evidence',async()=>{
  const f=await probed('readonly');
  await withRecoveryWorkspace(f.f,'source',w=>withTransaction(w.storage,tx=>tx.exec('UPDATE scheduler_state SET dirty=1,last_error_code=NULL WHERE id=1')));
  const snapshot=()=>withRecoveryWorkspace(f.f,'source',w=>withTransaction(w.storage,tx=>JSON.stringify(Object.fromEntries(['scheduler_state','probe_receipts','idempotency_outcomes','maintenance_state'].map(table=>[table,tx.all('SELECT * FROM '+table)])))));
  const before=await snapshot(),alarm=await runInDurableObject(f.f.source,(_object,state)=>state.storage.getAlarm());
  const health=await diagnostics(f);expect(health.data.ready).toBe(false);
  expect(health.data.checks).toContainEqual(expect.objectContaining({name:'scheduler',status:'unknown',code:'SCHEDULE_REPAIR_PENDING'}));
- await diagnostics(f,'/operations');expect(await snapshot()).toBe(before);
+ expect(await snapshot()).toBe(before);
  expect(await runInDurableObject(f.f.source,(_object,state)=>state.storage.getAlarm())).toBe(alarm);
 });
-it('maintenance_diagnostics_use_current_human_authority_without_reopening_admission',async()=>{
+it('historical_schema7_maintenance_diagnostics_project_persisted_state_without_reopening_admission',async()=>{
  const f=await probed('maintenance');
  await withRecoveryWorkspace(f.f,'source',async w=>{
   const budget={max_rows:10000,max_artifacts:0 as const,max_total_bytes:16777216};
@@ -134,10 +135,9 @@ it('maintenance_diagnostics_use_current_human_authority_without_reopening_admiss
  const health=await diagnostics(f);expect(health.data.ready).toBe(false);
  expect(health.data.checks).toContainEqual(expect.objectContaining({name:'admission',status:'fail',code:'MAINTENANCE_ACTIVE'}));
  expect(health.data.checks).toContainEqual(expect.objectContaining({name:'storage_probe',status:'fail',code:'PROBE_IDENTITY_MISMATCH'}));
- await diagnostics(f,'/operations');
  expect(await withRecoveryWorkspace(f.f,'source',w=>withTransaction(w.storage,tx=>JSON.stringify(tx.one('SELECT * FROM maintenance_state WHERE id=1'))))).toBe(before);
 });
-it('delivery_failure_degrades_delivery_while_actual_storage_probe_remains_healthy',async()=>{
+it('historical_schema7_delivery_failure_degrades_delivery_while_actual_storage_probe_remains_healthy',async()=>{
  const f=await probed('delivery',true);const body=await diagnostics(f);
  expect(body.data.ready).toBe(false);
  expect(body.data.checks).toContainEqual(expect.objectContaining({name:'delivery',status:'fail',code:'DELIVERY_FAILURES'}));

@@ -1,5 +1,5 @@
 import {canonicalJson} from '../config/bootstrap.ts';
-import {tableDefinition,type RecoveryTableName,type RegistryTable} from './table-registry.ts';
+import {tableDefinition,type RecoveryTableName,type RegistryTable} from './table-registry-v1.ts';
 import type {SqlValue} from '../storage/transaction';
 export const CONTROL_LIMIT=65536,CHUNK_LIMIT=1048576,CHUNK_ROWS=200,CHUNK_COUNT=256,CONTROL_HEADER_LIMIT=8192;
 /** Contract ceilings; details V2 is not persisted by current runtime. */

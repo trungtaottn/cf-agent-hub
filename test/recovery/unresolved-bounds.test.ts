@@ -1,3 +1,4 @@
+// Historical schema7 SQLite recovery regression, not schema8 operational acceptance.
 import {it,expect} from 'vitest';
 import {withTransaction} from '../../src/storage/transaction';
 import {recoveryFixture,captureFixture,restoreFixture,withRecoveryWorkspace,recoveryContext,fixtureIntegrity} from '../helpers/recovery-fixture';

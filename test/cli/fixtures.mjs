@@ -1,6 +1,6 @@
 import fs from 'node:fs';import os from 'node:os';import path from 'node:path';import crypto from 'node:crypto';
 import {canonicalBytes,encodeChunk} from '../../src/recovery/encoding.ts';
-import {TABLE_REGISTRY,RECOVERY_SCHEMA_VERSION} from '../../src/recovery/table-registry.ts';
+import {TABLE_REGISTRY,RECOVERY_SCHEMA_VERSION} from '../../src/recovery/table-registry-v1.ts';
 import {signRecord} from '../../src/recovery/manifest.ts';
 import {prepareBootstrap} from '../../src/config/bootstrap.ts';
 export const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');

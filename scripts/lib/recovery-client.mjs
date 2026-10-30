@@ -3,7 +3,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import {canonicalBytes,decodeChunk,digestBytes,CONTROL_LIMIT,CHUNK_LIMIT,isSlug,closed} from '../../src/recovery/encoding.ts';
 import {verifyManifest,verifyCurrentLedger,verifyRetirement,verifyCutover} from '../../src/recovery/manifest.ts';
-import {TABLE_REGISTRY} from '../../src/recovery/table-registry.ts';
+import {TABLE_REGISTRY} from '../../src/recovery/table-registry-v1.ts';
 import {validateRecoveryCommand,validateRecoveryJobProgress,validateRecoveryReceipt,validateProbeReceipt,validateResumeReceipt,validateRetirementReceipt} from '../../src/recovery/generated/recovery-validators.js';
 import {readProtectedJson,readProtectedBytes,readEncryptedArtifact,writeEncryptedArtifact,replaceEncryptedState,fileSha256} from './recovery-io.mjs';
 import {loadRecoveryConfig} from './recovery-config.mjs';
