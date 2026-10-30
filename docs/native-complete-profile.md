@@ -239,3 +239,36 @@ not a selectable subset profile, deployed endpoint, installed authority or full
 R2 producer completion. Fault HOLD and the remaining required producer families
 are not implemented by these three slots. Deferred tuple cases remain unverified,
 not passed.
+
+## Protected configuration and response framing
+
+The complete configuration reader uses the same protected-directory and
+protected-JSON checks as the existing reader, followed by selected config2
+validation. It does not fall back to config1 or find a less-protected directory.
+The default local temporary directory has Git ancestry, so the eligible-disk
+positive and isolated file-metadata negatives are explicitly skipped there;
+pure validation and the actual Git-ancestry rejection are exercised separately.
+
+Response framing selects one of the frozen 370 operation/slot/pass ceilings
+before decoding. Required-profile requests still select only their 346 allowed
+calls. The full response allocation totals 1,585,635 bytes; its finalizer ceiling
+is 80,140 bytes, including both signed rosters. These are wire allowances, not a
+new release allowance or proof that every producer is implemented. Release
+admission still has its independent joint 16 MiB cap.
+
+The parser correlates the selected request, run, policy, preparation and process
+final reference. Retained reads require an earlier issuance sequence and distinct
+request identity; the actual issuance registry must still resolve that record.
+A manifest names its selected policy producer, and an inline summary must name
+the same producer. Revocation commits the separate disable acknowledgment, not a
+substituted control acknowledgment. Canonical base64 padding and closed metadata
+are checked without decoding payloads in the framing layer.
+
+Every parsed result says **structural response only**, with signature verification,
+installed authority and native conformance all false. The consumer must separately
+verify each original under the pinned key and validate its payload, causal state
+and actual producer availability. Required preflight may correctly be blocked
+with an empty tuple list: this means the deferred tuple obligations are absent,
+not that other missing authority or producers are ready. Full-profile preflight
+retains its exact six unavailable tuple control/probe IDs. Cleanup counts describe
+actual partial work, and pending work cannot be labeled closed.
