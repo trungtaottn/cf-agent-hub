@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cf-agent-hub:search-literal-examples:1",
+  "title": "Synthetic literal-search scalar vectors",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "status": {
+      "const": "static-contract-only"
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "text": {
+            "type": "string"
+          },
+          "query": {
+            "type": "string",
+            "minLength": 1
+          },
+          "matches": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "text",
+          "query",
+          "matches"
+        ]
+      }
+    }
+  },
+  "required": [
+    "status",
+    "cases"
+  ]
+}

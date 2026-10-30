@@ -121,6 +121,7 @@ Use **Conventional Commits** for commits and PR titles, for example `feat(ui): a
 ## 8. Safe change and verification workflow
 
 **Before editing:** confirm the intended repository, actual branch/HEAD, clean/owned changes, current issue/PR, release scope, toolchain and environment. Read the relevant contracts, nearby tests and `CONTRIBUTING.md`. Work in an isolated Cloud Harness workspace or approved worktree; preserve unrelated changes.
+Don’t build unfamiliar features from scratch; search GitHub for open-source projects to compare approaches before you start coding.
 
 **Implementation:** identify the invariant and a meaningful failing test first for behavior defects. Fix narrowly, update the owning source/contract and negative tests, then run the focused gate followed by the required integration gate. No global dependency bump, forced install, network access expansion, secrets injection or migration merely to make a test pass.
 

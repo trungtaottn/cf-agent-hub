@@ -1,0 +1,26 @@
+{
+  "source_namespace": "example",
+  "source_revision": "revision_2",
+  "rows": [
+    {
+      "external_id": "external_new",
+      "source_updated_at": null,
+      "title": "Source external_new",
+      "description": "Synthetic inert source text",
+      "project_id": null,
+      "work_role_id": null,
+      "source_state": "Done",
+      "source_ref": "source reference (never fetched)"
+    },
+    {
+      "external_id": "external_same",
+      "source_updated_at": null,
+      "title": "Source external_same",
+      "description": "Synthetic inert source text",
+      "project_id": null,
+      "work_role_id": null,
+      "source_state": "Doing",
+      "source_ref": "source reference (never fetched)"
+    }
+  ]
+}

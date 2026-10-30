@@ -511,6 +511,46 @@
       "operation_id": "listTaskResults",
       "direction": "response",
       "http_status": 200
+    },
+    {
+      "file": "r2-import-preview.request.json",
+      "schema": "#/components/schemas/ImportBatch",
+      "operation_id": "previewImport",
+      "direction": "request"
+    },
+    {
+      "file": "r2-import-preview.response.json",
+      "schema": "#/components/schemas/ImportPreviewResponse",
+      "operation_id": "previewImport",
+      "direction": "response",
+      "http_status": 200
+    },
+    {
+      "file": "r2-import-apply.request.json",
+      "schema": "#/components/schemas/ImportApplyRequest",
+      "operation_id": "applyImport",
+      "direction": "request"
+    },
+    {
+      "file": "r2-import-apply.response.json",
+      "schema": "#/components/schemas/ImportReportResponse",
+      "operation_id": "applyImport",
+      "direction": "response",
+      "http_status": 200
+    },
+    {
+      "file": "r2-import-get-preview.response.json",
+      "schema": "#/components/schemas/ImportResponse",
+      "operation_id": "getImport",
+      "direction": "response",
+      "http_status": 200
+    },
+    {
+      "file": "r2-import-get-report.response.json",
+      "schema": "#/components/schemas/ImportResponse",
+      "operation_id": "getImport",
+      "direction": "response",
+      "http_status": 200
     }
   ],
   "amendment_id": "r1-foundation-1"

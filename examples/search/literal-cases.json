@@ -1,0 +1,95 @@
+{
+  "status": "static-contract-only",
+  "cases": [
+    {
+      "name": "percent-is-literal",
+      "text": "100% complete",
+      "query": "%",
+      "matches": true
+    },
+    {
+      "name": "percent-is-not-wildcard",
+      "text": "100 complete",
+      "query": "%",
+      "matches": false
+    },
+    {
+      "name": "underscore-is-literal",
+      "text": "a_b",
+      "query": "a_b",
+      "matches": true
+    },
+    {
+      "name": "underscore-is-not-wildcard",
+      "text": "acb",
+      "query": "a_b",
+      "matches": false
+    },
+    {
+      "name": "quote-is-literal",
+      "text": "O'Reilly",
+      "query": "'",
+      "matches": true
+    },
+    {
+      "name": "regex-is-literal",
+      "text": "abc.*def",
+      "query": ".*",
+      "matches": true
+    },
+    {
+      "name": "regex-not-evaluated",
+      "text": "abcdef",
+      "query": ".*",
+      "matches": false
+    },
+    {
+      "name": "nfc-source",
+      "text": "café",
+      "query": "é",
+      "matches": true
+    },
+    {
+      "name": "nfc-query",
+      "text": "café",
+      "query": "é",
+      "matches": true
+    },
+    {
+      "name": "case-sensitive-ascii",
+      "text": "ABC",
+      "query": "abc",
+      "matches": false
+    },
+    {
+      "name": "case-sensitive-unicode",
+      "text": "É",
+      "query": "é",
+      "matches": false
+    },
+    {
+      "name": "no-compatibility-fold",
+      "text": "ﬀ",
+      "query": "ff",
+      "matches": false
+    },
+    {
+      "name": "whitespace-preserved",
+      "text": "one two",
+      "query": " two",
+      "matches": true
+    },
+    {
+      "name": "no-trimming",
+      "text": "two",
+      "query": " two",
+      "matches": false
+    },
+    {
+      "name": "newline-literal",
+      "text": "one\ntwo",
+      "query": "\n",
+      "matches": true
+    }
+  ]
+}

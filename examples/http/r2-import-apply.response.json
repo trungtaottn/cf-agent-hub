@@ -1,0 +1,54 @@
+{
+  "data": {
+    "id": "import_example",
+    "import_version": 2,
+    "status": "applied",
+    "counts": {
+      "received": 2,
+      "created": 1,
+      "unchanged": 1,
+      "conflict": 0,
+      "rejected": 0
+    },
+    "rows": [
+      {
+        "index": 0,
+        "external_id": "external_new",
+        "disposition": "created",
+        "task_id": "task_created",
+        "code": null,
+        "provenance": {
+          "external_id": "external_new",
+          "source_updated_at": null,
+          "source_state": "Done",
+          "source_ref": "source reference (never fetched)",
+          "source_namespace": "example",
+          "source_revision": "revision_2",
+          "source_sha256": "796e2808d143ae69c350888d7e7bc660cc5818316fe768f9b7bf6ed4f987007b",
+          "import_id": "import_example",
+          "task_id": "task_created"
+        }
+      },
+      {
+        "index": 1,
+        "external_id": "external_same",
+        "disposition": "unchanged",
+        "task_id": "task_existing",
+        "code": null,
+        "provenance": {
+          "external_id": "external_same",
+          "source_updated_at": null,
+          "source_state": "Doing",
+          "source_ref": "source reference (never fetched)",
+          "source_namespace": "example",
+          "source_revision": "revision_2",
+          "source_sha256": "6589def48349b3f33d29c3fcf9215a9d58c46bd7f4945f8dac659cc70339358c",
+          "import_id": "import_example",
+          "task_id": "task_existing"
+        }
+      }
+    ],
+    "applied_at": "2026-10-27T00:01:00Z"
+  },
+  "request_id": "request_example"
+}

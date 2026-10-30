@@ -1,0 +1,586 @@
+{
+  "timestamp_utc": "2026-10-27T00:20:34.537Z",
+  "scope": "synthetic static pagination model and WebCrypto length experiment; NOT product tests",
+  "node": "v24.22.1",
+  "cap": 2000,
+  "limit": 1,
+  "script_sha256": "b760a8dff542e4fb02a3ad183285301f4724cc4004c6f07a39c5c5b9eb12ddf8",
+  "asserted_successful_hidden_insertion_variants": 6561,
+  "cases": {
+    "empty": {
+      "candidates": 0,
+      "candidate": {
+        "public_pages": [
+          {
+            "status": 200,
+            "data": [],
+            "has_more": false
+          }
+        ],
+        "examined_per_request": [
+          0
+        ]
+      },
+      "authorized": {
+        "public_pages": [
+          {
+            "status": 200,
+            "data": [],
+            "has_more": false
+          }
+        ],
+        "examined_per_request": [
+          0
+        ]
+      }
+    },
+    "hidden_1": {
+      "candidates": 1,
+      "candidate": {
+        "public_pages": [
+          {
+            "status": 200,
+            "data": [],
+            "has_more": false
+          }
+        ],
+        "examined_per_request": [
+          1
+        ]
+      },
+      "authorized": {
+        "public_pages": [
+          {
+            "status": 200,
+            "data": [],
+            "has_more": false
+          }
+        ],
+        "examined_per_request": [
+          1
+        ]
+      }
+    },
+    "hidden_2000": {
+      "candidates": 2000,
+      "candidate": {
+        "public_pages": [
+          {
+            "status": 200,
+            "data": [],
+            "has_more": false
+          }
+        ],
+        "examined_per_request": [
+          2000
+        ]
+      },
+      "authorized": {
+        "public_pages": [
+          {
+            "status": 200,
+            "data": [],
+            "has_more": false
+          }
+        ],
+        "examined_per_request": [
+          2000
+        ]
+      }
+    },
+    "hidden_2001": {
+      "candidates": 2001,
+      "candidate": {
+        "public_pages": [
+          {
+            "status": 200,
+            "data": [],
+            "has_more": true
+          },
+          {
+            "status": 200,
+            "data": [],
+            "has_more": false
+          }
+        ],
+        "examined_per_request": [
+          2000,
+          1
+        ]
+      },
+      "authorized": {
+        "public_pages": [
+          {
+            "status": 503,
+            "error": {
+              "code": "DEPENDENCY_UNAVAILABLE"
+            }
+          }
+        ],
+        "examined_per_request": [
+          2000
+        ]
+      }
+    },
+    "hidden_4001": {
+      "candidates": 4001,
+      "candidate": {
+        "public_pages": [
+          {
+            "status": 200,
+            "data": [],
+            "has_more": true
+          },
+          {
+            "status": 200,
+            "data": [],
+            "has_more": true
+          },
+          {
+            "status": 200,
+            "data": [],
+            "has_more": false
+          }
+        ],
+        "examined_per_request": [
+          2000,
+          2000,
+          1
+        ]
+      },
+      "authorized": {
+        "public_pages": [
+          {
+            "status": 503,
+            "error": {
+              "code": "DEPENDENCY_UNAVAILABLE"
+            }
+          }
+        ],
+        "examined_per_request": [
+          2000
+        ]
+      }
+    },
+    "visible_only": {
+      "candidates": 3,
+      "candidate": {
+        "public_pages": [
+          {
+            "status": 200,
+            "data": [
+              "v1"
+            ],
+            "has_more": true
+          },
+          {
+            "status": 200,
+            "data": [
+              "v2"
+            ],
+            "has_more": true
+          },
+          {
+            "status": 200,
+            "data": [
+              "v3"
+            ],
+            "has_more": false
+          }
+        ],
+        "examined_per_request": [
+          1,
+          1,
+          1
+        ]
+      },
+      "authorized": {
+        "public_pages": [
+          {
+            "status": 200,
+            "data": [
+              "v1"
+            ],
+            "has_more": true
+          },
+          {
+            "status": 200,
+            "data": [
+              "v2"
+            ],
+            "has_more": true
+          },
+          {
+            "status": 200,
+            "data": [
+              "v3"
+            ],
+            "has_more": false
+          }
+        ],
+        "examined_per_request": [
+          2,
+          2,
+          1
+        ]
+      }
+    },
+    "hidden_prefix": {
+      "candidates": 2001,
+      "candidate": {
+        "public_pages": [
+          {
+            "status": 200,
+            "data": [
+              "v1"
+            ],
+            "has_more": true
+          },
+          {
+            "status": 200,
+            "data": [
+              "v2"
+            ],
+            "has_more": true
+          },
+          {
+            "status": 200,
+            "data": [
+              "v3"
+            ],
+            "has_more": false
+          }
+        ],
+        "examined_per_request": [
+          1999,
+          1,
+          1
+        ]
+      },
+      "authorized": {
+        "public_pages": [
+          {
+            "status": 200,
+            "data": [
+              "v1"
+            ],
+            "has_more": true
+          },
+          {
+            "status": 200,
+            "data": [
+              "v2"
+            ],
+            "has_more": true
+          },
+          {
+            "status": 200,
+            "data": [
+              "v3"
+            ],
+            "has_more": false
+          }
+        ],
+        "examined_per_request": [
+          2000,
+          2,
+          1
+        ]
+      }
+    },
+    "hidden_between": {
+      "candidates": 1903,
+      "candidate": {
+        "public_pages": [
+          {
+            "status": 200,
+            "data": [
+              "v1"
+            ],
+            "has_more": true
+          },
+          {
+            "status": 200,
+            "data": [
+              "v2"
+            ],
+            "has_more": true
+          },
+          {
+            "status": 200,
+            "data": [
+              "v3"
+            ],
+            "has_more": false
+          }
+        ],
+        "examined_per_request": [
+          1,
+          1001,
+          901
+        ]
+      },
+      "authorized": {
+        "public_pages": [
+          {
+            "status": 200,
+            "data": [
+              "v1"
+            ],
+            "has_more": true
+          },
+          {
+            "status": 200,
+            "data": [
+              "v2"
+            ],
+            "has_more": true
+          },
+          {
+            "status": 200,
+            "data": [
+              "v3"
+            ],
+            "has_more": false
+          }
+        ],
+        "examined_per_request": [
+          1002,
+          1902,
+          901
+        ]
+      }
+    },
+    "hidden_suffix": {
+      "candidates": 2002,
+      "candidate": {
+        "public_pages": [
+          {
+            "status": 200,
+            "data": [
+              "v1"
+            ],
+            "has_more": true
+          },
+          {
+            "status": 200,
+            "data": [
+              "v2"
+            ],
+            "has_more": true
+          },
+          {
+            "status": 200,
+            "data": [
+              "v3"
+            ],
+            "has_more": true
+          },
+          {
+            "status": 200,
+            "data": [],
+            "has_more": false
+          }
+        ],
+        "examined_per_request": [
+          1,
+          1,
+          1,
+          1999
+        ]
+      },
+      "authorized": {
+        "public_pages": [
+          {
+            "status": 200,
+            "data": [
+              "v1"
+            ],
+            "has_more": true
+          },
+          {
+            "status": 200,
+            "data": [
+              "v2"
+            ],
+            "has_more": true
+          },
+          {
+            "status": 200,
+            "data": [
+              "v3"
+            ],
+            "has_more": false
+          }
+        ],
+        "examined_per_request": [
+          2,
+          2,
+          2000
+        ]
+      }
+    },
+    "excessive_prefix": {
+      "candidates": 2003,
+      "candidate": {
+        "public_pages": [
+          {
+            "status": 200,
+            "data": [],
+            "has_more": true
+          },
+          {
+            "status": 200,
+            "data": [
+              "v1"
+            ],
+            "has_more": true
+          },
+          {
+            "status": 200,
+            "data": [
+              "v2"
+            ],
+            "has_more": true
+          },
+          {
+            "status": 200,
+            "data": [
+              "v3"
+            ],
+            "has_more": false
+          }
+        ],
+        "examined_per_request": [
+          2000,
+          1,
+          1,
+          1
+        ]
+      },
+      "authorized": {
+        "public_pages": [
+          {
+            "status": 503,
+            "error": {
+              "code": "DEPENDENCY_UNAVAILABLE"
+            }
+          }
+        ],
+        "examined_per_request": [
+          2000
+        ]
+      }
+    },
+    "excessive_suffix": {
+      "candidates": 2003,
+      "candidate": {
+        "public_pages": [
+          {
+            "status": 200,
+            "data": [
+              "v1"
+            ],
+            "has_more": true
+          },
+          {
+            "status": 200,
+            "data": [
+              "v2"
+            ],
+            "has_more": true
+          },
+          {
+            "status": 200,
+            "data": [
+              "v3"
+            ],
+            "has_more": true
+          },
+          {
+            "status": 200,
+            "data": [],
+            "has_more": false
+          }
+        ],
+        "examined_per_request": [
+          1,
+          1,
+          1,
+          2000
+        ]
+      },
+      "authorized": {
+        "public_pages": [
+          {
+            "status": 200,
+            "data": [
+              "v1"
+            ],
+            "has_more": true
+          },
+          {
+            "status": 200,
+            "data": [
+              "v2"
+            ],
+            "has_more": true
+          },
+          {
+            "status": 503,
+            "error": {
+              "code": "DEPENDENCY_UNAVAILABLE"
+            }
+          }
+        ],
+        "examined_per_request": [
+          2,
+          2,
+          2000
+        ]
+      }
+    }
+  },
+  "crypto_lengths": [
+    {
+      "hidden_id_bytes": 1,
+      "padded": false,
+      "raw_plaintext_bytes": 40,
+      "encrypted_plaintext_bytes": 40,
+      "ciphertext_tag_bytes": 56,
+      "encoded_cursor_bytes": 91
+    },
+    {
+      "hidden_id_bytes": 1,
+      "padded": true,
+      "raw_plaintext_bytes": 40,
+      "encrypted_plaintext_bytes": 256,
+      "ciphertext_tag_bytes": 272,
+      "encoded_cursor_bytes": 379
+    },
+    {
+      "hidden_id_bytes": 100,
+      "padded": false,
+      "raw_plaintext_bytes": 139,
+      "encrypted_plaintext_bytes": 139,
+      "ciphertext_tag_bytes": 155,
+      "encoded_cursor_bytes": 223
+    },
+    {
+      "hidden_id_bytes": 100,
+      "padded": true,
+      "raw_plaintext_bytes": 139,
+      "encrypted_plaintext_bytes": 256,
+      "ciphertext_tag_bytes": 272,
+      "encoded_cursor_bytes": 379
+    }
+  ],
+  "decision": "authorized-only continuation; preserve cap; whole-request generic503 if lookahead/termination unproven at cap",
+  "limitations": [
+    "Array model does not prove actual SQLite physical work or bounded Workers execution.",
+    "Candidate cap is per request; physical query/authorization cost must be proven before activation.",
+    "503 availability and timing remain observable side channels; successful transcript invariance does not remove them.",
+    "Changing authorization between requests is outside fixed-grants model.",
+    "Padding format, maximum supported identifiers and cursor-fit proof belong to shared implementation owners."
+  ]
+}
