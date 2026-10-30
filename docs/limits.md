@@ -102,3 +102,11 @@ Keep the shared absolute 3,600-second cursor lifetime and 2,048-byte encoded tok
 ## R2 recovery contract boundary
 
 The [issue #22 recovery decision](adr/r2-recovery-contract.md) defines the closed V1/V2 envelope, simultaneous SQL-plus-artifact bounds, trusted private bindings and bounded future restart state. This is a contract, not enabled V2 recovery. Current runtime remains V1-only; nonzero artifact capture budgets and V2 restore are unavailable. No new CLI command or caller-selected bucket/key/URL is added. Existing protected files, HMAC authentication, separate AES-GCM file protection, operator Access identity, current ledger, maintenance and explicit resume remain required.
+
+### Local catalog work bound
+
+Issue 28 uses schema 9 reference indexes to inspect at most201 task references, then rejects combined task/agent counts above200. These indexes avoid scanning unrelated task history: actual Workers SQLite experiments at 10,000 tasks measured0/2/201 rows read for 0 / 1 / 201 references, versus10000 for the old filtered scan. Measurements are local query evidence, not production throughput guarantees.
+
+Agent role membership is a JSON array without an indexed normalized projection. Work-role operations inspect at most 2,049 indexed agent candidates to establish the supported 2,048-agent completeness bound, then fail the whole operation with generic503 if exhausted. This can deny an empty-role archive above 2,048 agents; it never returns a truncated plan. Project operations do not scan agent roles. A future normalized membership projection would improve availability but needs a separately reviewed migration and synchronized lifecycle/bootstrap writers. Role JSON uses the supported65,536-byte request envelope, not an invented 8 KiB limit. Public plan/private evidence and response envelopes remain bounded; oversize complete evidence rejects rather than truncates.
+
+Agent candidates are keyset-scanned in chunks of 32 rather than loading every large role array at once. Private evidence retains agent ID/version/status, not duplicated role arrays; apply reads current role metadata only after exact set/version checks inside the same transaction. Ten legitimately created agents with long valid role arrays are covered by a regression proving compact evidence and unchanged remap semantics.

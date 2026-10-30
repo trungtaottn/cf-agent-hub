@@ -3622,7 +3622,7 @@ export function tableDefinition(name:string):RegistryTable {
 }
 interface ColumnInfo {cid:number;name:string;type:string;notnull:number;dflt_value:string|null;pk:number;}
 /** No prefix exclusion: an unexpected application OR engine table is a schema mismatch. */
-export function inspectRegistry(tx:WorkspaceTransaction):{schemaVersion:8;eventSequence:number;tables:number} {
+export function inspectRegistry(tx:WorkspaceTransaction):{schemaVersion:typeof CURRENT_SCHEMA_VERSION;eventSequence:number;tables:number} {
  const actual=tx.all<{name:string}>("SELECT name FROM sqlite_schema WHERE type='table' ORDER BY name").map(x=>x.name);
  const expected=[...TABLE_REGISTRY.map(x=>x.name),...ENGINE_TABLES].sort();
  if(JSON.stringify(actual)!==JSON.stringify(expected))throw Error('RECOVERY_SCHEMA_MISMATCH');
@@ -3642,5 +3642,5 @@ export function inspectRegistry(tx:WorkspaceTransaction):{schemaVersion:8;eventS
  const retained=tx.one<{n:number}>('SELECT COALESCE(MAX(sequence),0) AS n FROM events')!.n;
  const floor=tx.one<{n:number|null}>('SELECT event_retained_after_sequence AS n FROM workspace_metadata WHERE id=1')?.n??0;
  if(!Number.isSafeInteger(retained)||!Number.isSafeInteger(floor)||floor<0||eventSequence<retained||eventSequence<floor)throw Error('RECOVERY_EVENT_SEQUENCE');
- return {schemaVersion:8,eventSequence,tables:expected.length};
+ return {schemaVersion:CURRENT_SCHEMA_VERSION,eventSequence,tables:expected.length};
 }

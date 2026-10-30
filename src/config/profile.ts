@@ -28,10 +28,6 @@ function merge(old:WorkspaceProfile,incoming:WorkspaceProfile):WorkspaceProfile{
  for(const key of ['projects','work_roles'] as const){const replacements=new Map(incoming[key].map(x=>[x.id,x]));merged[key]=old[key].map(x=>structuredClone(replacements.get(x.id)??x));for(const item of incoming[key])if(!old[key].some(x=>x.id===item.id))merged[key].push(structuredClone(item));}
  return merged;
 }
-function referencedProject(tx:WorkspaceTransaction,actor:ActorContext,id:string):boolean{
- const rows=tx.all<{project_ids_json:string}>('SELECT project_ids_json FROM human_grants WHERE workspace_id=? UNION ALL SELECT project_ids_json FROM native_credentials WHERE workspace_id=?',[actor.workspaceId,actor.workspaceId]);
- return rows.some(x=>{const ids:unknown=JSON.parse(x.project_ids_json);return Array.isArray(ids)&&ids.includes(id);});
-}
 export function previewProfile(tx:WorkspaceTransaction,ctx:CommandContext,request:ProfileWriteRequest):ProfilePreview{
  authorize(tx,ctx.actor,'profile:edit',undefined,ctx.nowMs);if(ctx.actor.kind!=='human')throw new HttpError('FORBIDDEN',403);settingsPolicy(tx,ctx.actor);validateRequest(request);
  const current=storedProfile(tx,ctx.actor);if(request.expected_profile_revision!==current.profile_revision)throw new HttpError('VERSION_CONFLICT',409,{current_revision:current.profile_revision});
@@ -40,14 +36,15 @@ export function previewProfile(tx:WorkspaceTransaction,ctx:CommandContext,reques
  for(const key of ['projects','work_roles'] as const)for(const [index,item]of profile[key].entries()){
   const old=current.profile[key].find(x=>x.id===item.id);
   if(!old||canonicalJson(item)!==canonicalJson(old))changes.push({field:'/'+key+'/'+index,operation:old?'update':'add'});
-  if(old&&old.archived!==item.archived&&key==='projects'&&referencedProject(tx,ctx.actor,item.id))conflicts.push({field:'/'+key+'/'+index+'/archived',code:'REFERENCED_ARCHIVE'});
+  if(old?old.archived!==item.archived:item.archived)conflicts.push({field:'/'+key+'/'+index+'/archived',code:'REFERENCED_ARCHIVE'});
+  if(profile[key].slice(0,index).some(x=>x.display_name===item.display_name))conflicts.push({field:'/'+key+'/'+index+'/display_name',code:'DUPLICATE_NAME'});
  }
  const result:ProfilePreview={base_revision:current.profile_revision,profile,changes,conflicts};
  if(!validateProfilePreview(result)||new TextEncoder().encode(JSON.stringify({data:result,request_id:ctx.requestId})).byteLength>65536)throw new HttpError('LIMIT_EXCEEDED',413);
  return result;
 }
 export function applyProfile(tx:WorkspaceTransaction,ctx:CommandContext,request:ProfileWriteRequest):ProfileData{
- const preview=previewProfile(tx,ctx,request);if(preview.conflicts.length)throw new HttpError('INVALID_STATE',409,{field:'/profile'});
+ const preview=previewProfile(tx,ctx,request);if(preview.conflicts.some(x=>x.code!=='DUPLICATE_NAME'))throw new HttpError('INVALID_STATE',409,{field:'/profile'});
  if(preview.base_revision===Number.MAX_SAFE_INTEGER)throw new HttpError('LIMIT_EXCEEDED',409);
  const revision=preview.base_revision+1;
  tx.exec('INSERT INTO profiles (workspace_id,version,document_json,updated_at,updated_by) VALUES (?,?,?,?,?) ON CONFLICT(workspace_id) DO UPDATE SET version=excluded.version,document_json=excluded.document_json,updated_at=excluded.updated_at,updated_by=excluded.updated_by',[ctx.actor.workspaceId,revision,canonicalJson(preview.profile),ctx.nowMs,ctx.actor.principalId]);

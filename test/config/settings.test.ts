@@ -132,7 +132,9 @@ it.each(['projects','work_roles'] as const)('duplicate_%s_ids_fail_without_parti
 });
 it.each([false,true])('referenced_archive_change_from_%s_is_advisory_conflict_and_atomic_rejection',async archived=>{
  const {stub,name}=await settingsFixture('settings-archive-'+archived);await runInDurableObject(stub,async(_o,state)=>{const id=human(state.storage),p=read(state.storage,id),project={id:'project_ref',display_name:'Referenced',description:'',archived},first={expected_profile_revision:1,profile:{...p.profile,projects:[project]}};
- executeCommand(await commandContext(state.storage,name,first,'create'),id,profileCommand(),first);
+ // Seed a retained archived record directly; ordinary imports no longer create archived IDs.
+ if(archived)state.storage.sql.exec('INSERT INTO profiles(workspace_id,version,document_json,updated_at,updated_by) VALUES(?,?,?,?,?)','ws_example',2,JSON.stringify(first.profile),Date.now(),'human_operator');
+ else executeCommand(await commandContext(state.storage,name,first,'create'),id,profileCommand(),first);
  state.storage.sql.exec("UPDATE human_grants SET project_ids_json='[\"project_ref\"]'");
  const a=actor(state.storage,id),body={expected_profile_revision:2,profile:{...p.profile,projects:[{...project,archived:!archived}]}},before=snapshot(state.storage),preview=withTransaction(state.storage,tx=>previewProfile(tx,{actor:a,requestId:'preview',idempotencyKey:'preview',nowMs:Date.now()},body));expect(preview.conflicts).toEqual([{field:'/projects/0/archived',code:'REFERENCED_ARCHIVE'}]);expect(snapshot(state.storage)).toEqual(before);
  const ctx=await commandContext(state.storage,name,body,'archive');expect(()=>executeCommand(ctx,id,profileCommand(),body)).toThrowError(expect.objectContaining({code:'INVALID_STATE'}));expect(snapshot(state.storage)).toEqual(before);
@@ -176,7 +178,7 @@ it('forward_migration_backfills_unique_opaque_owners_atomically_and_preserves_le
   expect(()=>state.storage.sql.exec('UPDATE preferences SET workspace_id=? WHERE principal_id=?','foreign','legacy_owner_a')).toThrow();expect(()=>state.storage.sql.exec('INSERT INTO preferences (principal_id,workspace_id,version,document_json,updated_at,record_id) VALUES (?,?,?,?,?,?)','third','ws_example',1,JSON.stringify(preference),1,rows[0].record_id)).toThrow();
   expect(()=>state.storage.sql.exec('INSERT INTO preferences (principal_id,workspace_id,version,document_json,updated_at) VALUES (?,?,?,?,?)','third','ws_example',1,JSON.stringify(preference),1)).toThrow();
   expect(state.storage.sql.exec('SELECT * FROM events').toArray()).toEqual(events.map(row=>({...row,task_version:null,run_id:null,fence:null})));
- });await evictDurableObject(stub);await runInDurableObject(stub,(_o,state)=>{expect(state.storage.sql.exec('SELECT version FROM schema_migrations ORDER BY version').toArray()).toEqual([{version:1},{version:2},{version:3},{version:4},{version:5},{version:6},{version:7},{version:8}]);expect(state.storage.sql.exec('SELECT record_id FROM preferences').toArray()).toHaveLength(2);});
+ });await evictDurableObject(stub);await runInDurableObject(stub,(_o,state)=>{expect(state.storage.sql.exec('SELECT version FROM schema_migrations ORDER BY version').toArray()).toEqual([{version:1},{version:2},{version:3},{version:4},{version:5},{version:6},{version:7},{version:8},{version:9}]);expect(state.storage.sql.exec('SELECT record_id FROM preferences').toArray()).toHaveLength(2);});
 });
 it('owner_event_projection_rechecks_current_scopes_and_session_before_projection',async()=>{
  const {stub,name}=await settingsFixture('settings-event-authority');await runInDurableObject(stub,async(_o,state)=>{const id=human(state.storage),a=actor(state.storage,id),body={expected_preferences_revision:0,preferences:preference};executeCommand(await commandContext(state.storage,name,body,'event'),id,preferencesCommand('pref_'+'7'.repeat(32)),body);

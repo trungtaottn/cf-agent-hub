@@ -77,9 +77,15 @@ describe('R2 catalog design contracts (not runtime endpoint evidence)',()=>{
   const collection=fixtures();expect(collection.contract_revision).toBe('0.1');expect(collection.fixtures.length).toBeGreaterThanOrEqual(4);
   for(const entry of collection.fixtures)expect(valid(entry.schema.split('/').at(-1),entry.value),entry.name).toBe(true);
  });
- it('preserves existing profile advisory/write and Workspace contracts exactly',()=>{
+ it('preserves profile transport and Workspace while adding only reviewed duplicate-name advisory',()=>{
   const digest=(value:unknown)=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
-  for(const [name,hash]of Object.entries({Workspace:'126799170b9252c40c25b616e48289df3ae1e621daa13014c820cbdec75be1a0',ProfilePreview:'f210028142756dcb4b15aad3f14dfcdb0c38ff1170880254fce0dc3ed2977a98',ProfileWriteRequest:'4408816804c224c9cbf146f422402fe611de0c1fe177cbae8f6e5af824614571'}))expect(digest(schemas[name])).toBe(hash);
+  const profile=structuredClone(schemas.ProfilePreview);
+  expect(profile.properties.conflicts.items.properties.code.enum).toEqual(['REFERENCED_ARCHIVE','REFERENCED_REMAP','DUPLICATE_NAME']);
+  expect(profile.description).toContain('DUPLICATE_NAME is advisory');
+  profile.properties.conflicts.items.properties.code.enum.pop();
+  profile.description='field is a JSON Pointer into canonical merged profile. Arrays <=200; entire UTF-8 response envelope <=65536 bytes. Reject overflow, never truncate. Stale revision409; malformed shapes/duplicates use normal validation errors.';
+  expect(digest(profile)).toBe('f210028142756dcb4b15aad3f14dfcdb0c38ff1170880254fce0dc3ed2977a98');
+  for(const [name,hash]of Object.entries({Workspace:'126799170b9252c40c25b616e48289df3ae1e621daa13014c820cbdec75be1a0',ProfileWriteRequest:'4408816804c224c9cbf146f422402fe611de0c1fe177cbae8f6e5af824614571'}))expect(digest(schemas[name])).toBe(hash);
   expect(digest(api.paths['/v2/workspaces/{workspace_id}/profile'])).toBe('687d9772cdfd9f50f97ec52e1527a3560dc34f6947ccd3675357c3e4321acd2c');
   expect(digest(api.paths['/v2/workspaces/{workspace_id}/profile:preview'])).toBe('de11913a5143d64cdc8e91461daf46a5bdeee94eed176cdeb0aff246ddc1456f');
   expect(api.paths).not.toHaveProperty('/v2/workspaces/{workspace_id}/profile:apply');

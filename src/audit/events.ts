@@ -11,6 +11,8 @@ import {HttpError} from '../http/envelopes';
 import {assertMessageVisible} from '../messages/references';
 export interface RedactedEventInput extends EventDraft{id:string;workspaceId:string;actor:ActorContext;requestId:string;nowMs:number;}
 const definitions={
+ 'catalog.previewed':{resource:'profile',summary:'Catalog change previewed.'},
+ 'catalog.applied':{resource:'profile',summary:'Catalog change applied.'},
  'message.accepted':{resource:'message',summary:'Message accepted.'},
  'message.acknowledged':{resource:'message',summary:'Message acknowledged.'},
  'profile.updated':{resource:'profile',summary:'Workspace profile updated.'},
@@ -104,7 +106,7 @@ export const settingsEventVisibility:EventVisibility=(tx,actor,resource,event,no
  const live=refreshActor(tx,actor,nowMs);
  if(!live.scopes.has('events:read'))return false;
  if(event.type==='configuration.installed')return live.kind==='human'&&live.scopes.has('operations:read')&&resource.kind==='configuration'&&resource.id===live.workspaceId&&event.actor.kind==='system';
- if(event.type==='profile.updated')return live.scopes.has('workspace:read')&&resource.kind==='profile'&&resource.id===live.workspaceId&&event.actor.kind==='human';
+ if(event.type==='profile.updated'||event.type==='catalog.previewed'||event.type==='catalog.applied')return live.scopes.has('workspace:read')&&resource.kind==='profile'&&resource.id===live.workspaceId&&event.actor.kind==='human';
  if(event.type==='preferences.updated'){
   if(live.kind!=='human'||!live.scopes.has('workspace:read')||resource.kind!=='preferences'||event.actor.kind!=='human'||event.actor.principal_id!==live.principalId)return false;
   return !!tx.one('SELECT record_id FROM preferences WHERE record_id=? AND workspace_id=? AND principal_id=?',[resource.id,live.workspaceId,live.principalId]);

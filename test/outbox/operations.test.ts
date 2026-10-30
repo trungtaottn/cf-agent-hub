@@ -16,7 +16,7 @@ it('operations_projects_real_counts_and_unknown_readiness_without_fabricated_pro
   expect(data.readiness.ready).toBe(false);
   expect(data.readiness.checks).toContainEqual({name:'storage_probe',status:'unknown',code:'PROBE_NOT_RUN',checked_at:null});
   expect(data.readiness.checks).toContainEqual(expect.objectContaining({name:'delivery',status:'fail',code:'DELIVERY_FAILURES'}));
-  expect(data.readiness.checks).toContainEqual({name:'r2_artifacts',status:'unknown',code:'CAPABILITY_UNAVAILABLE_R1',checked_at:null});expect(data.schema_version).toBe(8);
+  expect(data.readiness.checks).toContainEqual({name:'r2_artifacts',status:'unknown',code:'CAPABILITY_UNAVAILABLE_R1',checked_at:null});expect(data.schema_version).toBe(9);
   state.storage.sql.exec('UPDATE human_grants SET enabled=0');expect(()=>withTransaction(state.storage,tx=>projectOperations(tx,workspace,h,Date.now()))).toThrow();
  });
 });
