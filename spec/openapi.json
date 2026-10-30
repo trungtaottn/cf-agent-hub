@@ -4982,6 +4982,304 @@
           }
         }
       }
+    },
+    "/v2/workspaces/{workspace_id}/catalog:preview": {
+      "parameters": [
+        {
+          "name": "workspace_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque stable identifier; never infer authority from its value."
+          }
+        }
+      ],
+      "post": {
+        "operationId": "previewCatalogChange",
+        "summary": "previewCatalogChange",
+        "description": "Proposed R2 catalog contract; not an implemented R1 endpoint. Requires a current human session, profile:edit, exact allowed origin, CSRF and durable idempotency. Task remap additionally requires tasks:edit; agent role changes additionally require human agents:manage. Recheck current workspace authority on preview, apply and replay. Preview stores a bounded plan expiring exactly 15 minutes after trusted creation, with touched versions retained internally. Apply rejects expired plans, stale profile or touched entity versions, and conflicts; it cannot bypass archive/reference checks. Apply returns the existing ProfileView (ProfileData), not a new profile shape.",
+        "security": [
+          {
+            "HumanSession": []
+          }
+        ],
+        "x-required-scopes": [
+          "profile:edit"
+        ],
+        "x-actor-kind": "human",
+        "x-contract-status": "proposed",
+        "x-r1-available": false,
+        "responses": {
+          "200": {
+            "description": "Proposed bounded result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogPlanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Required on cookie-authenticated writes. Must match the same-origin human session. Not a substitute for authentication."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogPreviewRequest"
+              }
+            }
+          }
+        },
+        "x-conditional-scopes": {
+          "task_remap": [
+            "tasks:edit"
+          ],
+          "agent_roles": [
+            "agents:manage"
+          ]
+        }
+      }
+    },
+    "/v2/workspaces/{workspace_id}/catalog:apply": {
+      "parameters": [
+        {
+          "name": "workspace_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque stable identifier; never infer authority from its value."
+          }
+        }
+      ],
+      "post": {
+        "operationId": "applyCatalogChange",
+        "summary": "applyCatalogChange",
+        "description": "Proposed R2 catalog contract; not an implemented R1 endpoint. Requires a current human session, profile:edit, exact allowed origin, CSRF and durable idempotency. Task remap additionally requires tasks:edit; agent role changes additionally require human agents:manage. Recheck current workspace authority on preview, apply and replay. Preview stores a bounded plan expiring exactly 15 minutes after trusted creation, with touched versions retained internally. Apply rejects expired plans, stale profile or touched entity versions, and conflicts; it cannot bypass archive/reference checks. Apply returns the existing ProfileView (ProfileData), not a new profile shape.",
+        "security": [
+          {
+            "HumanSession": []
+          }
+        ],
+        "x-required-scopes": [
+          "profile:edit"
+        ],
+        "x-actor-kind": "human",
+        "x-contract-status": "proposed",
+        "x-r1-available": false,
+        "responses": {
+          "200": {
+            "description": "Proposed bounded result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Required on cookie-authenticated writes. Must match the same-origin human session. Not a substitute for authentication."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogApplyRequest"
+              }
+            }
+          }
+        },
+        "x-conditional-scopes": {
+          "task_remap": [
+            "tasks:edit"
+          ],
+          "agent_roles": [
+            "agents:manage"
+          ]
+        }
+      }
+    },
+    "/v2/workspaces/{workspace_id}/tasks/{task_id}/results": {
+      "parameters": [
+        {
+          "name": "workspace_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque stable identifier; never infer authority from its value."
+          }
+        },
+        {
+          "name": "task_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque stable identifier; never infer authority from its value."
+          }
+        }
+      ],
+      "get": {
+        "security": [
+          {
+            "NativeBearer": []
+          },
+          {
+            "HumanSession": []
+          }
+        ],
+        "x-required-scopes": [
+          "tasks:read"
+        ],
+        "x-actor-kind": "both",
+        "x-contract-status": "specified",
+        "x-r1-available": false,
+        "operationId": "listTaskResults",
+        "summary": "List visible retained task results",
+        "description": "Specified R2 read contract; not an available R1 endpoint. In one transaction recheck current task/project and complete artifact visibility before selection. Seek by immutable internal submission sequence under a fixed ceiling. Continuation uses the last returned authorized sequence and exists only for another authorized result; hidden-only suffixes never produce a continuation. Complete canonical results only. No physical scan bound follows from LIMIT; activation requires a demonstrated bounded authorization/query plan. A work-budget failure returns no partial data or progress cursor. See ADR 0008 for byte limits, absolute cursor expiry, authority/restore binding and residual timing risks.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "$ref": "#/components/parameters/ListLimit"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Currently authorized immutable results, with authorized-only lookahead; hidden-only history is an empty terminal page.",
+            "headers": {
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResultListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "410": {
+            "$ref": "#/components/responses/Gone"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "description": "Unexpected internal failure; sanitized error only, no partial history or progress cursor.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-pagination-visibility": "authorized-results-only",
+        "x-max-response-bytes": 1048576,
+        "x-query-work-proof-required": true
+      }
     }
   },
   "components": {
@@ -5152,7 +5450,8 @@
           "search:read",
           "messages:review",
           "profile:edit",
-          "operations:read"
+          "operations:read",
+          "imports:manage"
         ]
       },
       "TaskResult": {
@@ -7455,12 +7754,15 @@
           "project_ids",
           "expires_at"
         ],
-        "description": "Human administrator cannot delegate scopes they do not hold or any human-only authority to a native token. Workspace is always taken from route. Human-only scopes approvals:decide, credentials:manage, agents:manage and messages:review cannot be issued to native credentials.",
+        "description": "Human administrator cannot delegate scopes they do not hold or any human-only authority to a native token. Workspace is always taken from route. Human-only scopes approvals:decide, credentials:manage, agents:manage, messages:review, profile:edit, operations:read, imports:manage cannot be issued to native credentials. Recognition does not enable a route or grant authority; explicit current operator ceilings and current actor authorization remain required.",
         "x-native-disallowed-scopes": [
           "approvals:decide",
           "credentials:manage",
           "agents:manage",
-          "messages:review"
+          "messages:review",
+          "profile:edit",
+          "operations:read",
+          "imports:manage"
         ]
       },
       "CredentialRevokeRequest": {
@@ -8943,6 +9245,293 @@
           "occurred_at"
         ],
         "description": "Immutable notification intent. The receiver durably deduplicates delivery_id and fetches authoritative content with its own current credential; transport acceptance does not acknowledge or execute the message."
+      },
+      "CatalogPreviewRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "expected_profile_revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "kind": {
+            "enum": [
+              "project",
+              "work_role"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+          },
+          "operation": {
+            "enum": [
+              "archive",
+              "remap"
+            ]
+          },
+          "replacement_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          }
+        },
+        "required": [
+          "expected_profile_revision",
+          "kind",
+          "id",
+          "operation",
+          "replacement_id",
+          "reason"
+        ],
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "operation": {
+                  "const": "archive"
+                }
+              },
+              "required": [
+                "operation"
+              ]
+            },
+            "then": {
+              "properties": {
+                "replacement_id": {
+                  "type": "null"
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "replacement_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "CatalogApplyRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "preview_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expected_profile_revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "preview_id",
+          "expected_profile_revision"
+        ]
+      },
+      "CatalogPlan": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "profile_revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "changes": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 200,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "project",
+                    "work_role"
+                  ]
+                },
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$"
+                },
+                "operation": {
+                  "enum": [
+                    "archive",
+                    "remap"
+                  ]
+                },
+                "before": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/WorkspaceProfile/$defs/named_record"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "after": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/WorkspaceProfile/$defs/named_record"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "kind",
+                "id",
+                "operation",
+                "before",
+                "after"
+              ]
+            }
+          },
+          "affected_task_ids": {
+            "type": "array",
+            "maxItems": 200,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "affected_agent_ids": {
+            "type": "array",
+            "maxItems": 200,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "conflicts": {
+            "type": "array",
+            "maxItems": 200,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "resource_kind": {
+                  "enum": [
+                    "project",
+                    "work_role",
+                    "task",
+                    "agent"
+                  ]
+                },
+                "resource_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "code": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64,
+                  "pattern": "^[A-Z][A-Z0-9_]*$"
+                }
+              },
+              "required": [
+                "resource_kind",
+                "resource_id",
+                "code"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "profile_revision",
+          "expires_at",
+          "changes",
+          "affected_task_ids",
+          "affected_agent_ids",
+          "conflicts"
+        ],
+        "x-max-affected-entities": 200,
+        "x-plan-ttl-seconds": 900,
+        "description": "Persisted catalog preview, distinct from advisory profile preview. At most 200 affected entities combined across affected_task_ids and affected_agent_ids; reject overflow, never truncate. The combined limit is a semantic constraint, not enforced by the per-array JSON Schema limits alone. expires_at is exactly 900 seconds (15 minutes) after trusted server creation time. Store touched entity versions internally, not in this public DTO. Apply checks current profile revision against both the request and stored plan, all touched entity versions, current human authority and plan expiry using transaction time; stale or expired plans conflict. IDs and references must belong to the current workspace. These contracts do not implement runtime enforcement."
+      },
+      "CatalogPlanResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CatalogPlan"
+          },
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "data",
+          "request_id"
+        ]
+      },
+      "TaskResultListResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskResult"
+            },
+            "maxItems": 200
+          },
+          "page": {
+            "$ref": "#/components/schemas/Page"
+          },
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque stable identifier; never infer authority from its value."
+          }
+        },
+        "required": [
+          "data",
+          "page",
+          "request_id"
+        ]
       }
     },
     "responses": {

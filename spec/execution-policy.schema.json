@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cf-agent-hub:execution-policy:1",
+  "title": "R2 execution policy",
+  "description": "Closed operator-reviewed policy shape. Schema validity alone does not establish current eligibility, unique tuple/rule identity, replay evidence applicability or execution authority. Missing policy never means unlimited execution.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["policy_version", "agent_wip_limit", "task_retry_limit", "artifact_upload_ttl_seconds", "eligibility_rules", "replay_safety_rules"],
+  "properties": {
+    "policy_version": {"type": "integer", "minimum": 1},
+    "agent_wip_limit": {"type": "integer", "minimum": 1, "maximum": 100},
+    "task_retry_limit": {"type": "integer", "minimum": 0, "maximum": 10},
+    "artifact_upload_ttl_seconds": {"type": "integer", "minimum": 60, "maximum": 3600},
+    "eligibility_rules": {"type": "array", "items": {"$ref": "#/$defs/eligibility_rule"}},
+    "replay_safety_rules": {"type": "array", "items": {"$ref": "#/$defs/replay_safety_rule"}}
+  },
+  "$defs": {
+    "id": {"type": "string", "minLength": 1},
+    "nullable_id": {"anyOf": [{"$ref": "#/$defs/id"}, {"type": "null"}]},
+    "eligibility_rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["project_id", "work_role_id", "eligible_agent_ids"],
+      "properties": {
+        "project_id": {"$ref": "#/$defs/nullable_id"},
+        "work_role_id": {"$ref": "#/$defs/nullable_id"},
+        "eligible_agent_ids": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/id"}}
+      }
+    },
+    "replay_safety_rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "project_id", "work_role_id", "classification", "evidence_ref"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "project_id": {"$ref": "#/$defs/nullable_id"},
+        "work_role_id": {"$ref": "#/$defs/nullable_id"},
+        "classification": {"const": "replay_safe"},
+        "evidence_ref": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

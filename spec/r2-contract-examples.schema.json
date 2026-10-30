@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cf-agent-hub:r2-contract-examples:1",
+  "title": "R2 execution-policy contract fixture collection",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "execution_policy": {
+      "$ref": "urn:cf-agent-hub:execution-policy:1"
+    },
+    "invalid_execution_policies": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 200,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "expected_code": {
+            "enum": [
+              "invalid_shape",
+              "duplicate_eligibility_tuple",
+              "duplicate_replay_id",
+              "conflicting_replay_tuple"
+            ]
+          },
+          "value": {
+            "description": "Deliberately invalid policy input, including semantically invalid well-shaped policies. Rejection and expected_code are checked by verify-r2-policy-contract.mjs; this fixture-container schema does not assert that negative input is a valid policy."
+          }
+        },
+        "required": [
+          "name",
+          "expected_code",
+          "value"
+        ]
+      }
+    }
+  },
+  "required": [
+    "execution_policy",
+    "invalid_execution_policies"
+  ]
+}

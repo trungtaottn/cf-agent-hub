@@ -1,0 +1,90 @@
+{
+  "status": "proposed semantic fixture vectors; not executable runtime proof",
+  "source_revision": "5d20de4c7ad3ab26867b938bef0582e7a07c98f4",
+  "cases": [
+    {
+      "id": "static_ref_retained",
+      "provenance": "operator_static",
+      "transition": "higher_epoch",
+      "given": "same immutable credential/ref; valid current configured grant",
+      "expected": "preserve configured static authority; never classify as dynamic"
+    },
+    {
+      "id": "static_ref_missing_tombstone",
+      "provenance": "operator_static",
+      "transition": "higher_epoch",
+      "given": "old credential missing from refs and tombstones",
+      "expected": "reject install atomically"
+    },
+    {
+      "id": "static_hash_or_agent_changed",
+      "provenance": "operator_static",
+      "transition": "higher_epoch",
+      "given": "same credential ID with different hash or agent",
+      "expected": "reject immutable binding violation"
+    },
+    {
+      "id": "static_retired_reintroduced",
+      "provenance": "operator_static",
+      "transition": "higher_epoch",
+      "given": "previously retired credential referenced again",
+      "expected": "reject resurrection"
+    },
+    {
+      "id": "dynamic_active_epoch_advance",
+      "provenance": "human_managed",
+      "transition": "higher_epoch",
+      "given": "active agent plus enabled dynamic credential/runtime",
+      "expected": "retain identity/history; advance active agent epoch; revoke credential/proof; do not grant scopes"
+    },
+    {
+      "id": "dynamic_fresh_issuance",
+      "provenance": "human_managed",
+      "transition": "after_higher_epoch",
+      "given": "current authorized human; active current-epoch agent; request within current ceiling",
+      "expected": "fresh credential/runtime can be issued; old remains denied"
+    },
+    {
+      "id": "dynamic_disabled_archive",
+      "provenance": "human_managed",
+      "transition": "higher_epoch",
+      "given": "disabled or archived identity",
+      "expected": "preserve status; issuance/authentication denied"
+    },
+    {
+      "id": "dynamic_restore_revoked_after_backup",
+      "provenance": "human_managed",
+      "transition": "restore",
+      "given": "backup contains enabled old credential; it was revoked after backup",
+      "expected": "deny restored credential/proof irrespective of captured enabled bit"
+    },
+    {
+      "id": "dynamic_scope_ceiling_reduced",
+      "provenance": "human_managed",
+      "transition": "higher_epoch",
+      "given": "fresh issuance request exceeds current ceiling",
+      "expected": "deny; never union old and current scopes"
+    },
+    {
+      "id": "provenance_collision",
+      "provenance": "human_managed",
+      "transition": "higher_epoch",
+      "given": "static catalog attempts same ID as dynamic agent/credential",
+      "expected": "reject ambiguous reclassification atomically"
+    },
+    {
+      "id": "same_epoch_idempotent_install",
+      "provenance": "human_managed",
+      "transition": "same_epoch",
+      "given": "same installation digest with healthy existing dynamic authority",
+      "expected": "no epoch-change revocation solely from no-op install; restore remains separate revocation boundary"
+    },
+    {
+      "id": "same_epoch_changed_install",
+      "provenance": "human_managed",
+      "transition": "same_epoch",
+      "given": "changed installation digest",
+      "expected": "reject; no implicit authority change"
+    }
+  ]
+}

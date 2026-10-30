@@ -1,0 +1,254 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cf-agent-hub:r2-catalog-examples:1",
+  "title": "R2 catalog route fixture collection",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "contract_revision": {
+      "const": "0.1"
+    },
+    "status": {
+      "const": "design-baseline"
+    },
+    "fixtures": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "const": "catalog-archive-preview"
+              },
+              "schema": {
+                "const": "#/components/schemas/CatalogPreviewRequest"
+              },
+              "operation_id": {
+                "const": "previewCatalogChange"
+              },
+              "direction": {
+                "const": "request"
+              },
+              "value": {
+                "$ref": "urn:cf-agent-hub:openapi-components:1#/components/schemas/CatalogPreviewRequest"
+              }
+            },
+            "required": [
+              "name",
+              "schema",
+              "operation_id",
+              "direction",
+              "value"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "const": "catalog-role-remap-preview"
+              },
+              "schema": {
+                "const": "#/components/schemas/CatalogPreviewRequest"
+              },
+              "operation_id": {
+                "const": "previewCatalogChange"
+              },
+              "direction": {
+                "const": "request"
+              },
+              "value": {
+                "$ref": "urn:cf-agent-hub:openapi-components:1#/components/schemas/CatalogPreviewRequest"
+              }
+            },
+            "required": [
+              "name",
+              "schema",
+              "operation_id",
+              "direction",
+              "value"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "const": "catalog-preview-response"
+              },
+              "schema": {
+                "const": "#/components/schemas/CatalogPlanResponse"
+              },
+              "operation_id": {
+                "const": "previewCatalogChange"
+              },
+              "direction": {
+                "const": "response"
+              },
+              "http_status": {
+                "const": 200
+              },
+              "value": {
+                "$ref": "urn:cf-agent-hub:openapi-components:1#/components/schemas/CatalogPlanResponse"
+              }
+            },
+            "required": [
+              "name",
+              "schema",
+              "operation_id",
+              "direction",
+              "http_status",
+              "value"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "const": "catalog-apply"
+              },
+              "schema": {
+                "const": "#/components/schemas/CatalogApplyRequest"
+              },
+              "operation_id": {
+                "const": "applyCatalogChange"
+              },
+              "direction": {
+                "const": "request"
+              },
+              "value": {
+                "$ref": "urn:cf-agent-hub:openapi-components:1#/components/schemas/CatalogApplyRequest"
+              }
+            },
+            "required": [
+              "name",
+              "schema",
+              "operation_id",
+              "direction",
+              "value"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "const": "catalog-apply-response"
+              },
+              "schema": {
+                "const": "#/components/schemas/ProfileDataResponse"
+              },
+              "operation_id": {
+                "const": "applyCatalogChange"
+              },
+              "direction": {
+                "const": "response"
+              },
+              "http_status": {
+                "const": 200
+              },
+              "value": {
+                "$ref": "urn:cf-agent-hub:openapi-components:1#/components/schemas/ProfileDataResponse"
+              }
+            },
+            "required": [
+              "name",
+              "schema",
+              "operation_id",
+              "direction",
+              "http_status",
+              "value"
+            ]
+          }
+        ]
+      },
+      "allOf": [
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "const": "catalog-archive-preview"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "const": "catalog-role-remap-preview"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "const": "catalog-preview-response"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "const": "catalog-apply"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "const": "catalog-apply-response"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        }
+      ]
+    }
+  },
+  "required": [
+    "contract_revision",
+    "status",
+    "fixtures"
+  ]
+}

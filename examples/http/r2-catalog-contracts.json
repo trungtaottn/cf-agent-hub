@@ -1,0 +1,115 @@
+{
+  "contract_revision": "0.1",
+  "status": "design-baseline",
+  "fixtures": [
+    {
+      "name": "catalog-archive-preview",
+      "schema": "#/components/schemas/CatalogPreviewRequest",
+      "operation_id": "previewCatalogChange",
+      "direction": "request",
+      "value": {
+        "expected_profile_revision": 1,
+        "kind": "project",
+        "id": "project_a",
+        "operation": "archive",
+        "replacement_id": null,
+        "reason": "Retire unused project"
+      }
+    },
+    {
+      "name": "catalog-role-remap-preview",
+      "schema": "#/components/schemas/CatalogPreviewRequest",
+      "operation_id": "previewCatalogChange",
+      "direction": "request",
+      "value": {
+        "expected_profile_revision": 1,
+        "kind": "work_role",
+        "id": "role_a",
+        "operation": "remap",
+        "replacement_id": "role_b",
+        "reason": "Consolidate roles"
+      }
+    },
+    {
+      "name": "catalog-preview-response",
+      "schema": "#/components/schemas/CatalogPlanResponse",
+      "operation_id": "previewCatalogChange",
+      "direction": "response",
+      "http_status": 200,
+      "value": {
+        "data": {
+          "id": "catalog_plan_a",
+          "profile_revision": 1,
+          "expires_at": "2026-10-26T15:15:00Z",
+          "changes": [
+            {
+              "kind": "project",
+              "id": "project_a",
+              "operation": "archive",
+              "before": {
+                "id": "project_a",
+                "display_name": "Project A",
+                "description": "Synthetic example",
+                "archived": false
+              },
+              "after": {
+                "id": "project_a",
+                "display_name": "Project A",
+                "description": "Synthetic example",
+                "archived": true
+              }
+            }
+          ],
+          "affected_task_ids": [],
+          "affected_agent_ids": [],
+          "conflicts": []
+        },
+        "request_id": "request_catalog_preview"
+      }
+    },
+    {
+      "name": "catalog-apply",
+      "schema": "#/components/schemas/CatalogApplyRequest",
+      "operation_id": "applyCatalogChange",
+      "direction": "request",
+      "value": {
+        "preview_id": "catalog_plan_a",
+        "expected_profile_revision": 1
+      }
+    },
+    {
+      "name": "catalog-apply-response",
+      "schema": "#/components/schemas/ProfileDataResponse",
+      "operation_id": "applyCatalogChange",
+      "direction": "response",
+      "http_status": 200,
+      "value": {
+        "data": {
+          "profile_revision": 1,
+          "profile": {
+            "contract_revision": "0.1",
+            "profile_id": "profile_neutral",
+            "display_name": "Workspace",
+            "description": "A shared coordination workspace.",
+            "branding": {
+              "accent": "blue"
+            },
+            "navigation": {
+              "visible_views": [
+                "overview",
+                "inbox",
+                "tasks",
+                "agents",
+                "approvals",
+                "activity"
+              ]
+            },
+            "projects": [],
+            "work_roles": []
+          }
+        },
+        "request_id": "req_synthetic_putProfile"
+      }
+    }
+  ]
+}

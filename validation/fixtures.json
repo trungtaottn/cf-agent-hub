@@ -61,6 +61,14 @@
     {
       "file": "examples/http/r1-message-notification.json",
       "openapi_schema": "#/components/schemas/MessageNotification"
+    },
+    {
+      "file": "examples/http/r2-contracts.json",
+      "schema": "spec/r2-contract-examples.schema.json"
+    },
+    {
+      "file": "examples/http/r2-catalog-contracts.json",
+      "schema": "spec/r2-catalog-examples.schema.json"
     }
   ]
 }

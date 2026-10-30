@@ -78,3 +78,13 @@ Workspace WIP ceilings, task retry limits and explicit replay-safety classificat
 | Recovery total rows/bytes | 1,000,000 / 268,435,456 | Required budget ceiling |
 
 Persisted retry delay is `max(nominal * jitter, min(validRetryAfterSeconds, retry_after_max_seconds))`, with absent/invalid hints treated as zero. The cap applies only to the provider hint: it never shortens nominal jittered backoff or increases the six-attempt budget. Profile preview and recovery bounds fail explicitly; neither may truncate evidence or partly apply a command. R1 does not expose artifact upload despite retaining its later-release bounds in this register.
+
+## R2 policy and catalog contract bounds — 2026-10-26
+
+These selected bounds constrain future R2 consumers; they are not deployed-capacity measurements. Execution policy requires integer version >=1, WIP 1–100, retries 0–10 and artifact-upload TTL 60–3,600 seconds. No universal policy default is installed; 1/2/900 remain fixture values. Catalog preview affects at most 200 entities and expires exactly 15 minutes after creation. Exceeding a bound rejects the operation rather than truncating its effects. See [configuration](configuration.md) and [catalog lifecycle](customization.md).
+
+### Selected R2 historical-result limits
+
+History uses existing ListLimit default 50 and range 1–200, with up to limit plus one fully authorized rows for lookahead. This is an authorized-output bound, **not** a physical candidate-scan or artifact-lookup bound. Long hidden prefixes/suffixes require actual indexed-query/work-budget proof before #27 activates the read. Exceeding a supported hard work budget rejects the entire request with generic 503, never a partial/progress page.
+
+The new complete serialized history-response ceiling is 1,048,576 UTF-8 bytes including page, cursor and request_id. Never truncate a result. Stop before the next unreturned authorized result exceeds the budget. Submission/restore validation must prove a result fits with maximum supported continuation-envelope overhead; canonical identifier/envelope bounds must be established by the owning implementation before activation. No new identifier-length number is invented here. Oversize persisted invariants fail sanitized 500 rather than looping. Test Unicode and 1MiB−1/at/+1, including large supported envelope fields. Cursor lifetime remains absolute 3,600 seconds; fixed-width/padded history cursor encoding must remain within the existing 2,048-byte limit, including encoding overhead. These are reviewed contract requirements, not measured deployed behavior; [ADR 0008](adr/0008-r2-authority-and-history.md) owns the privacy and sequencing rationale.

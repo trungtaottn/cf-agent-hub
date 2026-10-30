@@ -1,0 +1,30 @@
+{
+  "data": {
+    "id": "catalog_plan_a",
+    "profile_revision": 1,
+    "expires_at": "2026-10-26T15:15:00Z",
+    "changes": [
+      {
+        "kind": "project",
+        "id": "project_a",
+        "operation": "archive",
+        "before": {
+          "id": "project_a",
+          "display_name": "Project A",
+          "description": "Synthetic example",
+          "archived": false
+        },
+        "after": {
+          "id": "project_a",
+          "display_name": "Project A",
+          "description": "Synthetic example",
+          "archived": true
+        }
+      }
+    ],
+    "affected_task_ids": [],
+    "affected_agent_ids": [],
+    "conflicts": []
+  },
+  "request_id": "request_catalog_preview"
+}

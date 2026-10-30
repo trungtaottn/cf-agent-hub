@@ -1,0 +1,22 @@
+{
+  "data": [
+    {
+      "summary": "Synthetic retained result",
+      "artifact_ids": [
+        "artifact_a"
+      ],
+      "run_id": "run_a",
+      "submitted_by": {
+        "kind": "agent",
+        "principal_id": "agent_a",
+        "agent_id": "agent_a"
+      },
+      "submitted_at": "2026-10-26T15:00:00Z"
+    }
+  ],
+  "page": {
+    "next_cursor": null,
+    "has_more": false
+  },
+  "request_id": "request_history_a"
+}
