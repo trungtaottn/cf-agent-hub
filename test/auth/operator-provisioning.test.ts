@@ -208,3 +208,15 @@ it('short_writes_complete_and_write_errors_leave_no_published_bundle',()=>{
  expect(failed.status).not.toBe(0);expect(existsSync(failedPath)).toBe(false);
  expect(readdirSync(f.dir).some(x=>x.includes('.tmp-'))).toBe(false);
 });
+it('canonical deployment validation is directly importable by the supported Node CLI',()=>{
+ const result=spawnSync(process.execPath,['--input-type=module','-e',"await import('./src/config/deployment.ts');"],{encoding:'utf8'});
+ expect(result.status,result.stderr).toBe(0);
+});
+it('operator provisioning preserves explicit execution policy in the signed configuration digest',()=>{
+ const f=setup(),config=f.config(1),policy={policy_version:1,agent_wip_limit:1,task_retry_limit:2,artifact_upload_ttl_seconds:900,eligibility_rules:[{project_id:null,work_role_id:null,eligible_agent_ids:['agent_research']}],replay_safety_rules:[]};
+ Object.assign(config.workspace_policies[0],{execution_policy:policy});const out=f.create(config);green(out);
+ expect(read(out.config).workspace_policies[0].execution_policy).toEqual(policy);
+ expect(read(out.bundle).config_digest).toBe(createHash('sha256').update(canonical(config)).digest('hex'));
+ const invalid=f.config(2);Object.assign(invalid.workspace_policies[0],{execution_policy:{...policy,eligibility_rules:[policy.eligibility_rules[0],policy.eligibility_rules[0]]}});
+ const denied=f.create(invalid,out);expect(denied.status).not.toBe(0);expect(denied.token).toBe('');expect(existsSync(denied.bundle)).toBe(false);
+});

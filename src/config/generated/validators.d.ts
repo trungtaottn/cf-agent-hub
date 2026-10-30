@@ -36,7 +36,7 @@ export type DeploymentConfig = {
 "issuer": string;
 "subject": string;
 "scopes": Array<"workspace:read" | "messages:send" | "messages:read" | "messages:review" | "events:read" | "profile:edit" | "operations:read" | "tasks:read" | "tasks:create" | "tasks:edit" | "tasks:schedule" | "tasks:review" | "tasks:cancel" | "agents:read" | "agents:manage" | "credentials:manage" | "artifacts:read" | "artifacts:write" | "search:read" | "imports:manage">;
-"project_ids": unknown;
+"project_ids": (Array<string> | null);
 "enabled": boolean;
 "delegable_native_scopes"?: Array<"workspace:read" | "messages:send" | "messages:read" | "messages:ack" | "events:read" | "tasks:read" | "tasks:create" | "tasks:edit" | "tasks:schedule" | "tasks:claim" | "tasks:execute" | "tasks:review" | "tasks:cancel" | "agents:read" | "runtimes:manage" | "artifacts:read" | "artifacts:write" | "search:read">;
 }>;
@@ -45,7 +45,7 @@ export type DeploymentConfig = {
 "credential_id": string;
 "agent_id": string;
 "scopes": Array<"workspace:read" | "messages:send" | "messages:read" | "messages:ack" | "events:read" | "tasks:read" | "tasks:create" | "tasks:edit" | "tasks:schedule" | "tasks:claim" | "tasks:execute" | "tasks:review" | "tasks:cancel" | "agents:read" | "runtimes:manage" | "artifacts:read" | "artifacts:write" | "search:read">;
-"project_ids": unknown;
+"project_ids": (Array<string> | null);
 "expires_at": string;
 "enabled": boolean;
 }>;
@@ -60,6 +60,7 @@ export type DeploymentConfig = {
 "enabled": boolean;
 }>;
 "retry_after_max_seconds": number;
+"execution_policy"?: ExecutionPolicy;
 }>;
 };
 export type VerificationBundle = {
@@ -84,5 +85,24 @@ export type VerificationBundle = {
 "tag": string;
 };
 };
+export type ExecutionPolicy = {
+"policy_version": number;
+"agent_wip_limit": number;
+"task_retry_limit": number;
+"artifact_upload_ttl_seconds": number;
+"eligibility_rules": Array<{
+"project_id": (string | null);
+"work_role_id": (string | null);
+"eligible_agent_ids": Array<string>;
+}>;
+"replay_safety_rules": Array<{
+"id": string;
+"project_id": (string | null);
+"work_role_id": (string | null);
+"classification": "replay_safe";
+"evidence_ref": string;
+}>;
+};
 export declare function validateDeployment(input: unknown): input is DeploymentConfig;
 export declare function validateBundle(input: unknown): input is VerificationBundle;
+export declare function validateExecutionPolicyShape(input: unknown): input is ExecutionPolicy;

@@ -1,3 +1,4 @@
+import {taskRecord,taskVisible,taskView} from '../tasks/repository';
 import type {WorkspaceTransaction} from '../storage/transaction';
 import type {ActorContext,ResourceAccess} from '../workspace/context';
 import type {EventDraft} from '../workspace/commands';
@@ -20,11 +21,14 @@ const definitions={
  'credential.issued':{resource:'credential',summary:'Credential issued.'},
  'credential.revoked':{resource:'credential',summary:'Credential revoked.'},
  'runtime.enrolled':{resource:'runtime',summary:'Runtime enrolled.'},
- 'runtime.heartbeat':{resource:'runtime',summary:'Runtime presence refreshed.'}
+ 'runtime.heartbeat':{resource:'runtime',summary:'Runtime presence refreshed.'},
+ 'task.created':{resource:'task',summary:'Task created.'},
+ 'task.updated':{resource:'task',summary:'Task metadata updated.'},
+ 'task.ready':{resource:'task',summary:'Task scheduled Ready.'}
 } as const;
-interface EventRow{id:string;workspace_id:string;sequence:number;type:string;actor_json:string;resource_type:Event['resource_type'];resource_id:string;resource_version:number|null;thread_id:string|null;request_id:string;occurred_at:number;summary:string;}
+interface EventRow{id:string;workspace_id:string;sequence:number;type:string;actor_json:string;resource_type:Event['resource_type'];resource_id:string;resource_version:number|null;thread_id:string|null;request_id:string;occurred_at:number;summary:string;task_version?:number|null;run_id?:string|null;fence?:number|null;}
 function projection(row:EventRow):Event{
- return {id:row.id,workspace_id:row.workspace_id,sequence:row.sequence,type:row.type,actor:JSON.parse(row.actor_json) as Event['actor'],resource_type:row.resource_type,resource_id:row.resource_id,resource_version:row.resource_version,thread_id:row.thread_id,request_id:row.request_id,occurred_at:new Date(row.occurred_at).toISOString(),summary:row.summary,task_version:null,run_id:null,fence:null};
+ return {id:row.id,workspace_id:row.workspace_id,sequence:row.sequence,type:row.type,actor:JSON.parse(row.actor_json) as Event['actor'],resource_type:row.resource_type,resource_id:row.resource_id,resource_version:row.resource_version,thread_id:row.thread_id,request_id:row.request_id,occurred_at:new Date(row.occurred_at).toISOString(),summary:row.summary,task_version:row.task_version??null,run_id:row.run_id??null,fence:row.fence??null};
 }
 /** Handler supplies stable resource fields only. The wrapper supplies actor, ID, time and request correlation. */
 export function appendEvent(tx:WorkspaceTransaction,event:RedactedEventInput):{id:string;sequence:number}{
@@ -33,8 +37,13 @@ export function appendEvent(tx:WorkspaceTransaction,event:RedactedEventInput):{i
   (event.resourceType==='profile'||event.resourceType==='preferences'||event.resourceType==='agent'||event.resourceType==='credential')&&event.actor.kind!=='human'||
   event.resourceType==='profile'&&event.resourceId!==event.workspaceId)throw new HttpError('INTERNAL_ERROR',500);
  const row:EventRow={id:event.id,workspace_id:event.workspaceId,sequence:1,type:event.type,actor_json:canonicalJson({kind:event.actor.kind,principal_id:event.actor.principalId,agent_id:event.actor.agentId}),resource_type:event.resourceType,resource_id:event.resourceId,resource_version:event.resourceVersion,thread_id:event.threadId,request_id:event.requestId,occurred_at:event.nowMs,summary:definition.summary};
+ if(event.resourceType==='task'){const task=taskRecord(tx,event.workspaceId,event.resourceId);if(event.resourceVersion!==null)throw new HttpError('INTERNAL_ERROR',500);row.task_version=task.task_version;}
  if(!validateEvent(projection(row)))throw new HttpError('INTERNAL_ERROR',500);
  tx.exec('INSERT INTO events (id,workspace_id,type,actor_json,resource_type,resource_id,resource_version,thread_id,request_id,occurred_at,summary) VALUES (?,?,?,?,?,?,?,?,?,?,?)',[row.id,row.workspace_id,row.type,row.actor_json,row.resource_type,row.resource_id,row.resource_version,row.thread_id,row.request_id,row.occurred_at,row.summary]);
+ if(event.resourceType==='task'){
+  tx.exec('UPDATE events SET task_version=? WHERE id=?',[row.task_version!,event.id]);
+  tx.exec('INSERT INTO task_history(id,workspace_id,event_id,task_id,task_version,run_id,kind,created_at) VALUES(?,?,?,?,?,NULL,?,?)',[event.id,event.workspaceId,event.id,event.resourceId,row.task_version!,event.type,event.nowMs]);
+ }
  const stored=tx.one<{sequence:number}>('SELECT sequence FROM events WHERE id=?',[row.id])!;
  return {id:row.id,sequence:stored.sequence};
 }
@@ -49,6 +58,7 @@ export function projectEvent(tx:WorkspaceTransaction,actor:ActorContext,id:strin
  // A caller-supplied visibility hook cannot enable an unknown producer/resource pair.
  const resource=row.type==='configuration.installed'?'configuration':Object.hasOwn(definitions,row.type)?definitions[row.type as keyof typeof definitions].resource:null;
  if(resource===null||resource!==row.resource_type)return null;
+ if(resource==='task'&&(!row.task_version||!tx.one('SELECT id FROM tasks WHERE workspace_id=? AND id=?',[actor.workspaceId,row.resource_id])))return null;
  const event=projection(row);
  const visible:unknown=visibility(tx,live,{kind:row.resource_type,id:row.resource_id,projectId:null},event,nowMs);
  if(visible!==null&&(typeof visible==='object'||typeof visible==='function')&&typeof (visible as {then?:unknown}).then==='function'){
@@ -67,10 +77,11 @@ export function projectEvent(tx:WorkspaceTransaction,actor:ActorContext,id:strin
 export const resourceEventVisibility:EventVisibility=(tx,actor,resource,event,nowMs)=>{
  if(!validateEvent(event)||event.workspace_id!==actor.workspaceId||resource.id!==event.resource_id||resource.kind!==event.resource_type)return false;
  try{
-  authorize(tx,actor,'events:read',resource.kind==='credential'?undefined:resource,nowMs);
+  authorize(tx,actor,'events:read',resource.kind==='credential'||resource.kind==='task'?undefined:resource,nowMs);
   if(event.type==='message.accepted'||event.type==='message.acknowledged'){
    assertMessageVisible(tx,actor,event.resource_id,nowMs);return true;
   }
+  if(resource.kind==='task'){const task=taskRecord(tx,actor.workspaceId,resource.id);if(!taskVisible(actor,task)||event.task_version===null)return false;taskView(tx,actor,task,nowMs);return true;}
   if(resource.kind==='agent'){
    authorize(tx,actor,'agents:read',resource,nowMs);
    return actor.projectIds===null&&!!tx.one('SELECT agent_id FROM static_agents WHERE agent_id=? AND workspace_id=?',[resource.id,actor.workspaceId]);

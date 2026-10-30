@@ -12,7 +12,7 @@ export function probe(schema,value,document=schema,path='$') {
   if(schema.not&&probe(schema.not,value,document,path).length===0)return fail();
   if(schema.$ref){
     const [id,fragment='']=schema.$ref.split('#');
-    const sources={'urn:cf-agent-hub:deployment-config:0.2':'spec/deployment-config.schema.json','urn:cf-agent-hub:r1-bootstrap:0.1':'spec/r1-bootstrap.schema.json','urn:cf-agent-hub:recovery-manifest:1':'spec/recovery-manifest.schema.json','urn:cf-agent-hub:recovery-command:1':'spec/recovery-command.schema.json'};
+    const sources={'urn:cf-agent-hub:execution-policy:1':'spec/execution-policy.schema.json','urn:cf-agent-hub:deployment-config:0.2':'spec/deployment-config.schema.json','urn:cf-agent-hub:r1-bootstrap:0.1':'spec/r1-bootstrap.schema.json','urn:cf-agent-hub:recovery-manifest:1':'spec/recovery-manifest.schema.json','urn:cf-agent-hub:recovery-command:1':'spec/recovery-command.schema.json'};
     let source=id==='urn:cf-agent-hub:openapi-components:1'?{components:readJson('spec/openapi.json').components}:id?readJson(sources[id]??(()=>{throw Error('Unregistered contract schema: '+id)})()):document;
     let target=source;
     if(fragment){if(!fragment.startsWith('/'))throw Error('Invalid local schema fragment: '+schema.$ref);for(const key of fragment.slice(1).split('/'))target=target[key.replaceAll('~1','/').replaceAll('~0','~')];}

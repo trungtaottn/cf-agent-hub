@@ -10,16 +10,21 @@ const unavailable=Object.entries(spec.paths).flatMap(([path,item])=>Object.entri
  const op=value as {operationId?:string;'x-r1-available'?:boolean};
  return op.operationId&&op['x-r1-available']!==true?[{path,method:method.toUpperCase(),operation:op.operationId}]:[];
 }));
-// These #25/#26 operations now exist, but recognition does not grant old R1 callers authority.
+// These #25–27 operations now exist, but recognition does not grant old R1 callers authority.
 const identityOperations=new Set(['listAgents','createAgent','getAgent','patchAgent','archiveAgent','listCredentials','createCredential','revokeCredential','createRuntime','heartbeatRuntime']);
-const identityBody:Record<string,unknown>={createRuntime:{label:'Denied runtime'},heartbeatRuntime:{expected_runtime_version:1},createAgent:{display_name:'Denied synthetic',description:'',work_role_ids:[]},patchAgent:{expected_agent_version:1,description:'Denied'},archiveAgent:{expected_agent_version:1,reason:'Denied'},createCredential:{agent_id:'agent_research',label:'Denied',scopes:['messages:read'],project_ids:null,expires_at:new Date(Date.now()+3600000).toISOString()},revokeCredential:{expected_credential_version:1,reason:'Denied'}};
-for(const route of unavailable)it((identityOperations.has(route.operation)?'ungranted identity ':'unavailable ')+route.operation+' has no R1 mutation surface',async()=>{
+const taskOperations=new Set(['listTasks','createTask','getTask','patchTask','readyTask','listTaskResults']);
+const availableOperations=new Set([...identityOperations,...taskOperations]);
+const identityBody:Record<string,unknown>={createTask:{title:'Denied synthetic task',description:''},patchTask:{expected_version:1,title:'Denied'},readyTask:{expected_version:1},createRuntime:{label:'Denied runtime'},heartbeatRuntime:{expected_runtime_version:1},createAgent:{display_name:'Denied synthetic',description:'',work_role_ids:[]},patchAgent:{expected_agent_version:1,description:'Denied'},archiveAgent:{expected_agent_version:1,reason:'Denied'},createCredential:{agent_id:'agent_research',label:'Denied',scopes:['messages:read'],project_ids:null,expires_at:new Date(Date.now()+3600000).toISOString()},revokeCredential:{expected_credential_version:1,reason:'Denied'}};
+for(const route of unavailable)it((availableOperations.has(route.operation)?'ungranted operation ':'unavailable ')+route.operation+' has no R1 mutation surface',async()=>{
  const f=await acceptanceFixture(('r1_unavailable_'+route.operation).toLowerCase());
  const path=route.path.replace('/v2/workspaces/{workspace_id}','').replace(/\{[^}]+\}/g,'unavailable_fixture');
+ // Keep the old canonical R1 grant/config unchanged. A real scoped target makes
+ // 403 prove lack of authority rather than merely a nonexistent resource.
+ if(taskOperations.has(route.operation))await runInDurableObject(f.a.stub,(_o,state)=>{state.storage.sql.exec("INSERT INTO tasks(id,workspace_id,title,description,state,task_version,proposal_version,retry_count,retry_limit,flags_json,created_at,updated_at) SELECT 'unavailable_fixture',workspace_id,'Existing synthetic task','','backlog',1,0,0,0,'[]',1,1 FROM workspace_metadata WHERE id=1");});
  const beforeA=await sqlSnapshot(f.a),beforeB=await sqlSnapshot(f.b);
  const response=await f.http(apiRequest(f.a,path,route.method,['GET','HEAD'].includes(route.method)?undefined:identityBody[route.operation]??{},{cookie:f.sessionCookie,'x-csrf-token':f.csrf,'idempotency-key':'unavailable',...(route.operation==='heartbeatRuntime'?{'x-runtime-token':btoa('x'.repeat(32)).replace(/=+$/,'')}:{})}));
- expect(response.status,'unavailable or ungranted route must fail without effects').toBe(identityOperations.has(route.operation)?403:404);
- const value=await response.json() as {error:{code:string}};expect(validateError(value)).toBe(true);expect(value.error.code).toBe(identityOperations.has(route.operation)?'FORBIDDEN':'NOT_FOUND');
+ expect(response.status,'unavailable or ungranted route must fail without effects').toBe(availableOperations.has(route.operation)?403:404);
+ const value=await response.json() as {error:{code:string}};expect(validateError(value)).toBe(true);expect(value.error.code).toBe(availableOperations.has(route.operation)?'FORBIDDEN':'NOT_FOUND');
  expect((await sqlSnapshot(f.a)).digest).toBe(beforeA.digest);expect((await sqlSnapshot(f.b)).digest).toBe(beforeB.digest);
 },30_000);
 

@@ -5,7 +5,7 @@ import addFormats from 'ajv-formats';
 import {readJson,deploymentIssues,recoveryAuthorityIssues,run} from '../../scripts/verify-r1-contract.mjs';
 const ajv=new Ajv2020({allErrors:true,strict:false});addFormats(ajv);
 const api=readJson('spec/openapi.json');
-for(const path of ['spec/deployment-config.schema.json','spec/r1-bootstrap.schema.json','spec/recovery-manifest.schema.json','spec/recovery-command.schema.json'])ajv.addSchema(readJson(path));
+for(const path of ['spec/execution-policy.schema.json','spec/deployment-config.schema.json','spec/r1-bootstrap.schema.json','spec/recovery-manifest.schema.json','spec/recovery-command.schema.json'])ajv.addSchema(readJson(path));
 ajv.addSchema({$schema:'https://json-schema.org/draft/2020-12/schema',$id:'urn:cf-agent-hub:openapi-components:1',components:api.components});
 function validate(schema:any,value:unknown){const fn=(schema.$id&&ajv.getSchema(schema.$id))||ajv.compile(schema);const valid=fn(value);return {valid,errors:fn.errors??[]};}
 describe('R1 closed contract boundary',()=>{
