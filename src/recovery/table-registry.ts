@@ -2516,6 +2516,13 @@ export const TABLE_REGISTRY = [
     "notNull": true,
     "defaultValue": null,
     "pk": 0
+   },
+   {
+    "name": "reason",
+    "type": "TEXT",
+    "notNull": false,
+    "defaultValue": null,
+    "pk": 0
    }
   ],
   "primaryKey": [

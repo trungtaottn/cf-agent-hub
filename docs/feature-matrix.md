@@ -97,3 +97,5 @@ Issue 28 local source evidence: [catalog execution ledger](r2-task-plans/issue-0
 Issue 29 staged claim/lease source and local engine evidence: [execution ledger](r2-task-plans/issue-029-execution.md). Public claim/run routes remain unavailable until expiry and settlement integration; formal capability promotion and live acceptance are pending.
 
 Issue 30 staged failure/expiry and shared-alarm source: [execution ledger](r2-task-plans/issue-030-execution.md). This does not promote F17 or other capabilities, activate public execution ingress, or establish live acceptance. Issue 31 integration and the deferred acceptance gates remain outstanding.
+
+Issue31 local cancel/requeue and integrated29–31 execution ingress source: [execution ledger](r2-task-plans/issue-031-execution.md). Historical result/decision fixtures do not implement submission/acceptance or R3 decision records. Formal capability promotion, remote availability and live acceptance remain pending.

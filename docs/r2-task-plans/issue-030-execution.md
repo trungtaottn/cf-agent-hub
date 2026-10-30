@@ -34,7 +34,7 @@ Fresh integrated verification passed generated freshness, five TypeScript projec
 
 Known environmental exclusions remain explicit: recovery CLI outside-checkout fixtures encounter protected host `/tmp/.git`; no guard bypass. The exact pinned Chromium download previously failed integrity after built-in retries; no replacement executable or fabricated browser result. Live acceptance remains deferred until the owner-selected post-R4 stage, not passed.
 
-## Handoff obligations
+## Historical handoff obligations (scope corrected below)
 
 Issue31 must integrate submission/cancellation, current-authority replay, expiry/cancel/submit races, and public claim/fail/run activation only after all producers are present. Preserve committed dirty scheduling plus shared postcommit repair before final sensitive response projection; do not await unrelated repair after projecting sensitive authority. Issue33 adds artifact deadlines to this same source merger. No unknown/exhausted task may be silently requeued; external reconciliation precedes reviewed replacement work. Future operational recovery must validate current schema/proof/fence/captured safety and due-work restoration.
 
@@ -53,3 +53,7 @@ The first post-index full run collected891 Workers tests:887 passed and4 failed 
 Final CLI inspection caught a fourth old schema-version expectation in the current-runtime smoke test. It now imports CURRENT_SCHEMA_VERSION without changing denial/no-effects assertions. The subsequent CLI-only rerun remains8 pass/18 fail, now reaching RECOVERY_INPUT_REJECTED through protected input/directory checks rather than failing the version assertion. Host `/tmp/.git` makes the synthetic outside-checkout artifact directories invalid; no guard or fixture security bypass was attempted. The current-runtime HTTPS denial journey is therefore not established by this run. The aggregate log predates this test-only correction; the CLI rerun covers the exact corrected consumer.
 
 UI production build and schema10 runtime boot smoke passed. Documentation and implementation-plan validators passed (114 Markdown documents,169 JSON files,1374 local links;636 plan checks); diff whitespace check passed. Browser executable availability was checked and the exact pinned Chromium was absent: browser assertions were not run. Independent final integration/simplifier/query/security reviews leave zero unresolved Critical/Important findings; original schema owner independently ran20/20 migration tests and reviewed the final version-consumer corrections. Two Important implementation findings (ordinary expiry-producer spoofing and second-maintenance alarm repair) were fixed with meaningful red-to-green tests. Evidence, exact commands, failed intermediate runs, review receipts and immutable file hashes are retained in the local handoff bundle, not represented as live acceptance.
+
+## Issue31 scope correction at successor pickup
+
+The handoff above incorrectly assigned submission to issue31. Live issue31 and its pinned plan assign cancel/requeue only; actual submission, independent review and real submit/cancel race verification belong to issue35. The original receipt remains historical. Issue31 must independently review integrated29–31 claim/expiry/cancel before exposing their routes; this never enables the missing submit/accept/artifact/approval operations.

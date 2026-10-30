@@ -35,7 +35,7 @@ export function executionActor(tx:WorkspaceTransaction,ctx:CommandContext,scope:
  return actor;
 }
 /** Current visibility does not require ownership, a live lease or an extra runtime proof. */
-export function getRun(tx:WorkspaceTransaction,ctx:CommandContext,id:string):Run{
+export function getRun(tx:WorkspaceTransaction,ctx:Pick<CommandContext,'actor'|'nowMs'>,id:string):Run{
  const actor=taskAccess(tx,ctx.actor,'tasks:read',null,ctx.nowMs),row=runRecord(tx,actor.workspaceId,id);
  taskAccess(tx,actor,'tasks:read',row.task_id,ctx.nowMs);taskView(tx,actor,taskRecord(tx,actor.workspaceId,row.task_id),ctx.nowMs);return runView(row);
 }

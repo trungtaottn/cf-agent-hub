@@ -109,4 +109,16 @@ The claim's private captured policy version, rule ID and evidence reference are 
 
 Run ending, task pointer/version/retry updates, redacted event/history and dirty scheduler generation commit together. User failure additionally commits its sanitized command outcome in that transaction. Expiry has no fictitious user idempotency outcome: active-to-ended transition is its replay guard. Each shared-alarm unit commits independently, so a later failure retains earlier transitions and leaves remaining work due. This is local source behavior, not deployed acceptance.
 
-Issue 31 still owns result submission/cancellation and activation integration. Claim, fail and run public ingress remain unavailable after issue 30; no hold-clear, retry reset, external effect replay or settlement beyond this issue is enabled. See [execution evidence](r2-task-plans/issue-030-execution.md).
+Issue 31 owns cancellation/requeue and integrated claim/expiry/cancel activation review; issue 35 owns result submission and independent acceptance. Claim, fail and run public ingress remain unavailable after issue 30; no hold-clear, retry reset, external effect replay or settlement beyond this issue is enabled. See [execution evidence](r2-task-plans/issue-030-execution.md).
+
+## Issue31 cancellation and execution ingress
+
+Local source integrates reviewed claim/renew/fail/run-read and cancel/requeue ingress through the same Worker→DO authorization lane. Submit/accept, artifact runtime and R3 decisions remain unavailable. This is not remote publication, deployed verification or acceptance.
+
+Cancellation checks current `tasks:cancel`, complete current task/result visibility, expected task version and a nonempty reason. It ends only an active run, clears current ownership/result/approval pointers and preserves ended attempts, historical attribution, holds and retry budget. It does not undo external effects. `TaskCommandResult.run` and `.approval` are null for cancel/requeue; latest run and durable audit/history retain linkage. A fresh command against Done/Cancelled rejects; same-key replay remains the original outcome under current access.
+
+Explicit Backlog/Review requeue clears prior current result/approval context under current scheduling/eligibility guards, without creating a run. Both uncertainty/exhaustion holds reject. A stale version requires a fresh read and deliberate current reason, not a retry with a fabricated version. Existing Ready remains distinct and rejects a retained approval pointer.
+
+Ownership-changing POST success schedules the existing shared alarm repair in the DO lifetime without awaiting after final authorized response projection. The durable dirty generation survives failed arming; the existing catalog sweep can repair it. Cancellation/expiry do not promise that an external runtime stopped its side effects. A lost response must replay the same key/body, then fresh-read current run/task state rather than treating a historical replayed claim as a renewed lease.
+
+See [issue31 evidence](r2-task-plans/issue-031-execution.md) for exact scope, fixture-only decision/result limitations, migration and remaining gates.

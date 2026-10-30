@@ -1,11 +1,13 @@
 import type {WorkspaceTransaction} from '../storage/transaction';
 import type {ActorContext,CommandContext} from '../workspace/context';
-import type {Task,TaskCreateRequest,TaskPatchRequest,TaskVersionRequest,TaskCommandResult} from '../http/dto';
+import type {Task,TaskCreateRequest,TaskPatchRequest,TaskVersionRequest,TaskReasonRequest,TaskCommandResult} from '../http/dto';
 import type {CommandDescriptor} from '../workspace/commands';
-import {validateTask,validateTaskCreateRequest,validateTaskPatchRequest,validateTaskVersionRequest} from '../http/generated/auth-validators.js';
+import {validateTask,validateTaskCreateRequest,validateTaskPatchRequest,validateTaskVersionRequest,validateTaskReasonRequest,validateTaskCommandResult} from '../http/generated/auth-validators.js';
 import {HttpError} from '../http/envelopes';
 import {assertTaskReferences,assertTaskEligible,installedExecutionPolicy} from '../config/execution-policy';
 import {taskAccess,taskRecord,taskView,assertTaskOutcomeVisible} from './repository';
+import {runRecord,nextRunVersion} from './lease';
+import {markSchedulerDirty} from '../outbox/scheduler-state';
 const encoder=new TextEncoder();
 function body<B>(value:B,validate:(input:unknown)=>boolean):void{
  if(!validate(value))throw new HttpError('INVALID_REQUEST',400);
@@ -48,6 +50,41 @@ export function readyTask(tx:WorkspaceTransaction,ctx:CommandContext,id:string,r
  tx.exec("UPDATE tasks SET state='ready',task_version=?,updated_at=? WHERE workspace_id=? AND id=?",[nextVersion(row.task_version),ctx.nowMs,actor.workspaceId,id]);
  return {task:taskView(tx,actor,taskRecord(tx,actor.workspaceId,id),ctx.nowMs),run:null,approval:null};
 }
+/** An explicit revision clears prior current context, never historical records or holds. */
+export function requeueTask(tx:WorkspaceTransaction,ctx:CommandContext,id:string,request:TaskReasonRequest):TaskCommandResult{
+ body(request,validateTaskReasonRequest);const actor=taskAccess(tx,ctx.actor,'tasks:schedule',id,ctx.nowMs),row=taskRecord(tx,actor.workspaceId,id),task=taskView(tx,actor,row,ctx.nowMs);
+ version(row,request.expected_version);
+ if(!['backlog','review'].includes(row.state)||row.active_run_id!==null)throw new HttpError('INVALID_STATE',409);
+ assertTaskEligible(tx,{...ctx,actor},task,task.assigned_agent_id);
+ tx.exec("UPDATE tasks SET state='ready',task_version=?,current_result_id=NULL,approval_id=NULL,updated_at=? WHERE workspace_id=? AND id=?",[nextVersion(row.task_version),ctx.nowMs,actor.workspaceId,id]);
+ return {task:taskView(tx,actor,taskRecord(tx,actor.workspaceId,id),ctx.nowMs),run:null,approval:null};
+}
+/** Cancels local authority only. External agent effects cannot be undone by this transaction. */
+export function cancelTask(tx:WorkspaceTransaction,ctx:CommandContext,id:string,request:TaskReasonRequest):TaskCommandResult{
+ body(request,validateTaskReasonRequest);const actor=taskAccess(tx,ctx.actor,'tasks:cancel',id,ctx.nowMs),row=taskRecord(tx,actor.workspaceId,id);
+ taskView(tx,actor,row,ctx.nowMs);version(row,request.expected_version);
+ if(!['backlog','ready','doing','waiting','review'].includes(row.state))throw new HttpError('INVALID_STATE',409);
+ const taskVersion=nextVersion(row.task_version);
+ if(row.active_run_id!==null){
+  const run=runRecord(tx,actor.workspaceId,row.active_run_id);
+  if(row.state!=='doing'||row.latest_run_id!==run.id||run.task_id!==id||run.status!=='active'||run.ended_at!==null)throw new HttpError('INVALID_STATE',409);
+  tx.exec("UPDATE runs SET status='cancelled',run_version=?,ended_at=? WHERE workspace_id=? AND task_id=? AND id=?",[nextRunVersion(run.run_version),ctx.nowMs,actor.workspaceId,id,run.id]);
+  markSchedulerDirty(tx);
+ }
+ tx.exec("UPDATE tasks SET state='cancelled',task_version=?,active_run_id=NULL,current_result_id=NULL,approval_id=NULL,updated_at=? WHERE workspace_id=? AND id=?",[taskVersion,ctx.nowMs,actor.workspaceId,id]);
+ return {task:taskView(tx,actor,taskRecord(tx,actor.workspaceId,id),ctx.nowMs),run:null,approval:null};
+}
+function reasonCommand(id:string,action:'cancel'|'requeue'):CommandDescriptor<TaskReasonRequest,TaskCommandResult>{
+ const operation=action==='cancel'?'tasks:cancel':'tasks:schedule';
+ return {operation,target:'tasks:'+id+':'+action,
+  resource(tx,ctx,request){body(request,validateTaskReasonRequest);taskAccess(tx,ctx.actor,operation,null,ctx.nowMs);const row=taskRecord(tx,ctx.actor.workspaceId,id);return {kind:'task',id,projectId:row.project_id};},
+  checkAccess(tx,ctx){const actor=taskAccess(tx,ctx.actor,operation,id,ctx.nowMs);taskView(tx,actor,taskRecord(tx,actor.workspaceId,id),ctx.nowMs);},
+  checkReplay(tx,ctx,_request,outcome){const actor=taskAccess(tx,ctx.actor,operation,id,ctx.nowMs);if(!validateTaskCommandResult(outcome.data)||outcome.data.task.id!==id||outcome.data.run!==null||outcome.data.approval!==null)throw new HttpError('INTERNAL_ERROR',500);assertTaskOutcomeVisible(tx,actor,outcome.data.task,ctx.nowMs);},
+  execute(tx,ctx,request){const data=action==='cancel'?cancelTask(tx,ctx,id,request):requeueTask(tx,ctx,id,request);return {outcome:{status:200,data},event:{type:action==='cancel'?'task.cancelled':'task.requeued',resourceType:'task',resourceId:id,resourceVersion:null,threadId:null,historyReason:request.reason}};}
+ };
+}
+export const cancelTaskCommand=(id:string)=>reasonCommand(id,'cancel');
+export const requeueTaskCommand=(id:string)=>reasonCommand(id,'requeue');
 function resultTask(data:Task|TaskCommandResult):Task{return 'task' in data?data.task:data;}
 function command<B,T extends Task|TaskCommandResult>(id:string|null,operation:'tasks:create'|'tasks:edit'|'tasks:schedule',type:'task.created'|'task.updated'|'task.ready',validate:(input:unknown)=>boolean,run:(tx:WorkspaceTransaction,ctx:CommandContext,request:B)=>T):CommandDescriptor<B,T>{return {
  operation,target:id===null?'tasks:create':'tasks:'+id+':'+(operation==='tasks:edit'?'patch':'ready'),

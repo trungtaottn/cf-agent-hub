@@ -171,6 +171,10 @@ export class WorkspaceDO extends DurableObject<WorkspaceEnvironment> {
   const metadata=withTransaction(this.ctx.storage,tx=>tx.one<{workspace_id:string;object_name:string}>('SELECT workspace_id,object_name FROM workspace_metadata WHERE id=1'));
   if(!metadata||metadata.workspace_id!==selected[1]||this.env.WORKSPACE.idFromName(metadata.object_name).toString()!==this.ctx.id.toString()){const headers=new Headers(securityHeaders);if(match?.[2]==='callback')headers.append('set-cookie',cookieHeader('cfhub_login','',0));return authFailure(new AuthError('UNAUTHENTICATED',401),crypto.randomUUID(),headers);}
   const response=await (catalog?catalogRoutes:task?taskRoutes:identity?r2Routes:operations?operationsRoutes:readiness?readinessRoutes:base?workspaceRoutes:message?messageRoutes:settings?settingsRoutes:authRoutes)(request,{storage:this.ctx.storage,workspaceId:metadata.workspace_id,objectName:metadata.object_name,secrets:this.env as unknown as Record<string,unknown>,clock:systemClock,entropy:systemEntropy});
+  // Ownership commands commit a durable generation. Schedule its shared repair
+  // within the DO lifetime without awaiting after the final authorized projection.
+  // Failure remains dirty for the existing scheduled catalog sweep/restart repair.
+  if(task&&request.method==='POST'&&/:(claim|fail|cancel|heartbeat)$/.test(path)&&response.ok)this.ctx.waitUntil(this.#repairDirty());
   if(!diagnostic)await this.#repairDirty();return response;
  }
  async command(request:InternalRequest):Promise<InternalResponse> {

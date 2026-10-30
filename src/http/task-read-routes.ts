@@ -7,14 +7,15 @@ import {sha256,canonicalJson} from '../config/bootstrap';
 import type {VerifiedIdentity} from '../workspace/context';
 import type {TaskState} from './dto';
 import {createCursorCodec,type CursorBinding} from './cursors';
+import {getRun} from '../tasks/lease';
 import {getTask} from '../tasks/repository';
 import {listTasks,TASK_STATES} from '../tasks/reads';
 import {listTaskResults} from '../tasks/history';
 import {TASK_RESPONSE_BYTES,TASK_CURSOR_BYTES,jsonBytes} from '../tasks/bounds';
 import {HttpError,securityHeaders,toHttpError} from './envelopes';
-export interface TaskReadTarget {operation:'task'|'tasks'|'task-results';taskId:string|null;}
+export interface TaskReadTarget {operation:'task'|'tasks'|'task-results'|'run';taskId:string|null;runId?:string;}
 export function parseTaskQuery(params:URLSearchParams,operation:TaskReadTarget['operation']){
- const allowed=operation==='task'?[]:operation==='tasks'?['cursor','limit','state','project_id']:['cursor','limit'];
+ const allowed=operation==='task'||operation==='run'?[]:operation==='tasks'?['cursor','limit','state','project_id']:['cursor','limit'];
  for(const [key]of params)if(!allowed.includes(key)||params.getAll(key).length!==1)throw new HttpError('INVALID_REQUEST',400);
  const raw=params.get('limit'),limit=raw===null?50:Number(raw),token=params.get('cursor'),state=params.get('state'),project=params.get('project_id');
  if(raw!==null&&!/^[0-9]+$/.test(raw)||!Number.isSafeInteger(limit)||limit<1||limit>200||token!==null&&(token.length===0||token.length>TASK_CURSOR_BYTES)||state!==null&&!TASK_STATES.includes(state as TaskState)||project==='')throw new HttpError('INVALID_REQUEST',400);
@@ -37,6 +38,7 @@ export async function dispatchTaskRead(request:Request,workspace:AuthWorkspace,t
   else identity=await verifyHumanSession(workspace,cookie,workspace.clock.nowMs());
   const current=(tx:Parameters<typeof resolveActor>[0])=>{currentConfiguration(tx,workspace,installed.fence);const nowMs=workspace.clock.nowMs();return {actor:resolveActor(tx,identity,nowMs),nowMs};};
   const response=(value:unknown)=>{if(jsonBytes(value)>TASK_RESPONSE_BYTES)throw new HttpError('INTERNAL_ERROR',500);return new Response(JSON.stringify(value),{headers:new Headers({...Object.fromEntries(headers),'content-type':'application/json'})});};
+  if(target.operation==='run'){if(!target.runId)throw new HttpError('INVALID_REQUEST',400);const data=withTransaction(workspace.storage,tx=>getRun(tx,current(tx),target.runId!));return response({data,request_id:requestId});}
   if(target.operation==='task'){
    if(!target.taskId)throw new HttpError('INVALID_REQUEST',400);
    const data=withTransaction(workspace.storage,tx=>getTask(tx,current(tx),target.taskId!));return response({data,request_id:requestId});
