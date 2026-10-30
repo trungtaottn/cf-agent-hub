@@ -2,6 +2,8 @@ import {canonicalJson} from '../config/bootstrap.ts';
 import {tableDefinition,type RecoveryTableName,type RegistryTable} from './table-registry.ts';
 import type {SqlValue} from '../storage/transaction';
 export const CONTROL_LIMIT=65536,CHUNK_LIMIT=1048576,CHUNK_ROWS=200,CHUNK_COUNT=256,CONTROL_HEADER_LIMIT=8192;
+/** Contract ceilings; details V2 is not persisted by current runtime. */
+export const RECOVERY_JOB_DETAILS_LIMIT=262144,ARTIFACT_COUNT=1000,ARTIFACT_BYTES=10485760,RECOVERY_TOTAL_BYTES=268435456,RECOVERY_ROWS=1000000;
 export type SqlCell=null|string|number|{type:'blob';base64:string};
 export interface RecoveryChunk {format_version:1;capture_id:string;index:number;table:RecoveryTableName;columns:string[];rows:SqlCell[][];}
 const utf8=new TextEncoder(),decoder=new TextDecoder('utf-8',{fatal:true,ignoreBOM:false});

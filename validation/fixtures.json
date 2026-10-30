@@ -77,6 +77,10 @@
     {
       "file": "examples/search/literal-cases.json",
       "schema": "spec/search-literal-examples.schema.json"
+    },
+    {
+      "file": "examples/recovery/manifest-v2.json",
+      "schema": "spec/recovery-manifest.schema.json"
     }
   ]
 }

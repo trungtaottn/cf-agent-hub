@@ -1,0 +1,42 @@
+{
+  "node": "v24.22.1",
+  "case": "illustrative canonical SHA256 immutable keys; JSON UTF8 byte lengths, not runtime throughput",
+  "results": [
+    {
+      "n": 0,
+      "entriesBytes": 2,
+      "detailsBytes": 79,
+      "checkpointOnlyBytes": 170
+    },
+    {
+      "n": 1,
+      "entriesBytes": 402,
+      "detailsBytes": 479,
+      "checkpointOnlyBytes": 170
+    },
+    {
+      "n": 100,
+      "entriesBytes": 40101,
+      "detailsBytes": 40178,
+      "checkpointOnlyBytes": 172
+    },
+    {
+      "n": 200,
+      "entriesBytes": 80201,
+      "detailsBytes": 80278,
+      "checkpointOnlyBytes": 172
+    },
+    {
+      "n": 1000,
+      "entriesBytes": 401001,
+      "detailsBytes": 401078,
+      "checkpointOnlyBytes": 173
+    },
+    {
+      "n": 1001,
+      "entriesBytes": 401402,
+      "detailsBytes": 401479,
+      "checkpointOnlyBytes": 173
+    }
+  ]
+}

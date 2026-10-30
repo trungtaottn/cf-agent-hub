@@ -28,6 +28,7 @@ function page(tx:WorkspaceTransaction,job:RecoveryJob):{job:RecoveryJob;chunk:Re
  return {job,chunk:{format_version:1,capture_id:job.capture_id,index:d.counts.chunks,table:table.name,columns:table.columns.map(c=>c.name),rows}};
 }
 export async function advanceCapture(w:RecoveryWorkspace,ctx:RecoveryContext,budget:RecoveryBudget):Promise<RecoveryJobProgress>{
+ if(budget.max_artifacts!==0)throw Error('RECOVERY_FORMAT_UNAVAILABLE');
  if(!ctx.captureId||ctx.operation!=='capture')throw Error('INVALID_RECOVERY_CONTEXT');
  withTransaction(w.storage,tx=>assertRecoveryContext(tx,w,ctx));const id=await jobIdFor(w.workspaceId,ctx.captureId,'capture');
  const admitted=withTransaction(w.storage,tx=>{assertRecoveryContext(tx,w,ctx);const prior=priorOperation(tx,ctx);if(prior){if(!validateRecoveryJobProgress(prior))throw Error('RECOVERY_OPERATION_CONFLICT');return {prior,job:null};}

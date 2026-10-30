@@ -69,3 +69,7 @@ The CLI does not start models, schedule wakeups, clear uncertainty holds, reset 
 ## Acceptance criteria
 
 Before distributing a CLI, verify command-to-operation mapping, JSON/error envelopes, explicit workspace selection, secure credential capture, redaction, cursor continuation, interrupted upload and same-key retry after a committed-but-lost response. Exercise wrong-workspace and wrong-runtime proofs, expired leases and approvals, unexpected content types, safe output-file handling and nonzero exits. Document supported platforms and package provenance only after actual builds are produced; this baseline supplies neither.
+
+## R2 recovery contract boundary
+
+The [issue #22 recovery decision](adr/r2-recovery-contract.md) defines the closed V1/V2 envelope, simultaneous SQL-plus-artifact bounds, trusted private bindings and bounded future restart state. This is a contract, not enabled V2 recovery. Current runtime remains V1-only; nonzero artifact capture budgets and V2 restore are unavailable. No new CLI command or caller-selected bucket/key/URL is added. Existing protected files, HMAC authentication, separate AES-GCM file protection, operator Access identity, current ledger, maintenance and explicit resume remain required.

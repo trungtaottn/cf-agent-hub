@@ -14,3 +14,5 @@ These records explain the chosen design direction and alternatives. Acceptance h
 | [0006](0006-evidence-and-release-gates.md) | Make public capability claims depend on release evidence |
 
 Record dates are 2026-10-23. The canonical operational contracts remain in their linked reference pages; these records explain why those contracts exist.
+
+Issue-specific additive decisions: [R2 recovery contract](r2-recovery-contract.md) (development contract only).
