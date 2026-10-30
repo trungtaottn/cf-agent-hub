@@ -1,0 +1,99 @@
+{
+  "type": "native-complete-family-ledger",
+  "version": 2,
+  "profile": "native-r2-complete-prepared-v1",
+  "logical_commands": {
+    "scenario": 68,
+    "evidence": 41,
+    "service": 370,
+    "bootstrap": 10
+  },
+  "mutation_attempts": {
+    "scenario": 34,
+    "bootstrap": 6,
+    "external": 5,
+    "human_revoke": 1
+  },
+  "artifact_windows": {
+    "count": 6,
+    "bytes_each": 29
+  },
+  "logical_output_bytes": {
+    "retained_report_originals": 10505022,
+    "fixed_process_output": 188416,
+    "input_json_publications": 2902,
+    "bootstrap_cli_return_text": 510,
+    "application_selected_captures": 164962,
+    "private_sql_canonical": 7888422,
+    "private_typed_canonical_before_signing": 707162,
+    "assembly_structural_fragment": 379249,
+    "service_request": 1253142,
+    "service_response": 1585635,
+    "service_selected_auth_headers": 79920,
+    "report2_reference_wrapper": 135325
+  },
+  "report_original_families": [
+    {
+      "kind": "old recorder originals",
+      "count": 235,
+      "bytes": 8691712
+    },
+    {
+      "kind": "additional process custody",
+      "count": 51,
+      "bytes": 417792
+    },
+    {
+      "kind": "nonrecorder signed summaries",
+      "count": 17,
+      "bytes": 68706
+    },
+    {
+      "kind": "bootstrap action originals",
+      "count": 10,
+      "bytes": 11091
+    },
+    {
+      "kind": "signed process scans",
+      "count": 112,
+      "bytes": 423920
+    },
+    {
+      "kind": "signed final scan",
+      "count": 1,
+      "bytes": 2999
+    },
+    {
+      "kind": "signed external observations",
+      "count": 2,
+      "bytes": 46858
+    },
+    {
+      "kind": "output verification originals",
+      "count": 39,
+      "bytes": 159744
+    },
+    {
+      "kind": "signed native and disable provenance",
+      "count": 40,
+      "bytes": 603360
+    },
+    {
+      "kind": "signed control and slot rosters",
+      "count": 2,
+      "bytes": 78840
+    }
+  ],
+  "service_calls": {
+    "preflight": 1,
+    "bind-run": 1,
+    "prepare-slot": 70,
+    "complete-process": 56,
+    "execute-control": 12,
+    "execute-external": 2,
+    "observe-slot": 70,
+    "read-original": 42,
+    "scanner": 115,
+    "close-run": 1
+  }
+}

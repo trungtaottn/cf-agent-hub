@@ -1,0 +1,402 @@
+{
+  "type": "native-complete-fixture",
+  "version": 2,
+  "profile": "native-r2-complete-prepared-v1",
+  "topology": {
+    "workspaces": [
+      "primary",
+      "foreign"
+    ],
+    "native_actors": [
+      "submitter",
+      "reviewer"
+    ],
+    "service_actor": "X",
+    "credential_roles": [
+      "S",
+      "R",
+      "X"
+    ],
+    "stores": [
+      "primary-S",
+      "primary-R",
+      "server-foreign-S"
+    ],
+    "human_workspace": "primary"
+  },
+  "substitution": {
+    "ids": 64,
+    "objectNames": 96,
+    "originAndIssuer": 128,
+    "audienceAndClientId": 64,
+    "subjectAndDisplay": 64,
+    "ASCIIOnly": true,
+    "epochMax": 9007199254740991,
+    "expiryUtcMillisLength": 24,
+    "grammars": {
+      "ids": "^[A-Za-z0-9_-]{1,64}$",
+      "objectNames": "^[A-Za-z0-9_-]{1,96}$",
+      "audience": "^[A-Za-z0-9_-]{1,64}$",
+      "clientId": "^[A-Za-z0-9_-]{1,64}$",
+      "subject": "^[A-Za-z0-9_-]{1,64}$",
+      "originAndIssuer": {
+        "scheme": "https:",
+        "canonical_origin_only": true,
+        "maximum_bytes": 128,
+        "userinfo": false,
+        "ip_literal": false,
+        "localhost_including_trailing_dot": false,
+        "query_fragment_or_nonroot_path": false,
+        "json_escape_characters": false
+      },
+      "displayLabels": {
+        "S": "Native submitter",
+        "R": "Native reviewer",
+        "X": "Foreign proof actor"
+      }
+    }
+  },
+  "artifact": {
+    "text": "Native conformance artifact.\n",
+    "filename": "native-scenario.txt",
+    "media_type": "text/plain",
+    "byte_size": 29,
+    "sha256": "eefb414947860e55eb533966c87bb64b6d38ea4514768cf10f4a16721ee876b2"
+  },
+  "body_recipe": {
+    "source": "scripts/lib/native-r2-bindings.mjs",
+    "sha256": "dee4df944926d17bf8b1e7f5447268ca6c5f750c1c9b4096face8942b970f37d",
+    "entry": "createNativeBindingRegistry.planRequestInput",
+    "publication_count": 27
+  },
+  "scenario": {
+    "source": "scripts/lib/native-r2-scenario.mjs",
+    "sha256": "0002b80346fd2671d2764371e825a19fccdf4bc0559db8d37b3d88480d0e684e",
+    "step_count": 68,
+    "external_count": 2
+  },
+  "selected_state": {
+    "source": "workers/native-fixture/complete-selectors.json",
+    "sha256": "1c0d0bb848a9a349c01f7061c2f9a245775033d55b41537ed980f2ef7829527b",
+    "selectors": 34
+  },
+  "process_output_offers": [
+    {
+      "step_id": "success/getWorkspace",
+      "output_bytes": 2048
+    },
+    {
+      "step_id": "success/getConfiguration",
+      "output_bytes": 1024
+    },
+    {
+      "step_id": "success/getProfile",
+      "output_bytes": 1024
+    },
+    {
+      "step_id": "prepare/reviewer-binding",
+      "output_bytes": 2048
+    },
+    {
+      "step_id": "success/listAgents",
+      "output_bytes": 4096
+    },
+    {
+      "step_id": "success/getAgent",
+      "output_bytes": 2048
+    },
+    {
+      "step_id": "prepare/submitter-enrollment",
+      "output_bytes": 2048
+    },
+    {
+      "step_id": "prepare/reviewer-enrollment",
+      "output_bytes": 2048
+    },
+    {
+      "step_id": "success/createTask",
+      "output_bytes": 4096
+    },
+    {
+      "step_id": "success/getTask",
+      "output_bytes": 4096
+    },
+    {
+      "step_id": "success/patchTask",
+      "output_bytes": 4096
+    },
+    {
+      "step_id": "success/readyTask",
+      "output_bytes": 4096
+    },
+    {
+      "step_id": "success/createRuntime",
+      "output_bytes": 2048
+    },
+    {
+      "step_id": "success/claimTask",
+      "output_bytes": 4096
+    },
+    {
+      "step_id": "success/getRun",
+      "output_bytes": 2048
+    },
+    {
+      "step_id": "success/heartbeatRun",
+      "output_bytes": 2048
+    },
+    {
+      "step_id": "success/heartbeatRuntime",
+      "output_bytes": 2048
+    },
+    {
+      "step_id": "prepare/retain-artifact",
+      "output_bytes": 1024
+    },
+    {
+      "step_id": "success/stageArtifact",
+      "output_bytes": 2048
+    },
+    {
+      "step_id": "success/uploadArtifactContent",
+      "output_bytes": 2048
+    },
+    {
+      "step_id": "success/commitArtifact",
+      "output_bytes": 2048
+    },
+    {
+      "step_id": "success/getArtifact",
+      "output_bytes": 2048
+    },
+    {
+      "step_id": "success/downloadArtifactContent",
+      "output_bytes": 2048
+    },
+    {
+      "step_id": "success/listArtifacts",
+      "output_bytes": 4096
+    },
+    {
+      "step_id": "success/submitTaskResult",
+      "output_bytes": 4096
+    },
+    {
+      "step_id": "success/listTaskResults",
+      "output_bytes": 4096
+    },
+    {
+      "step_id": "success/acceptTaskResult",
+      "output_bytes": 4096
+    },
+    {
+      "step_id": "prepare/fail-create",
+      "output_bytes": 4096
+    },
+    {
+      "step_id": "prepare/fail-ready",
+      "output_bytes": 4096
+    },
+    {
+      "step_id": "prepare/fail-claim",
+      "output_bytes": 4096
+    },
+    {
+      "step_id": "success/failTask",
+      "output_bytes": 4096
+    },
+    {
+      "step_id": "prepare/cancel-create",
+      "output_bytes": 4096
+    },
+    {
+      "step_id": "success/cancelTask",
+      "output_bytes": 4096
+    },
+    {
+      "step_id": "prepare/requeue-create",
+      "output_bytes": 4096
+    },
+    {
+      "step_id": "success/requeueTask",
+      "output_bytes": 4096
+    },
+    {
+      "step_id": "success/createMessage",
+      "output_bytes": 2048
+    },
+    {
+      "step_id": "success/getInbox",
+      "output_bytes": 4096
+    },
+    {
+      "step_id": "success/ackMessages",
+      "output_bytes": 1024
+    },
+    {
+      "step_id": "success/getThread",
+      "output_bytes": 4096
+    },
+    {
+      "step_id": "success/listTasks",
+      "output_bytes": 16384
+    },
+    {
+      "step_id": "success/listEvents",
+      "output_bytes": 32768
+    },
+    {
+      "step_id": "success/searchWorkspace",
+      "output_bytes": 4096
+    },
+    {
+      "step_id": "probe/server-foreign-workspace",
+      "output_bytes": 1024
+    },
+    {
+      "step_id": "prepare/server-foreign-own-positive",
+      "output_bytes": 2048
+    },
+    {
+      "step_id": "probe/wrong-workspace",
+      "output_bytes": 1024
+    },
+    {
+      "step_id": "prepare/runtime-own-before",
+      "output_bytes": 2048
+    },
+    {
+      "step_id": "probe/wrong-runtime",
+      "output_bytes": 1024
+    },
+    {
+      "step_id": "prepare/runtime-own-after",
+      "output_bytes": 2048
+    },
+    {
+      "step_id": "probe/swapped-slot",
+      "output_bytes": 1024
+    },
+    {
+      "step_id": "probe/swapped-generation",
+      "output_bytes": 1024
+    },
+    {
+      "step_id": "probe/swapped-principal",
+      "output_bytes": 1024
+    },
+    {
+      "step_id": "case/settled-no-send",
+      "output_bytes": 1024
+    },
+    {
+      "step_id": "case/lost-response-retained",
+      "output_bytes": 1024
+    },
+    {
+      "step_id": "case/restart-no-send",
+      "output_bytes": 1024
+    },
+    {
+      "step_id": "prepare/revoke-own-positive",
+      "output_bytes": 2048
+    },
+    {
+      "step_id": "case/revoked-after-disable",
+      "output_bytes": 1024
+    }
+  ],
+  "key_allocator": {
+    "prefix": "r2_",
+    "hex_characters": 32
+  },
+  "native_scope_counts": [
+    16,
+    7,
+    2
+  ],
+  "configuration_canonical_bytes": 5974,
+  "configuration_json_string_bytes": 6340,
+  "configuration_constraints": {
+    "contract_revision": "0.2",
+    "authentication_mode": "verified-oidc",
+    "session_ttl_seconds": 3600,
+    "id_token_algorithms": [
+      "RS256"
+    ],
+    "client_secret_ref": "OIDC_CLIENT_SECRET",
+    "native_scopes": {
+      "S": [
+        "agents:read",
+        "artifacts:read",
+        "artifacts:write",
+        "events:read",
+        "messages:read",
+        "messages:send",
+        "runtimes:manage",
+        "search:read",
+        "tasks:cancel",
+        "tasks:claim",
+        "tasks:create",
+        "tasks:edit",
+        "tasks:execute",
+        "tasks:read",
+        "tasks:schedule",
+        "workspace:read"
+      ],
+      "R": [
+        "artifacts:read",
+        "messages:ack",
+        "messages:read",
+        "runtimes:manage",
+        "tasks:read",
+        "tasks:review",
+        "workspace:read"
+      ],
+      "X": [
+        "runtimes:manage",
+        "workspace:read"
+      ]
+    },
+    "human_scopes": [
+      "credentials:manage",
+      "workspace:read"
+    ],
+    "human_delegable_native_scopes": [
+      "agents:read",
+      "artifacts:read",
+      "artifacts:write",
+      "events:read",
+      "messages:read",
+      "messages:send",
+      "runtimes:manage",
+      "search:read",
+      "tasks:cancel",
+      "tasks:claim",
+      "tasks:create",
+      "tasks:edit",
+      "tasks:execute",
+      "tasks:read",
+      "tasks:schedule",
+      "workspace:read"
+    ],
+    "workspace_policy": {
+      "allowed_user_overrides": [],
+      "notification_destinations": [],
+      "retry_after_max_seconds": 3600,
+      "execution_policy": {
+        "policy_version": 1,
+        "agent_wip_limit": 1,
+        "task_retry_limit": 0,
+        "artifact_upload_ttl_seconds": 900,
+        "replay_safety_rules": []
+      }
+    },
+    "primary_eligible_agent_role": "S",
+    "foreign_eligibility_rules": [],
+    "initial_configuration_events_per_workspace": 1,
+    "profile": "source-default-neutral",
+    "projects": [],
+    "work_roles": []
+  }
+}
