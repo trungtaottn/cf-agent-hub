@@ -1,3 +1,4 @@
+import {selectNativeExecutionProfile} from './native-execution-profile.mjs';
 import {parseNativeCliOutput} from './native-cli-output.mjs';
 /** Fixed source consistency only: not authenticated host or consumed request-body custody. */
 import {PROCESS_LIMITS} from './native-r2-process.mjs';
@@ -34,11 +35,17 @@ function byteLength(v){if(!(v instanceof Uint8Array)||![Buffer.prototype,Uint8Ar
 
 const isId=v=>typeof v==='string'&&ID.test(v),isSha=v=>typeof v==='string'&&SHA.test(v);
 const taskFixtures=new Set(['main','fail','cancel','requeue']);
-export function createNativeBindingRegistry(input){
+export function createNativeBindingRegistry(input){return createBindingRegistry(input,getNativeScenario());}
+export function createCompleteNativeBindingRegistry(input){
+ const raw=closed(input,['config']),selected=selectNativeExecutionProfile(raw.config),config=selected.config;if(config.version!==2)fail();
+ const actor=role=>{const a=config.actors.find(x=>x.id===role);return {principalId:a.principal_id,agentId:a.agent_id};};
+ return createBindingRegistry({workspaceId:config.workspaces.primary,submitter:actor('submitter'),reviewer:actor('reviewer')},selected.scenario);
+}
+function createBindingRegistry(input,scenario){
  const raw=closed(input,['workspaceId','submitter','reviewer']),actors={};if(!isId(raw.workspaceId))fail();
  for(const slot of ['submitter','reviewer']){actors[slot]=closed(raw[slot],['principalId','agentId']);const a=actors[slot];if(!isId(a.principalId)||!isId(a.agentId)||a.principalId!==a.agentId)fail();}
  if(actors.submitter.principalId===actors.reviewer.principalId||actors.submitter.agentId===actors.reviewer.agentId)fail();
- const workspace=raw.workspaceId,scenario=getNativeScenario(),tokens=new WeakMap(),used=new Set(),allocatedRuntimeIds=new Set(),FINISHING=Object.freeze({});let inputAdmissions=[],active=null,poisoned=false,index=0,state={tasks:{},runs:{},runtimes:{},content:null,artifact:null,submitted:null,message:null,messageInboxObserved:false,messageAcknowledged:false,messageThreadObserved:false},completed=[],provenance=[];
+ const workspace=raw.workspaceId,tokens=new WeakMap(),used=new Set(),allocatedRuntimeIds=new Set(),FINISHING=Object.freeze({});let inputAdmissions=[],active=null,poisoned=false,index=0,state={tasks:{},runs:{},runtimes:{},content:null,artifact:null,submitted:null,message:null,messageInboxObserved:false,messageAcknowledged:false,messageThreadObserved:false},completed=[],provenance=[];
  const guarded=fn=>{try{if(poisoned)fail();return fn();}catch(e){poisoned=true;throw e;}};
  const same=(a,b)=>{if(a!==b)fail();},increment=(a,b)=>{if(!Number.isSafeInteger(b)||b>=Number.MAX_SAFE_INTEGER||a!==b+1)fail();};
  function checkRefs(step,r){

@@ -1,3 +1,4 @@
+import {selectNativeExecutionProfile} from './native-execution-profile.mjs';
 import {constants,openSync,closeSync,fstatSync,lstatSync,realpathSync,readSync} from 'node:fs';
 import {dirname,join,resolve} from 'node:path';
 import {createHash} from 'node:crypto';
@@ -38,9 +39,13 @@ function inspectExecutable(path,expected,maxBytes,isNode=false){
 }
 /** Trusted host code is an explicit dependency, never loaded from a config string.
  * This response validates bindings, not the authenticity of a caller's adapter. */
-export async function admitNativeRun(input,integration){
+export function admitNativeRun(input,integration){return admitRun(input,integration,false);}
+export function admitCompleteNativeRun(input,integration){return admitRun(input,integration,true);}
+async function admitRun(input,integration,complete){
  if(!integration||typeof integration.authorize!=='function')throw Error('NATIVE_AUTHORITY_UNAVAILABLE');
- const config=validateNativeConfig(input),configSha256=nativeConfigDigest(config);
+ const selected=complete?selectNativeExecutionProfile(input):null;
+ if(complete&&selected.config.version!==2)fail();
+ const config=complete?selected.config:validateNativeConfig(input),configSha256=complete?selected.configSha256:nativeConfigDigest(config);
  let authorization;
  try{authorization=await integration.authorize(structuredClone({configSha256,config}));}catch{throw Error('NATIVE_AUTHORITY_REJECTED');}
  if(!authorization||Object.keys(authorization).sort().join(',')!=='authorityRecordSha256,configSha256,expiresAt'||authorization.configSha256!==configSha256||authorization.authorityRecordSha256!==config.authority_record_sha256||!Number.isSafeInteger(authorization.expiresAt)||authorization.expiresAt<=Date.now()||authorization.expiresAt>Date.now()+300000)throw Error('NATIVE_AUTHORITY_REJECTED');

@@ -4,8 +4,8 @@ import {readFileSync} from 'node:fs';
 const source=readFileSync(new URL('../../scripts/lib/native-r2-controller.mjs',import.meta.url),'utf8');
 // Source wiring checks only: protected executable positives remain separately gated.
 test('binding registry is mandatory, privately owned and not an adapter supplied bypass',()=>{
- assert.match(source,/import \{createNativeBindingRegistry\} from '\.\/native-r2-bindings\.mjs'/);
- const create=source.indexOf('const bindings=createNativeBindingRegistry('),loop=source.indexOf('for(let i=0;i<scenario.steps.length;i++)');
+ assert.match(source,/import \{createNativeBindingRegistry,createCompleteNativeBindingRegistry\} from '\.\/native-r2-bindings\.mjs'/);
+ const create=source.indexOf('const bindings=complete?createCompleteNativeBindingRegistry({config}):createNativeBindingRegistry('),loop=source.indexOf('for(let i=0;i<scenario.steps.length;i++)');
  assert.ok(create>=0&&create<loop);
  assert.ok(!source.includes('adapter.bindings'));
  assert.match(source,/workspaceId:config\.workspaces\.primary/);

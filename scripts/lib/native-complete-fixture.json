@@ -65,7 +65,7 @@
   },
   "body_recipe": {
     "source": "scripts/lib/native-r2-bindings.mjs",
-    "sha256": "dee4df944926d17bf8b1e7f5447268ca6c5f750c1c9b4096face8942b970f37d",
+    "sha256": "b8d7aab5dd81a7796474564518348ce4c65b7b52be0bdb5e6c4778d9b52a4c63",
     "entry": "createNativeBindingRegistry.planRequestInput",
     "publication_count": 27
   },

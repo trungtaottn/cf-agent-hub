@@ -1,3 +1,4 @@
+import {selectNativeExecutionProfile} from './native-execution-profile.mjs';
 /** Actual in-process phase capture, not an authentication or durability service. */
 import {createHash,randomUUID} from 'node:crypto';
 import {dirname} from 'node:path';
@@ -6,7 +7,7 @@ import {caseSchemas,CASE_OPERATIONS,canonicalCaseSubject} from './r2-case-policy
 import {validateNativeConfig} from './native-r2-config.mjs';
 import {nativeConfigDigest} from './native-r2-admission.mjs';
 import {getNativeScenario,buildNativeInvocation,buildPinnedNativeInvocation} from './native-r2-scenario.mjs';
-import {nativeSourceInventoryDigest,loadNativeOriginals,prepareNativeEvidence,finalizeNativeEvidence,discardNativeEvidence} from './native-r2-evidence.mjs';
+import {nativeSourceInventoryDigest,loadNativeOriginals,prepareNativeEvidence,finalizeNativeEvidence,prepareCompleteNativeEvidence,finalizeCompleteNativeEvidence,discardNativeEvidence} from './native-r2-evidence.mjs';
 import {planNativeOriginalReads} from './native-r2-original-reader.mjs';
 import {validateNativeObservation} from './native-r2-observation.mjs';
 const ajv=new Ajv({strict:true,allErrors:false,inlineRefs:false});ajv.addSchema(caseSchemas);const validSubject=ajv.compile({$ref:caseSchemas.$id+'#/$defs/prepared_subject'});
@@ -26,11 +27,15 @@ function originalRows(value,reserve,verify=()=>{},expectedCount=4){
  verify(rows);reserve(rows.length,sum);
  return rows.map(r=>({id:r.id,sha256:r.sha256,bytes:Buffer.from(Uint8Array.prototype.slice.call(r.bytes))}));
 }
-export function createNativeCaseRecorder(input){
- const raw=closed(input,['config','context']),config=validateNativeConfig(snapshot(raw.config)),ctx=snapshot(closed(raw.context,['run_id','environment_id','config_epoch','observer_id','source_inventory']));
+export function createNativeCaseRecorder(input){return createCaseRecorder(input,false);}
+export function createCompleteNativeCaseRecorder(input){return createCaseRecorder(input,true);}
+function createCaseRecorder(input,complete){
+ const raw=closed(input,['config','context']),selected=complete?selectNativeExecutionProfile(snapshot(raw.config)):null;
+ if(complete&&selected.config.version!==2)reject();
+ const config=complete?selected.config:validateNativeConfig(snapshot(raw.config)),ctx=snapshot(closed(raw.context,['run_id','environment_id','config_epoch','observer_id','source_inventory']));
  if(!ID.test(ctx.run_id)||!/^[a-z0-9][a-z0-9_-]{0,127}$/.test(ctx.environment_id)||!ID.test(ctx.observer_id)||!Number.isSafeInteger(ctx.config_epoch)||ctx.config_epoch<0)reject();
- const scenario=getNativeScenario(),steps=new Map(scenario.steps.filter(s=>s.caseId||['prepare/fail-create','prepare/revoke-own-positive'].includes(s.id)).map(s=>[s.id,s]));
- const shared={run_id:ctx.run_id,candidate_sha:config.candidate_sha,source_tree_sha256:nativeSourceInventoryDigest(ctx.source_inventory),environment_id:ctx.environment_id,composition_sha256:config.composition_sha256,config_sha256:nativeConfigDigest(config),scenario_sha256:sha(scenario),authority_record_sha256:config.authority_record_sha256};
+ const scenario=complete?selected.scenario:getNativeScenario(),steps=new Map(scenario.steps.filter(s=>s.caseId||['prepare/fail-create','prepare/revoke-own-positive'].includes(s.id)).map(s=>[s.id,s]));
+ const shared={run_id:ctx.run_id,candidate_sha:config.candidate_sha,source_tree_sha256:nativeSourceInventoryDigest(ctx.source_inventory),environment_id:ctx.environment_id,composition_sha256:config.composition_sha256,config_sha256:complete?selected.configSha256:nativeConfigDigest(config),scenario_sha256:sha(scenario),authority_record_sha256:config.authority_record_sha256};
  const processSubjects={config_sha256:shared.config_sha256,candidate_sha:config.candidate_sha,candidate_tree_sha:config.candidate_tree_sha,composition_sha256:config.composition_sha256,node_sha256:config.node.sha256,build_sha256:config.build.sha256,authority_record_sha256:config.authority_record_sha256,scenario_sha256:shared.scenario_sha256,actors_sha256:sha({actors:config.actors,fixture_stores:config.fixture_stores}),workspaces_sha256:sha(config.workspaces)};
  const records=new Map(),prepared=new Map(),handles=new WeakMap(),usedProcesses=new Set(),captures=new Map(),processIdentities=new Set();let total=0,lastTime=0,recordSlots=0,completedSequence=0,activeToken=null,assemblyAttempted=false,disableAttempted=false;const FINISHING=Object.freeze({});
  const now=()=>{const t=Date.now();if(!Number.isSafeInteger(t)||t<lastTime)reject();lastTime=t;return t;};
@@ -164,9 +169,9 @@ export function createNativeCaseRecorder(input){
     if(step.id==='case/revoked-after-disable'){const positive=captures.get('prepare/revoke-own-positive'),disable=captures.get('control/revoke-submitter');related={positive_prepared:positive.processPreparedId,positive_spawned:positive.processSpawnedId,positive_final:positive.processFinalId,positive_preparation:positive.preparation.id,positive_observation:positive.observerId,disable_control:disable.record.id};}
     return {case_id:step.caseId,step_id:step.id,preparation_record_id:c.preparation.id,process_prepared_record_id:c.processPreparedId,process_spawned_record_id:c.processSpawnedId,process_final_record_id:c.processFinalId,observer_record_id:c.observerId,harness_record_id:c.harness.id,related_record_ids:related};
    });
-   const core=prepareNativeEvidence({version:1,context:structuredClone(publicContext),records:[...records.values()].map(r=>({...r,bytes:Buffer.from(r.bytes)})),caseBindings,assemblyBinding:{record_id:id,command_id:id,native_artifact_path:'validation/releases/'+ctx.run_id+'/native.json'}});
+   const core=(complete?prepareCompleteNativeEvidence:prepareNativeEvidence)({version:complete?2:1,context:structuredClone(publicContext),records:[...records.values()].map(r=>({...r,bytes:Buffer.from(r.bytes)})),caseBindings,assemblyBinding:{record_id:id,command_id:id,native_artifact_path:'validation/releases/'+ctx.run_id+'/native.json'}});
    let result=core,terminal=null;
-   if(core.status==='core-validated')try{const end=now();terminal=emit(id,{type:'native-assembly-original',version:1,id,run_id:ctx.run_id,candidate_sha:config.candidate_sha,source_tree_sha256:shared.source_tree_sha256,environment_id:ctx.environment_id,composition_sha256:shared.composition_sha256,input_manifest_sha256:core.input_manifest_sha256,started_at:started,ended_at:end,observed_at:end,exit_code:0,observer_id:ctx.observer_id});result=finalizeNativeEvidence(core.token,{assemblyRecord:terminal});}finally{discardNativeEvidence(core.token);}
+   if(core.status==='core-validated')try{const end=now();terminal=emit(id,{type:'native-assembly-original',version:1,id,run_id:ctx.run_id,candidate_sha:config.candidate_sha,source_tree_sha256:shared.source_tree_sha256,environment_id:ctx.environment_id,composition_sha256:shared.composition_sha256,input_manifest_sha256:core.input_manifest_sha256,started_at:started,ended_at:end,observed_at:end,exit_code:0,observer_id:ctx.observer_id});result=(complete?finalizeCompleteNativeEvidence:finalizeNativeEvidence)(core.token,{assemblyRecord:terminal});}finally{discardNativeEvidence(core.token);}
    const output=Buffer.byteLength(canonical(result))+(terminal?.bytes.length??0);if(output>outputBytes)reject();return {result,usage:{commands:1,mutations:0,artifact_bytes:0,output_bytes:output}};
   }},
   finish:{value:(token,value)=>finishCaptured(token,value,'case')},

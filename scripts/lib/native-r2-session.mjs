@@ -1,3 +1,4 @@
+import {selectNativeExecutionProfile} from './native-execution-profile.mjs';
 /** Finite trusted-source lifecycle ownership; not installed or native authority. */
 import {types} from 'node:util';
 import {createHash} from 'node:crypto';
@@ -23,4 +24,10 @@ export function createNativeSessionOwner(context,methods){const c=validContext(c
  async function open(timeoutMs){if(attempted||closing||!Number.isFinite(timeoutMs)||timeoutMs<=0||timeoutMs>300000)fail();attempted=true;openController=new AbortController();let timer,listener;const actual=track(Promise.resolve().then(()=>functions.openSession(c,{signal:openController.signal})).then(v=>checkReceipt(v,['opened'])));try{const aborted=new Promise((_,reject)=>{listener=()=>reject(Error('NATIVE_SESSION_OPEN_TIMEOUT'));openController.signal.addEventListener('abort',listener,{once:true});timer=setTimeout(()=>openController.abort(),Math.ceil(timeoutMs));});const value=await Promise.race([actual,aborted]);if(closing||failed||openController.signal.aborted)fail();admitted=true;return value;}catch{failed=true;openController.abort();throw Error('NATIVE_SESSION_OPEN_REJECTED');}finally{clearTimeout(timer);if(listener)openController.signal.removeEventListener('abort',listener);}}
  async function close(){closing=true;openController?.abort();if(!attempted)return result('not-opened');if(!closeAttempted){closeAttempted=true;closeController=new AbortController();track(Promise.resolve().then(()=>functions.closeSession(c,{signal:closeController.signal})).then(v=>{closedReceipt=checkReceipt(v,['closed','cleanup-unknown']);if(closedReceipt.status!=='closed')cleanupFailed=true;},()=>{cleanupFailed=true;}).catch(()=>{cleanupFailed=true;}));}const drain=(async()=>{while(pending.size)await Promise.allSettled([...pending]);return result(!cleanupFailed&&closedReceipt?.status==='closed'?'closed':'cleanup-unknown');})();let timer;try{return await Promise.race([drain,new Promise(resolve=>{timer=setTimeout(()=>{closeController.abort();resolve(result('cleanup-unknown'));},1000);})]);}finally{clearTimeout(timer);}}
  return Object.freeze({open,close,snapshot:()=>Object.freeze({attempted,admitted,failed,closing,closeAttempted,pending:pending.size,cleanupFailed,cleanup:!attempted?'not-opened':closing?(pending.size||cleanupFailed||!closedReceipt?'cleanup-unknown':'closed'):'open'})});
+}
+
+/** Selected config2 context; callers cannot inject another scenario. */
+export function createCompleteNativeRunContext(config,runId){
+ const selected=selectNativeExecutionProfile(config),c=selected.config;if(c.version!==2)fail();
+ return validContext({version:2,runId,configSha256:selected.configSha256,scenarioSha256:selected.scenarioSha256,candidateSha:c.candidate_sha,candidateTreeSha:c.candidate_tree_sha,compositionSha256:c.composition_sha256,nodeSha256:c.node.sha256,buildSha256:c.build.sha256,authorityRecordSha256:c.authority_record_sha256});
 }

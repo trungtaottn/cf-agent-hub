@@ -1,15 +1,17 @@
-import {snapshotNativeSessionAdapter,createNativeRunContext,validateNativeSessionPlan,reserveNativeCombinedBudget,createNativeSessionOwner} from './native-r2-session.mjs';
+import {selectNativeExecutionProfile} from './native-execution-profile.mjs';
+import {requireCompleteCapabilities} from './native-complete-profile.mjs';
+import {snapshotNativeSessionAdapter,createNativeRunContext,createCompleteNativeRunContext,validateNativeSessionPlan,reserveNativeCombinedBudget,createNativeSessionOwner} from './native-r2-session.mjs';
 import {createNativeInputWriter} from './native-r2-input-writer.mjs';
 import {createNativeInputAdmission} from './native-r2-input.mjs';
 import {createHash,randomUUID} from 'node:crypto';
 import {mkdirSync,lstatSync} from 'node:fs';
 import {join,dirname,relative,isAbsolute} from 'node:path';
-import {admitNativeRun,inspectNativeDirectory} from './native-r2-admission.mjs';
+import {admitNativeRun,admitCompleteNativeRun,inspectNativeDirectory} from './native-r2-admission.mjs';
 import {createNativeBudget,withNativeDeadline} from './native-r2-budget.mjs';
 import {validateNativeConfig} from './native-r2-config.mjs';
 import {getNativeScenario,buildNativeInvocation,buildPinnedNativeInvocation} from './native-r2-scenario.mjs';
 import {runOwnedProcess} from './native-r2-process.mjs';
-import {createNativeBindingRegistry} from './native-r2-bindings.mjs';
+import {createNativeBindingRegistry,createCompleteNativeBindingRegistry} from './native-r2-bindings.mjs';
 import {nativeOutputVerificationPlan,verifyNativeCapturedOutput} from './native-r2-projection.mjs';
 import {readNativeProcessOriginals} from './native-r2-original-reader.mjs';
 import {canonicalCaseSubject} from './r2-case-policy.mjs';
@@ -82,9 +84,11 @@ const within=(parent,path)=>{const rel=relative(parent,path);return rel!==''&&!i
  * adds pure full-roster planning and owned open/close boundaries after combined
  * reservation and existing custody admission. Control/observe retain their bounds.
  * Full live acceptance and complete 380-case root assembly remain downstream. */
-export async function executeNativeScenario(input,adapter,evidenceContext=null){
+export function executeNativeScenario(input,adapter,evidenceContext=null){return executeScenario(input,adapter,evidenceContext,false);}
+export function executeCompleteNativeScenario(input,adapter,evidenceContext=null){return executeScenario(input,adapter,evidenceContext,true);}
+async function executeScenario(input,adapter,evidenceContext,complete){
  const lifetime={owner:null};let result,failure,didThrow=false;
- try{result=await executeNativeScenarioOwned(input,adapter,evidenceContext,lifetime);}catch(error){didThrow=true;failure=error;}
+ try{result=await executeNativeScenarioOwned(input,adapter,evidenceContext,lifetime,complete);}catch(error){didThrow=true;failure=error;}
  if(lifetime.owner){
   const cleanup=await lifetime.owner.close();
   if(didThrow){try{if(failure&&(typeof failure==='object'||typeof failure==='function')&&Object.isExtensible(failure))Object.defineProperty(failure,'readSessionCleanup',{value:()=>({...cleanup}),enumerable:false});}catch{/* Preserve the original rejection even when its object cannot carry diagnostics. */}}
@@ -92,28 +96,31 @@ export async function executeNativeScenario(input,adapter,evidenceContext=null){
  }
  if(didThrow)throw failure;return result;
 }
-async function executeNativeScenarioOwned(input,adapter,evidenceContext,lifetime){
+async function executeNativeScenarioOwned(input,adapter,evidenceContext,lifetime,complete){
+ const selected=complete?selectNativeExecutionProfile(input):null;
+ if(complete){if(selected.config.version!==2)fail();if(selected.profile.unavailable.length)requireCompleteCapabilities();}
  const methods=['authorize','describe','prepare','control','observe'];
  if(!adapter||(typeof adapter!=='object'&&typeof adapter!=='function'))throw Error('NATIVE_AUTHORITY_UNAVAILABLE');
  const sessionAdapter=snapshotNativeSessionAdapter(adapter);
+ if(complete&&!sessionAdapter)throw Error('NATIVE_SESSION_REJECTED');
  if(methods.some(name=>typeof adapter[name]!=='function'))throw Error('NATIVE_AUTHORITY_UNAVAILABLE');
- const initial=validateNativeConfig(input),budget=createNativeBudget(initial.budgets);
+ const initial=complete?selected.config:validateNativeConfig(input),budget=createNativeBudget(initial.budgets);
  const runId='run_'+randomUUID().replaceAll('-','');let recorder=null;
  if(evidenceContext!==null){
   try{
    if(!evidenceContext||Object.getPrototypeOf(evidenceContext)!==Object.prototype)throw Error();
    const keys=['environment_id','config_epoch','observer_id','source_inventory'],ds=Object.getOwnPropertyDescriptors(evidenceContext);
    if(Reflect.ownKeys(ds).length!==keys.length||keys.some(k=>!Object.hasOwn(ds,k)||!Object.hasOwn(ds[k],'value')||!ds[k].enumerable))throw Error();
-   const {createNativeCaseRecorder}=await import('./native-r2-recorder.mjs');
-   recorder=createNativeCaseRecorder({config:initial,context:{run_id:runId,...Object.fromEntries(keys.map(k=>[k,ds[k].value]))}});
+   const {createNativeCaseRecorder,createCompleteNativeCaseRecorder}=await import('./native-r2-recorder.mjs');
+   recorder=(complete?createCompleteNativeCaseRecorder:createNativeCaseRecorder)({config:initial,context:{run_id:runId,...Object.fromEntries(keys.map(k=>[k,ds[k].value]))}});
   }catch{throw Error('NATIVE_EVIDENCE_CONTEXT_REJECTED');}
   if(['prepareEvidence','observeEvidence','observeAuxiliaryEvidence','observeDisableEvidence','describeEvidence'].some(name=>typeof adapter[name]!=='function'))throw Error('NATIVE_EVIDENCE_AUTHORITY_UNAVAILABLE');
  }
 
  if(!['submitter','reviewer'].every(role=>initial.actors.some(actor=>actor.id===role)))throw Error('NATIVE_SUBJECT_REJECTED');
  const bounded=work=>withNativeDeadline(work,budget.remainingMs());
- let admitted,description,evidenceDescription;const scenario=getNativeScenario();
- const runContext=sessionAdapter?createNativeRunContext(initial,runId,scenario):null;
+ let admitted,description,evidenceDescription;const scenario=complete?selected.scenario:getNativeScenario();
+ const runContext=sessionAdapter?(complete?createCompleteNativeRunContext(initial,runId):createNativeRunContext(initial,runId,scenario)):null;
  const hostOptions=signal=>({signal,...(runContext?{runContext}: {})});
  if(scenario.steps.some(step=>step.requires?.includes('separate-explicit-fixture-store-authorization')&&!initial.fixture_stores.some(item=>item.fixture===step.fixture&&item.actor_slot===step.actor)))throw Error('NATIVE_FIXTURE_BINDINGS_UNAVAILABLE');
  let plan,evidencePlan;
@@ -124,17 +131,17 @@ async function executeNativeScenarioOwned(input,adapter,evidenceContext,lifetime
   if(recorder)evidenceDescription=await bounded(signal=>adapter.describeEvidence(structuredClone({config:initial,scenario}),hostOptions(signal)));
   plan=prepareNativeExecution(scenario,initial.budgets,description);evidencePlan=recorder?prepareNativeEvidenceExecution(initial.budgets,evidenceDescription):null;
   reserveNativeCombinedBudget(budget,[plan.totals,...(evidencePlan?[evidencePlan.totals]:[]),...(recorder?[nativeOutputVerificationPlan().cost]:[]),sessionCost]);
-  try{admitted=await bounded(signal=>admitNativeRun(initial,{authorize:value=>adapter.authorize(value,hostOptions(signal))}));}catch{throw Error('NATIVE_ADMISSION_REJECTED');}
+  try{admitted=await bounded(signal=>(complete?admitCompleteNativeRun:admitNativeRun)(initial,{authorize:value=>adapter.authorize(value,hostOptions(signal))}));}catch{throw Error('NATIVE_ADMISSION_REJECTED');}
   lifetime.owner=createNativeSessionOwner(runContext,sessionAdapter);
  }else{
-  try{admitted=await bounded(signal=>admitNativeRun(initial,{authorize:value=>adapter.authorize(value,{signal})}));description=await bounded(signal=>adapter.describe(structuredClone({config:initial,scenario}),{signal}));if(recorder)evidenceDescription=await bounded(signal=>adapter.describeEvidence(structuredClone({config:initial,scenario}),{signal}));}
+  try{admitted=await bounded(signal=>(complete?admitCompleteNativeRun:admitNativeRun)(initial,{authorize:value=>adapter.authorize(value,{signal})}));description=await bounded(signal=>adapter.describe(structuredClone({config:initial,scenario}),{signal}));if(recorder)evidenceDescription=await bounded(signal=>adapter.describeEvidence(structuredClone({config:initial,scenario}),{signal}));}
   catch{throw Error('NATIVE_ADMISSION_REJECTED');}
   plan=prepareNativeExecution(scenario,admitted.config.budgets,description);evidencePlan=recorder?prepareNativeEvidenceExecution(admitted.config.budgets,evidenceDescription):null;budget.reserve(plan.totals);if(evidencePlan)budget.reserve(evidencePlan.totals);if(recorder)budget.reserve(nativeOutputVerificationPlan().cost);
  }
  const {config,configSha256}=admitted;const evidenceCosts=new Map(evidencePlan?.costs.map(row=>[row.id,Object.fromEntries(costKeys.map(k=>[k,row[k]]))])??[]);
  const subjects={config_sha256:configSha256,candidate_sha:config.candidate_sha,candidate_tree_sha:config.candidate_tree_sha,composition_sha256:config.composition_sha256,node_sha256:config.node.sha256,build_sha256:config.build.sha256,authority_record_sha256:config.authority_record_sha256,scenario_sha256:plan.scenarioSha256,actors_sha256:sha({actors:config.actors,fixture_stores:config.fixture_stores}),workspaces_sha256:sha(config.workspaces)};
  const bindingActor=role=>{const actor=config.actors.find(item=>item.id===role);return {principalId:actor.principal_id,agentId:actor.agent_id};};
- const bindings=createNativeBindingRegistry({workspaceId:config.workspaces.primary,submitter:bindingActor('submitter'),reviewer:bindingActor('reviewer')});
+ const bindings=complete?createCompleteNativeBindingRegistry({config}):createNativeBindingRegistry({workspaceId:config.workspaces.primary,submitter:bindingActor('submitter'),reviewer:bindingActor('reviewer')});
  const inputs=createNativeInputAdmission(),writer=createNativeInputWriter({fixtureDirectory:config.fixture_directory});budget.remainingMs();
  const completed=[],protectedResults=[];let retainedArtifactBytes=null,assembled=null;
  const attachEvidence=result=>{Object.defineProperty(result,'readProtectedInputPublications',{enumerable:false,value:()=>writer.readProtectedSummary()});Object.defineProperty(result,'readProtectedInputAdmissions',{enumerable:false,value:()=>inputs.readProtectedSummary()});Object.defineProperty(result,'readProtectedBindings',{enumerable:false,value:()=>bindings.readSummary()});if(recorder)Object.defineProperty(result,'readProtectedEvidence',{enumerable:false,value:()=>({durability:'memory-only',status:assembled?.result.status??'partial-originals-pending',context:recorder.readProtectedContext(),records:recorder.readProtectedRecords(),assembly:assembled?structuredClone(assembled):null})});return result;};

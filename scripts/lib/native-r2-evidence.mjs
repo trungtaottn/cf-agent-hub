@@ -1,3 +1,4 @@
+import {selectNativeExecutionProfile} from './native-execution-profile.mjs';
 /** Pure, bounded projection of custody originals. No I/O or authentication. */
 import {createHash} from 'node:crypto';
 import {CASE_POLICY,caseSchemas,validateCaseFamily,validateNativeCaseCore,canonicalCaseSubject} from './r2-case-policy.mjs';
@@ -63,10 +64,10 @@ const CONTEXT=fields('config_record_id run_id candidate_sha candidate_git_tree_s
 const SHARED=fields('run_id candidate_sha source_tree_sha256 environment_id composition_sha256 config_sha256 scenario_sha256 authority_record_sha256');
 const SUBJECTS=fields('config_sha256 candidate_sha candidate_tree_sha composition_sha256 node_sha256 build_sha256 authority_record_sha256 scenario_sha256 actors_sha256 workspaces_sha256');
 const OBSERVER=fields('type version run_id case_id step_id invocation_id observed_at config_sha256 scenario_sha256 authority_record_sha256 process_final_sha256 preparation_sha256 subject_sha256 observer_id binding projection transport resources artifact journal revocation');
-function contextInput(input){
+function contextInput(input,scenario=getNativeScenario()){
  const c=plain(closed(input,CONTEXT));for(const k of CONTEXT.filter(k=>k.endsWith('_sha256')))requireValue(HASH.test(c[k]),'CONTEXT');
  requireValue(/^[a-f0-9]{40}$/.test(c.candidate_sha)&&/^[a-f0-9]{40}$/.test(c.candidate_git_tree_sha)&&ID.test(c.config_record_id)&&ID.test(c.run_id)&&/^[a-z0-9][a-z0-9_-]{0,127}$/.test(c.environment_id)&&typeof c.workspace_id==='string'&&/^[\x20-\x7e]{1,128}$/.test(c.workspace_id)&&ID.test(c.observer_id)&&n(c.config_epoch),'CONTEXT');
- const scenario=getNativeScenario();requireValue(hashObject(scenario)===c.scenario_sha256,'SCENARIO');
+ requireValue(hashObject(scenario)===c.scenario_sha256,'SCENARIO');
  return {...c,source_tree_sha256:nativeSourceInventoryDigest(c.source_inventory),processIdentities:new Map(),processOriginalDigests:new Map()};
 }
 function requireShared(value,c,keys=SHARED){for(const k of keys)requireValue(value[k]===c[k],'CONTEXT');}
@@ -161,13 +162,23 @@ function revocationProjection(store,o,related,c,prep,proc){
 }
 const incomplete=code=>({status:'incomplete',scope:'native37',acceptance:'pending-external-inspection',issue48Complete:false,errors:[code]});
 /** All originals are structural inputs. Their independent authentication remains external. */
-function projectNative(input,coreOnly=false){
+function projectNative(input,coreOnly=false,complete=false){
  try{
-  const outer=closed(input,['version','context','records','caseBindings','assemblyBinding']);requireValue(outer.version===1,'VERSION');
-  const c=contextInput(outer.context),store=loadNativeOriginals(outer.records),bindings=plain(array(outer.caseBindings,37)),assemblyBinding=plain(closed(outer.assemblyBinding,['record_id','command_id','native_artifact_path']));
-  const scenario=getNativeScenario(),steps=new Map(scenario.steps.filter(s=>s.caseId).map(s=>[s.caseId,s])),roster=CASE_POLICY.filter(r=>r.family==='native');
-  requireValue(store.has(c.config_record_id),'CONFIG');const config=validateNativeConfig(store.get(c.config_record_id).value);
-  requireValue(nativeConfigDigest(config)===c.config_sha256&&hashObject({actors:config.actors,fixture_stores:config.fixture_stores})===c.actors_sha256&&hashObject(config.workspaces)===c.workspaces_sha256,'CONFIG');
+  const outer=closed(input,['version','context','records','caseBindings','assemblyBinding']);requireValue(outer.version===(complete?2:1),'VERSION');
+  let c,store,config,selected;
+  if(complete){
+   // Resolve the bounded config original before interpreting selected scenario identity.
+   const rawContext=plain(closed(outer.context,CONTEXT));
+   store=loadNativeOriginals(outer.records);requireValue(ID.test(rawContext.config_record_id)&&store.has(rawContext.config_record_id),'CONFIG');
+   selected=selectNativeExecutionProfile(store.get(rawContext.config_record_id).value);requireValue(selected.config.version===2,'CONFIG');
+   config=selected.config;c=contextInput(rawContext,selected.scenario);
+  }else{
+   c=contextInput(outer.context);store=loadNativeOriginals(outer.records);
+  }
+  const bindings=plain(array(outer.caseBindings,37)),assemblyBinding=plain(closed(outer.assemblyBinding,['record_id','command_id','native_artifact_path']));
+  const scenario=complete?selected.scenario:getNativeScenario(),steps=new Map(scenario.steps.filter(s=>s.caseId).map(s=>[s.caseId,s])),roster=CASE_POLICY.filter(r=>r.family==='native');
+  if(!complete){requireValue(store.has(c.config_record_id),'CONFIG');config=validateNativeConfig(store.get(c.config_record_id).value);}
+  requireValue((complete?selected.configSha256:nativeConfigDigest(config))===c.config_sha256&&hashObject({actors:config.actors,fixture_stores:config.fixture_stores})===c.actors_sha256&&hashObject(config.workspaces)===c.workspaces_sha256,'CONFIG');
   requireValue(config.candidate_sha===c.candidate_sha&&config.candidate_tree_sha===c.candidate_git_tree_sha&&config.composition_sha256===c.composition_sha256&&config.node.sha256===c.node_sha256&&config.build.sha256===c.executable_sha256&&config.authority_record_sha256===c.authority_record_sha256&&config.workspaces.primary===c.workspace_id,'CONFIG');
   requireValue(bindings.length===37&&new Set(bindings.map(b=>b.case_id)).size===37,'COVERAGE');
   const commands=[],entries=[],rows=[],usedInvocations=new Set(),usedIdentities=new Set();
@@ -213,7 +224,7 @@ function projectNative(input,coreOnly=false){
    const manifestSha256=inputManifest(outer.context,bindings,store,assemblyBinding.record_id);
    const token=Object.freeze(Object.create(null));
    const retainedContext=Object.fromEntries(fields('run_id candidate_sha source_tree_sha256 environment_id composition_sha256 workspace_id config_epoch executable_sha256 observer_id').map(k=>[k,c[k]]));
-   const state=deepFreeze({c:retainedContext,commands,entries,rows,assemblyBinding,manifestSha256,originalCount:store.size,originalBytes:[...store.values()].reduce((sum,r)=>sum+r.byte_size,0)});
+   const state=deepFreeze({complete,c:retainedContext,commands,entries,rows,assemblyBinding,manifestSha256,originalCount:store.size,originalBytes:[...store.values()].reduce((sum,r)=>sum+r.byte_size,0)});
    pendingTokens.set(token,state);
    return {status:'core-validated',scope:'native37',acceptance:'pending-external-inspection',issue48Complete:false,input_manifest_sha256:manifestSha256,token};
   }
@@ -252,8 +263,13 @@ export function assembleNativeEvidence(input){return projectNative(input,false);
 /** Validates core facts only, with no fabricated completed assembly receipt. */
 export function prepareNativeEvidence(input){return projectNative(input,true);}
 /** Consumes an opaque token before reading the actual terminal original. */
-export function finalizeNativeEvidence(token,input){
+export function finalizeNativeEvidence(token,input){return finalizeEvidence(token,input,false);}
+export function assembleCompleteNativeEvidence(input){return projectNative(input,false,true);}
+export function prepareCompleteNativeEvidence(input){return projectNative(input,true,true);}
+export function finalizeCompleteNativeEvidence(token,input){return finalizeEvidence(token,input,true);}
+function finalizeEvidence(token,input,complete){
  const state=pendingTokens.get(token);if(!state)return incomplete('NATIVE_EVIDENCE_TOKEN');pendingTokens.delete(token);
+ if(state.complete!==complete)return incomplete('NATIVE_EVIDENCE_TOKEN');
  try{
   const {assemblyRecord}=closed(input,['assemblyRecord']),reservation=reserveOriginals([assemblyRecord]);
   requireValue(state.originalCount+1<=512&&state.originalBytes+reservation.total<=16777216,'BUDGET');

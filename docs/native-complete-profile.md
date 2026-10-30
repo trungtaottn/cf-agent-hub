@@ -348,3 +348,35 @@ Response framing remains structural and signature-unverified until the service
 original verifier and causal payload checks consume it. Neither client tests nor
 attachment tests satisfy native conformance, installation or the three deferred
 and unverified R4 tuple cases.
+
+## Selected execution and control ownership
+
+The complete config now has explicit admission, session, binding, controller,
+recorder and evidence facades. They retain the original config2 digest and selected
+DAG, without casting it to config1 or adding unbudgeted context metadata. Existing
+v1 APIs remain separate. Full-profile unavailable capabilities reject before
+adapter callbacks; required execution still needs the actual hostVersion2 owner.
+Private evidence tokens cannot cross the old/new finalizer boundaries. An assembled
+native37 fragment remains structural, not full issue 48 acceptance.
+
+A fixed public-key request authenticator checks canonical bounded wire and the
+client key from the installation statement without receiving its private key.
+Its result is authenticated-statement-only: the complete factory must additionally
+verify root installation, actual current custody, config-derived identity joins
+and schedule ownership before effects. A valid signature alone does not admit a run.
+
+The supported control role map now separates service observations from host-local
+facts. Service ACKs cannot assert unreceived protected journal/bootstrap originals.
+The final host report must join those actual originals to the service's preserved
+facts and authenticated terminal correlations. In particular, settled-intent ACK
+checks the prior successful create but references only its authenticated terminal;
+the actual protected journal still proves settled state. Disarm retains actual
+server commit/publication/drain facts; retained journal and actual client receipt
+remain host-owned. Server readback cannot settle an intent.
+
+The fixed nine service payload shapes fit their unchanged per-control ceilings.
+Internal role kinds do not add exported evidence families or release records.
+Content composition is not role custody: the actual service resolver must own each
+record, and report verification must enforce every fixed host counterpart. Three
+unavailable tuple controls remain deferred/unverified; no security guard, case
+roster, service-call count or cumulative release limit is changed by this correction.
