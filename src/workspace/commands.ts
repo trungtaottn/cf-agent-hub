@@ -10,7 +10,7 @@ import {HttpError} from '../http/envelopes';
 export interface CommandOutcome<T>{status:number;data:T;}
 /** Internal owned context; never construct from HTTP JSON or serialize caller authority. */
 export interface CommandExecutionContext{workspace:AuthWorkspace;requestId:string;idempotencyKey:string;fingerprint:string;admissionEpoch:number;admissionGeneration:number;}
-export interface EventDraft{type:'message.accepted'|'message.acknowledged'|'profile.updated'|'preferences.updated';resourceType:'message'|'profile'|'preferences';resourceId:string;resourceVersion:number|null;threadId:string|null;}
+export interface EventDraft{type:'message.accepted'|'message.acknowledged'|'profile.updated'|'preferences.updated'|'agent.created'|'agent.updated'|'agent.archived'|'credential.issued'|'credential.revoked';resourceType:'message'|'profile'|'preferences'|'agent'|'credential';resourceId:string;resourceVersion:number|null;threadId:string|null;}
 export interface CommandDescriptor<B,T>{
  operation:string;target:string;
  resource(tx:WorkspaceTransaction,ctx:CommandContext,body:B):ResourceAccess|undefined;
@@ -33,6 +33,10 @@ function synchronousGuard(result:undefined):void{
  if(synchronousResult(result)!==undefined)throw new HttpError('INTERNAL_ERROR',500);
 }
 export function executeCommand<B,T>(ctx:CommandExecutionContext,identity:VerifiedIdentity,command:CommandDescriptor<B,T>,body:B):CommandOutcome<T>{
+ return executeCommandDetailed(ctx,identity,command,body).outcome;
+}
+/** Private first-attempt signal; never retained in SQL or inferred from a cached outcome. */
+export function executeCommandDetailed<B,T>(ctx:CommandExecutionContext,identity:VerifiedIdentity,command:CommandDescriptor<B,T>,body:B):{outcome:CommandOutcome<T>;firstExecution:boolean}{
  if(!Number.isSafeInteger(ctx.admissionGeneration)||ctx.admissionGeneration<0||!Number.isSafeInteger(ctx.admissionEpoch)||ctx.admissionEpoch<=0||identity.workspaceId!==ctx.workspace.workspaceId||!ctx.idempotencyKey||!/^[a-f0-9]{64}$/.test(ctx.fingerprint)||!/^[a-z]+:[a-z]+$/.test(command.operation)||!command.target)throw new HttpError('INVALID_REQUEST',400);
  // Entropy and all async proof/fingerprint work complete before SQL. Command time is sampled inside entry.
  const eventId='event_'+Array.from(ctx.workspace.entropy.bytes(24),b=>b.toString(16).padStart(2,'0')).join('');
@@ -63,6 +67,6 @@ export function executeCommand<B,T>(ctx:CommandExecutionContext,identity:Verifie
    return outcome;
   });
   if(replay)replayLog(ctx.requestId,replay.requestId,replay.eventId);
-  return result;
+  return {outcome:result,firstExecution:replay===undefined};
  }catch(error){securityLog(error,ctx.requestId,verifiedActor);throw error;}
 }

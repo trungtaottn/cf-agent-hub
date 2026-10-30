@@ -1,6 +1,6 @@
 # Agents and external runtimes
 
-Status: Design baseline · Contract revision 0.1 · Implementation pending.
+Status: R2 identity/credential source implemented locally · Contract revision 0.1 · Runtime/task lifecycle and live acceptance pending.
 
 CF Agent Hub coordinates external agents; it does not execute their code or supply an execution sandbox. An agent is a durable workspace participant record. A runtime instance is one concrete process or session acting for that agent. Keeping these identities separate makes restarts, concurrent instances, credential revocation, and task ownership reviewable.
 
@@ -16,11 +16,27 @@ CF Agent Hub coordinates external agents; it does not execute their code or supp
 | Display name | Human-readable presentation | Never used as a lookup key for authorization |
 | Native credential | Authenticates a workspace-scoped principal | Bounded by its current grants and revocation state |
 
-A static R1 participant is provisioned by the deployment operator. R2 adds planned dynamic agent enrollment and native credentials. A profile cannot enroll an agent, rotate a token, or change a runtime's scope. Exact operations and required grants belong to the [HTTP API](http-api.md); security policy belongs to the [security model](security-model.md).
+A static R1 participant is provisioned by the deployment operator. The local R2 issue25 source adds human-authorized durable agent creation, metadata editing, archival and native credential issuance/revocation. Runtime enrollment remains a separate, pending capability. A profile cannot enroll an agent, rotate a token, or change a runtime's scope. Exact operations and required grants belong to the [HTTP API](http-api.md); security policy belongs to the [security model](security-model.md).
 
 Native credentials are opaque bearer values, revealed once and stored by the hub only as verification hashes. An external runtime must obtain its credential through an authorized provisioning flow and keep it in its own secret store. The browser must not persist native agent credentials in localStorage. Operators must be able to revoke or rotate credentials without renaming the agent. Rotating a credential is distinct from changing a workspace's signing or encryption secrets.
 
-## Runtime participation flow
+## Local identity and credential lifecycle
+
+Agent IDs are immutable. `agents:manage` requires a current human session and workspace-wide project authority (`project_ids: null`); agent reads require `agents:read` and the same workspace-wide project authority. Metadata and work-role labels are not project grants. New work-role references must exist and be active. PATCH and archive require the current `expected_agent_version`; there is no unarchive or delete endpoint.
+
+Archive rejects an active run or an assignment in any nonterminal task state, including Backlog, Ready, Doing, Waiting and Review. Reassign or explicitly reconcile that work through its owning workflow before retrying; archive does not perform those actions. Successful archive atomically changes status, revokes all credentials and runtime proofs, and records the sanitized event and replay outcome. Identity, terminal tasks and attribution remain. Separate credential revocation may invalidate an active owner immediately; it does not transfer or settle that owner's work.
+
+Credential management is human-session-only with `credentials:manage`. Requested native scopes and projects must fit the current issuer's grant, and human-only scopes cannot be delegated. `null` projects and `[]` remain distinct: an empty array grants no project-scoped access, while a restricted issuer cannot issue `null`. Named projects must exist and be active. Expiry must be in the future and no more than 90 days from issuance.
+
+The existing registry retains immutable `operator_static` or `human_managed` provenance. Issuing a human-managed credential to an existing static agent does not reclassify it: one current enabled, unrevoked, unexpired static credential must cover the entire requested scope/project grant and expiry. Separate static grants cannot be combined. Native authentication and background delivery recheck that ceiling and the issuing human's current enabled grant, including `credentials:manage` and the delegated permissions. The original human browser session need not remain alive after issuance.
+
+Only the successful first issuance response contains the 256-bit bearer. The durable outcome contains `token: null` and `revealed: false`; SQL retains SHA-256 verification material, not a recoverable token. Retry a lost response with the original key to establish its sanitized outcome. If the token was lost, explicitly issue a replacement with a new key and revoke the uncertain credential. There is no token recovery or automatic rotation endpoint, and replacement does not inherit active work or runtime proofs. Credential lists and revocation require the complete credential grant to remain within the human's current scope/project ceiling.
+
+Higher-epoch configuration installation and every restore-authority overlay revoke human-managed credentials and runtime proofs. Retained active human-managed identities advance to the current epoch without receiving grants; archived identity and local static credential revocation remain inactive. Later static configuration can refresh operator-owned display metadata and versions, but cannot revive an archived agent or a locally revoked credential. Fresh issuance must satisfy the current ceilings again.
+
+These are local source behaviors, not a deployed acceptance claim. See the [issue25 execution ledger](r2-task-plans/issue-025-execution.md). Current schema8 operational recovery remains fail-closed until #39/#43; the historical schema7 recovery harness does not establish current recovery support.
+
+## Runtime participation flow (specified; not enabled by issue25)
 
 Enrollment with an active native credential returns a server-owned runtime identity and a one-time opaque `runtime_token`. The hub stores only its verification hash, bound to the workspace, agent, runtime and issuing credential. Execution mutations and runtime heartbeat require both the active native credential and `X-Runtime-Token`; readable IDs and fences are insufficient. If the one-time enrollment response is lost, replay reveals no secret again and the client enrolls a fresh runtime. A runtime reads only the work its grant permits. It may claim a Ready task only if the state, task version, eligibility, WIP rules, and grant checks all pass atomically. A successful claim creates a run bound to the agent and runtime with a lease and monotonic fence. Reading a task or receiving a notification does not claim it.
 

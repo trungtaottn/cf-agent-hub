@@ -5,6 +5,7 @@ import type {Event} from '../http/dto';
 import {validateEvent} from '../http/generated/auth-validators.js';
 import {canonicalJson} from '../config/bootstrap';
 import {authorize,refreshActor} from '../auth/authorize';
+import {grantsCover} from '../auth/credential-authority';
 import {HttpError} from '../http/envelopes';
 import {assertMessageVisible} from '../messages/references';
 export interface RedactedEventInput extends EventDraft{id:string;workspaceId:string;actor:ActorContext;requestId:string;nowMs:number;}
@@ -12,7 +13,12 @@ const definitions={
  'message.accepted':{resource:'message',summary:'Message accepted.'},
  'message.acknowledged':{resource:'message',summary:'Message acknowledged.'},
  'profile.updated':{resource:'profile',summary:'Workspace profile updated.'},
- 'preferences.updated':{resource:'preferences',summary:'User preferences updated.'}
+ 'preferences.updated':{resource:'preferences',summary:'User preferences updated.'},
+ 'agent.created':{resource:'agent',summary:'Agent created.'},
+ 'agent.updated':{resource:'agent',summary:'Agent updated.'},
+ 'agent.archived':{resource:'agent',summary:'Agent archived.'},
+ 'credential.issued':{resource:'credential',summary:'Credential issued.'},
+ 'credential.revoked':{resource:'credential',summary:'Credential revoked.'}
 } as const;
 interface EventRow{id:string;workspace_id:string;sequence:number;type:string;actor_json:string;resource_type:Event['resource_type'];resource_id:string;resource_version:number|null;thread_id:string|null;request_id:string;occurred_at:number;summary:string;}
 function projection(row:EventRow):Event{
@@ -22,7 +28,7 @@ function projection(row:EventRow):Event{
 export function appendEvent(tx:WorkspaceTransaction,event:RedactedEventInput):{id:string;sequence:number}{
  const definition=definitions[event.type];
  if(!definition||event.resourceType!==definition.resource||event.workspaceId!==event.actor.workspaceId||
-  (event.resourceType==='profile'||event.resourceType==='preferences')&&event.actor.kind!=='human'||
+  (event.resourceType==='profile'||event.resourceType==='preferences'||event.resourceType==='agent'||event.resourceType==='credential')&&event.actor.kind!=='human'||
   event.resourceType==='profile'&&event.resourceId!==event.workspaceId)throw new HttpError('INTERNAL_ERROR',500);
  const row:EventRow={id:event.id,workspace_id:event.workspaceId,sequence:1,type:event.type,actor_json:canonicalJson({kind:event.actor.kind,principal_id:event.actor.principalId,agent_id:event.actor.agentId}),resource_type:event.resourceType,resource_id:event.resourceId,resource_version:event.resourceVersion,thread_id:event.threadId,request_id:event.requestId,occurred_at:event.nowMs,summary:definition.summary};
  if(!validateEvent(projection(row)))throw new HttpError('INTERNAL_ERROR',500);
@@ -59,9 +65,21 @@ export function projectEvent(tx:WorkspaceTransaction,actor:ActorContext,id:strin
 export const resourceEventVisibility:EventVisibility=(tx,actor,resource,event,nowMs)=>{
  if(!validateEvent(event)||event.workspace_id!==actor.workspaceId||resource.id!==event.resource_id||resource.kind!==event.resource_type)return false;
  try{
-  authorize(tx,actor,'events:read',resource,nowMs);
+  authorize(tx,actor,'events:read',resource.kind==='credential'?undefined:resource,nowMs);
   if(event.type==='message.accepted'||event.type==='message.acknowledged'){
    assertMessageVisible(tx,actor,event.resource_id,nowMs);return true;
+  }
+  if(resource.kind==='agent'){
+   authorize(tx,actor,'agents:read',resource,nowMs);
+   return actor.projectIds===null&&!!tx.one('SELECT agent_id FROM static_agents WHERE agent_id=? AND workspace_id=?',[resource.id,actor.workspaceId]);
+  }
+  if(resource.kind==='credential'){
+   authorize(tx,actor,'credentials:manage',undefined,nowMs);
+   if(actor.kind!=='human')return false;
+   const row=tx.one<{scopes_json:string;project_ids_json:string}>('SELECT scopes_json,project_ids_json FROM native_credentials WHERE credential_id=? AND workspace_id=?',[resource.id,actor.workspaceId]);
+   if(!row)return false;
+   const scopes=JSON.parse(row.scopes_json) as string[],projects=JSON.parse(row.project_ids_json) as string[]|null;
+   return grantsCover([...actor.scopes],actor.projectIds,scopes,projects);
   }
   return settingsEventVisibility(tx,actor,resource,event,nowMs)===true;
  }catch(error){if(error instanceof HttpError&&error.code==='NOT_FOUND'||error instanceof Error&&'code' in error&&error.code==='FORBIDDEN')return false;throw error;}

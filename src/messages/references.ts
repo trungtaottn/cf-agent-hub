@@ -1,3 +1,4 @@
+import {credentialGrantAllowed,type CredentialAuthorityRow} from '../auth/credential-authority';
 import type {WorkspaceTransaction} from '../storage/transaction';
 import type {ActorContext} from '../workspace/context';
 import type {MessageCreateRequest} from '../http/dto';
@@ -26,11 +27,11 @@ function readGrant(row:GrantRow,participant:Participant):ReadGrant{
 }
 /** Eligibility only: these grants never become authentication proofs, sessions or ActorContexts. */
 function participantGrants(tx:WorkspaceTransaction,workspaceId:string,participant:Participant,nowMs:number):readonly ReadGrant[]{
- const rows=participant.kind==='agent'?tx.all<GrantRow>(`SELECT c.scopes_json,c.project_ids_json FROM native_credentials c
+ const rows=participant.kind==='agent'?tx.all<CredentialAuthorityRow>(`SELECT c.* FROM native_credentials c
   JOIN static_agents a ON a.agent_id=c.agent_id AND a.workspace_id=c.workspace_id
   JOIN workspace_metadata m ON m.workspace_id=c.workspace_id AND m.id=1
   WHERE c.workspace_id=? AND c.agent_id=? AND m.admission_state='installed' AND c.enabled=1 AND c.retired_at_epoch IS NULL
-  AND c.expires_at>? AND c.config_epoch=m.config_epoch AND a.config_epoch=m.config_epoch`,[workspaceId,participant.id,nowMs]):
+  AND c.expires_at>? AND c.config_epoch=m.config_epoch AND a.config_epoch=m.config_epoch`,[workspaceId,participant.id,nowMs]).filter(row=>credentialGrantAllowed(tx,row,nowMs)):
  tx.all<GrantRow>(`SELECT g.scopes_json,g.project_ids_json FROM human_grants g JOIN workspace_metadata m ON m.workspace_id=g.workspace_id AND m.id=1
   WHERE g.workspace_id=? AND g.principal_id=? AND g.enabled=1 AND g.config_epoch=m.config_epoch AND m.admission_state='installed'`,[workspaceId,participant.id]);
  return rows.map(r=>readGrant(r,participant));

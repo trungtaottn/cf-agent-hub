@@ -1,8 +1,8 @@
 # Data model
 
-Status: R2 schema8 source implemented locally · Contract revision 0.1 · Domain commands and live acceptance pending.
+Status: R2 schema8 and identity/credential source implemented locally · Contract revision 0.1 · Other domain commands and live acceptance pending.
 
-This page defines conceptual ownership and invariants. The issue24 storage implementation is described below; conceptual behavior is not automatically an enabled command. JSON field spelling and request schemas are defined in [HTTP API](http-api.md) and [OpenAPI](../spec/openapi.json). Database table/index design must preserve these invariants while being verified against the chosen runtime.
+This page defines conceptual ownership and invariants. The issue24 storage implementation is described below; issue25 adds the identity/credential commands only. Other conceptual behavior is not automatically an enabled command. JSON field spelling and request schemas are defined in [HTTP API](http-api.md) and [OpenAPI](../spec/openapi.json). Database table/index design must preserve these invariants while being verified against the chosen runtime.
 
 ## Entity ownership
 
@@ -96,3 +96,11 @@ Immediate composite foreign keys bind workspace/task/run/result/generation ident
 Artifact generation rows retain expected and observed digest/size, admission epoch/generation and current effect identity/kind/state/start/drain evidence. A single slot requires serialized external operations: never replace in-flight/uncertain work or dispatch cleanup delete until the prior put is conclusively drained. Future effect owners retain immutable evidence needed before advancing a drained slot; no simultaneous put/delete tracking or optimistic drain is promised. Polymorphic associations and actor/creator consistency require command guards. Imports retain original source rows, preview/report snapshots, digest, scoped mapping identity, originating import and provenance JSON.
 
 Schema8 operational recovery is deliberately unavailable until #39/#43 implement the complete versioned restore/capture semantics. V1/schema7 codec/registry remains frozen; it cannot omit new tables to produce a partial backup. See [backup/restore](backup-restore.md). Source tests and index observations do not establish deployment, throughput or R2 acceptance.
+
+## Issue25 identity lifecycle persistence
+
+The legacy-named `static_agents` remains the single identity registry, with immutable `operator_static | human_managed` provenance and versioned metadata. `native_credentials` retains immutable identity/hash binding, provenance, issuing human and independent local revocation. No parallel identity/grant store or new migration is introduced. Legacy empty static labels are projected safely as “Operator credential” without rewriting migration history.
+
+Agent archive never deletes attribution: it rejects active runs or nonterminal assignments, then atomically archives the identity and revokes all credentials/proofs alongside event and sanitized outcome. Credential revocation can invalidate an active owner without changing its task/run history. Higher-epoch installation and restore overlay invalidate dynamic credentials/proofs, retain identities and preserve archived/local-revoked state. Same-epoch same-digest ordinary install remains a no-op. The schema8 operational recovery interface remains unavailable pending #39/#43; overlay source behavior is not complete recovery acceptance.
+
+Credential DTOs contain metadata only. Raw bearer bytes exist only in private first-response preparation; SQL holds SHA-256 verification material, and replay outcomes always retain `token: null`/`revealed: false`. Current scope/project disclosure checks cover both the current row and original replay metadata. See [agents](agents.md) and [security model](security-model.md) for the authority ceilings and replacement procedure.

@@ -1,6 +1,6 @@
 # Native HTTP API
 
-Status: Design baseline · Contract revision 0.1 · Implementation pending.
+Status: Mixed implemented source and proposed contracts · Contract revision 0.1 · Live acceptance pending.
 
 The planned native API is the shared command surface for the web application, external runtimes, CLI and protocol adapters. It coordinates durable work; it does not execute agent code. This reference and [OpenAPI](../spec/openapi.json) own route names and request/response fields. They describe proposed contracts dated 2026-10-23, not a deployed service. The versioned path is `/v2/workspaces/{workspace_id}`; the API path version and documentation contract revision are separate identifiers.
 
@@ -19,9 +19,21 @@ An endpoint listing both lanes permits either credential type, subject to all po
 
 For runtime-bound commands, the authenticated native identity must match the run's agent and registered runtime binding; knowing a run ID or fence is insufficient. Runtime enrollment returns a one-time `runtime_token`, stored server-side only as a verification hash bound to workspace, agent, runtime and issuing native credential. Claim, run commands, runtime heartbeat and native artifact writes require both `Authorization: Bearer ...` and `X-Runtime-Token`; the proof must match the stored run/runtime. The OpenAPI security requirement combines `NativeBearer` and `RuntimeProof` in one AND object. Proof expires with its credential or runtime and is invalid after revocation; credential rotation requires fresh enrollment. Enrollment replay returns `runtime_token: null` and `revealed: false`; a lost proof requires new enrollment. Runtime registration does not start a process. See [agents](agents.md) and [security model](security-model.md).
 
+## Local issue25 identity/credential subset
+
+This local source enables `listAgents`, `getAgent`, `createAgent`, `patchAgent`, `archiveAgent`, `listCredentials`, `createCredential` and `revokeCredential` only. Runtime, task, artifact, import, search and approval routes are not enabled by this change. There is no credential GET-by-ID, token recovery, unarchive or automatic rotation route. See [execution evidence](r2-task-plans/issue-025-execution.md), not this route inventory, for the actual checks and pending acceptance.
+
+Writes require the canonical closed request body, `Idempotency-Key`, current human session, exact allowed origin and CSRF. Agent management requires `agents:manage` and workspace-wide project authority; agent GET/list allows either lane with `agents:read` and `project_ids: null`. Work roles are metadata, never authority. PATCH/archive use `expected_agent_version`; revoke uses `expected_credential_version`. Archive rejects active runs or any nonterminal assigned task with `INVALID_STATE`; reassign/reconcile first rather than treating archival as task cancellation.
+
+Credential management requires `credentials:manage`. Complete requested scopes/projects must be within the current human ceiling and native allowlist; active named projects and active agent are required. Expiry is future and at most 90 days. A static agent additionally needs one current live static credential covering the complete grant and expiry; no union of grants is allowed. Static provenance remains immutable. Credential listing/revoke exposes only complete grants within the caller's current ceiling, without hashes or bearer values. `null` and `[]` project grants are never interchangeable.
+
+Initial successful `createCredential` returns the bearer once. Same-key/same-body replay returns the original sanitized metadata with `token: null`, `revealed: false`; a changed payload conflicts. Lost-token recovery means an explicit new issuance key followed by revoking the uncertain credential, not reusing a key to obtain another reveal. Replays reauthorize both the current resource and original response visibility. Archived identities remain readable for authorized historical attribution; revoked/archive/epoch authority cannot authenticate merely because a previous command succeeded.
+
+Agent/credential lists accept only `cursor` and `limit` (default 50, range 1–200). They seek by creation time/ID, use a fixed initial high-water bound, and return `{data, page, request_id}`. Only fully visible credentials establish continuation. Encrypted cursors bind operation, workspace, caller lane/session or credential, authority epoch, maintenance generation, limit and ordering; they expire absolutely after one hour and are limited to 2,048 characters. Identity reads do not reuse message-retention floors. Responses are no-store, bounded to 1 MiB, and recheck current authority after cursor crypto; a changed page during preparation fails as a whole rather than disclosing stale metadata.
+
 ## Canonical endpoint table
 
-Paths below are relative to `/v2/workspaces/{workspace_id}`. `/` denotes that base resource without a trailing slash. All entries are planned. The R1 settings and authentication additions appear below. Task/agent/artifact routes are staged by the [roadmap](roadmap.md); their presence here does not make them available in an earlier release gate.
+Paths below are relative to `/v2/workspaces/{workspace_id}`. `/` denotes that base resource without a trailing slash. The table is the canonical contract inventory, not a deployment availability claim. R1 source routes and the local issue25 identity/credential subset described below are implemented; other R2/R3 routes remain staged by the [roadmap](roadmap.md). Presence here does not make a route available in an earlier release gate.
 
 | Method and relative path | Required scope | Actor lane |
 | --- | --- | --- |

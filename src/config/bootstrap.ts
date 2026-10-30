@@ -77,7 +77,7 @@ function applyAuthorityRows(tx:WorkspaceTransaction,config:DeploymentConfig,inpu
  if(hashes.size!==config.static_credential_refs.length)throw Error('CREDENTIAL_SET_MISMATCH');
  for(const ref of config.static_credential_refs)if(!hashes.has(keyed(ref.workspace_id,ref.credential_id))||retired.has(keyed(ref.workspace_id,ref.credential_id)))throw Error('CREDENTIAL_SET_MISMATCH');
  for(const tombstone of retired.values())validateRetirement(config,tombstone);
- const existing=tx.all<Credential>('SELECT credential_id,agent_id,token_sha256,retired_at_epoch FROM native_credentials');
+ const existing=tx.all<Credential>('SELECT credential_id,agent_id,token_sha256,retired_at_epoch FROM native_credentials'+(r2?" WHERE origin='operator_static'":''));
  const references=config.static_credential_refs.filter(x=>x.workspace_id===workspaceId);
  for(const credential of existing) {
   // Stored tombstones remain bound to the reviewed catalog even when incoming history is omitted.
@@ -99,13 +99,35 @@ function applyAuthorityRows(tx:WorkspaceTransaction,config:DeploymentConfig,inpu
   if(prior&&(prior.issuer!==grant.issuer||prior.subject!==grant.subject))throw Error('PRINCIPAL_IMMUTABLE');
   tx.exec('INSERT INTO human_grants (principal_id,workspace_id,issuer,subject,scopes_json,project_ids_json,enabled,config_epoch) VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(principal_id) DO UPDATE SET scopes_json=excluded.scopes_json,project_ids_json=excluded.project_ids_json,enabled=excluded.enabled,config_epoch=excluded.config_epoch',[grant.principal_id,workspaceId,grant.issuer,grant.subject,canonicalJson(grant.scopes),canonicalJson(grant.project_ids),Number(grant.enabled),config.config_epoch]);
  }
- for(const agent of config.static_participants.filter(x=>x.workspace_id===workspaceId))
+ for(const agent of config.static_participants.filter(x=>x.workspace_id===workspaceId)){
+  if(r2){
+   const old=tx.one<{display_name:string;agent_version:number}>('SELECT display_name,agent_version FROM static_agents WHERE agent_id=?',[agent.agent_id]);
+   if(old&&old.display_name!==agent.display_name){if(old.agent_version>=Number.MAX_SAFE_INTEGER)throw Error('R2_VERSION_EXHAUSTED');tx.exec('UPDATE static_agents SET agent_version=agent_version+1 WHERE agent_id=?',[agent.agent_id]);}
+  }
   tx.exec('INSERT INTO static_agents (agent_id,workspace_id,display_name,config_epoch) VALUES (?,?,?,?) ON CONFLICT(agent_id) DO UPDATE SET display_name=excluded.display_name,config_epoch=excluded.config_epoch',[agent.agent_id,workspaceId,agent.display_name,config.config_epoch]);
- for(const ref of references)
+ }
+ for(const ref of references){
+  if(r2){
+   const old=tx.one<{scopes_json:string;project_ids_json:string;expires_at:number;enabled:number;credential_version:number}>('SELECT scopes_json,project_ids_json,expires_at,enabled,credential_version FROM native_credentials WHERE credential_id=?',[ref.credential_id]);
+   if(old&&(old.scopes_json!==canonicalJson(ref.scopes)||old.project_ids_json!==canonicalJson(ref.project_ids)||old.expires_at!==Date.parse(ref.expires_at)||old.enabled!==Number(ref.enabled))){
+    if(old.credential_version>=Number.MAX_SAFE_INTEGER)throw Error('R2_VERSION_EXHAUSTED');
+    tx.exec('UPDATE native_credentials SET credential_version=credential_version+1 WHERE credential_id=?',[ref.credential_id]);
+   }
+  }
   tx.exec('INSERT INTO native_credentials (credential_id,workspace_id,agent_id,token_sha256,scopes_json,project_ids_json,expires_at,enabled,config_epoch,retired_at_epoch) VALUES (?,?,?,?,?,?,?,?,?,NULL) ON CONFLICT(credential_id) DO UPDATE SET scopes_json=excluded.scopes_json,project_ids_json=excluded.project_ids_json,expires_at=excluded.expires_at,enabled=excluded.enabled,config_epoch=excluded.config_epoch',[ref.credential_id,workspaceId,ref.agent_id,hashes.get(keyed(workspaceId,ref.credential_id))!.token_sha256,canonicalJson(ref.scopes),canonicalJson(ref.project_ids),Date.parse(ref.expires_at),Number(ref.enabled),config.config_epoch]);
- for(const item of bundle.retired_credentials.filter(x=>x.workspace_id===workspaceId))
+ }
+ for(const item of bundle.retired_credentials.filter(x=>x.workspace_id===workspaceId)){
+  if(r2){
+   const old=tx.one<{retired_at_epoch:number|null;credential_version:number}>('SELECT retired_at_epoch,credential_version FROM native_credentials WHERE credential_id=?',[item.credential_id]);
+   if(old&&old.retired_at_epoch===null){if(old.credential_version>=Number.MAX_SAFE_INTEGER)throw Error('R2_VERSION_EXHAUSTED');tx.exec('UPDATE native_credentials SET credential_version=credential_version+1 WHERE credential_id=?',[item.credential_id]);}
+  }
   tx.exec("INSERT INTO native_credentials (credential_id,workspace_id,agent_id,token_sha256,scopes_json,project_ids_json,expires_at,enabled,config_epoch,retired_at_epoch) VALUES (?,?,?,?,'[]','null',0,0,?,?) ON CONFLICT(credential_id) DO UPDATE SET enabled=0,config_epoch=excluded.config_epoch,retired_at_epoch=excluded.retired_at_epoch",[item.credential_id,workspaceId,item.agent_id,item.token_sha256,config.config_epoch,item.retired_at_epoch]);
+ }
  if(r2){
+  if(tx.one("SELECT credential_id FROM native_credentials WHERE workspace_id=? AND origin='human_managed' AND revoked_at IS NULL AND credential_version>=?",[workspaceId,Number.MAX_SAFE_INTEGER])||tx.one('SELECT id FROM runtimes WHERE workspace_id=? AND revoked_at IS NULL AND runtime_version>=?',[workspaceId,Number.MAX_SAFE_INTEGER]))throw Error('R2_VERSION_EXHAUSTED');
+  tx.exec("UPDATE native_credentials SET enabled=0,revoked_at=COALESCE(revoked_at,?),credential_version=credential_version+CASE WHEN revoked_at IS NULL THEN 1 ELSE 0 END WHERE workspace_id=? AND origin='human_managed'",[nowMs,workspaceId]);
+  tx.exec("UPDATE runtimes SET revoked_at=COALESCE(revoked_at,?),status='expired',runtime_version=runtime_version+CASE WHEN revoked_at IS NULL THEN 1 ELSE 0 END WHERE workspace_id=?",[nowMs,workspaceId]);
+  tx.exec("UPDATE static_agents SET config_epoch=? WHERE workspace_id=? AND origin='human_managed' AND status='active'",[config.config_epoch,workspaceId]);
   for(const agent of config.static_participants.filter(x=>x.workspace_id===workspaceId)){
    if(!priorAgents.has(agent.agent_id))tx.exec('UPDATE static_agents SET created_at=?,updated_at=? WHERE agent_id=?',[nowMs,nowMs,agent.agent_id]);
    else tx.exec('UPDATE static_agents SET updated_at=? WHERE agent_id=?',[nowMs,agent.agent_id]);

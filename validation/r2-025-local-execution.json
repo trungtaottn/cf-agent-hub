@@ -1,0 +1,120 @@
+{
+  "issue": 25,
+  "scope": "local source verification only; no remote or live acceptance",
+  "base": "982bbe61c9a88e35490134de229b589bd566ffb7",
+  "base_tree": "2e5bd2f6e4bb05282596e210ce5ec3aeaa6d2276",
+  "source_files": {
+    "src/agents/commands.ts": "be235e21666516faff21ad1c22343b39ddf9a72cff5c079501cee3207c168094",
+    "src/agents/reads.ts": "c4908cae225093b780353512d8fb2ba74f49047f60ce0c663f271257f94e02be",
+    "src/audit/events.ts": "3fce346a46bb363fe2d6d3d7c6f93290ce997a076069978258bb883db9c1c68b",
+    "src/auth/authorize.ts": "1ec2291cd4eb55a9b0d1c2aa5924d65da229b724990670ff25935c988e4d374f",
+    "src/auth/credential-authority.ts": "176cdc921a79fc92eacd3b680ae505809e24183a81a623f3206e720209d04cda",
+    "src/auth/native-credentials.ts": "4aa675564afc988d442c3dd4bf47bb3249e99d6c72c1543f34537ffda02e3e5a",
+    "src/config/bootstrap.ts": "828c24c21255eb04e81fcd9bbe2c4c049eaa2d1c9dbcb8c5bd377542c2fec264",
+    "src/http/cursors.ts": "c7686c5f0baa96db94564da9fc743f5b51b451a0da6c96317d336b7be4cc4b29",
+    "src/http/identity-read-routes.ts": "31994dacb961c1902ea2da617777c10bd5247b95212203a6a9784ed65fbd852e",
+    "src/http/r2-routes.ts": "df6478e5399adda0458452ad001d59b442ea41746d1de4e8ec70bbb4266c79e1",
+    "src/http/router.ts": "68a1ea145cd457cbd288894097c2b50acb4303a38bf3053b964cb64d19e88f7d",
+    "src/index.ts": "eab790bedbec0c52959204b4af2469f78eceed6bdd3c5bf338103b968839be2a",
+    "src/messages/references.ts": "85f150cdf8354ef0fc3424ad73c63fd498035e3e261128f707a2ccb0494249ef",
+    "src/workspace/commands.ts": "694861769ebe705469ed8ff3cdec4bea9e32612e951b75e1d691efad746e2513",
+    "src/workspace/workspace-do.ts": "f00472c6b794a35bbe1de95f57de0994bf4d21cca34a953786880b74341df7e2",
+    "test/acceptance/r1-isolation.test.ts": "75246f7ea4b9f53607b9b40a555c1d8dfc206022b0e6df7e12496723f961196e",
+    "test/agents/authority-overlay.test.ts": "043b85d3e77121ebc5aa227c81f232e43fb77461fd11e223528838e685843e9e",
+    "test/agents/delivery-revocation.test.ts": "70b5b34e0b9c5b25a2d7faf0dd0ec407958cbed32dcba7161ef9507ee108db8f",
+    "test/agents/epoch-fresh-issuance.test.ts": "03b168a1c87c2ab9e91278f062e1ea7fb113752513fc122faf76e0fc67d339e1",
+    "test/agents/first-response.test.ts": "fa55435f2ccd13852289bde5571d775b2cd2686a150010bac460a597e1f1dbc0",
+    "test/agents/identity-http.test.ts": "8cd5292fbc1df276c55e0ea4c7398b46fa455f81519bfaca5445979ec2c5da70",
+    "test/agents/identity-lifecycle.test.ts": "f161b84a81cb711f2d402f0b477fc57a3d2e1c4c808c1907761411a76e9a7ec9",
+    "test/agents/identity-reads.test.ts": "b75367e8e8eb936ab154bd537910fab60256fd6c61bf60f0f8a55adf3ebe88d4",
+    "test/agents/lifecycle-audit.test.ts": "a8e492a94f06040c29b1257df7f8ad7d9e1dfa62746abbbd6ab0136cbf6f8620",
+    "test/agents/revoke-replay-ceiling.test.ts": "daef372a1f68aaec8f9bac5aae4205b855e11ed7b43ff4407606563cac385286",
+    "test/workspace/r2-boundaries.test.ts": "3f56c39481821e138b886b2daa9c74fb74a81feb79ccde8e804e7818b96d6a63"
+  },
+  "source_digest": "85baf56cca14d14afe0631f7a6c62183922a64b8827e978b940d475d465786a9",
+  "toolchain": {
+    "node": "24.22.1",
+    "npm": "11.19.1",
+    "lock_sha256": "8fa7894880bd0b77bfdf6fffe7e13fd8eb1a8b695b1316682dc33f7783873634"
+  },
+  "checks": [
+    {
+      "command": "npm run verify:generated",
+      "exit": 0
+    },
+    {
+      "command": "npm run typecheck",
+      "exit": 0,
+      "log": "types-final.log"
+    },
+    {
+      "command": "npm run verify:r1-contract",
+      "exit": 0
+    },
+    {
+      "command": "npm test",
+      "exit": 0,
+      "tests": 798,
+      "files": 29
+    },
+    {
+      "command": "npm run test:workers",
+      "exit": 0,
+      "tests": 525,
+      "files": 34,
+      "log": "workers-final.log"
+    },
+    {
+      "command": "npm run test:operator",
+      "exit": 0,
+      "tests": 18
+    },
+    {
+      "command": "npm run test:deployment-verifier",
+      "exit": 0,
+      "tests": 13
+    },
+    {
+      "command": "npm run test:recovery-cli",
+      "exit": 1,
+      "tests": 26,
+      "pass": 8,
+      "fail": 18,
+      "limitation": "Existing host /tmp/.git protected-input rejection before transport; unchanged guards and assertions."
+    },
+    {
+      "command": "npm run check",
+      "exit": 1,
+      "limitation": "Stops at protected recovery CLI; prior stages pass. Final Workers rerun includes one added fresh-epoch test."
+    },
+    {
+      "command": "npm run check:runtime",
+      "exit": 0,
+      "sqlite_schema": 8,
+      "environment": "local-isolated-runtime"
+    },
+    {
+      "command": "PYTHONPATH=<task-local pinned dependencies> python -B scripts/validate_docs.py",
+      "exit": 0
+    },
+    {
+      "command": "python -B scripts/validate_plans.py",
+      "exit": 0
+    },
+    {
+      "command": "git diff --check",
+      "exit": 0
+    }
+  ],
+  "review": {
+    "independent": true,
+    "important_found": 2,
+    "important_fixed": 2,
+    "minor_found": 1,
+    "minor_fixed": 1,
+    "final_recheck": "All 26 source/test file SHA256 values match independent reviewed snapshot; 0 Critical / 0 Important / 0 Minor remaining.",
+    "source_digest": "85baf56cca14d14afe0631f7a6c62183922a64b8827e978b940d475d465786a9"
+  },
+  "publication": "Pending root predecessor reconciliation and action-time gate; no remote writes",
+  "recovery": "Schema8 operational recovery remains fail-closed pending #39/#43; historical schema7 checks are compatibility only"
+}
