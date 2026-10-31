@@ -1,4 +1,8 @@
-import {HttpTransport,failure,faultResult} from './transport';
+import {clientOperations} from '../../../src/http/generated/client-operations';
+import {prepareNativeOperation} from './native-request';
+import type {HttpOperationData} from '../../../src/http/dto';
+import type {BrowserReadOperation,RequestFor} from './types';
+import {HttpTransport,Deadline,ClientFault,failure,faultResult} from './transport';
 import type {ApiResult,HubClientOptions,Operation,OperationInputs,RequestOptions} from './types';
 import {
  validateAuthStartRequest,validateAuthLogoutRequest,validateAuthStartData,validateAuthSession,validateAuthLogoutData,validateProfileWriteRequest,validatePreferencesWriteRequest,
@@ -75,6 +79,24 @@ export class HubClient {
  constructor(workspaceId:string,options:HubClientOptions={}){
   if(!/^[a-zA-Z0-9_-]{1,128}$/.test(workspaceId))throw new Error('Invalid workspace ID');
   this.#workspaceId=workspaceId;this.#transport=new HttpTransport(options.fetch??globalThis.fetch.bind(globalThis));
+ }
+ /** Read-only cookie lane uses the same generated map, bounds and transport as native reads.
+  * A map entry is implementation support, not a current permission/capability assertion. */
+ async read<K extends BrowserReadOperation>(operation:K,input:RequestFor<K>,options:Pick<RequestOptions,'signal'>={}):Promise<ApiResult<HttpOperationData[K]>>{
+  const allowed:readonly string[]=['listTasks','getTask','getRun','listTaskResults','getArtifact','listEvents'];
+  if(!allowed.includes(operation))return failure('OPERATION_UNAVAILABLE','Operation unavailable in the browser read surface');
+  let prepared:ReturnType<typeof prepareNativeOperation>;
+  try{
+   if(!record(options)||Object.keys(options).some(key=>key!=='signal')||options.signal!==undefined&&!(options.signal instanceof AbortSignal))throw new ClientFault('INVALID_REQUEST');
+   // Base is validation-only; dispatch is exclusively root-relative, never this reserved origin.
+   prepared=prepareNativeOperation('https://browser.invalid',this.#workspaceId,operation,input);
+  }catch{return failure('INVALID_REQUEST','Invalid request');}
+  const contract=clientOperations[operation],deadline=new Deadline(30_000,options.signal);
+  try{
+   const response=await this.#transport.open(prepared.path+(prepared.queryCanonical?'?'+prepared.queryCanonical:''),{method:'GET',headers:{accept:'application/json'},credentials:'same-origin',mode:'same-origin',redirect:'error',cache:'no-store',signal:deadline.signal},deadline);
+   if(response.status===401||response.status===403)this.#csrfToken=null;
+   return await this.#transport.json<HttpOperationData[K]>(response,{page:contract.page,status:contract.status,validateEnvelope:contract.validateResponse,maxBytes:1048576,deadline});
+  }catch(error){return faultResult(error);}finally{deadline.dispose();}
  }
  /** Session-bound token stays in this object only; callers supply the /auth/session token. */
  setCsrfToken(token:string|null):void{

@@ -29,7 +29,7 @@ const rows=(storage:DurableObjectStorage,table:string)=>storage.sql.exec('SELECT
 describe('R2 schema8 actual Workers SQLite storage (no domain activation)',()=>{
  it('historical_schema8_still_matches_immutable_manifest_and_current_registry_adds_only_reviewed_reason_and_artifact_admission',async()=>{
   await runInDurableObject(stub('fresh'),async(_o,state)=>{
-   expect(withTransaction(state.storage,inspectRegistry).schemaVersion).toBe(15);
+   expect(withTransaction(state.storage,inspectRegistry).schemaVersion).toBe(16);
    expect(TABLE_REGISTRY.filter(t=>t.name!=='artifact_inventory_state').map(t=>({...t,columns:t.columns.filter(c=>!({task_history:['reason'],artifacts:['admission_generation','expiry_check_at'],artifact_generations:['artifact_version','upload_idempotency_sha256','cleanup_next_at','cleanup_error_code','delete_admission_epoch','delete_admission_generation']} as Record<string,string[]>)[t.name]?.includes(c.name))}))).toEqual(manifest.tables);
    await state.storage.deleteAll();migrate(state.storage,[...v7,{version:8,sql:m8}]);
    expect(schema(state.storage)).toEqual(manifest.sqlite_schema);
@@ -56,7 +56,7 @@ describe('R2 schema8 actual Workers SQLite storage (no domain activation)',()=>{
    expect(rows(state.storage,'workspace_metadata')).toEqual(before.workspace_metadata);
    expect(rows(state.storage,'maintenance_state')).toEqual(before.maintenance_state);
    for(const row of rows(state.storage,'static_agents'))expect(row).toMatchObject({origin:'operator_static',agent_version:1,description:'',work_role_ids_json:'[]',framework:null,model:null,created_at:before.workspace_metadata[0].installed_at});
-   expect(withTransaction(state.storage,inspectRegistry).schemaVersion).toBe(15);
+   expect(withTransaction(state.storage,inspectRegistry).schemaVersion).toBe(16);
   });
  });
  it('collision_rolls_back_schema_and_rows',async()=>{
@@ -82,7 +82,7 @@ describe('R2 schema8 actual Workers SQLite storage (no domain activation)',()=>{
   const before=await runInDurableObject(target,(_o,state)=>{migrate(state.storage);migrate(state.storage);return {schema:schema(state.storage),agents:rows(state.storage,'static_agents'),versions:rows(state.storage,'schema_migrations')};});
   await evictDurableObject(target);
   expect(await runInDurableObject(target,(_o,state)=>({schema:schema(state.storage),agents:rows(state.storage,'static_agents'),versions:rows(state.storage,'schema_migrations')}))).toEqual(before);
-  expect(before.versions).toHaveLength(15);
+  expect(before.versions).toHaveLength(16);
  });
 });
 
@@ -93,7 +93,7 @@ describe('R2 migration fault and static bootstrap compatibility',()=>{
    const before={schema:schema(state.storage),agents:rows(state.storage,'static_agents'),credentials:rows(state.storage,'native_credentials'),versions:rows(state.storage,'schema_migrations')};
    expect(()=>migrate(state.storage,[...v7,{version:8,sql:m8+" INSERT INTO missing_fault_table VALUES(1);"}])).toThrow();
    expect({schema:schema(state.storage),agents:rows(state.storage,'static_agents'),credentials:rows(state.storage,'native_credentials'),versions:rows(state.storage,'schema_migrations')}).toEqual(before);
-   migrate(state.storage);expect(rows(state.storage,'schema_migrations')).toHaveLength(15);
+   migrate(state.storage);expect(rows(state.storage,'schema_migrations')).toHaveLength(16);
   });
  });
  it('fresh_static_metadata_uses_trusted_install_time_without_changing_revocations',async()=>{
@@ -178,7 +178,7 @@ describe('R2 scoped constraints and transaction behavior',()=>{
  });
 });
 
-describe('current schema15 requires product capture binding and keeps restore closed before effects',()=>{
+describe('current schema16 requires product capture binding and keeps restore closed before effects',()=>{
  it('capture_and_restore_do_not_write_replay_maintenance_alarm_or_objects',async()=>{
   const {advanceCapture}=await import('../../src/recovery/capture');
   const {beginRestore}=await import('../../src/recovery/restore');
@@ -190,7 +190,7 @@ describe('current schema15 requires product capture binding and keeps restore cl
    const workspace:import('../../src/recovery/protocol').RecoveryWorkspace={storage:state.storage,bucket,workspaceId:'ws_example',objectName:'r2_migration_unavailable',environmentId:'synthetic_r2',clock:systemClock,entropy:systemEntropy,integrity:{keyId:'synthetic',key:btoa('a'.repeat(32))},release:{revision:'synthetic',worker_version:'synthetic',binding_ids:[],catalog_mapping:{workspace_id:'ws_example',object_name:'r2_migration_unavailable'}},repairSchedule:async()=>{throw Error('Unexpected scheduler effect');}};
    const context:import('../../src/recovery/protocol').RecoveryContext={principalId:'synthetic_operator',workspaceId:workspace.workspaceId,objectName:workspace.objectName,environmentId:workspace.environmentId,requestId:'request_unavailable',operationId:'operation_unavailable',operation:'capture',captureId:'capture_unavailable',expectedEpoch:1,expectedInstallationDigest:input.installationDigest,proofExpiresAt:Date.now()+120000,requestFingerprint:'a'.repeat(64),ledgerAnchor:null};
    const snapshot=()=>Object.fromEntries(TABLE_REGISTRY.map(t=>[t.name,rows(state.storage,t.name)])),before=snapshot(),alarm=await state.storage.getAlarm();
-   expect(withTransaction(state.storage,inspectRegistry).schemaVersion).toBe(15);
+   expect(withTransaction(state.storage,inspectRegistry).schemaVersion).toBe(16);
    await expect(advanceCapture(workspace,context,{max_rows:100,max_artifacts:0,max_total_bytes:100000})).rejects.toThrow('RECOVERY_ARTIFACT_BINDING_UNAVAILABLE');
    await expect(beginRestore(workspace,{...context,operation:'restore'},{} as never,{} as never)).rejects.toThrow('RECOVERY_FORMAT_UNAVAILABLE');
    await expect(recordProbe(workspace,{...context,operation:'probe',captureId:null})).rejects.toThrow('RECOVERY_FORMAT_UNAVAILABLE');

@@ -1,0 +1,619 @@
+{
+  "source": "277ba2ae04b9127b30fa0ce865318eb81d78b8e7 capture code, before schema16 edits",
+  "name": "frozen15_upgrade_fixture",
+  "release": {
+    "revision": "synthetic_schema15_source",
+    "worker_version": "synthetic_schema15_worker",
+    "binding_ids": [
+      "recovery_fixture",
+      "artifact_fixture"
+    ],
+    "catalog_mapping": {
+      "workspace_id": "ws_example",
+      "object_name": "frozen15_upgrade_fixture"
+    }
+  },
+  "environment": "capture_fixture",
+  "budget": {
+    "max_rows": 1000000,
+    "max_artifacts": 1000,
+    "max_total_bytes": 268435456
+  },
+  "drain": {
+    "tables": {
+      "schema_migrations": [
+        {
+          "version": 1,
+          "applied_at": 1793122620483
+        },
+        {
+          "version": 2,
+          "applied_at": 1793122620483
+        },
+        {
+          "version": 3,
+          "applied_at": 1793122620484
+        },
+        {
+          "version": 4,
+          "applied_at": 1793122620486
+        },
+        {
+          "version": 5,
+          "applied_at": 1793122620487
+        },
+        {
+          "version": 6,
+          "applied_at": 1793122620487
+        },
+        {
+          "version": 7,
+          "applied_at": 1793122620488
+        },
+        {
+          "version": 8,
+          "applied_at": 1793122620494
+        },
+        {
+          "version": 9,
+          "applied_at": 1793122620494
+        },
+        {
+          "version": 10,
+          "applied_at": 1793122620494
+        },
+        {
+          "version": 11,
+          "applied_at": 1793122620494
+        },
+        {
+          "version": 12,
+          "applied_at": 1793122620496
+        },
+        {
+          "version": 13,
+          "applied_at": 1793122620500
+        },
+        {
+          "version": 14,
+          "applied_at": 1793122620500
+        },
+        {
+          "version": 15,
+          "applied_at": 1793122620500
+        }
+      ],
+      "workspace_metadata": [
+        {
+          "id": 1,
+          "workspace_id": "ws_example",
+          "object_name": "frozen15_upgrade_fixture",
+          "config_epoch": 1,
+          "config_digest": "fe97c4a15990df1545f908520c02651732c11639010ff3e03c9eac0a3feaf326",
+          "installation_digest": "26e39ece3e7d0dd5453bbcd6b05e1c9e9eef48e5859295bc96e8c1a51fbbad27",
+          "config_json": "{\"authentication\":{\"allowed_origins\":[\"https://hub.example.invalid\"],\"audience\":\"cfhub-client\",\"client_id\":\"cfhub-client\",\"client_secret_ref\":\"OIDC_CLIENT_SECRET\",\"id_token_algorithms\":[\"RS256\"],\"issuer\":\"https://identity.example.invalid\",\"mode\":\"verified-oidc\",\"redirect_uris\":[{\"redirect_uri\":\"https://hub.example.invalid/v2/workspaces/ws_example/auth/callback\",\"workspace_id\":\"ws_example\"}],\"reviewed_oidc_endpoints\":{\"authorization_endpoint\":\"https://identity.example.invalid/authorize\",\"jwks_uri\":\"https://identity.example.invalid/jwks\",\"token_endpoint\":\"https://identity.example.invalid/token\"},\"session_ttl_seconds\":3600},\"config_epoch\":1,\"contract_revision\":\"0.2\",\"human_grants\":[{\"enabled\":true,\"issuer\":\"https://identity.example.invalid\",\"principal_id\":\"human_operator\",\"project_ids\":null,\"scopes\":[\"workspace:read\",\"messages:send\",\"messages:read\",\"messages:review\",\"events:read\",\"profile:edit\",\"operations:read\",\"tasks:read\",\"tasks:create\",\"tasks:edit\",\"tasks:schedule\",\"tasks:cancel\",\"artifacts:read\",\"artifacts:write\"],\"subject\":\"synthetic-subject\",\"workspace_id\":\"ws_example\"}],\"static_credential_refs\":[{\"agent_id\":\"agent_research\",\"credential_id\":\"credential_research_1\",\"enabled\":true,\"expires_at\":\"2026-11-26T17:37:00.469Z\",\"project_ids\":null,\"scopes\":[\"workspace:read\",\"events:read\",\"tasks:read\",\"tasks:claim\",\"tasks:execute\",\"runtimes:manage\",\"artifacts:read\",\"artifacts:write\"],\"workspace_id\":\"ws_example\"},{\"agent_id\":\"agent_research\",\"credential_id\":\"credential_research_2\",\"enabled\":true,\"expires_at\":\"2026-11-26T17:37:00.469Z\",\"project_ids\":null,\"scopes\":[\"workspace:read\",\"events:read\",\"tasks:read\",\"tasks:claim\",\"tasks:execute\",\"runtimes:manage\",\"artifacts:read\",\"artifacts:write\"],\"workspace_id\":\"ws_example\"},{\"agent_id\":\"agent_other\",\"credential_id\":\"credential_other\",\"enabled\":true,\"expires_at\":\"2026-11-26T17:37:00.469Z\",\"project_ids\":null,\"scopes\":[\"workspace:read\",\"events:read\",\"tasks:read\",\"tasks:claim\",\"tasks:execute\",\"runtimes:manage\",\"artifacts:read\",\"artifacts:write\"],\"workspace_id\":\"ws_example\"}],\"static_participants\":[{\"agent_id\":\"agent_research\",\"display_name\":\"Research participant\",\"workspace_id\":\"ws_example\"},{\"agent_id\":\"agent_other\",\"display_name\":\"Other synthetic agent\",\"workspace_id\":\"ws_example\"}],\"workspace_catalog\":[{\"object_name\":\"frozen15_upgrade_fixture\",\"workspace_id\":\"ws_example\"}],\"workspace_policies\":[{\"allowed_user_overrides\":[\"theme\",\"density\",\"default_view\"],\"execution_policy\":{\"agent_wip_limit\":2,\"artifact_upload_ttl_seconds\":900,\"eligibility_rules\":[{\"eligible_agent_ids\":[\"agent_research\",\"agent_other\"],\"project_id\":null,\"work_role_id\":null},{\"eligible_agent_ids\":[\"agent_research\",\"agent_other\"],\"project_id\":\"project_a\",\"work_role_id\":\"role_a\"}],\"policy_version\":1,\"replay_safety_rules\":[],\"task_retry_limit\":2},\"notification_destinations\":[{\"agent_id\":\"agent_research\",\"destination_id\":\"research\",\"enabled\":true,\"signing_key_ref\":\"NOTIFICATION_SIGNING_KEY\",\"url\":\"https://receiver.example.invalid/cfhub\"}],\"retry_after_max_seconds\":3600,\"workspace_id\":\"ws_example\"}]}",
+          "bundle_json": "{\"auth\":{\"algorithm\":\"HMAC-SHA256\",\"key_id\":\"synthetic_key\",\"tag\":\"0000000000000000000000000000000000000000000000000000000000000000\"},\"config_digest\":\"fe97c4a15990df1545f908520c02651732c11639010ff3e03c9eac0a3feaf326\",\"config_epoch\":1,\"contract_revision\":\"0.1\",\"credentials\":[{\"credential_id\":\"credential_research_1\",\"token_sha256\":\"1111111111111111111111111111111111111111111111111111111111111111\",\"workspace_id\":\"ws_example\"},{\"credential_id\":\"credential_research_2\",\"token_sha256\":\"2222222222222222222222222222222222222222222222222222222222222222\",\"workspace_id\":\"ws_example\"},{\"credential_id\":\"credential_other\",\"token_sha256\":\"3333333333333333333333333333333333333333333333333333333333333333\",\"workspace_id\":\"ws_example\"}],\"retired_credentials\":[]}",
+          "installed_at": 1793122620504,
+          "admission_state": "maintenance",
+          "message_retained_after_created_at": null,
+          "message_retained_after_id": null,
+          "event_retained_after_sequence": null
+        }
+      ],
+      "human_grants": [
+        {
+          "principal_id": "human_operator",
+          "workspace_id": "ws_example",
+          "issuer": "https://identity.example.invalid",
+          "subject": "synthetic-subject",
+          "scopes_json": "[\"workspace:read\",\"messages:send\",\"messages:read\",\"messages:review\",\"events:read\",\"profile:edit\",\"operations:read\",\"tasks:read\",\"tasks:create\",\"tasks:edit\",\"tasks:schedule\",\"tasks:cancel\",\"artifacts:read\",\"artifacts:write\"]",
+          "project_ids_json": "null",
+          "enabled": 1,
+          "config_epoch": 1
+        }
+      ],
+      "static_agents": [
+        {
+          "agent_id": "agent_research",
+          "workspace_id": "ws_example",
+          "display_name": "Research participant",
+          "config_epoch": 1,
+          "origin": "operator_static",
+          "agent_version": 1,
+          "description": "",
+          "work_role_ids_json": "[]",
+          "framework": null,
+          "model": null,
+          "status": "active",
+          "created_at": 1793122620504,
+          "updated_at": 1793122620504
+        },
+        {
+          "agent_id": "agent_other",
+          "workspace_id": "ws_example",
+          "display_name": "Other synthetic agent",
+          "config_epoch": 1,
+          "origin": "operator_static",
+          "agent_version": 1,
+          "description": "",
+          "work_role_ids_json": "[]",
+          "framework": null,
+          "model": null,
+          "status": "active",
+          "created_at": 1793122620504,
+          "updated_at": 1793122620504
+        }
+      ],
+      "native_credentials": [
+        {
+          "credential_id": "credential_research_1",
+          "workspace_id": "ws_example",
+          "agent_id": "agent_research",
+          "token_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+          "scopes_json": "[\"workspace:read\",\"events:read\",\"tasks:read\",\"tasks:claim\",\"tasks:execute\",\"runtimes:manage\",\"artifacts:read\",\"artifacts:write\"]",
+          "project_ids_json": "null",
+          "expires_at": 1795714620469,
+          "enabled": 1,
+          "config_epoch": 1,
+          "retired_at_epoch": null,
+          "origin": "operator_static",
+          "credential_version": 1,
+          "label": "",
+          "created_at": 1793122620504,
+          "revoked_at": null,
+          "issued_by_principal_id": null
+        },
+        {
+          "credential_id": "credential_research_2",
+          "workspace_id": "ws_example",
+          "agent_id": "agent_research",
+          "token_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+          "scopes_json": "[\"workspace:read\",\"events:read\",\"tasks:read\",\"tasks:claim\",\"tasks:execute\",\"runtimes:manage\",\"artifacts:read\",\"artifacts:write\"]",
+          "project_ids_json": "null",
+          "expires_at": 1795714620469,
+          "enabled": 1,
+          "config_epoch": 1,
+          "retired_at_epoch": null,
+          "origin": "operator_static",
+          "credential_version": 1,
+          "label": "",
+          "created_at": 1793122620504,
+          "revoked_at": null,
+          "issued_by_principal_id": null
+        },
+        {
+          "credential_id": "credential_other",
+          "workspace_id": "ws_example",
+          "agent_id": "agent_other",
+          "token_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+          "scopes_json": "[\"workspace:read\",\"events:read\",\"tasks:read\",\"tasks:claim\",\"tasks:execute\",\"runtimes:manage\",\"artifacts:read\",\"artifacts:write\"]",
+          "project_ids_json": "null",
+          "expires_at": 1795714620469,
+          "enabled": 1,
+          "config_epoch": 1,
+          "retired_at_epoch": null,
+          "origin": "operator_static",
+          "credential_version": 1,
+          "label": "",
+          "created_at": 1793122620504,
+          "revoked_at": null,
+          "issued_by_principal_id": null
+        }
+      ],
+      "login_attempts": [],
+      "sessions": [],
+      "profiles": [],
+      "preferences": [],
+      "threads": [],
+      "thread_participants": [],
+      "messages": [],
+      "inbox": [],
+      "events": [
+        {
+          "sequence": 1,
+          "id": "configuration_1",
+          "workspace_id": "ws_example",
+          "type": "configuration.installed",
+          "actor_json": "{\"agent_id\":null,\"kind\":\"system\",\"principal_id\":\"synthetic_operator\"}",
+          "resource_type": "configuration",
+          "resource_id": "ws_example",
+          "resource_version": 1,
+          "thread_id": null,
+          "request_id": "req_fixture",
+          "occurred_at": 1793122620504,
+          "summary": "Workspace configuration installed.",
+          "task_version": null,
+          "run_id": null,
+          "fence": null
+        }
+      ],
+      "idempotency_outcomes": [
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15",
+          "key": "close",
+          "workspace_id": "ws_example",
+          "fingerprint": "fa7869a58c18c59acdc7fdc550a3a17bb9e7f02a224e8691716a892d6a2e4807",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15\",\"counts\":{\"bytes\":0,\"chunks\":0,\"rows\":0},\"job_id\":\"job_bb6c3f39e6c50c5e23ad8af786501cdb1b19d3289ef71e98\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"capture_drain\",\"receipt\":null,\"state\":\"running\",\"step\":0,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_b4876b80-551c-4f67-baf4-eacf44113fe2",
+          "event_id": null,
+          "created_at": 1793122620521,
+          "expires_at": 9007199254740991
+        }
+      ],
+      "outbox": [],
+      "scheduler_state": [],
+      "maintenance_state": [
+        {
+          "id": 1,
+          "state": "capturing",
+          "barrier_id": "barrier_a0188ee25c2c816b13f71b82744dc30f",
+          "authority_epoch": 1,
+          "capture_id": "capture_frozen15",
+          "updated_at": 1793122620514,
+          "generation": 1
+        }
+      ],
+      "recovery_jobs": [
+        {
+          "id": "job_bb6c3f39e6c50c5e23ad8af786501cdb1b19d3289ef71e98",
+          "workspace_id": "ws_example",
+          "operation": "capture",
+          "state": "running",
+          "authority_epoch": 1,
+          "capture_id": "capture_frozen15",
+          "manifest_digest": null,
+          "created_at": 1793122620514,
+          "updated_at": 1793122620514,
+          "details_json": "{\"artifactBytes\":0,\"artifactIndex\":0,\"barrierId\":\"barrier_a0188ee25c2c816b13f71b82744dc30f\",\"budget\":{\"max_artifacts\":1000,\"max_rows\":1000000,\"max_total_bytes\":268435456},\"checkpoint\":null,\"counts\":{\"bytes\":0,\"chunks\":0,\"rows\":0},\"cursor\":null,\"diagnostic\":null,\"draft\":null,\"fence\":{\"authorityEpoch\":1,\"maintenanceGeneration\":1},\"integrityKeyId\":\"recovery_fixture\",\"manifest\":null,\"pending\":null,\"pendingArtifact\":null,\"phase\":\"capture_drain\",\"receipt\":null,\"sourceMaintenance\":null,\"sqlBytes\":0,\"step\":0,\"tableIndex\":0,\"version\":2}"
+        }
+      ],
+      "recovery_chunks": [],
+      "probe_receipts": [],
+      "runtimes": [],
+      "tasks": [],
+      "runs": [],
+      "task_results": [],
+      "task_acceptances": [],
+      "task_history": [],
+      "artifacts": [],
+      "artifact_generations": [],
+      "result_artifacts": [],
+      "artifact_associations": [],
+      "message_artifacts": [],
+      "catalog_plans": [],
+      "import_plans": [],
+      "import_mappings": [],
+      "artifact_inventory_state": []
+    },
+    "sequence": [
+      {
+        "name": "events",
+        "seq": 1
+      }
+    ],
+    "objects": []
+  },
+  "pages": {
+    "tables": {
+      "schema_migrations": [
+        {
+          "version": 1,
+          "applied_at": 1793122620483
+        },
+        {
+          "version": 2,
+          "applied_at": 1793122620483
+        },
+        {
+          "version": 3,
+          "applied_at": 1793122620484
+        },
+        {
+          "version": 4,
+          "applied_at": 1793122620486
+        },
+        {
+          "version": 5,
+          "applied_at": 1793122620487
+        },
+        {
+          "version": 6,
+          "applied_at": 1793122620487
+        },
+        {
+          "version": 7,
+          "applied_at": 1793122620488
+        },
+        {
+          "version": 8,
+          "applied_at": 1793122620494
+        },
+        {
+          "version": 9,
+          "applied_at": 1793122620494
+        },
+        {
+          "version": 10,
+          "applied_at": 1793122620494
+        },
+        {
+          "version": 11,
+          "applied_at": 1793122620494
+        },
+        {
+          "version": 12,
+          "applied_at": 1793122620496
+        },
+        {
+          "version": 13,
+          "applied_at": 1793122620500
+        },
+        {
+          "version": 14,
+          "applied_at": 1793122620500
+        },
+        {
+          "version": 15,
+          "applied_at": 1793122620500
+        }
+      ],
+      "workspace_metadata": [
+        {
+          "id": 1,
+          "workspace_id": "ws_example",
+          "object_name": "frozen15_upgrade_fixture",
+          "config_epoch": 1,
+          "config_digest": "fe97c4a15990df1545f908520c02651732c11639010ff3e03c9eac0a3feaf326",
+          "installation_digest": "26e39ece3e7d0dd5453bbcd6b05e1c9e9eef48e5859295bc96e8c1a51fbbad27",
+          "config_json": "{\"authentication\":{\"allowed_origins\":[\"https://hub.example.invalid\"],\"audience\":\"cfhub-client\",\"client_id\":\"cfhub-client\",\"client_secret_ref\":\"OIDC_CLIENT_SECRET\",\"id_token_algorithms\":[\"RS256\"],\"issuer\":\"https://identity.example.invalid\",\"mode\":\"verified-oidc\",\"redirect_uris\":[{\"redirect_uri\":\"https://hub.example.invalid/v2/workspaces/ws_example/auth/callback\",\"workspace_id\":\"ws_example\"}],\"reviewed_oidc_endpoints\":{\"authorization_endpoint\":\"https://identity.example.invalid/authorize\",\"jwks_uri\":\"https://identity.example.invalid/jwks\",\"token_endpoint\":\"https://identity.example.invalid/token\"},\"session_ttl_seconds\":3600},\"config_epoch\":1,\"contract_revision\":\"0.2\",\"human_grants\":[{\"enabled\":true,\"issuer\":\"https://identity.example.invalid\",\"principal_id\":\"human_operator\",\"project_ids\":null,\"scopes\":[\"workspace:read\",\"messages:send\",\"messages:read\",\"messages:review\",\"events:read\",\"profile:edit\",\"operations:read\",\"tasks:read\",\"tasks:create\",\"tasks:edit\",\"tasks:schedule\",\"tasks:cancel\",\"artifacts:read\",\"artifacts:write\"],\"subject\":\"synthetic-subject\",\"workspace_id\":\"ws_example\"}],\"static_credential_refs\":[{\"agent_id\":\"agent_research\",\"credential_id\":\"credential_research_1\",\"enabled\":true,\"expires_at\":\"2026-11-26T17:37:00.469Z\",\"project_ids\":null,\"scopes\":[\"workspace:read\",\"events:read\",\"tasks:read\",\"tasks:claim\",\"tasks:execute\",\"runtimes:manage\",\"artifacts:read\",\"artifacts:write\"],\"workspace_id\":\"ws_example\"},{\"agent_id\":\"agent_research\",\"credential_id\":\"credential_research_2\",\"enabled\":true,\"expires_at\":\"2026-11-26T17:37:00.469Z\",\"project_ids\":null,\"scopes\":[\"workspace:read\",\"events:read\",\"tasks:read\",\"tasks:claim\",\"tasks:execute\",\"runtimes:manage\",\"artifacts:read\",\"artifacts:write\"],\"workspace_id\":\"ws_example\"},{\"agent_id\":\"agent_other\",\"credential_id\":\"credential_other\",\"enabled\":true,\"expires_at\":\"2026-11-26T17:37:00.469Z\",\"project_ids\":null,\"scopes\":[\"workspace:read\",\"events:read\",\"tasks:read\",\"tasks:claim\",\"tasks:execute\",\"runtimes:manage\",\"artifacts:read\",\"artifacts:write\"],\"workspace_id\":\"ws_example\"}],\"static_participants\":[{\"agent_id\":\"agent_research\",\"display_name\":\"Research participant\",\"workspace_id\":\"ws_example\"},{\"agent_id\":\"agent_other\",\"display_name\":\"Other synthetic agent\",\"workspace_id\":\"ws_example\"}],\"workspace_catalog\":[{\"object_name\":\"frozen15_upgrade_fixture\",\"workspace_id\":\"ws_example\"}],\"workspace_policies\":[{\"allowed_user_overrides\":[\"theme\",\"density\",\"default_view\"],\"execution_policy\":{\"agent_wip_limit\":2,\"artifact_upload_ttl_seconds\":900,\"eligibility_rules\":[{\"eligible_agent_ids\":[\"agent_research\",\"agent_other\"],\"project_id\":null,\"work_role_id\":null},{\"eligible_agent_ids\":[\"agent_research\",\"agent_other\"],\"project_id\":\"project_a\",\"work_role_id\":\"role_a\"}],\"policy_version\":1,\"replay_safety_rules\":[],\"task_retry_limit\":2},\"notification_destinations\":[{\"agent_id\":\"agent_research\",\"destination_id\":\"research\",\"enabled\":true,\"signing_key_ref\":\"NOTIFICATION_SIGNING_KEY\",\"url\":\"https://receiver.example.invalid/cfhub\"}],\"retry_after_max_seconds\":3600,\"workspace_id\":\"ws_example\"}]}",
+          "bundle_json": "{\"auth\":{\"algorithm\":\"HMAC-SHA256\",\"key_id\":\"synthetic_key\",\"tag\":\"0000000000000000000000000000000000000000000000000000000000000000\"},\"config_digest\":\"fe97c4a15990df1545f908520c02651732c11639010ff3e03c9eac0a3feaf326\",\"config_epoch\":1,\"contract_revision\":\"0.1\",\"credentials\":[{\"credential_id\":\"credential_research_1\",\"token_sha256\":\"1111111111111111111111111111111111111111111111111111111111111111\",\"workspace_id\":\"ws_example\"},{\"credential_id\":\"credential_research_2\",\"token_sha256\":\"2222222222222222222222222222222222222222222222222222222222222222\",\"workspace_id\":\"ws_example\"},{\"credential_id\":\"credential_other\",\"token_sha256\":\"3333333333333333333333333333333333333333333333333333333333333333\",\"workspace_id\":\"ws_example\"}],\"retired_credentials\":[]}",
+          "installed_at": 1793122620504,
+          "admission_state": "maintenance",
+          "message_retained_after_created_at": null,
+          "message_retained_after_id": null,
+          "event_retained_after_sequence": null
+        }
+      ],
+      "human_grants": [
+        {
+          "principal_id": "human_operator",
+          "workspace_id": "ws_example",
+          "issuer": "https://identity.example.invalid",
+          "subject": "synthetic-subject",
+          "scopes_json": "[\"workspace:read\",\"messages:send\",\"messages:read\",\"messages:review\",\"events:read\",\"profile:edit\",\"operations:read\",\"tasks:read\",\"tasks:create\",\"tasks:edit\",\"tasks:schedule\",\"tasks:cancel\",\"artifacts:read\",\"artifacts:write\"]",
+          "project_ids_json": "null",
+          "enabled": 1,
+          "config_epoch": 1
+        }
+      ],
+      "static_agents": [
+        {
+          "agent_id": "agent_research",
+          "workspace_id": "ws_example",
+          "display_name": "Research participant",
+          "config_epoch": 1,
+          "origin": "operator_static",
+          "agent_version": 1,
+          "description": "",
+          "work_role_ids_json": "[]",
+          "framework": null,
+          "model": null,
+          "status": "active",
+          "created_at": 1793122620504,
+          "updated_at": 1793122620504
+        },
+        {
+          "agent_id": "agent_other",
+          "workspace_id": "ws_example",
+          "display_name": "Other synthetic agent",
+          "config_epoch": 1,
+          "origin": "operator_static",
+          "agent_version": 1,
+          "description": "",
+          "work_role_ids_json": "[]",
+          "framework": null,
+          "model": null,
+          "status": "active",
+          "created_at": 1793122620504,
+          "updated_at": 1793122620504
+        }
+      ],
+      "native_credentials": [
+        {
+          "credential_id": "credential_research_1",
+          "workspace_id": "ws_example",
+          "agent_id": "agent_research",
+          "token_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+          "scopes_json": "[\"workspace:read\",\"events:read\",\"tasks:read\",\"tasks:claim\",\"tasks:execute\",\"runtimes:manage\",\"artifacts:read\",\"artifacts:write\"]",
+          "project_ids_json": "null",
+          "expires_at": 1795714620469,
+          "enabled": 1,
+          "config_epoch": 1,
+          "retired_at_epoch": null,
+          "origin": "operator_static",
+          "credential_version": 1,
+          "label": "",
+          "created_at": 1793122620504,
+          "revoked_at": null,
+          "issued_by_principal_id": null
+        },
+        {
+          "credential_id": "credential_research_2",
+          "workspace_id": "ws_example",
+          "agent_id": "agent_research",
+          "token_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+          "scopes_json": "[\"workspace:read\",\"events:read\",\"tasks:read\",\"tasks:claim\",\"tasks:execute\",\"runtimes:manage\",\"artifacts:read\",\"artifacts:write\"]",
+          "project_ids_json": "null",
+          "expires_at": 1795714620469,
+          "enabled": 1,
+          "config_epoch": 1,
+          "retired_at_epoch": null,
+          "origin": "operator_static",
+          "credential_version": 1,
+          "label": "",
+          "created_at": 1793122620504,
+          "revoked_at": null,
+          "issued_by_principal_id": null
+        },
+        {
+          "credential_id": "credential_other",
+          "workspace_id": "ws_example",
+          "agent_id": "agent_other",
+          "token_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+          "scopes_json": "[\"workspace:read\",\"events:read\",\"tasks:read\",\"tasks:claim\",\"tasks:execute\",\"runtimes:manage\",\"artifacts:read\",\"artifacts:write\"]",
+          "project_ids_json": "null",
+          "expires_at": 1795714620469,
+          "enabled": 1,
+          "config_epoch": 1,
+          "retired_at_epoch": null,
+          "origin": "operator_static",
+          "credential_version": 1,
+          "label": "",
+          "created_at": 1793122620504,
+          "revoked_at": null,
+          "issued_by_principal_id": null
+        }
+      ],
+      "login_attempts": [],
+      "sessions": [],
+      "profiles": [],
+      "preferences": [],
+      "threads": [],
+      "thread_participants": [],
+      "messages": [],
+      "inbox": [],
+      "events": [
+        {
+          "sequence": 1,
+          "id": "configuration_1",
+          "workspace_id": "ws_example",
+          "type": "configuration.installed",
+          "actor_json": "{\"agent_id\":null,\"kind\":\"system\",\"principal_id\":\"synthetic_operator\"}",
+          "resource_type": "configuration",
+          "resource_id": "ws_example",
+          "resource_version": 1,
+          "thread_id": null,
+          "request_id": "req_fixture",
+          "occurred_at": 1793122620504,
+          "summary": "Workspace configuration installed.",
+          "task_version": null,
+          "run_id": null,
+          "fence": null
+        }
+      ],
+      "idempotency_outcomes": [
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15",
+          "key": "close",
+          "workspace_id": "ws_example",
+          "fingerprint": "fa7869a58c18c59acdc7fdc550a3a17bb9e7f02a224e8691716a892d6a2e4807",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15\",\"counts\":{\"bytes\":0,\"chunks\":0,\"rows\":0},\"job_id\":\"job_bb6c3f39e6c50c5e23ad8af786501cdb1b19d3289ef71e98\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"capture_drain\",\"receipt\":null,\"state\":\"running\",\"step\":0,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_b4876b80-551c-4f67-baf4-eacf44113fe2",
+          "event_id": null,
+          "created_at": 1793122620521,
+          "expires_at": 9007199254740991
+        },
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15",
+          "key": "checkpoint",
+          "workspace_id": "ws_example",
+          "fingerprint": "cb54221ac9d6b7e102ac902775cd7952d5fe6bcffdeec9bb7db45c28fbec5296",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15\",\"counts\":{\"bytes\":0,\"chunks\":0,\"rows\":0},\"job_id\":\"job_bb6c3f39e6c50c5e23ad8af786501cdb1b19d3289ef71e98\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"capture_pages\",\"receipt\":null,\"state\":\"running\",\"step\":1,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_e6919a39-2f8a-4e72-886b-e0705c082b9a",
+          "event_id": null,
+          "created_at": 1793122620534,
+          "expires_at": 9007199254740991
+        },
+        {
+          "principal_id": "operator_fixture",
+          "operation": "operator.recovery.capture",
+          "target": "recovery:capture_frozen15",
+          "key": "first_page",
+          "workspace_id": "ws_example",
+          "fingerprint": "a53229e3b12845c47d64427f51b9f1f6ced381c9a82ef0f82e6e32c4d5f46646",
+          "status": 200,
+          "outcome_json": "{\"authority_epoch\":1,\"capture_id\":\"capture_frozen15\",\"counts\":{\"bytes\":430,\"chunks\":1,\"rows\":15},\"job_id\":\"job_bb6c3f39e6c50c5e23ad8af786501cdb1b19d3289ef71e98\",\"manifest\":null,\"next_chunk_index\":null,\"next_operation\":\"capture\",\"operation\":\"capture\",\"pending_operation_id\":null,\"phase\":\"capture_pages\",\"receipt\":null,\"state\":\"running\",\"step\":2,\"workspace_id\":\"ws_example\"}",
+          "original_request_id": "request_a5878e55-51fb-469b-8759-970eacf92fd7",
+          "event_id": null,
+          "created_at": 1793122620559,
+          "expires_at": 9007199254740991
+        }
+      ],
+      "outbox": [],
+      "scheduler_state": [],
+      "maintenance_state": [
+        {
+          "id": 1,
+          "state": "capturing",
+          "barrier_id": "barrier_a0188ee25c2c816b13f71b82744dc30f",
+          "authority_epoch": 1,
+          "capture_id": "capture_frozen15",
+          "updated_at": 1793122620514,
+          "generation": 1
+        }
+      ],
+      "recovery_jobs": [
+        {
+          "id": "job_bb6c3f39e6c50c5e23ad8af786501cdb1b19d3289ef71e98",
+          "workspace_id": "ws_example",
+          "operation": "capture",
+          "state": "running",
+          "authority_epoch": 1,
+          "capture_id": "capture_frozen15",
+          "manifest_digest": null,
+          "created_at": 1793122620514,
+          "updated_at": 1793122620559,
+          "details_json": "{\"artifactBytes\":0,\"artifactIndex\":0,\"barrierId\":\"barrier_a0188ee25c2c816b13f71b82744dc30f\",\"budget\":{\"max_artifacts\":1000,\"max_rows\":1000000,\"max_total_bytes\":268435456},\"checkpoint\":{\"authority_epoch\":1,\"barrier_id\":\"barrier_a0188ee25c2c816b13f71b82744dc30f\",\"contract_revision\":\"0.2\",\"event_sequence\":1,\"schema_version\":15},\"counts\":{\"bytes\":430,\"chunks\":1,\"rows\":15},\"cursor\":[15],\"diagnostic\":null,\"draft\":{\"artifacts\":[],\"auth\":{\"algorithm\":\"HMAC-SHA256\",\"key_id\":\"recovery_fixture\",\"tag\":\"0000000000000000000000000000000000000000000000000000000000000000\"},\"capture_id\":\"capture_frozen15\",\"checkpoint\":{\"authority_epoch\":1,\"barrier_id\":\"barrier_a0188ee25c2c816b13f71b82744dc30f\",\"contract_revision\":\"0.2\",\"event_sequence\":1,\"schema_version\":15},\"database\":{\"byte_size\":430,\"chunks\":[{\"byte_size\":430,\"index\":0,\"row_count\":15,\"sha256\":\"9e899b47478c6a6bf09f719e3d34e0bebb92c595a46786b5912387cb7bca427f\",\"table\":\"schema_migrations\"}],\"sha256\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"table_counts\":{\"artifact_associations\":0,\"artifact_generations\":0,\"artifact_inventory_state\":0,\"artifacts\":0,\"catalog_plans\":0,\"events\":1,\"human_grants\":1,\"idempotency_outcomes\":0,\"import_mappings\":0,\"import_plans\":0,\"inbox\":0,\"login_attempts\":0,\"maintenance_state\":1,\"message_artifacts\":0,\"messages\":0,\"native_credentials\":3,\"outbox\":0,\"preferences\":0,\"probe_receipts\":0,\"profiles\":0,\"recovery_chunks\":0,\"recovery_jobs\":0,\"result_artifacts\":0,\"runs\":0,\"runtimes\":0,\"scheduler_state\":0,\"schema_migrations\":15,\"sessions\":0,\"static_agents\":2,\"task_acceptances\":0,\"task_history\":0,\"task_results\":0,\"tasks\":0,\"thread_participants\":0,\"threads\":0,\"workspace_metadata\":1}},\"ended_at\":\"2026-10-27T17:37:00.528Z\",\"environment_id\":\"capture_fixture\",\"format_version\":2,\"release\":{\"binding_ids\":[\"recovery_fixture\",\"artifact_fixture\"],\"catalog_mapping\":{\"object_name\":\"frozen15_upgrade_fixture\",\"workspace_id\":\"ws_example\"},\"revision\":\"synthetic_schema15_source\",\"worker_version\":\"synthetic_schema15_worker\"},\"started_at\":\"2026-10-27T17:37:00.514Z\",\"unfinished_artifact_ids\":[],\"workspace_id\":\"ws_example\"},\"fence\":{\"authorityEpoch\":1,\"maintenanceGeneration\":1},\"integrityKeyId\":\"recovery_fixture\",\"manifest\":null,\"pending\":null,\"pendingArtifact\":null,\"phase\":\"capture_pages\",\"receipt\":null,\"sourceMaintenance\":[1,\"capturing\",\"barrier_a0188ee25c2c816b13f71b82744dc30f\",1,\"capture_frozen15\",1793122620514,1],\"sqlBytes\":430,\"step\":2,\"tableIndex\":0,\"version\":2}"
+        }
+      ],
+      "recovery_chunks": [
+        {
+          "job_id": "job_bb6c3f39e6c50c5e23ad8af786501cdb1b19d3289ef71e98",
+          "chunk_index": 0,
+          "table_name": "schema_migrations",
+          "sha256": "9e899b47478c6a6bf09f719e3d34e0bebb92c595a46786b5912387cb7bca427f",
+          "byte_size": 430,
+          "row_count": 15,
+          "object_key": "r2/ws_example/job_bb6c3f39e6c50c5e23ad8af786501cdb1b19d3289ef71e98/0/9e899b47478c6a6bf09f719e3d34e0bebb92c595a46786b5912387cb7bca427f.json"
+        }
+      ],
+      "probe_receipts": [],
+      "runtimes": [],
+      "tasks": [],
+      "runs": [],
+      "task_results": [],
+      "task_acceptances": [],
+      "task_history": [],
+      "artifacts": [],
+      "artifact_generations": [],
+      "result_artifacts": [],
+      "artifact_associations": [],
+      "message_artifacts": [],
+      "catalog_plans": [],
+      "import_plans": [],
+      "import_mappings": [],
+      "artifact_inventory_state": []
+    },
+    "sequence": [
+      {
+        "name": "events",
+        "seq": 1
+      }
+    ],
+    "objects": [
+      {
+        "key": "r2/ws_example/job_bb6c3f39e6c50c5e23ad8af786501cdb1b19d3289ef71e98/0/9e899b47478c6a6bf09f719e3d34e0bebb92c595a46786b5912387cb7bca427f.json",
+        "body": "{\"capture_id\":\"capture_frozen15\",\"columns\":[\"version\",\"applied_at\"],\"format_version\":2,\"index\":0,\"rows\":[[1,1793122620483],[2,1793122620483],[3,1793122620484],[4,1793122620486],[5,1793122620487],[6,1793122620487],[7,1793122620488],[8,1793122620494],[9,1793122620494],[10,1793122620494],[11,1793122620494],[12,1793122620496],[13,1793122620500],[14,1793122620500],[15,1793122620500]],\"schema_version\":15,\"table\":\"schema_migrations\"}"
+      }
+    ]
+  }
+}

@@ -23,11 +23,14 @@ export function preferenceView(tx:WorkspaceTransaction,actor:ActorContext,prefer
  const {policy}=settingsPolicy(tx,live),effective=structuredClone(neutralPreferences);
  for(const field of policy.allowed_user_overrides)effective[field]=preferences[field] as never;
  // Profile navigation is presentation only, but an invisible default must not be selected.
- // R1 has no human inbox or task engine; Overview is the deterministic safe fallback.
+ // Human inbox and later-round views remain unavailable; Overview is the safe fallback.
  const visibleViews=new Set(storedProfile(tx,live).profile.navigation.visible_views);
- const available=(view:UserPreferences['default_view'])=>view==='overview'||view==='activity'&&live.scopes.has('events:read')&&visibleViews.has('activity');
- if(!available(effective.default_view))effective.default_view='overview';
- const reason=effective.default_view===preferences.default_view?null:!policy.allowed_user_overrides.includes('default_view')?'PREFERENCE_NOT_ALLOWED':'VIEW_UNAVAILABLE';
+ const requested=effective.default_view;
+ const board=(requested==='tasks'||requested==='kanban')&&live.scopes.has('tasks:read')&&(visibleViews.has('tasks')||visibleViews.has('kanban'));
+ const available=requested==='overview'||requested==='activity'&&live.scopes.has('events:read')&&visibleViews.has('activity')||board;
+ if(!available)effective.default_view='overview';else if(board)effective.default_view='tasks';
+ const acceptedAlias=board&&requested===preferences.default_view;
+ const reason=effective.default_view===preferences.default_view||acceptedAlias?null:!policy.allowed_user_overrides.includes('default_view')?'PREFERENCE_NOT_ALLOWED':'VIEW_UNAVAILABLE';
  return {preferences_revision:revision,preferences,effective,allowed_user_overrides:[...policy.allowed_user_overrides],default_view_fallback_reason:reason};
 }
 export function readPreferences(tx:WorkspaceTransaction,actor:ActorContext,nowMs=Date.now()):PreferencesData{

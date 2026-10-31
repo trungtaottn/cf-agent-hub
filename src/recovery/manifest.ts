@@ -19,7 +19,7 @@ export async function verifyRecord(value:Authenticated,integrity:RecoveryIntegri
 }
 export function validateManifestShape(value:unknown):asserts value is RecoveryManifest {
  if(!validateRecoveryManifest(value)||canonicalBytes(value).length>CONTROL_LIMIT)throw Error('INVALID_RECOVERY_MANIFEST');
- const m=value,current=m.format_version===2&&m.checkpoint.contract_revision==='0.2';if((current?m.checkpoint.schema_version!==15:m.checkpoint.schema_version!==7||m.checkpoint.contract_revision!=='0.1')||m.release.catalog_mapping.workspace_id!==m.workspace_id||Date.parse(m.started_at)>Date.parse(m.ended_at)||(m.format_version===1&&(m.artifacts.length>0||m.unfinished_artifact_ids.length>0)))throw Error('RECOVERY_MANIFEST_MISMATCH');
+ const m=value,current=m.format_version===2&&m.checkpoint.contract_revision==='0.2';if((current?m.checkpoint.schema_version!==15&&m.checkpoint.schema_version!==16:m.checkpoint.schema_version!==7||m.checkpoint.contract_revision!=='0.1')||m.release.catalog_mapping.workspace_id!==m.workspace_id||Date.parse(m.started_at)>Date.parse(m.ended_at)||(m.format_version===1&&(m.artifacts.length>0||m.unfinished_artifact_ids.length>0)))throw Error('RECOVERY_MANIFEST_MISMATCH');
  if(m.format_version===2){
   const ids=new Set<string>(),objects=new Set<string>(),recovery=new Set<string>(),generations=new Set<string>();let artifactBytes=0;
   for(const entry of m.artifacts){
@@ -36,7 +36,7 @@ export function validateManifestShape(value:unknown):asserts value is RecoveryMa
  const totals=new Map(names.map(name=>[name,0]));let totalBytes=0,last=-1;
  if(m.database.chunks.length>CHUNK_COUNT)throw Error('RECOVERY_CHUNK_LIMIT');
  m.database.chunks.forEach((entry,i)=>{const index=names.indexOf(entry.table);if(entry.index!==i||index<last||index<0||entry.row_count<1||entry.row_count>200||entry.byte_size<1||entry.byte_size>CHUNK_LIMIT)throw Error('RECOVERY_MANIFEST_CHUNKS');last=index;totalBytes+=entry.byte_size;totals.set(entry.table,totals.get(entry.table)!+entry.row_count);});
- if(totalBytes!==m.database.byte_size||names.some(n=>totals.get(n)!==counts[n])||m.database.table_counts.schema_migrations!==(current?15:7)||m.database.table_counts.workspace_metadata!==1||m.database.table_counts.maintenance_state!==1)throw Error('RECOVERY_MANIFEST_COUNTS');
+ if(totalBytes!==m.database.byte_size||names.some(n=>totals.get(n)!==counts[n])||m.database.table_counts.schema_migrations!==(current?m.checkpoint.schema_version:7)||m.database.table_counts.workspace_metadata!==1||m.database.table_counts.maintenance_state!==1)throw Error('RECOVERY_MANIFEST_COUNTS');
 }
 export async function verifyManifest(value:unknown,integrity:RecoveryIntegrity):Promise<Extract<RecoveryManifest,{format_version:1}>>{validateManifestShape(value);if(value.format_version!==1)throw Error('RECOVERY_FORMAT_UNAVAILABLE');await verifyRecord(value,integrity);return structuredClone(value);}
 export interface VerifiedLedger {ledger:CurrentLedger;input:ValidatedBootstrap;digest:string;}

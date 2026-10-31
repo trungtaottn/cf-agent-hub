@@ -16,7 +16,7 @@ const errorText=(result:Exclude<ApiResult<unknown>,{ok:true}>):string=>
 const readStatuses:Record<ReadState<unknown>['status'],string>={
  loading:'Loading — waiting for an authenticated response',ready:'Current response',empty:'Successful empty response',
  stale:'Stale — showing the last successful observation',forbidden:'Access denied — current authority is required',
- error:'Read failed — no successful result is available',disconnected:'Disconnected — no cached observation is available'
+ error:'Read failed — no successful result is available',disconnected:'Disconnected — no cached observation is available',unavailable:'Unavailable — no authorized resource or supported capability'
 };
 function renderReadEvidence<T>(element:HTMLElement,state:Readonly<ReadState<T>>,source:string):void{
  element.dataset.status=state.status;
@@ -69,7 +69,7 @@ export class SettingsPanel{
   const fieldset=el('fieldset'),theme=select(['system','light','dark'],data.preferences.theme),density=select(['comfortable','compact'],data.preferences.density),view=select(['overview','inbox','activity','tasks','kanban','agents','approvals'],data.preferences.default_view);
   const policy=el('p',undefined,{'data-testid':'preference-policy',class:'muted'});
   const policyText=()=>{
-   policy.textContent='Allowed overrides: '+(data.allowed_user_overrides.join(', ')||'None')+'.'+(data.default_view_fallback_reason?' Default view falls back to '+data.effective.default_view+' ('+data.default_view_fallback_reason+').':' Agent inbox and R2–R4 views remain unavailable to humans in R1.');
+   policy.textContent='Allowed overrides: '+(data.allowed_user_overrides.join(', ')||'None')+'.'+(data.default_view_fallback_reason?' Default view falls back to '+data.effective.default_view+' ('+data.default_view_fallback_reason+').':' Task board availability follows current task-read scope and visible profile views; agent inbox and later-round views remain unavailable.');
    for(const [name,node]of [['theme',theme],['density',density],['default_view',view]] as const)node.disabled=!data.allowed_user_overrides.includes(name);
   };
   policyText();

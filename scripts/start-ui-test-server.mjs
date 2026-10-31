@@ -22,11 +22,11 @@ try {
  buildDirectory=await mkdtemp(resolve('.superpowers/tmp/ui-build-'));
  const modulePath=join(buildDirectory,'fixture.mjs');
  await build({
-  stdin:{contents:`export * from './test/helpers/https-oidc-provider.ts'; export * from './test/helpers/environment.ts'; export * from './src/config/bootstrap.ts';`,resolveDir:process.cwd()},
+  stdin:{contents:`export * from './test/helpers/https-oidc-provider.ts'; export * from './test/helpers/environment.ts'; export * from './src/config/bootstrap.ts'; export * from './test/helpers/r2-ui-fixture.ts';`,resolveDir:process.cwd()},
   outfile:modulePath,bundle:true,platform:'node',format:'esm',packages:'external',logLevel:'silent'
  });
- const {startHttpsFixture,APP_ORIGIN,ISSUER_ORIGIN,fixture:configurationFixture,operator,prepareBootstrap,sha256,canonicalJson}=await import(pathToFileURL(modulePath).href);
- let worker,currentName='ui-fixture',dropPreferencesResponse=false,control=async(_action)=>{throw Error('FIXTURE_NOT_READY');};
+ const {startHttpsFixture,APP_ORIGIN,ISSUER_ORIGIN,fixture:configurationFixture,operator,prepareBootstrap,sha256,canonicalJson,configureR2UiFixture,seedR2UiFixture}=await import(pathToFileURL(modulePath).href);
+ let worker,r2Fixture=null,currentName='ui-fixture',dropPreferencesResponse=false,control=async(_action)=>{throw Error('FIXTURE_NOT_READY');};
  const providerClientSecret=randomBytes(32).toString('base64url'),csrfSecret=randomBytes(32).toString('base64url'),cursorSecret=randomBytes(32).toString('hex');
  fixture=await startHttpsFixture({fetch:async(input,init)=>{
   const request=new Request(input,init),url=new URL(request.url);
@@ -40,7 +40,7 @@ try {
    if(response.ok){await response.arrayBuffer();throw Error('FIXTURE_DROP_COMMITTED_RESPONSE');}
   }
   return response;
- }},{clientSecret:providerClientSecret,subjects:['synthetic-subject','restricted-subject']});
+ }},{clientSecret:providerClientSecret,subjects:['synthetic-subject','restricted-subject','tasks-only-subject']});
  globalThis.fetch=fixture.dispatch;
  const probePath=join(buildDirectory,'egress-probe.mjs');
  await writeFile(probePath,"export default {async fetch(request){try{return await fetch(request);}catch{return new Response(null,{status:599,headers:{'x-fixture-egress-denied':'1'}});}}};\n");
@@ -54,11 +54,12 @@ try {
  input.config.human_grants[0].issuer=ISSUER_ORIGIN;
  input.config.human_grants.push({...structuredClone(input.config.human_grants[0]),principal_id:'human_restricted',subject:'restricted-subject',scopes:['workspace:read','events:read'],project_ids:[]});
  input.config.static_credential_refs[0].expires_at=new Date(Date.now()+30*86400000).toISOString();
- input.bundle.credentials[0].token_sha256=await sha256(randomBytes(32).toString('base64url'));
+ const fixtureNativeToken=randomBytes(32).toString('base64url');
+ input.bundle.credentials[0].token_sha256=await sha256(fixtureNativeToken);
  input.bundle.config_digest=await sha256(canonicalJson(input.config));
  const {auth:_,...unsigned}=input.bundle;
  input.bundle.auth.tag=createHmac('sha256',randomBytes(32)).update(canonicalJson(unsigned)).digest('hex');
- const baselinePolicy=structuredClone(input.config.workspace_policies[0]);
+ const baselineConfig=structuredClone(input.config);
  const prepared=await prepareBootstrap(input.config,input.bundle,'ws_example');
  const harnessOptions=()=>({workers:[{configPath:'./wrangler.jsonc',env:'test',vars:{DEPLOYMENT_CONFIG:JSON.stringify(input.config)},secrets:{[input.config.authentication.client_secret_ref]:providerClientSecret,CSRF_SECRET:csrfSecret,CURSOR_ENCRYPTION_KEY:cursorSecret}},{config:{name:'cf-agent-hub-egress-fixture',main:probePath,compatibility_date:'2026-10-19'}},{config:{name:'cf-agent-hub-control-fixture',main:installPath,compatibility_date:'2026-10-19',durable_objects:{bindings:[{name:'WORKSPACE',class_name:'WorkspaceDO',script_name:'cf-agent-hub-test'}]}}}]});
  harness=createTestHarness(harnessOptions());
@@ -87,8 +88,11 @@ try {
   if(action==='drop-next-preferences-response'){dropPreferencesResponse=true;return;}
   if(action==='resume-preferences-responses'){dropPreferencesResponse=false;return;}
   if(action==='restart'){await worker.evictDurableObject('WORKSPACE',{name:currentName});return;}
-  if(action==='fresh'){
-   input.config.config_epoch=1;input.bundle.config_epoch=1;input.config.workspace_policies[0]=structuredClone(baselinePolicy);dropPreferencesResponse=false;
+  if(action==='r2-advance-backlog'){if(!r2Fixture)throw Error('R2_FIXTURE_NOT_READY');await r2Fixture.advanceBacklog();return;}
+  if(action==='r2-revoke-human'){if(!r2Fixture)throw Error('R2_FIXTURE_NOT_READY');await r2Fixture.revokeHumans();return;}
+  if(action==='fresh'||action==='r2-board'){
+   input.config=structuredClone(baselineConfig);input.bundle.config_epoch=1;dropPreferencesResponse=false;r2Fixture=null;
+   if(action==='r2-board')configureR2UiFixture(input.config);
    currentName='ui-fixture-'+randomBytes(8).toString('hex');
    input.config.workspace_catalog[0].object_name=currentName;
    input.bundle.config_digest=await sha256(canonicalJson(input.config));
@@ -96,7 +100,9 @@ try {
    const next=await prepareBootstrap(input.config,input.bundle,'ws_example');
    const response=await harness.getWorker('cf-agent-hub-control-fixture').fetch('http://fixture-control/install',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:currentName,operator:operator(),input:next})});
    if(response.status!==200){await response.arrayBuffer();throw Error('FIXTURE_INSTALL_FAILED');}
-   await response.arrayBuffer();return;
+   await response.arrayBuffer();
+   if(action==='r2-board')r2Fixture=await seedR2UiFixture({worker,storage:await worker.getDurableObjectStorage('WORKSPACE',{name:currentName}),origin:APP_ORIGIN,issuer:ISSUER_ORIGIN,csrfSecret,nativeToken:fixtureNativeToken});
+   return;
   }
   if(action==='restrict-overrides'){
    const env=await worker.getEnv(),metadata=await worker.getDurableObjectStorage('WORKSPACE',{name:currentName});
@@ -108,7 +114,7 @@ try {
   }
   throw Error('UNKNOWN_FIXTURE_CONTROL');
  };
- if(process.argv.includes('--self-check')) {
+ if(process.argv.includes('--self-check')||process.argv.includes('--self-check-r2')) {
   await control('fresh');
   const authProbe=await worker.fetch(APP_ORIGIN+'/v2/workspaces/ws_example/auth/start',{method:'POST',headers:{origin:APP_ORIGIN,'content-type':'application/json'},body:JSON.stringify({return_path:'/overview'})});
   if(authProbe.status!==200){const value=await authProbe.json();throw Error('FIXTURE_FRESH_AUTH_FAILED_'+authProbe.status+'_'+value.error?.code);}
@@ -117,15 +123,21 @@ try {
   await fixture.selfCheckApp('/overview');
   await fixture.selfCheckApp('/ui/app.js');
   await fixture.selfCheckApp('/ui/styles.css');
+  if(process.argv.includes('--self-check-r2')){
+   await control('r2-board');await r2Fixture.assertPersisted();await control('restart');await r2Fixture.assertPersisted();await fixture.selfCheckApp('/tasks');
+   await control('r2-advance-backlog');await control('fresh');
+   assert.equal(input.config.human_grants[0].scopes.includes('tasks:read'),false);assert.equal(input.config.human_grants.length,2);
+   const resetStorage=await worker.getDurableObjectStorage('WORKSPACE',{name:currentName});assert.equal((await resetStorage.exec('SELECT COUNT(*) AS count FROM tasks'))[0].count,0);
+  }
   await control('restart');
   await fixture.selfCheckApp();
   const proxy=fixture.proxyPort,negativeProxy=fixture.negativeProxyPort;
   await dispose();
   const {connect}=await import('node:net');
   for(const port of [proxy,negativeProxy])await new Promise((resolve,reject)=>{const socket=connect({host:'127.0.0.1',port});socket.once('connect',()=>{socket.destroy();reject(Error('LISTENER_SURVIVED_TEARDOWN'));});socket.once('error',()=>resolve());});
-  console.log('CFHUB_FIXTURE_SELF_CHECK_PASS provider_signature basic_auth pkce one_use_code exact_egress worker_sql_authority teardown');
+  console.log('CFHUB_FIXTURE_SELF_CHECK_PASS provider_signature basic_auth pkce one_use_code exact_egress worker_sql_authority teardown'+(process.argv.includes('--self-check-r2')?' r2_real_commands retained_results committed_artifact bounded_pages do_eviction':''));
  } else {
-  console.log('CFHUB_FIXTURE_READY proxy='+fixture.proxyPort+' negative_proxy='+fixture.negativeProxyPort+' app_port='+fixture.appPort+' app_pin='+fixture.pins[0]+' issuer_pin='+fixture.pins[1]);
+  console.log('CFHUB_FIXTURE_READY proxy='+fixture.proxyPort+' negative_proxy='+fixture.negativeProxyPort+' app_port='+fixture.appPort+' app_pin='+fixture.pins[0]+' issuer_pin='+fixture.pins[1]+' app_certificate='+Buffer.from(fixture.appCertificate).toString('base64'));
  }
 } catch(error) {
  // Do not print provider tokens, environment, request bodies or key material.

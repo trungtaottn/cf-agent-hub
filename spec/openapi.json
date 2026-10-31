@@ -4342,7 +4342,8 @@
                     "/overview",
                     "/inbox",
                     "/activity",
-                    "/settings"
+                    "/settings",
+                    "/tasks"
                   ]
                 }
               },
@@ -9353,7 +9354,8 @@
               "/overview",
               "/inbox",
               "/activity",
-              "/settings"
+              "/settings",
+              "/tasks"
             ]
           }
         },
@@ -9467,7 +9469,8 @@
               "/overview",
               "/inbox",
               "/activity",
-              "/settings"
+              "/settings",
+              "/tasks"
             ]
           }
         },

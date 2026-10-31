@@ -3758,7 +3758,7 @@ export function tableDefinition(name:string):RegistryTable {
 }
 interface ColumnInfo {cid:number;name:string;type:string;notnull:number;dflt_value:string|null;pk:number;}
 /** No prefix exclusion: an unexpected application OR engine table is a schema mismatch. */
-export function inspectRegistry(tx:WorkspaceTransaction):{schemaVersion:typeof CURRENT_SCHEMA_VERSION;eventSequence:number;tables:number} {
+export function inspectRegistry(tx:WorkspaceTransaction,schemaVersion:15|16=CURRENT_SCHEMA_VERSION):{schemaVersion:15|16;eventSequence:number;tables:number} {
  const actual=tx.all<{name:string}>("SELECT name FROM sqlite_schema WHERE type='table' ORDER BY name").map(x=>x.name);
  const expected=[...TABLE_REGISTRY.map(x=>x.name),...ENGINE_TABLES].sort();
  if(JSON.stringify(actual)!==JSON.stringify(expected))throw Error('RECOVERY_SCHEMA_MISMATCH');
@@ -3771,12 +3771,12 @@ export function inspectRegistry(tx:WorkspaceTransaction):{schemaVersion:typeof C
  const engine=tx.all<ColumnInfo>('PRAGMA table_info(sqlite_sequence)');
  if(engine.length!==2||engine.some((c,i)=>c.cid!==i||c.name!==['name','seq'][i]||c.type!==''||c.notnull!==0||c.pk!==0||c.dflt_value!==null))throw Error('RECOVERY_SCHEMA_MISMATCH');
  const versions=tx.all<{version:number}>('SELECT version FROM schema_migrations ORDER BY version').map(x=>x.version);
- if(JSON.stringify(versions)!==JSON.stringify(EXPECTED_SCHEMA_VERSIONS))throw Error('RECOVERY_SCHEMA_MISMATCH');
+ if(JSON.stringify(versions)!==JSON.stringify(EXPECTED_SCHEMA_VERSIONS.slice(0,schemaVersion)))throw Error('RECOVERY_SCHEMA_MISMATCH');
  const sequences=tx.all<{name:string;seq:number}>('SELECT name,seq FROM sqlite_sequence');
  if(sequences.length>1||sequences.some(x=>x.name!=='events'||!Number.isSafeInteger(x.seq)||x.seq<0))throw Error('RECOVERY_EVENT_SEQUENCE');
  const eventSequence=sequences[0]?.seq??0;
  const retained=tx.one<{n:number}>('SELECT COALESCE(MAX(sequence),0) AS n FROM events')!.n;
  const floor=tx.one<{n:number|null}>('SELECT event_retained_after_sequence AS n FROM workspace_metadata WHERE id=1')?.n??0;
  if(!Number.isSafeInteger(retained)||!Number.isSafeInteger(floor)||floor<0||eventSequence<retained||eventSequence<floor)throw Error('RECOVERY_EVENT_SEQUENCE');
- return {schemaVersion:CURRENT_SCHEMA_VERSION,eventSequence,tables:expected.length};
+ return {schemaVersion,eventSequence,tables:expected.length};
 }

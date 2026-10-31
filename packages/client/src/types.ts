@@ -124,3 +124,7 @@ export interface NativeClient {
  /** createRuntime is supported only through this explicit one-time-secret mode. */
  enrollRuntime(request:RequestFor<'createRuntime'>,options:EnrollmentOptions):Promise<ApiResult<DTO.Runtime>>;
 }
+
+/** Deliberately read-only browser board surface; canonical DTOs remain server-owned. */
+export type BrowserReadOperation='listTasks'|'getTask'|'getRun'|'listTaskResults'|'getArtifact'|'listEvents';
+export type BrowserReadRequest=<K extends BrowserReadOperation>(operation:K,input:RequestFor<K>,options?:Pick<RequestOptions,'signal'>)=>Promise<ApiResult<DTO.HttpOperationData[K]>>;

@@ -10,7 +10,7 @@ export type Liveness = {"status":"alive"};
 export type Operations = {"observed_at":string;"config_epoch":number;"schema_version":number;"readiness":Readiness;"outbox":{"pending_count":number;"in_flight_count":number;"failed_count":number;"suppressed_count":number;"oldest_due_at":string | null;"next_due_at":string | null};"scheduler":{"last_run_at":string | null;"last_error_code":string | null}};
 export type OperationsResponse = {"data":Operations;"request_id":string};
 export type AckResult = {"acknowledged_ids":Array<string>;"already_acknowledged_ids":Array<string>};
-export type AuthStartRequest = {"return_path":"/" | "/overview" | "/inbox" | "/activity" | "/settings"};
+export type AuthStartRequest = {"return_path":"/" | "/overview" | "/inbox" | "/activity" | "/settings" | "/tasks"};
 export type AuthCallbackQuery = {"code":string;"state":string};
 export type AuthLogoutRequest = Record<string, never>;
 export type MessageReference = {"kind":"task" | "artifact" | "message";"id":string};
@@ -337,4 +337,4 @@ export interface HttpDTOMap {
 "AckResultResponse":AckResultResponse;
 "EventListResponse":EventListResponse;
 }
-export const authReturnPaths = ["/","/overview","/inbox","/activity","/settings"] as const;
+export const authReturnPaths = ["/","/overview","/inbox","/activity","/settings","/tasks"] as const;

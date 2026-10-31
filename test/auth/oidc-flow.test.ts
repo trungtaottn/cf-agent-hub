@@ -141,3 +141,14 @@ it('successful_reauthentication_rotates_and_revokes_previous_session',async()=>{
  expect((await stub.fetch(request('session','GET',undefined,first.cookie))).status).toBe(401);
  expect((await stub.fetch(request('session','GET',undefined,cookie(completed.response,'cfhub_session')))).status).toBe(200);
 });
+
+it('task_view_login_returns_only_the_exact_reviewed_document_path',async()=>{
+ const {stub}=await installed('task-view-return');
+ const response=await stub.fetch(request('start','POST',{return_path:'/tasks'}));expect(response.status).toBe(200);
+ const {data}=await response.json() as {data:{authorization_url:string}};
+ const completed=await callback(stub,{...data,cookie:cookie(response),response});
+ expect(completed.response.status).toBe(302);expect(completed.response.headers.get('location')).toBe('/tasks');expect(await completed.response.text()).toBe('');
+ for(const return_path of ['/tasks?task=private','/tasks#fragment','/tasks/','/%74asks','/tasks%2f..%2fsettings','/tasks\\settings','//foreign.invalid/tasks','https://foreign.invalid/tasks']){
+  const denied=await stub.fetch(request('start','POST',{return_path}));expect(denied.status).toBe(400);expect(denied.headers.get('location')).toBeNull();await denied.arrayBuffer();
+ }
+});

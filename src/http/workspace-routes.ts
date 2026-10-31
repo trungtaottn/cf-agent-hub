@@ -8,7 +8,7 @@ import type {Workspace,Scope} from './dto';
 import {validateWorkspace} from './generated/auth-validators.js';
 import {HttpError,securityHeaders,toHttpError,toHttpResponse} from './envelopes';
 export const workspacePath=/^\/v2\/workspaces\/([a-zA-Z0-9_-]{1,128})$/;
-const r1Scopes=new Set<string>(['workspace:read','profile:edit','messages:send','messages:read','messages:ack','messages:review','events:read','operations:read']);
+const implementedDisplayScopes=new Set<string>(['workspace:read','profile:edit','messages:send','messages:read','messages:ack','messages:review','events:read','operations:read','tasks:read','artifacts:read']);
 export async function workspaceRoutes(request:Request,workspace:AuthWorkspace):Promise<Response>{
  const requestId=crypto.randomUUID(),headers=new Headers(securityHeaders);
  try{
@@ -30,7 +30,7 @@ export async function workspaceRoutes(request:Request,workspace:AuthWorkspace):P
    const nowMs=workspace.clock.nowMs(),actor=resolveActor(tx,identity,nowMs);
    authorize(tx,actor,'workspace:read',undefined,nowMs);
    const profile=storedProfile(tx,actor).profile;
-   const data:Workspace={id:workspace.workspaceId,display_name:profile.display_name,contract_revision:'0.1',actor:{kind:actor.kind,principal_id:actor.principalId,agent_id:actor.agentId},effective_scopes:[...actor.scopes].filter(scope=>r1Scopes.has(scope)&&(actor.kind==='human'?scope!=='messages:ack':!['profile:edit','messages:review','operations:read'].includes(scope))).sort() as Scope[]};
+   const data:Workspace={id:workspace.workspaceId,display_name:profile.display_name,contract_revision:'0.1',actor:{kind:actor.kind,principal_id:actor.principalId,agent_id:actor.agentId},effective_scopes:[...actor.scopes].filter(scope=>implementedDisplayScopes.has(scope)&&(actor.kind==='human'?scope!=='messages:ack':!['profile:edit','messages:review','operations:read'].includes(scope))).sort() as Scope[]};
    if(!validateWorkspace(data))throw new HttpError('INTERNAL_ERROR',500);return data;
   });
   return toHttpResponse({status:200,data},requestId,headers);

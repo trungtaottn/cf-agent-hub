@@ -57,7 +57,7 @@ describe('durable enrollment capture to real journaled claim dispatch',()=>{
 describe('lost success, explicit legal server GC and actual process restart',()=>{
  it.each(cases)('$operation: keeps original intent and never repeats receiver effect after 24h GC',async scenario=>{
   const directory=root(),{receipt,output}=await crashAtReceipt(directory,'lost',scenario.operation);expect(receipt.stage).toBe('response-lost');expect(receipt.requests).toBe(1);expect(receipt.result).toMatchObject({ok:false,error:{code:'NETWORK_ERROR'}});assertNoSecret(receipt);assertNoSecret(output);
-  const server=track(new DatabaseSync(join(directory,'receiver.sqlite')));expect(server.prepare('SELECT count(*) AS n FROM schema_migrations').get()).toEqual({n:15});
+  const server=track(new DatabaseSync(join(directory,'receiver.sqlite')));expect(server.prepare('SELECT count(*) AS n FROM schema_migrations').get()).toEqual({n:16});
   const firstEffects=server.prepare('SELECT operation,path,body,key FROM synthetic_effects').all();expect(firstEffects).toHaveLength(1);expect(firstEffects[0]).toMatchObject({operation:scenario.operation,path:scenario.path,key:receipt.intent.key});expect(server.prepare('SELECT count(*) AS n FROM idempotency_outcomes').get()).toEqual({n:1});
   // Actual production cleanup helper + actual migrated SQL schema. This is an
   // explicitly invoked test GC, not evidence of a production alarm/GC caller.

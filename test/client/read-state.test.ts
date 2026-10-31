@@ -189,3 +189,28 @@ describe('truthful independent read states',()=>{
     expect(JSON.stringify(read.state)).not.toContain('sensitive');
   });
 });
+
+it('clears cached resource on not-found and rejects an older pending observation',async()=>{
+ const read=model();await read.refresh(async()=>ready(['private title']));
+ const late=deferred<ApiResult<string[]>>(),pending=read.refresh(()=>late.promise);
+ await read.refresh(async()=>failure(404,'NOT_FOUND'));
+ expect(read.state).toMatchObject({status:'unavailable',data:null,observedAt:null,errorCode:'NOT_FOUND'});
+ late.resolve(ready(['private title']));await pending;expect(read.state.data).toBeNull();
+});
+it('redacts a revoked record without hiding unrelated cached success and invalidates old page',async()=>{
+ const read=model();await read.refresh(async()=>ready(['revoked','allowed']));
+ const late=deferred<ApiResult<string[]>>(),pending=read.refresh(()=>late.promise);
+ read.redact(items=>items.filter(item=>item!=='revoked'));
+ expect(read.state).toMatchObject({status:'stale',data:['allowed'],observedAt:firstObserved});
+ late.resolve(ready(['revoked','allowed']));await pending;expect(read.state.data).toEqual(['allowed']);
+});
+it('explicit unavailable differs from empty and resets pending data',async()=>{
+ const read=model();const late=deferred<ApiResult<string[]>>(),pending=read.refresh(()=>late.promise);
+ read.unavailable('CAPABILITY_UNAVAILABLE');late.resolve(ready(['hidden']));await pending;
+ expect(read.state).toMatchObject({status:'unavailable',data:null,errorCode:'CAPABILITY_UNAVAILABLE'});
+});
+it('uncached redaction cancels the observation without leaving a phantom loading state',async()=>{
+ const read=model(),late=deferred<ApiResult<string[]>>(),pending=read.refresh(()=>late.promise);read.redact(items=>items);
+ expect(read.state).toMatchObject({status:'unavailable',data:null,errorCode:'OBSERVATION_INVALIDATED'});
+ late.resolve(ready(['old']));await pending;expect(read.state.data).toBeNull();
+});

@@ -7,7 +7,7 @@ export async function login(page:Page,returnPath='/overview',principal='human_op
   const r=await fetch('/v2/workspaces/ws_example/auth/start',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({return_path:path})});
   if(!r.ok)throw Error('FIXTURE_LOGIN_START_FAILED');return (await r.json() as AuthStartDataResponse).data.authorization_url as string;
  },returnPath);
- await page.goto(url);await expect(page.getByRole('heading',{name:'Workspace overview'})).toBeVisible();
+ await page.goto(url);const heading=returnPath==='/tasks'?'Workspace tasks':returnPath==='/settings'?'Workspace settings':returnPath==='/activity'?'Workspace activity':'Workspace overview';await expect(page.getByRole('heading',{name:heading,exact:true})).toBeVisible();
  await expect(page.getByTestId('session-status')).toContainText(principal);
 }
 export async function screenshot(page:Page,name:string){await page.screenshot({path:'.superpowers/r1-completion/screenshots/'+name+'.png',fullPage:true});}

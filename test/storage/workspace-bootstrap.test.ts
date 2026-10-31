@@ -75,7 +75,7 @@ describe('actual workerd SQLite authority',()=>{
  });
  it('migration_restart_no_duplicate_schema',async()=>{
   const name='restart',input=await prepared(name),receipt=await stub(name).reconcileConfiguration(operator(),input);
-  const before=await snapshot(name);expect(before.migrations).toHaveLength(15);expect(before.grants).toHaveLength(1);
+  const before=await snapshot(name);expect(before.migrations).toHaveLength(16);expect(before.grants).toHaveLength(1);
   await evictDurableObject(stub(name));
   expect(await stub(name).reconcileConfiguration(operator(1,input.installationDigest),input)).toEqual(receipt);
   expect(await snapshot(name)).toEqual(before);
