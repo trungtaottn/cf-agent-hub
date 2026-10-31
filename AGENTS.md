@@ -161,3 +161,9 @@ Every finished task or blocked checkpoint must report **observed facts**, not pr
 Keep this file short enough to use at session start, but specific enough to prevent dangerous shortcuts. Do not duplicate schemas, exact payload sizes, enum lists, runtime-version inventories or every command from their canonical owners; link to the owning sources and update this map when they move. Keep `AGENT.md` as a simple pointer to this file. Changes to branching, trust boundaries, issue pickup, release policy or agent authority require a reviewed PR and a corresponding update here.
 
 A coding agent's final responsibility is to leave a **traceable, reviewable, evidence-grounded handoff**. If a requested action is not authorized, cannot be verified or would violate an active required gate, stop at that boundary and report the precise blocker.
+
+# Definition of done
+Do not report success based on implementation alone.
+Provide reproducible evidence that the acceptance criteria are met.
+Be unreasonable about quality,
+but be disciplined about cost, evidence and risk.
