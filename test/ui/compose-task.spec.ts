@@ -43,7 +43,7 @@ test('optional picker403 does not revoke tasks:create or block omitted-reference
  // Finish bootstrap and open with actual reads before denying an explicit picker refresh.
  await expect(page.getByTestId('workspace-name')).not.toHaveText('');await open(page);
  const denied=new Set<string>();
- for(const endpoint of ['profile','agents?*'])await page.route('**/v2/workspaces/ws_example/'+endpoint,async route=>{denied.add(endpoint);await route.fulfill({status:403,contentType:'application/json',body:JSON.stringify({error:{code:'FORBIDDEN',message:'Unavailable',retryable:false},request_id:'denied_optional_picker'})});});
+ for(const endpoint of ['profile','agents?*'])await page.route('**/v2/workspaces/ws_example/'+endpoint,async route=>{denied.add(endpoint);await route.fulfill({status:403,contentType:'application/json',body:JSON.stringify({error:{code:'FORBIDDEN',message:'Unavailable',retryable:false,request_id:'denied_optional_picker'}})});});
  await page.getByRole('button',{name:'Refresh choices',exact:true}).click();
  await expect.poll(()=>[...denied].sort()).toEqual(['agents?*','profile']);
  await page.getByLabel('Title',{exact:true}).fill('No optional references');await expect(page.getByLabel('Project',{exact:true})).toBeDisabled();await expect(page.getByLabel('Work role',{exact:true})).toBeDisabled();await expect(page.getByLabel('Assigned agent',{exact:true})).toBeDisabled();await page.getByRole('button',{name:'Create Backlog task',exact:true}).click();await expect(page.getByTestId('task-compose-status')).toContainText('Original task admission confirmed');await expect(page.getByTestId('session-status')).toContainText('human_operator');

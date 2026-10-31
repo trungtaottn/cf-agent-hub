@@ -42,12 +42,15 @@ export class TaskComposition {
  private errorApplies(body:unknown,edit:number,revision:number){const intent=this.state.entry?.intent;return edit===this.#edit&&revision===this.draftRevision()&&canonicalBody(body)===canonicalBody(this.#draft)&&(!intent||intent.bodyJson!==canonicalBody(body)||intent.draftRevision===revision);}
  private async references(body:TaskCreateRequest):Promise<boolean>{
   const g=this.#generation,c=this.capture(),edit=this.#edit,revision=this.draftRevision();if(!c)return false;
-  let allowed=false;try{allowed=await this.options.verifyAuthority();}catch{/* fail closed */}if(!this.same(g,c))return false;
-  const errors:TaskErrors={};if(!allowed)errors.form='Current permission to create tasks is unavailable.';
+  const errors:TaskErrors={};
   // Missing optional read scopes do not impose a new policy on omitted/null references.
   let profile:ApiResult<ProfileData>|null=null;try{profile=await this.options.getProfile();}catch{/* unavailable catalog */}if(!this.same(g,c))return false;
   for(const [field,list] of [['project_id','projects'],['work_role_id','work_roles']] as const){const id=body[field];if(typeof id==='string'&&(!profile?.ok||!profile.data.profile[list].some(p=>p.id===id&&!p.archived)))errors[field]='Saved selection is unavailable or archived. Review this field.';}
   if(typeof body.assigned_agent_id==='string'){let result;try{result=await this.options.read('getAgent',{path:{agent_id:body.assigned_agent_id}});}catch{/* unavailable assignment */}if(!this.same(g,c))return false;if(!result?.ok||result.data.id!==body.assigned_agent_id||result.data.workspace_id!==c.workspaceId||result.data.status!=='active')errors.assigned_agent_id='Assigned agent is unavailable or archived. Review this field.';}
+  // Optional 403 responses intentionally clear HubClient CSRF. Verify current authority
+  // after those reads; never restore a cached token or suppress the client's denial handling.
+  let allowed=false;try{allowed=await this.options.verifyAuthority();}catch{/* fail closed */}if(!this.same(g,c))return false;
+  if(!allowed)errors.form='Current permission to create tasks is unavailable.';
   this.#errors={...this.validate(this.#draft),...(this.errorApplies(body,edit,revision)?errors:Object.keys(errors).length?{form:'The original retained request needs review, not the current draft. Review that original intent before submitting these edits.'}:{})};this.options.changed();return Object.keys(errors).length===0;
  }
  private restore(){const text=this.state.entry?.draft?.bodyJson??this.state.entry?.intent?.bodyJson;this.#draft=text?JSON.parse(text):empty();this.#errors={};}

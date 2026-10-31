@@ -1,4 +1,5 @@
 import {describe,it,expect,vi,afterEach} from 'vitest';
+import {HubClient} from '../../packages/client/src/client';
 import {TaskComposition} from '../../src/ui/compose/task-form';
 import {TaskForm} from '../../src/ui/compose/task-form-view';
 import {DraftStore} from '../../src/ui/compose/draft-store';
@@ -18,6 +19,29 @@ function fixture(){
  const model=new TaskComposition({store,currentBinding:()=>binding,verifyAuthority:authority,getProfile:profile as never,read:read as never,prepare:prepare as never,send:send as never,reconcile:lookup as never,changed:vi.fn()});
  return {model,db,store,authority,profile,read,prepare,send,lookup,setBinding:(x:typeof scope|null)=>{binding=x;}};
 }
+describe('task composition with actual browser client CSRF lifecycle',()=>{
+ it.each([false,true])('rechecks current authority after optional403; late denial fails closed with retained intent (late=%s)',async late=>{
+  const calls:string[]=[],preparedKeys:string[]=[];
+  const fetch=vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+   const path=String(input);calls.push(path);
+   if(path.endsWith('/profile')||path.includes('/agents'))return Response.json({error:{code:'FORBIDDEN',message:'Optional read denied',retryable:false,request_id:'denied'}},{status:403});
+   const data=path.endsWith('/auth/session')?{actor:{kind:'human',principal_id:'human_one',agent_id:null},csrf_token:'fresh-csrf',expires_at:'2030-01-01T00:00:00Z'}:path.endsWith('/tasks:prepare')?{admission_id:'event_'+'a'.repeat(48),expires_at:'2030-01-01T00:00:00Z'}:{id:'ws',display_name:'Workspace',contract_revision:'0.1',actor:{kind:'human',principal_id:'human_one',agent_id:null},effective_scopes:['workspace:read','tasks:create']};
+   if(path.endsWith('/tasks:prepare')){expect(new Headers(init?.headers).get('x-csrf-token')).toBe('fresh-csrf');preparedKeys.push(new Headers(init?.headers).get('idempotency-key')!);}
+   return Response.json({data,request_id:'current'});
+  });
+  const client=new HubClient('ws',{fetch});let injectLate=late;
+  const send=vi.fn(async()=>({...ok({id:'task_one',workspace_id:'ws',state:'backlog'}),status:201}));
+  const model=new TaskComposition({store:new DraftStore(new MemoryComposeDatabase()),currentBinding:()=>scope,changed:()=>{},
+   verifyAuthority:async()=>{const auth=await client.request<any>('getAuthSession',{}),access=await client.request<any>('getWorkspace',{});if(!auth.ok||!access.ok||!access.data.effective_scopes.includes('tasks:create'))return false;client.setCsrfToken(auth.data.csrf_token);return true;},
+   getProfile:()=>client.request('getProfile',{}),read:client.read.bind(client),send:send as never,
+   prepare:async(op,input,options)=>{if(injectLate){injectLate=false;await client.request('getProfile',{});}return client.prepareCreation(op,input,options);}
+  });
+  await model.open();await model.edit({title:'No optional references',description:''});await model.submit();
+  if(late){expect(model.state.status).toBe('preparation-error');expect(send).not.toHaveBeenCalled();expect(preparedKeys).toEqual([]);const retained=model.state.entry!.intent!;await model.submit();expect(model.state.entry?.intent?.key).toBe(retained.key);expect(model.state.entry?.intent?.bodyJson).toBe(retained.bodyJson);}
+  expect(model.state.status).toBe('confirmed');expect(send).toHaveBeenCalledTimes(1);expect(preparedKeys).toHaveLength(1);
+  const preparation=calls.indexOf('/v2/workspaces/ws/tasks:prepare');expect(calls.slice(preparation-3,preparation)).toEqual(['/v2/workspaces/ws/profile','/v2/workspaces/ws/auth/session','/v2/workspaces/ws']);
+ });
+});
 describe('task composition with real durable controller and synthetic reads',()=>{
  it('canonical required title and closed DTO reject unknown server-owned and artifact fields',async()=>{const f=fixture();await f.model.open();for(const body of [{title:'',description:''},{title:'A',description:'',state:'doing'},{title:'A',description:'',artifact_ids:[]}]){await f.model.edit(body as never);await f.model.submit();expect(f.model.errors).not.toEqual({});}expect(f.send).not.toHaveBeenCalled();});
  it('preserves omitted versus null refs and legitimate punctuation without normalization',async()=>{const f=fixture();await f.model.open();await f.model.edit({title:' <b>Title</b> ',description:'<&>',project_id:null});await f.model.submit();expect(f.send.mock.calls[0]).toEqual(['createTask',{body:{title:' <b>Title</b> ',description:'<&>',project_id:null}},expect.objectContaining({admissionId:'event_'+'a'.repeat(48)})]);});
