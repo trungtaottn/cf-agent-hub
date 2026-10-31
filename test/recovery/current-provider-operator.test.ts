@@ -1,4 +1,4 @@
-import {describe,it,expect} from 'vitest';
+import {describe,it,expect,vi} from 'vitest';
 import {env} from 'cloudflare:workers';
 import {evictDurableObject,runInDurableObject} from 'cloudflare:test';
 import operatorWorker from '../../workers/operator/src/index';
@@ -12,7 +12,13 @@ import {fixtureIntegrity,recoveryContext} from '../helpers/recovery-fixture';
 import {operator} from '../helpers/environment';
 import {seedNearSqlChunkBudget} from '../helpers/capture-sql-budget';
 import {artifactContext,stage,chunkStream} from '../helpers/artifacts';
-import {proof} from '../helpers/results';
+import {proof,token,sessionToken} from '../helpers/results';
+import {owned} from '../helpers/settings';
+import {csrfToken} from '../../src/auth/csrf';
+import {r2Routes} from '../../src/http/r2-routes';
+import {withTransaction} from '../../src/storage/transaction';
+import type {SessionRecord} from '../../src/auth/authorize';
+import type {CredentialIssue,RuntimeIssue} from '../../src/http/dto';
 import {sha256} from '../../src/config/bootstrap';
 import {uploadArtifactContent,commitArtifact} from '../../src/artifacts/content';
 import {currentRestoreFixture} from './current-restore-fixture';
@@ -27,7 +33,7 @@ type Bootstrap={create(input:Input):Promise<{anchor:Anchor}>};
 const bindings=env as unknown as {TARGET_WORKSPACE:DurableObjectNamespace<WorkspaceDO>;NO_ANCHOR_WORKSPACE:DurableObjectNamespace<WorkspaceDO>;SOURCE_BOOTSTRAP:Bootstrap;TARGET_BOOTSTRAP:Bootstrap;SOURCE_WRITER:Writer;TARGET_WRITER:Writer;RECOVERY_ANCHOR:Fetcher;TARGET_ANCHOR:Fetcher;TARGET_ARTIFACT_BUCKET:R2Bucket};
 const url='https://operator.example.invalid/operator/recovery';
 async function metric(kind:string,value:unknown){const response=await fetch('https://provider-benchmark.invalid/metric',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({kind,value})});expect(response.status).toBe(204);}
-async function setup(name:string,seed=false){
+async function setup(name:string,seed=false,observedAssertions?:string[]){
  const f=await currentRestoreFixture(name,{seed}),target=bindings.TARGET_WORKSPACE.getByName(f.targetName);
  const sourceLedger=await signRecord<CurrentLedger>({workspace_id:'ws_example',environment_id:'current_source',authority_epoch:1,config:f.sourceInput.config,verification_bundle:f.sourceInput.bundle,installation_digest:f.sourceInput.installationDigest,retired_authorities:[],auth:{key_id:fixtureIntegrity.keyId,algorithm:'HMAC-SHA256',tag:'0'.repeat(64)}},fixtureIntegrity);
  const sourceHash=await digestBytes(canonicalBytes(sourceLedger));
@@ -36,7 +42,7 @@ async function setup(name:string,seed=false){
  const policy=(lane:'source'|'target'):OperatorPolicy=>({environment_id:'current_'+lane,origin:'https://operator.example.invalid',access_issuer:'https://access.example.invalid',access_audience:'fixture-operator-audience',bundle_key_id:'fixture_key',workspace_catalog:[{workspace_id:'ws_example',object_name:lane==='source'?f.sourceName:f.targetName}],services:[{client_id:'fixture-client.access',principal_id:'operator_fixture',environment_id:'current_'+lane,workspace_ids:['ws_example'],operations:['capture','read-chunk','restore','write-chunk','verify','status','probe','retire','resume','resolve-delivery']}],recovery:{integrity_key_id:'recovery_fixture',current_ledgers:[{workspace_id:'ws_example',authority_epoch:lane==='source'?1:2,sha256:lane==='source'?sourceHash:f.anchor.sha256}]}});
  const gateway=(lane:'source'|'target',namespace?:DurableObjectNamespace<WorkspaceDO>)=>({...env,WORKSPACE:namespace??(lane==='source'?env.WORKSPACE:bindings.TARGET_WORKSPACE),OPERATOR_POLICY:JSON.stringify(policy(lane))}) as unknown as OperatorBindings;
  const body=(lane:'source'|'target',operation:string,payload:unknown,id:string,epoch=lane==='source'?1:2)=>({operation,workspace_id:'ws_example',capture_id:operation==='probe'?null:f.captureId,expected_authority_epoch:epoch,operation_id:id,reason:'Local real-provider integration',payload});
- const jwt=async()=>(await fetch('https://operator-fixture.example.invalid/assertion',{method:'POST',body:'{}'})).text();
+ const jwt=async()=>{const assertion=await (await fetch('https://operator-fixture.example.invalid/assertion',{method:'POST',body:'{}'})).text();observedAssertions?.push(assertion);return assertion;};
  const call=async(lane:'source'|'target',command:unknown,binary?:ArrayBuffer,namespace?:DurableObjectNamespace<WorkspaceDO>)=>operatorWorker.fetch(new Request(url,{method:'POST',headers:{'content-type':binary?'application/octet-stream':'application/json','cf-access-jwt-assertion':await jwt(),...(binary?{'X-CFHub-Recovery-Control':encodeHeader(command)}:{})},body:binary??JSON.stringify(command)}),gateway(lane,namespace));
  const progress=async(lane:'source'|'target',command:unknown,binary?:ArrayBuffer)=>{const response=await call(lane,command,binary);expect(response.status,await response.clone().text()).toBe(200);return (await response.json() as {data:RecoveryJobProgress}).data;};
  const capture=async()=>{let result:RecoveryJobProgress|undefined;for(let step=0;step<300;step++){result=await progress('source',body('source','capture',{budget:{max_rows:1000000,max_artifacts:1000,max_total_bytes:268435456}},'capture_'+step));if(result.state==='complete')break;}expect(result?.state).toBe('complete');expect(result?.manifest?.checkpoint.schema_version).toBe(16);return result!;};
@@ -223,4 +229,62 @@ describe('actual private provider Worker/SQLite/service-binding composition',()=
   const response=await f.call('source',f.body('source','capture',{budget:{max_rows:1000000,max_artifacts:1000,max_total_bytes:268435456}},'after_rotation'));
   expect(response.status).not.toBe(200);
  });
+});
+
+// Source-fixture regression only: Access client-secret exchange is outside this
+// application. The signed assertion below actually authenticates operator calls.
+it('capture excludes issued native and runtime secrets and accepted service assertions while retaining verification hashes',async()=>{
+ const assertions:string[]=[],ordinary:string[]=[];
+ const logs=[vi.spyOn(console,'info'),vi.spyOn(console,'log'),vi.spyOn(console,'warn'),vi.spyOn(console,'error')];
+ try{
+  const f=await setup('provider_secrets',true,assertions);
+  const csrf=await runInDurableObject(f.source,async(_instance,{storage})=>csrfToken(owned(storage,f.sourceName),withTransaction(storage,tx=>tx.one<SessionRecord>("SELECT * FROM sessions WHERE id='session_settings'")!)));
+  const credentialBody={agent_id:'agent_research',label:'Capture boundary fixture',scopes:['messages:read'],project_ids:null,expires_at:new Date(Date.now()+3600000).toISOString()};
+  const issueRequest=()=>new Request('https://hub.example.invalid/v2/workspaces/ws_example/credentials',{method:'POST',headers:{'content-type':'application/json',origin:'https://hub.example.invalid',cookie:'cfhub_session='+sessionToken,'x-csrf-token':csrf,'idempotency-key':'capture-secret-issue'},body:JSON.stringify(credentialBody)});
+  // Real credential HTTP route/auth/transaction, using the existing synthetic
+  // session and CSRF fixture; this does not claim a live OIDC login.
+  const issue=()=>runInDurableObject(f.source,(_instance,{storage})=>r2Routes(issueRequest(),owned(storage,f.sourceName)));
+  const issued=await issue();expect(issued.status).toBe(201);
+  const credential=(await issued.json() as {data:CredentialIssue}).data;
+  expect(credential.revealed).toBe(true);expect(credential.token).toMatch(/^[A-Za-z0-9_-]{43}$/);
+  const nativeSecret=credential.token!;
+  const enrollRequest=()=>new Request('https://hub.example.invalid/v2/workspaces/ws_example/runtimes',{method:'POST',headers:{authorization:'Bearer '+token,'content-type':'application/json','idempotency-key':'capture-secret-enroll'},body:JSON.stringify({label:'Capture boundary runtime'})});
+  const enrolled=await f.source.fetch(enrollRequest());expect(enrolled.status).toBe(201);
+  const runtime=(await enrolled.json() as {data:RuntimeIssue}).data;
+  expect(runtime.revealed).toBe(true);expect(runtime.runtime_token).toMatch(/^[A-Za-z0-9_-]{43}$/);
+  const runtimeSecret=runtime.runtime_token!;
+  // The first one-time responses intentionally contain their secrets and are
+  // not misclassified as sanitized ordinary responses.
+  const issueReplay=await issue();expect(issueReplay.status).toBe(201);
+  ordinary.push(await issueReplay.text());expect(JSON.parse(ordinary.at(-1)!).data).toMatchObject({token:null,revealed:false});
+  const enrollReplay=await f.source.fetch(enrollRequest());expect(enrollReplay.status).toBe(201);
+  ordinary.push(await enrollReplay.text());expect(JSON.parse(ordinary.at(-1)!).data).toMatchObject({runtime_token:null,revealed:false});
+  await f.bootstrap('source');
+  let progress:RecoveryJobProgress|undefined;
+  for(let step=0;step<300;step++){
+   const response=await f.call('source',f.body('source','capture',{budget:{max_rows:1000000,max_artifacts:1000,max_total_bytes:268435456}},'secret_capture_'+step));
+   expect(response.status).toBe(200);ordinary.push(await response.text());
+   progress=(JSON.parse(ordinary.at(-1)!) as {data:RecoveryJobProgress}).data;
+   if(progress.state==='complete')break;
+  }
+  expect(progress?.state).toBe('complete');expect(progress?.manifest).not.toBeNull();
+  const manifest=progress!.manifest!;
+  const rows:Record<string,unknown>[]=[],chunks:string[]=[];
+  for(const ref of manifest.database.chunks){
+   const response=await f.call('source',f.body('source','read-chunk',{index:ref.index},'secret_read_'+ref.index));
+   expect(response.status).toBe(200);const bytes=new Uint8Array(await response.arrayBuffer());
+   expect(await digestBytes(bytes)).toBe(ref.sha256);
+   const text=new TextDecoder('utf-8',{fatal:true}).decode(bytes);chunks.push(text);
+   const chunk=decodeCurrentChunk(bytes);
+   if(chunk.table==='native_credentials'||chunk.table==='runtimes')rows.push(...chunk.rows.map(row=>Object.fromEntries(chunk.columns.map((column,index)=>[column,row[index]]))));
+  }
+  expect(chunks).toHaveLength(manifest.database.chunks.length);expect(chunks.length).toBeGreaterThan(0);
+  // Positive controls prevent an empty/redacted-away export from passing.
+  expect(rows.find(row=>row.credential_id===credential.credential.id)).toMatchObject({token_sha256:await sha256(nativeSecret)});
+  expect(rows.find(row=>row.id===runtime.runtime.id)).toMatchObject({proof_sha256:await sha256(runtimeSecret)});
+  expect(assertions.length).toBeGreaterThan(0);
+  for(const assertion of assertions)expect(assertion.split('.')).toHaveLength(3);
+  const exported=JSON.stringify({chunks,manifest,ordinary,logs:logs.map(log=>log.mock.calls)});
+  for(const secret of [nativeSecret,runtimeSecret,...assertions])expect(exported).not.toContain(secret);
+ }finally{for(const log of logs)log.mockRestore();}
 });

@@ -1,6 +1,6 @@
 # Branching, beta and stable promotion
 
-Status: R1/R2 source integrated on dev as of 2026-10-31; acceptance pending; no released beta/stable artifact or deployment is asserted. Active protection and intended policy differ as recorded below.
+Status: R1/R2 source integrated on dev as of 2026-10-31; acceptance pending; no released beta/stable artifact or deployment is asserted. Dev source protection is active as recorded below; main remains separately scoped.
 
 ## Canonical branches
 
@@ -32,8 +32,8 @@ Keep `main` as the GitHub default branch. `dev` contains the reviewed R1/R2 sour
 
 ## Active enforcement readback — 2026-10-31
 
-Rulesets `25820686` (dev) and `25820767` (main) are active and scoped to their named branches. Both require PRs and resolved conversations, block deletion/non-fast-forward updates, have zero mandatory approvals and no bypass actors. Both currently require **only `branch-policy`** (GitHub Actions integration `15368`); `strict_required_status_checks_policy` is false. This does not enforce the intended complete CI/up-to-date policy above. Final R2 integration independently checked the exact source head's successful CI; that is not proof that every future merge is server-enforced.
+After explicit owner approval, the dev ruleset `25820686` was updated through GitHub administration on 2026-10-31. Fresh API readback confirms active scope `refs/heads/dev`, strict up-to-date checks, and exactly `branch-policy`, `source`, `dependencies`, `native-source`, `local-sandbox`, `native-build` and `native-service`, each bound to GitHub Actions integration `15368`. `do_not_enforce_on_create=false` is retained. The other rules, branch conditions and empty bypass array were unchanged: PRs and resolved conversations required, deletion/non-fast-forward blocked, zero mandatory approvals. Source merge still does not establish live acceptance.
 
-An authorized admin must reconcile the existing rules, not create duplicates or remove protections. The proposed dev amendment changes only the required-status-check parameters to the seven actual contexts above and strict=true; preserve `do_not_enforce_on_create=false` and every other rule. Main requires a separate applicability check to avoid blocking older workflow/hotfix candidates. Do not add conditional manual evidence as an unconditional merge requirement.
+Main ruleset `25820767` was not changed: it remains active for `refs/heads/main`, requiring only `branch-policy` with strict checks disabled. Its complete-check applicability and a separately authorized administration change remain future promotion work; older main/hotfix candidates may lack the newer jobs. Never add conditional manual evidence as an unconditional source merge requirement.
 
-The JSON examples in `docs/github-rulesets/` are historical proposals, not authoritative readback. Administrative changes require explicit action-time authorization through the authorized administration integration; Cloud Harness repository write access is not Administration permission. Do not elevate its credentials or route around a denied operation. After an authorized update, read back the exact rule ID, branch condition, enforcement and contexts. Until then, report this enforcement gap honestly; never disable a gate to obtain a merge.
+The earlier same-day readback required only branch-policy on dev as well; the applied amendment above supersedes that observed enforcement gap. The JSON examples in `docs/github-rulesets/` are historical proposals, not authoritative readback. Further administrative changes require explicit action-time authorization and verified readback through an authorized administration interface; Cloud Harness repository write access is not Administration permission. Never elevate its credentials, route around a denied operation, add a bypass or disable a gate to obtain a merge.

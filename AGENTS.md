@@ -90,7 +90,7 @@ Owner intent, existing tests, retained evidence and historical GitHub state must
 
 ## 6. Branch and pull-request contract (Beta / Stable)
 
-**These are required operating rules even before GitHub enforces them.** Actual repository-level enforcement is separately verified. The 2026-10-31 readback found active dev/main Rulesets requiring only `branch-policy`, with strict up-to-date checks disabled. This is a known enforcement gap, not permission to omit source checks. Read `docs/branching-and-releases.md`; any later authorized administrative change requires fresh readback.
+**These are required operating rules even before GitHub enforces them.** Actual repository-level enforcement is separately verified. After the owner's explicit administrative approval, the 2026-10-31 readback confirmed dev requires all seven source checks with strict up-to-date enforcement. Main still requires only `branch-policy` without strict checks; do not infer stable-branch protection from dev. Read `docs/branching-and-releases.md`; any later administrative change requires fresh readback.
 
 | Branch | Role | Allowed inbound path |
 | --- | --- | --- |
