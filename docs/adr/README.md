@@ -18,3 +18,5 @@ Record dates are 2026-10-23. The canonical operational contracts remain in their
 Issue-specific additive decisions: [R2 recovery contract](r2-recovery-contract.md) (development contract only).
 
 Local development decision: [ADR0009 — CLI local durability](0009-r2-cli-local-durability.md), including D3/D-JOURNAL, protected-provider trust and platform evidence limits.
+
+Local native CLI decision: [ADR0010 — bounded CLI effects](0010-r2-native-cli-effects.md), preserving journal v1 while adding heartbeat serialization, retained artifact references and truthful presentation.

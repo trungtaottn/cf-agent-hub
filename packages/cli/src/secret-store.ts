@@ -23,6 +23,8 @@ interface AttemptRow {id:string;request_json:string;slot_id:string;generation:nu
 function fail():never{throw Error('SECRET_STORE_REJECTED');}
 const digest=(value:string)=>createHash('sha256').update(value).digest('hex');
 const token=(value:unknown):value is string=>typeof value==='string'&&/^[A-Za-z0-9_-]{43}$/.test(value);
+/** Syntax-only CLI preflight, never credential binding or provenance authority. */
+export const isImportCredentialFormat=token;
 const text=(value:unknown):value is string=>typeof value==='string'&&value.length>0&&value.length<=2048;
 const bindingKeys=['origin','workspaceId','principalId','slotId','slotGeneration','provenanceId'] as const;
 const sameBinding=(a:Readonly<VerifiedPrincipalBinding>,b:Readonly<VerifiedPrincipalBinding>)=>bindingKeys.every(key=>a[key]===b[key]);
