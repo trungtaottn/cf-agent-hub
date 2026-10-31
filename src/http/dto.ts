@@ -10,6 +10,11 @@ export type Liveness = {"status":"alive"};
 export type Operations = {"observed_at":string;"config_epoch":number;"schema_version":number;"readiness":Readiness;"outbox":{"pending_count":number;"in_flight_count":number;"failed_count":number;"suppressed_count":number;"oldest_due_at":string | null;"next_due_at":string | null};"scheduler":{"last_run_at":string | null;"last_error_code":string | null}};
 export type OperationsResponse = {"data":Operations;"request_id":string};
 export type AckResult = {"acknowledged_ids":Array<string>;"already_acknowledged_ids":Array<string>};
+export type Checkpoint = {"summary":string;"artifact_ids":Array<string>};
+export type ProposalScope = {"project_id":string | null;"resource_ids":Array<string>};
+export type Proposal = {"summary":string;"action":string;"scope":ProposalScope;"artifact_ids":Array<string>;"inputs":{"artifact_id":string;"sha256":string}};
+export type TaskRequestDecisionRequest = {"expected_version":number;"run_id":string;"fence":number;"checkpoint":Checkpoint;"proposal":Proposal};
+export type ApprovalDecisionRequest = {"expected_version":number;"expected_proposal_version":number;"expected_approval_version":number;"reason":string};
 export type AuthStartRequest = {"return_path":"/" | "/overview" | "/inbox" | "/activity" | "/settings" | "/tasks"};
 export type AuthCallbackQuery = {"code":string;"state":string};
 export type AuthLogoutRequest = Record<string, never>;
@@ -28,7 +33,6 @@ export type TaskPatchRequest = {"expected_version":number;"title"?:string;"descr
 export type TaskVersionRequest = {"expected_version":number};
 export type TaskReasonRequest = {"expected_version":number;"reason":string};
 export type TaskClaimRequest = {"expected_version":number;"runtime_instance_id":string};
-export type Checkpoint = {"summary":string;"artifact_ids":Array<string>};
 export type TaskSubmitResultRequest = {"expected_version":number;"run_id":string;"fence":number;"result":Checkpoint};
 export type TaskFailRequest = {"expected_version":number;"run_id":string;"fence":number;"reason":string;"outcome_unknown":boolean};
 export type RunHeartbeatRequest = {"expected_run_version":number;"fence":number};
@@ -74,8 +78,6 @@ export type CredentialIssue = {"credential":Credential;"token":string | null;"re
 export type Runtime = {"id":string;"workspace_id":string;"agent_id":string;"runtime_version":number;"label":string;"status":"online" | "expired";"last_seen_at":string;"presence_expires_at":string;"created_at":string};
 export type RuntimeIssue = {"runtime":Runtime;"runtime_token":string | null;"revealed":boolean};
 export type SearchHit = {"kind":"task" | "message" | "artifact";"id":string;"title":string;"snippet":string;"created_at":string};
-export type ProposalScope = {"project_id":string | null;"resource_ids":Array<string>};
-export type Proposal = {"summary":string;"action":string;"scope":ProposalScope;"artifact_ids":Array<string>;"inputs":{"artifact_id":string;"sha256":string}};
 export type Approval = {"id":string;"workspace_id":string;"task_id":string;"run_id":string;"approval_version":number;"proposal_version":number;"task_version_at_request":number;"status":"pending" | "approved" | "rejected" | "expired" | "invalidated";"checkpoint":Checkpoint;"proposal":Proposal;"assigned_human_principal_ids":Array<string>;"requested_by":Actor;"created_at":string;"expires_at":string;"decided_at":string | null;"decided_by":Actor | null;"decision_reason":string | null};
 export type TaskCommandResult = {"task":Task;"run":Run | null;"approval":Approval | null};
 export type Page = {"next_cursor":string | null;"has_more":boolean};
@@ -235,6 +237,11 @@ export interface HttpDTOMap {
 "Operations":Operations;
 "OperationsResponse":OperationsResponse;
 "AckResult":AckResult;
+"TaskRequestDecisionRequest":TaskRequestDecisionRequest;
+"Checkpoint":Checkpoint;
+"Proposal":Proposal;
+"ProposalScope":ProposalScope;
+"ApprovalDecisionRequest":ApprovalDecisionRequest;
 "AuthStartRequest":AuthStartRequest;
 "AuthCallbackQuery":AuthCallbackQuery;
 "AuthLogoutRequest":AuthLogoutRequest;
@@ -254,7 +261,6 @@ export interface HttpDTOMap {
 "TaskReasonRequest":TaskReasonRequest;
 "TaskClaimRequest":TaskClaimRequest;
 "TaskSubmitResultRequest":TaskSubmitResultRequest;
-"Checkpoint":Checkpoint;
 "TaskFailRequest":TaskFailRequest;
 "RunHeartbeatRequest":RunHeartbeatRequest;
 "AgentCreateRequest":AgentCreateRequest;
@@ -301,8 +307,6 @@ export interface HttpDTOMap {
 "SearchHit":SearchHit;
 "TaskCommandResult":TaskCommandResult;
 "Approval":Approval;
-"Proposal":Proposal;
-"ProposalScope":ProposalScope;
 "TaskResultListResponse":TaskResultListResponse;
 "Page":Page;
 "CatalogPlan":CatalogPlan;

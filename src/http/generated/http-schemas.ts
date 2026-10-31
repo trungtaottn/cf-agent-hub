@@ -1,6 +1,8 @@
 // Generated from spec/openapi.json; npm run generate:auth.
 import * as validators from "./auth-validators.js";
 export const httpSchemas = {
+"TaskRequestDecisionRequest":{validate:validators.validateTaskRequestDecisionRequest,byteRules:[]},
+"ApprovalDecisionRequest":{validate:validators.validateApprovalDecisionRequest,byteRules:[]},
 "AuthStartRequest":{validate:validators.validateAuthStartRequest,byteRules:[]},
 "AuthCallbackQuery":{validate:validators.validateAuthCallbackQuery,byteRules:[]},
 "AuthLogoutRequest":{validate:validators.validateAuthLogoutRequest,byteRules:[]},
