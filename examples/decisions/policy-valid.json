@@ -1,0 +1,6 @@
+{
+  "policy_version": 1,
+  "expiry_seconds": 120,
+  "expiry_batch_limit": 2,
+  "actions": []
+}
