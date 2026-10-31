@@ -24,11 +24,11 @@ try {
  buildDirectory=await mkdtemp(resolve('.superpowers/tmp/ui-build-'));
  const modulePath=join(buildDirectory,'fixture.mjs');
  await build({
-  stdin:{contents:`export * from './test/helpers/https-oidc-provider.ts'; export * from './test/helpers/environment.ts'; export * from './src/config/bootstrap.ts'; export * from './test/helpers/r2-ui-fixture.ts'; export * from './test/helpers/composition-fixture.ts';`,resolveDir:process.cwd()},
+  stdin:{contents:`export * from './test/helpers/https-oidc-provider.ts'; export * from './test/helpers/environment.ts'; export * from './src/config/bootstrap.ts'; export * from './test/helpers/r2-ui-fixture.ts'; export * from './test/helpers/composition-fixture.ts'; export * from './test/helpers/task-composition-fixture.ts';`,resolveDir:process.cwd()},
   outfile:modulePath,bundle:true,platform:'node',format:'esm',packages:'external',logLevel:'silent'
  });
- const {startHttpsFixture,APP_ORIGIN,ISSUER_ORIGIN,fixture:configurationFixture,operator,prepareBootstrap,sha256,canonicalJson,configureR2UiFixture,seedR2UiFixture,CompositionFixtureProbe}=await import(pathToFileURL(modulePath).href);
- const compositionProbe=new CompositionFixtureProbe();
+ const {startHttpsFixture,APP_ORIGIN,ISSUER_ORIGIN,fixture:configurationFixture,operator,prepareBootstrap,sha256,canonicalJson,configureR2UiFixture,seedR2UiFixture,CompositionFixtureProbe,TaskCompositionFixtureProbe}=await import(pathToFileURL(modulePath).href);
+ const compositionProbe=new CompositionFixtureProbe(),taskCompositionProbe=new TaskCompositionFixtureProbe();
  let worker,r2Fixture=null,currentName='ui-fixture',dropPreferencesResponse=false,control=async(_action)=>{throw Error('FIXTURE_NOT_READY');};
  const providerClientSecret=randomBytes(32).toString('base64url'),csrfSecret=randomBytes(32).toString('base64url'),cursorSecret=randomBytes(32).toString('hex');
  fixture=await startHttpsFixture({fetch:async(input,init)=>{
@@ -42,7 +42,7 @@ try {
   if(dropPreferencesResponse&&request.method==='PUT'&&url.pathname==='/v2/workspaces/ws_example/preferences'){
    if(response.ok){await response.arrayBuffer();throw Error('FIXTURE_DROP_COMMITTED_RESPONSE');}
   }
-  return compositionProbe.observe(request,response);
+  return taskCompositionProbe.observe(request,await compositionProbe.observe(request,response));
  }},{clientSecret:providerClientSecret,subjects:['synthetic-subject','restricted-subject','tasks-only-subject']});
  globalThis.fetch=fixture.dispatch;
  const probePath=join(buildDirectory,'egress-probe.mjs');
@@ -88,6 +88,17 @@ try {
  await fixture.selfCheck(async(input,init)=>{const request=new Request(input,init);const response=await probe.fetch(request.url,{method:request.method,headers:Object.fromEntries(request.headers),body:request.body?await request.arrayBuffer():undefined,redirect:'manual'});if(response.headers.get('x-fixture-egress-denied')==='1')throw Error('FIXTURE_EGRESS_DENIED');return response;});
  // These controls exist only in the isolated HTTPS fixture, never in production Worker routes.
  control=async action=>{
+  if(action==='archive-task-assignment'){const state=await worker.getDurableObjectStorage('WORKSPACE',{name:currentName});await state.exec("UPDATE static_agents SET status='archived' WHERE workspace_id='ws_example' AND agent_id='agent_research'");return;}
+  if(action==='drop-task-composition-responses'){taskCompositionProbe.arm();return;}
+  if(action==='resume-task-composition-responses'){taskCompositionProbe.resume();return;}
+  if(action==='task-composition-snapshot'){
+   const state=await worker.getDurableObjectStorage('WORKSPACE',{name:currentName});
+   const tasks=await state.exec("SELECT id,title,description,state,task_version,proposal_version,project_id,work_role_id,assigned_agent_id,active_run_id,retry_count FROM tasks WHERE workspace_id='ws_example' ORDER BY id");
+   const events=await state.exec("SELECT * FROM events WHERE workspace_id='ws_example' AND type='task.created' ORDER BY sequence");
+   const outcomes=await state.exec("SELECT * FROM idempotency_outcomes WHERE workspace_id='ws_example' AND operation='domain.tasks:create' ORDER BY principal_id,target,key");
+   return {snapshot:{tasks,events,outcomes,dropped:taskCompositionProbe.receipts}};
+  }
+
   if(action==='drop-preparation-responses'){compositionProbe.armPreparation();return;}
   if(action==='drop-composition-responses'){compositionProbe.arm();return;}
   if(action==='resume-composition-responses'){compositionProbe.resume();return;}
@@ -113,7 +124,7 @@ try {
   if(action==='r2-advance-backlog'){if(!r2Fixture)throw Error('R2_FIXTURE_NOT_READY');await r2Fixture.advanceBacklog();return;}
   if(action==='r2-revoke-human'){if(!r2Fixture)throw Error('R2_FIXTURE_NOT_READY');await r2Fixture.revokeHumans();return;}
   if(action==='fresh'||action==='r2-board'){
-   input.config=structuredClone(baselineConfig);input.bundle.config_epoch=1;dropPreferencesResponse=false;r2Fixture=null;compositionProbe.reset();
+   input.config=structuredClone(baselineConfig);input.bundle.config_epoch=1;dropPreferencesResponse=false;r2Fixture=null;compositionProbe.reset();taskCompositionProbe.reset();
    if(action==='r2-board')configureR2UiFixture(input.config);
    currentName='ui-fixture-'+randomBytes(8).toString('hex');
    input.config.workspace_catalog[0].object_name=currentName;
@@ -153,7 +164,7 @@ try {
   await fixture.selfCheckApp('/ui/app.js');
   await fixture.selfCheckApp('/ui/styles.css');
   if(process.argv.includes('--self-check-r2')){
-   await control('r2-board');await r2Fixture.assertPersisted();await control('restart');await r2Fixture.assertPersisted();await fixture.selfCheckApp('/tasks');
+   await control('r2-board');await r2Fixture.assertPersisted();const taskSnapshot=(await control('task-composition-snapshot')).snapshot;assert.ok(taskSnapshot.tasks.length>0);assert.equal(taskSnapshot.events.length,taskSnapshot.tasks.length);assert.equal(taskSnapshot.outcomes.length,taskSnapshot.tasks.length);await control('restart');await r2Fixture.assertPersisted();await fixture.selfCheckApp('/tasks');
    await control('r2-advance-backlog');await control('fresh');
    assert.equal(input.config.human_grants[0].scopes.includes('tasks:read'),false);assert.equal(input.config.human_grants.length,2);
    const resetStorage=await worker.getDurableObjectStorage('WORKSPACE',{name:currentName});assert.equal((await resetStorage.exec('SELECT COUNT(*) AS count FROM tasks'))[0].count,0);

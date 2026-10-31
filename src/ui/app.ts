@@ -1,6 +1,8 @@
 import {MessageComposition} from './compose/message-form';
 import {MessageForm} from './compose/message-form-view';
-import {DraftStore,IndexedComposeDatabase} from './compose/draft-store';
+import {TaskComposition} from './compose/task-form';
+import {TaskForm} from './compose/task-form-view';
+import {CompositionStorage} from './compose/composition-storage';
 import {HubClient} from '../../packages/client/src/client';
 import type {ApiResult,Workspace,AuthSession,AuthStartData,Configuration,ProfileData,PreferencesData,Operations,Event,Message,Operation,OperationInputs,RequestOptions} from '../../packages/client/src/types';
 import {ReadModel,summarizeReadStates,type ReadState} from './read-state';
@@ -26,46 +28,73 @@ let connectionGeneration=0;
 let client:HubClient,authority=0,session:AuthSession|null=null,denied=false,currentView=location.pathname.slice(1)||'overview',threadId:string|null=null,eventCursor:string|null=null,threadCursor:string|null=null;
 let eventsAvailable=false,operationsAvailable=false,profileAvailable=false,preferencesAvailable=false,tasksAvailable=false;
 let messageComposition:MessageComposition|null=null,messageForm:MessageForm|null=null,composeViewGeneration=0;
-let composeScope:{workspaceId:string;principalId:string}|null=null,composeErasing:Promise<void>|null=null,composeEraseFailed=false;
+let taskComposition:TaskComposition|null=null,taskForm:TaskForm|null=null,lastTaskAdmission:string|null=null;
+let composeScope:{workspaceId:string;principalId:string}|null=null;
+const compositionStorage=new CompositionStorage(undefined,()=>hideComposition(),()=>{if(denied)notice.textContent=compositionStorage.failed?'Visible state cleared, but local draft erasure failed. Composition remains blocked.':'Visible state cleared. This does not cancel server writes already sent.';render();});
 const composeChannel=typeof BroadcastChannel==='function'?new BroadcastChannel('cfhub-compose-clear-v1'):null;
-function compositionBinding(){return session?.actor.kind==='human'&&!denied&&navigator.onLine&&!composeErasing&&!composeEraseFailed?{workspaceId:workspace,principalId:session.actor.principal_id,generation:connectionGeneration}:null;}
-function hideComposition(){++composeViewGeneration;messageComposition?.invalidate();if(messageForm)messageForm.element.hidden=true;}
+function compositionBinding(){return session?.actor.kind==='human'&&!denied&&navigator.onLine&&!compositionStorage.blocked?{workspaceId:workspace,principalId:session.actor.principal_id,generation:connectionGeneration}:null;}
+function hideComposition(){++composeViewGeneration;messageComposition?.invalidate();taskComposition?.invalidate();if(messageForm)messageForm.element.hidden=true;if(taskForm)taskForm.element.hidden=true;lastTaskAdmission=null;}
 function eraseComposition(broadcast=true){
- ++composeViewGeneration;const scope=composeScope;if(messageForm)messageForm.element.hidden=true;
+ const scope=composeScope;hideComposition();
  if(broadcast&&scope)composeChannel?.postMessage({type:'erase',...scope});
- if(!scope||composeErasing)return;
- const owner=messageComposition;
- // Privacy follows the verified session even after reload, before a form exists.
- const erase=owner?owner.logout().then(()=>{if(owner.state.status==='storage-error')throw Error('STORAGE_UNAVAILABLE');}):(async()=>{
-  const database=new IndexedComposeDatabase();try{const store=new DraftStore(database),binding=await store.bind(scope);await store.clearScope(binding);}finally{await database.close();}
- })();
- composeErasing=erase.then(()=>{composeEraseFailed=false;}).catch(()=>{composeEraseFailed=true;}).finally(()=>{composeErasing=null;if(denied)notice.textContent=composeEraseFailed?'Visible private state cleared, but local draft erasure failed. Composition is blocked; local storage requires attention.':'Visible state and local composition drafts cleared. This does not cancel server writes already sent.';});
+ if(scope)void compositionStorage.erase(scope);
 }
 composeChannel?.addEventListener('message',event=>{const value=event.data;if(value&&typeof value==='object'&&value.type==='erase'&&value.workspaceId===workspace&&typeof value.principalId==='string'&&value.principalId===(composeScope?.principalId??session?.actor.principal_id)){eraseComposition(false);++connectionGeneration;notice.textContent='Composition cleared in another tab. Refresh current session before composing.';}});
-async function verifyCompositionAuthority():Promise<boolean>{
+async function verifyCompositionAuthority(kind:'message'|'task'='message'):Promise<boolean>{
  const generation=authority,connection=connectionGeneration,principal=session?.actor.principal_id;
- const auth=await request<AuthSession>('getAuthSession',{});
+ const auth=await compositionRequest(()=>client.request<AuthSession>('getAuthSession',{}),true);
  if(!auth.ok||generation!==authority||connection!==connectionGeneration)return false;
  if(auth.data.actor.kind!=='human'||auth.data.actor.principal_id!==principal){invalidateAll(401,auth.requestId);return false;}
- const access=await request<Workspace>('getWorkspace',{});
+ const access=await compositionRequest(()=>client.request<Workspace>('getWorkspace',{}),true);
  if(!access.ok||generation!==authority||connection!==connectionGeneration)return false;
  if(access.data.id!==workspace||access.data.actor.principal_id!==principal){invalidateAll(401,access.requestId);return false;}
- if(!['messages:send','messages:read','agents:read'].every(scope=>access.data.effective_scopes.includes(scope as 'messages:send'|'messages:read'|'agents:read'))){invalidateAll(403,access.requestId);return false;}
+ if(!(kind==='task'?['tasks:create'] as const:['messages:send','messages:read','agents:read'] as const).every(scope=>access.data.effective_scopes.includes(scope))){invalidateAll(403,access.requestId);return false;}
  client.setCsrfToken(auth.data.csrf_token);return true;
 }
 async function openComposition(){
- const viewGeneration=++composeViewGeneration;if(messageForm)messageForm.element.hidden=true;messageComposition?.invalidate();
- if(composeErasing)await composeErasing;if(viewGeneration!==composeViewGeneration||!compositionBinding()||!models.workspace.state.data?.effective_scopes.includes('messages:send')||(!models.workspace.state.data.effective_scopes.includes('messages:read')||!models.workspace.state.data.effective_scopes.includes('agents:read')))return;
+ hideComposition();const viewGeneration=composeViewGeneration;
+ if(viewGeneration!==composeViewGeneration||!compositionBinding()||!models.workspace.state.data?.effective_scopes.includes('messages:send')||(!models.workspace.state.data.effective_scopes.includes('messages:read')||!models.workspace.state.data.effective_scopes.includes('agents:read')))return;
  if(!messageComposition){
-  const store=new DraftStore(new IndexedComposeDatabase());
-  messageComposition=new MessageComposition({store,currentBinding:compositionBinding,changed:()=>messageForm?.update(),read:readCommandPreparation,
-   verifyAuthority:verifyCompositionAuthority,
-   prepare:async(operation,input,options)=>{const result=await client.prepareCreation(operation,input,options);if(!result.ok&&(result.status===401||result.status===403))invalidateAll(result.status,result.requestId);return result;},
-   reconcile:async(operation,input,options)=>{const result=await client.reconcileCreation(operation,input,options);if(!result.ok&&(result.status===401||result.status===403))invalidateAll(result.status,result.requestId);return result;},
-   send:async(operation,input,options)=>{const result=await client.compose(operation,input,options);if(!result.ok&&(result.status===401||result.status===403))invalidateAll(result.status,result.requestId);return result;}});
+  const store=compositionStorage.store;
+  messageComposition=new MessageComposition({store,currentBinding:compositionBinding,changed:()=>messageForm?.update(),read:(operation,input,options)=>compositionRequest(()=>client.read(operation,input,options),true),
+   verifyAuthority:()=>verifyCompositionAuthority('message'),
+   prepare:(operation,input,options)=>compositionRequest(()=>client.prepareCreation(operation,input,options),true),
+   reconcile:(operation,input,options)=>compositionRequest(()=>client.reconcileCreation(operation,input,options),true),
+   send:(operation,input,options)=>compositionRequest(()=>client.compose(operation,input,options),true)});
   messageForm=new MessageForm(messageComposition,id=>{hideComposition();navigate('activity',id);});byId('main').append(messageForm.element);
  }
  composeScope={workspaceId:workspace,principalId:session!.actor.principal_id};await messageComposition.open();if(viewGeneration!==composeViewGeneration||messageComposition.state.status==='inactive')return;messageForm!.update();messageForm!.element.hidden=false;messageForm!.body.focus();
+}
+
+
+// Optional resource-read denial is field-local; tasks:create never implies picker read scopes.
+async function compositionRequest<T>(call:()=>Promise<ApiResult<T>>,deny403=false):Promise<ApiResult<T>>{
+ const started=authority,connection=connectionGeneration,viewGeneration=composeViewGeneration,result=await call();
+ // Fence before side effects: a late denial must not erase a newer session/form.
+ if(started!==authority||connection!==connectionGeneration||viewGeneration!==composeViewGeneration)return {ok:false,status:null,requestId:result.requestId,error:{code:'OBSERVATION_INVALIDATED',message:'Observation no longer current',retryable:false}};
+ if(!result.ok&&(result.status===401||deny403&&result.status===403))invalidateAll(result.status as 401|403,result.requestId);
+ return result;
+}
+const readTaskComposition:BrowserReadRequest=(operation,input,options)=>compositionRequest(()=>client.read(operation,input,options));
+function taskCompositionChanged(){
+ taskForm?.update();const state=taskComposition?.state;
+ const id=state?.status==='confirmed'?state.entry?.intent?.entityId:null;
+ if(id&&taskComposition?.currentTask&&id!==lastTaskAdmission){lastTaskAdmission=id;if(tasksAvailable&&!denied)void taskReads.refreshBoard();}
+}
+async function openTaskComposition(){
+ hideComposition();const viewGeneration=composeViewGeneration;
+ if(!compositionBinding()||models.workspace.state.status!=='ready'||!models.workspace.state.data?.effective_scopes.includes('tasks:create'))return;
+ if(!taskComposition){
+  taskComposition=new TaskComposition({store:compositionStorage.store,currentBinding:compositionBinding,changed:taskCompositionChanged,
+   verifyAuthority:()=>verifyCompositionAuthority('task'),read:readTaskComposition,
+   getProfile:()=>compositionRequest(()=>client.request<ProfileData>('getProfile',{})),
+   prepare:(operation,input,options)=>compositionRequest(()=>client.prepareCreation(operation,input,options)),
+   reconcile:(operation,input,options)=>compositionRequest(()=>client.reconcileCreation(operation,input,options)),
+   send:(operation,input,options)=>compositionRequest(()=>client.compose(operation,input,options))});
+  taskForm=new TaskForm(taskComposition,id=>{hideComposition();navigateTask(id);});taskForm.element.hidden=true;byId('main').append(taskForm.element);
+ }
+ composeScope={workspaceId:workspace,principalId:session!.actor.principal_id};await taskComposition.open();
+ if(viewGeneration!==composeViewGeneration||taskComposition.state.status==='inactive')return;taskForm!.update();taskForm!.element.hidden=false;taskForm!.title.focus();
 }
 
 const taskReads=new TaskReads({workspaceId:workspace,request:(async(operation,input,options)=>{
@@ -142,7 +171,7 @@ function invalidateAll(status:401|403,id:string|null):void{
  taskActions.invalidateAuthority();taskActionPanel.navigation();
  settings.invalidate();eventsAvailable=false;operationsAvailable=false;profileAvailable=false;preferencesAvailable=false;
  document.documentElement.dataset.theme='system';document.documentElement.dataset.density='comfortable';delete document.documentElement.dataset.accent;
- byId('workspace-name').textContent='';notice.textContent=composeErasing?'Visible private state cleared; local composition draft erasure is pending. Server writes already sent are not cancelled.':composeEraseFailed?'Visible state cleared, but local draft erasure failed. Composition remains blocked.':'Visible cached records and settings drafts cleared. Server writes already sent are not cancelled.';
+ byId('workspace-name').textContent='';notice.textContent=compositionStorage.erasing?'Visible private state cleared; local composition draft erasure is pending. Server writes already sent are not cancelled.':compositionStorage.failed?'Visible state cleared, but local draft erasure failed. Composition remains blocked.':'Visible cached records and settings drafts cleared. Server writes already sent are not cancelled.';
  renderSession();render();
 }
 async function request<T>(operation:Operation,input:OperationInputs[Operation],options?:RequestOptions):Promise<ApiResult<T>>{
@@ -286,6 +315,7 @@ function threadSection():HTMLElement{
 function render():void{
  renderNavigation();
  const composeButton=byId('compose-message-open') as HTMLButtonElement|null;if(composeButton)composeButton.disabled=!compositionBinding()||models.workspace.state.status!=='ready'||!models.workspace.state.data?.effective_scopes.includes('messages:send')||(!models.workspace.state.data.effective_scopes.includes('messages:read')||!models.workspace.state.data.effective_scopes.includes('agents:read'));
+ const taskComposeButton=byId('compose-task-open') as HTMLButtonElement|null;if(taskComposeButton){const eligible=!!compositionBinding()&&models.workspace.state.status==='ready'&&!!models.workspace.state.data?.effective_scopes.includes('tasks:create');taskComposeButton.hidden=!eligible;taskComposeButton.disabled=!eligible;}
  const heading=document.querySelector('h1')!;
  heading.textContent=currentView==='tasks'?(taskReads.selectedId?'Task detail':'Workspace tasks'):threadId?'Thread history':currentView==='activity'?'Workspace activity':currentView==='settings'?'Workspace settings':currentView==='inbox'?'Agent inbox':'Workspace overview';
  const active=currentView==='tasks'?(taskReads.selectedId?[taskReads.task.state,taskReads.run.state,taskReads.results.read.state,taskReads.events.read.state,taskReads.artifacts.state]:Object.values(taskReads.columns).map(page=>page.read.state)):currentView==='inbox'?[]:threadId?[models.thread.state]:currentView==='settings'?[models.workspace.state,models.profile.state,models.preferences.state]:[models.configuration.state,...(eventsAvailable||denied?[models.events.state]:[]),...(operationsAvailable?[models.operations.state]:[])];
@@ -360,7 +390,7 @@ async function boot():Promise<void>{
   sessionElement.textContent='Choose a configured workspace';
   const form=el('form'),label=el('label','Workspace ID'),input=el('input',undefined,{name:'workspace',required:'',pattern:'[a-zA-Z0-9_-]{1,128}',autocomplete:'off'});label.append(input);form.append(label,el('button','Open workspace',{type:'submit'}));form.method='get';form.action='/overview';view.replaceChildren(form);return;
  }
- client=new HubClient(workspace);byId('read-actions').replaceChildren(button('Refresh reads',()=>void refreshReads(),{class:'secondary'}),button('New message',()=>void openComposition(),{id:'compose-message-open',title:'Requires current online human session with messages:send, messages:read and agents:read; local storage must be available'}));
+ client=new HubClient(workspace);byId('read-actions').replaceChildren(button('Refresh reads',()=>void refreshReads(),{class:'secondary'}),button('New message',()=>void openComposition(),{id:'compose-message-open',title:'Requires current online human session with messages:send, messages:read and agents:read; local storage must be available'}),button('New Backlog task',()=>void openTaskComposition(),{id:'compose-task-open',title:'Requires a current online human session with tasks:create; local storage must be available'}));
  render();
  const result=await request<AuthSession>('getAuthSession',{});if(!result.ok){renderSession();return;}
  session=result.data;composeScope=session.actor.kind==='human'?{workspaceId:workspace,principalId:session.actor.principal_id}:null;denied=false;client.setCsrfToken(session.csrf_token);renderSession();notice.textContent='';await refreshReads();
@@ -375,3 +405,6 @@ addEventListener('offline',()=>{hideComposition();++connectionGeneration;taskAct
 addEventListener('online',()=>{hideComposition();++connectionGeneration;taskActions.invalidatePreparation();void refreshReads();});
 setInterval(()=>{taskReads.markStale(Date.now(),60_000);for(const model of Object.values(models))model.markStale(Date.now(),60_000);if(models.workspace.state.status!=='ready'&&taskActions.state.status==='ready')taskActions.invalidatePreparation();render();},15_000);
 void boot();
+
+addEventListener('pagehide',event=>{hideComposition();if(!(event as PageTransitionEvent).persisted){composeChannel?.close();void compositionStorage.dispose();}});
+addEventListener('pageshow',event=>{if((event as PageTransitionEvent).persisted){hideComposition();++connectionGeneration;void refreshReads();}});

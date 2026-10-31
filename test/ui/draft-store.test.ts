@@ -65,3 +65,5 @@ describe('scoped transactional draft and intent contract (memory adapter, not br
  });
 
 });
+it('concurrent scoped clears accept only a validated higher-epoch empty tombstone',async()=>{const db=new MemoryComposeDatabase(),store=new DraftStore(db),b=await store.bind(scope);await store.clearScope(b);await expect(store.clearScope(b)).resolves.toBeNull();const next=await store.bind(scope);await store.save(next,'task','createTask',{title:'Fresh',description:''});await expect(store.clearScope(b)).rejects.toThrow('SCOPE_CHANGED');expect((await store.load(next,'task'))?.draft?.bodyJson).toContain('Fresh');});
+it('stale erase cannot accept corrupt or wrong-scope empty tombstone',async()=>{for(const corrupt of [{version:99},{principalId:'other_owner'}]){const db=new MemoryComposeDatabase(),store=new DraftStore(db),b=await store.bind(scope);db.inject(scope,{version:2,...scope,epoch:b.epoch+1,entries:{},...corrupt});await expect(store.clearScope(b)).rejects.toThrow();}});
