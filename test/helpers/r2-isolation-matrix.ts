@@ -33,10 +33,10 @@ export const isolationOperations:IsolationOperation[]=[
  ...group(['getOperations','getReadiness'],['human'],'operations:read + human-only'),
  ...group(['previewImport','applyImport','getImport'],['human'],'imports:manage + tasks:read; apply also tasks:create; owner/current reference graph'),
 ];
-// These two R3 browser-only reads have executable isolation/nonmutation coverage in
-// test/workspace/creation-reconciliation.test.ts. They must not expand frozen R2
+// These four R3 browser-only preparation/reconciliation operations have executable
+// isolation coverage in creation-admissions and creation-reconciliation tests. They must not expand frozen R2
 // acceptance receipts. Any other new operation still fails this exact split.
-const r3RecoveryOperations=group(['reconcileMessageCreation','reconcileTaskCreation'],['human'],'current creation authority + retained resource replay visibility');
+const r3RecoveryOperations=group(['reconcileMessageCreation','reconcileTaskCreation','prepareMessageCreation','prepareTaskCreation'],['human'],'current creation authority; preparation is not domain admission; recovery requires exact evidence');
 export function assertIsolationCoverage(cases:readonly IsolationOperation[]):void{
  for(const row of r3RecoveryOperations){const operation=clientOperations[row.operation];if(!operation||operation.native||operation.runtimeProof||operation.method!=='POST'||operation.status!==200)throw Error('R3 recovery operation boundary mismatch: '+row.operation);}
  const expected=Object.keys(clientOperations).filter(name=>!r3RecoveryOperations.some(row=>row.operation===name)).sort(),actual=cases.map(x=>x.operation).sort();

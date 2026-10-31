@@ -5,7 +5,7 @@ export const RECOVERY_SCHEMA_VERSION=CURRENT_SCHEMA_VERSION;
 export interface RegistryColumn {name:string;type:string;notNull:boolean;defaultValue:string|null;pk:number;}
 export interface RegistryTable {name:string;mode:'evidence'|'invalidate'|'domain-outcomes'|'paused-effects'|'restore';columns:readonly RegistryColumn[];primaryKey:readonly string[];foreignKeys:readonly (readonly (string|number)[])[];}
 /** Reviewed schema, not a registry synthesized from the database being captured. */
-export const TABLE_REGISTRY = [
+export const SCHEMA16_TABLE_REGISTRY = [
  {
   "name": "schema_migrations",
   "mode": "evidence",
@@ -3752,21 +3752,30 @@ export const TABLE_REGISTRY = [
   "foreignKeys": []
  }
 ] as const satisfies readonly RegistryTable[];
+/** Schema15/16 have identical SQL columns. Their immutable registry excludes schema17 additions. */
+export const TABLE_REGISTRY = [...SCHEMA16_TABLE_REGISTRY.map(table=>table.name==='events'?{...table,columns:[...table.columns,{name:'creation_binding',type:'TEXT',notNull:false,defaultValue:null,pk:0}]}:table),{
+ name:'creation_admissions',mode:'invalidate',columns:[
+  {name:'id',type:'TEXT',notNull:true,defaultValue:null,pk:1},
+  ...['workspace_id','principal_id','operation','target','key_hash','fingerprint'].map(name=>({name,type:'TEXT',notNull:true,defaultValue:null,pk:0})),
+  ...['created_at','expires_at'].map(name=>({name,type:'INTEGER',notNull:true,defaultValue:null,pk:0})),
+ ],primaryKey:['id'],foreignKeys:[],
+} as const] as const satisfies readonly RegistryTable[];
+export function registryForSchema(version:15|16|17){return version===17?TABLE_REGISTRY:SCHEMA16_TABLE_REGISTRY;}
 export type RecoveryTableName=(typeof TABLE_REGISTRY)[number]['name'];
 export const ENGINE_TABLES=['sqlite_sequence'] as const;
-export function tableDefinition(name:string):RegistryTable {
- const table=TABLE_REGISTRY.find(x=>x.name===name);if(!table)throw Error('UNKNOWN_RECOVERY_TABLE');return table;
+export function tableDefinition(name:string,schemaVersion:15|16|17=CURRENT_SCHEMA_VERSION):RegistryTable {
+ const table=registryForSchema(schemaVersion).find(x=>x.name===name);if(!table)throw Error('UNKNOWN_RECOVERY_TABLE');return table;
 }
 interface ColumnInfo {cid:number;name:string;type:string;notnull:number;dflt_value:string|null;pk:number;}
 /** No prefix exclusion: only the exact reviewed optional schema16 alarm table is engine-owned. */
-export function inspectRegistry(tx:WorkspaceTransaction,schemaVersion:15|16=CURRENT_SCHEMA_VERSION):{schemaVersion:15|16;eventSequence:number;tables:number} {
+export function inspectRegistry(tx:WorkspaceTransaction,schemaVersion:15|16|17=CURRENT_SCHEMA_VERSION):{schemaVersion:15|16|17;eventSequence:number;tables:number} {
  const actual=tx.all<{name:string}>("SELECT name FROM sqlite_schema WHERE type='table' ORDER BY name").map(x=>x.name);
  const alarmMetadata=inspectAlarmMetadata(tx,schemaVersion);
- if(schemaVersion===16&&actual.some(name=>name.toLowerCase().startsWith('_cf_')&&!(alarmMetadata&&name==='_cf_METADATA')))throw Error('RECOVERY_ENGINE_SCHEMA_INCOMPATIBLE');
+ if(schemaVersion>=16&&actual.some(name=>name.toLowerCase().startsWith('_cf_')&&!(alarmMetadata&&name==='_cf_METADATA')))throw Error('RECOVERY_ENGINE_SCHEMA_INCOMPATIBLE');
  const productAndSequence=alarmMetadata?actual.filter(name=>name!=='_cf_METADATA'):actual;
- const expected=[...TABLE_REGISTRY.map(x=>x.name),...ENGINE_TABLES].sort();
+ const expected=[...registryForSchema(schemaVersion).map(x=>x.name),...ENGINE_TABLES].sort();
  if(JSON.stringify(productAndSequence)!==JSON.stringify(expected))throw Error('RECOVERY_SCHEMA_MISMATCH');
- for(const table of TABLE_REGISTRY){
+ for(const table of registryForSchema(schemaVersion)){
   const columns=tx.all<ColumnInfo>('PRAGMA table_info("'+table.name+'")');
   if(columns.length!==table.columns.length||columns.some((c,i)=>{const e:RegistryColumn=table.columns[i];return c.cid!==i||c.name!==e.name||c.type!==e.type||Boolean(c.notnull)!==e.notNull||c.dflt_value!==e.defaultValue||c.pk!==e.pk;}))throw Error('RECOVERY_SCHEMA_MISMATCH');
   const foreign=tx.all<{id:number;seq:number;table:string;from:string;to:string;on_update:string;on_delete:string;match:string}>('PRAGMA foreign_key_list("'+table.name+'")').map(x=>[x.id,x.seq,x.table,x.from,x.to,x.on_update,x.on_delete,x.match]);

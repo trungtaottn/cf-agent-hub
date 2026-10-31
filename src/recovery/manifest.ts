@@ -2,7 +2,7 @@ import {prepareBootstrap,type ValidatedBootstrap} from '../config/bootstrap.ts';
 import {resolveWorkspace} from '../config/deployment.ts';
 import {canonicalBytes,digestBytes,fromBase64,hex,CONTROL_LIMIT,CHUNK_LIMIT,CHUNK_COUNT} from './encoding.ts';
 import {TABLE_REGISTRY} from './table-registry-v1.ts';
-import {TABLE_REGISTRY as CURRENT_TABLE_REGISTRY} from './table-registry.ts';
+import {registryForSchema} from './table-registry.ts';
 import {validateRecoveryManifest,validateCurrentLedger,validateRetirementReceipt,validateCutoverRecord,type RecoveryManifest,type CurrentLedger,type RetirementReceipt,type CutoverRecord} from './generated/recovery-validators.js';
 import type {RecoveryIntegrity,RecoveryWorkspace,LedgerAnchor} from './protocol';
 interface Authenticated {auth:{key_id:string;algorithm:'HMAC-SHA256';tag:string};}
@@ -30,7 +30,7 @@ export async function verifyRecord(input:Authenticated,integrity:RecoveryIntegri
 }
 export function validateManifestShape(value:unknown):asserts value is RecoveryManifest {
  if(!validateRecoveryManifest(value)||canonicalBytes(value).length>CONTROL_LIMIT)throw Error('INVALID_RECOVERY_MANIFEST');
- const m=value,current=m.format_version===2&&m.checkpoint.contract_revision==='0.2';if((current?m.checkpoint.schema_version!==15&&m.checkpoint.schema_version!==16:m.checkpoint.schema_version!==7||m.checkpoint.contract_revision!=='0.1')||m.release.catalog_mapping.workspace_id!==m.workspace_id||Date.parse(m.started_at)>Date.parse(m.ended_at)||(m.format_version===1&&(m.artifacts.length>0||m.unfinished_artifact_ids.length>0)))throw Error('RECOVERY_MANIFEST_MISMATCH');
+ const m=value,current=m.format_version===2&&m.checkpoint.contract_revision==='0.2';if((current?m.checkpoint.schema_version!==15&&m.checkpoint.schema_version!==16&&m.checkpoint.schema_version!==17:m.checkpoint.schema_version!==7||m.checkpoint.contract_revision!=='0.1')||m.release.catalog_mapping.workspace_id!==m.workspace_id||Date.parse(m.started_at)>Date.parse(m.ended_at)||(m.format_version===1&&(m.artifacts.length>0||m.unfinished_artifact_ids.length>0)))throw Error('RECOVERY_MANIFEST_MISMATCH');
  if(m.format_version===2){
   const ids=new Set<string>(),objects=new Set<string>(),recovery=new Set<string>(),generations=new Set<string>();let artifactBytes=0;
   for(const entry of m.artifacts){
@@ -42,7 +42,7 @@ export function validateManifestShape(value:unknown):asserts value is RecoveryMa
   if(m.unfinished_artifact_ids.some(id=>ids.has(id)))throw Error('RECOVERY_ARTIFACT_IDENTITY_MISMATCH');
   if(m.database.byte_size+artifactBytes>268435456)throw Error('RECOVERY_TOTAL_BYTES_LIMIT');
  }
- const names:readonly string[]=(current?CURRENT_TABLE_REGISTRY:TABLE_REGISTRY).map(t=>t.name);
+ const names:readonly string[]=(current?registryForSchema(m.checkpoint.schema_version as 15|16|17):TABLE_REGISTRY).map(t=>t.name);
  const counts=m.database.table_counts as Record<string,number>;if(Object.values(counts).reduce((a,b)=>a+b,0)>1000000)throw Error('RECOVERY_ROW_BUDGET_LIMIT');if(JSON.stringify(Object.keys(m.database.table_counts).sort())!==JSON.stringify([...names].sort()))throw Error('RECOVERY_MANIFEST_REGISTRY');
  const totals=new Map(names.map(name=>[name,0]));let totalBytes=0,last=-1;
  if(m.database.chunks.length>CHUNK_COUNT)throw Error('RECOVERY_CHUNK_LIMIT');

@@ -4,8 +4,8 @@ import {WorkspaceDO} from '../../src/workspace/workspace-do';
 import {canonicalJson,sha256} from '../../src/config/bootstrap';
 import {clientOperations} from '../../src/http/generated/client-operations';
 import {fingerprintRequest} from '../../src/workspace/idempotency';
-import {admitCompleteFixture,readFixtureAdmissionCapture} from './fixture-admission';
-import {createCompleteSelectedState,completePhaseReservation,type SelectedOriginal} from './selected-state';
+import {admitCurrentCompleteFixture as admitCompleteFixture,readCurrentFixtureAdmissionCapture as readFixtureAdmissionCapture} from './fixture-admission';
+import {createCurrentCompleteSelectedState as createCompleteSelectedState,currentCompletePhaseReservation as completePhaseReservation,type SelectedOriginal} from './selected-state';
 type Obj=Record<string,unknown>;
 type Registration={run_id:string;step_id:string;invocation_id:string;preparation_sha256:string;idempotency_key:string;request_body_sha256:string};
 type CaptureSubject=Readonly<Omit<Registration,'idempotency_key'>&{idempotency_key_sha256:string}>;
@@ -102,7 +102,7 @@ export class NativeFixtureAttachment extends WorkspaceDO{
    const beforeBudget=completePhaseReservation(step.id,'before'),afterBudget=completePhaseReservation(step.id,'after');
    const pair={queries:beforeBudget.queries+afterBudget.queries,bridgeBytes:beforeBudget.bridgeBytes+afterBudget.bridgeBytes,canonicalBytes:beforeBudget.canonicalBytes+afterBudget.canonicalBytes};
    const next={queries:this.#reserved.queries+pair.queries,bridgeBytes:this.#reserved.bridgeBytes+pair.bridgeBytes,canonicalBytes:this.#reserved.canonicalBytes+pair.canonicalBytes,requestBytes:this.#reserved.requestBytes+step.bodyCap,responseBytes:this.#reserved.responseBytes+step.responseCap,headerBytes:this.#reserved.headerBytes+4096,metadataBytes:this.#reserved.metadataBytes+1024};
-   check(next.queries<=50&&next.bridgeBytes<=2368692&&next.canonicalBytes<=123510&&next.requestBytes<=160&&next.responseBytes<=8192&&next.headerBytes<=12288&&next.metadataBytes<=3072);this.#reserved=next;
+   check(next.queries<=50&&next.bridgeBytes<=2368938&&next.canonicalBytes<=123510&&next.requestBytes<=160&&next.responseBytes<=8192&&next.headerBytes<=12288&&next.metadataBytes<=3072);this.#reserved=next;
    let response:Response|null=null,responseConsumed=false;let reader:ReturnType<typeof createCompleteSelectedState>|null=null;
    try{
     cleanupOwned=true;const subject:CaptureSubject=Object.freeze({run_id:slot.run_id,step_id:slot.step_id,invocation_id:slot.invocation_id,preparation_sha256:slot.preparation_sha256,request_body_sha256:slot.request_body_sha256,idempotency_key_sha256:await sha256(slot.idempotency_key)});check(encoder.encode(canonicalJson(subject)).length<=1024);this.#healthy();const url=new URL(request.url);check(request.method==='POST'&&url.origin===expected.origin&&url.pathname==='/v2/workspaces/'+w.id+'/'+step.path&&!url.search&&!url.hash);

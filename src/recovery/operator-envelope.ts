@@ -17,7 +17,7 @@ export interface EnvelopeOptions {
 export function isCurrent16Manifest(value:unknown):boolean {
  if(!value||typeof value!=='object')return false;
  const v=value as {format_version?:unknown;checkpoint?:{contract_revision?:unknown;schema_version?:unknown}};
- return v.format_version===2&&v.checkpoint?.contract_revision==='0.2'&&v.checkpoint.schema_version===16;
+ return v.format_version===2&&v.checkpoint?.contract_revision==='0.2'&&(v.checkpoint.schema_version===16||v.checkpoint.schema_version===17);
 }
 /** Finite raw transport selection before detailed schema validation; never authorizes a command. */
 export function assertProvisionalRawEnvelope(value:unknown,rawBytes:number):void {

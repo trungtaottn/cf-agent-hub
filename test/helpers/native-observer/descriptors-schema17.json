@@ -1,0 +1,1379 @@
+{
+  "type": "private-observer-expanded-preflight-design",
+  "version": 1,
+  "sourceOnly": true,
+  "preflights": {
+    "S": {
+      "sql": "SELECT\n  CASE WHEN (typeof(version)='integer' AND version BETWEEN 1 AND 9007199254740991) THEN 1 ELSE 0 END AS __valid,\n  CASE WHEN (typeof(version)='integer' AND version BETWEEN 1 AND 9007199254740991) THEN version ELSE NULL END AS version\nFROM schema_migrations\nWHERE 1=1\nORDER BY version\nLIMIT 18;",
+      "sqlSha256": "2c8cc93d4591bbe276a90d510ebb3c368e9c8efc7bd416843d2a1802d11c423b",
+      "parameters": [],
+      "fields": [
+        {
+          "name": "version",
+          "type": "n1"
+        }
+      ],
+      "acceptedRows": 17,
+      "canonicalBytes": 16384,
+      "bridge": {
+        "rawScalarRowBytes": 16,
+        "jsonRowBytes": 40,
+        "rawScalarBytes": 288,
+        "jsonArrayBytes": 739,
+        "rows": 18
+      },
+      "paritySelector": "S"
+    },
+    "F": {
+      "sql": "SELECT\n  CASE WHEN (typeof(id)='integer' AND id BETWEEN 1 AND 9007199254740991) AND (typeof(state)='text' AND length(CAST(state AS BLOB))<=64) AND (typeof(authority_epoch)='integer' AND authority_epoch BETWEEN 0 AND 9007199254740991) AND (typeof(generation)='integer' AND generation BETWEEN 0 AND 9007199254740991) AND (typeof(barrier_id)='null' OR (typeof(barrier_id)='text' AND length(CAST(barrier_id AS BLOB))<=96)) AND (typeof(capture_id)='null' OR (typeof(capture_id)='text' AND length(CAST(capture_id AS BLOB))<=96)) AND (typeof(updated_at)='integer' AND updated_at BETWEEN 0 AND 9007199254740991) THEN 1 ELSE 0 END AS __valid,\n  CASE WHEN (typeof(id)='integer' AND id BETWEEN 1 AND 9007199254740991) THEN id ELSE NULL END AS id,\n  CASE WHEN (typeof(state)='text' AND length(CAST(state AS BLOB))<=64) THEN state ELSE NULL END AS state,\n  CASE WHEN (typeof(authority_epoch)='integer' AND authority_epoch BETWEEN 0 AND 9007199254740991) THEN authority_epoch ELSE NULL END AS authority_epoch,\n  CASE WHEN (typeof(generation)='integer' AND generation BETWEEN 0 AND 9007199254740991) THEN generation ELSE NULL END AS generation,\n  CASE WHEN (typeof(barrier_id)='null' OR (typeof(barrier_id)='text' AND length(CAST(barrier_id AS BLOB))<=96)) THEN barrier_id ELSE NULL END AS barrier_id,\n  CASE WHEN (typeof(capture_id)='null' OR (typeof(capture_id)='text' AND length(CAST(capture_id AS BLOB))<=96)) THEN capture_id ELSE NULL END AS capture_id,\n  CASE WHEN (typeof(updated_at)='integer' AND updated_at BETWEEN 0 AND 9007199254740991) THEN updated_at ELSE NULL END AS updated_at\nFROM maintenance_state\nWHERE id=1\nORDER BY id\nLIMIT 2;",
+      "sqlSha256": "9c8cbc481ac2b41f61b6f4d6e34dc92aa65b28c76808b3d2c163e85d9f1706a9",
+      "parameters": [],
+      "fields": [
+        {
+          "name": "id",
+          "type": "n1"
+        },
+        {
+          "name": "state",
+          "type": "t64"
+        },
+        {
+          "name": "authority_epoch",
+          "type": "n0"
+        },
+        {
+          "name": "generation",
+          "type": "n0"
+        },
+        {
+          "name": "barrier_id",
+          "type": "t96?"
+        },
+        {
+          "name": "capture_id",
+          "type": "t96?"
+        },
+        {
+          "name": "updated_at",
+          "type": "n0"
+        }
+      ],
+      "acceptedRows": 1,
+      "canonicalBytes": 16384,
+      "bridge": {
+        "rawScalarRowBytes": 296,
+        "jsonRowBytes": 1709,
+        "rawScalarBytes": 592,
+        "jsonArrayBytes": 3421,
+        "rows": 2
+      },
+      "paritySelector": null
+    },
+    "M": {
+      "sql": "SELECT\n  CASE WHEN (typeof(workspace_id)='text' AND length(CAST(workspace_id AS BLOB))<=96) AND (typeof(object_name)='text' AND length(CAST(object_name AS BLOB))<=512) AND (typeof(config_epoch)='integer' AND config_epoch BETWEEN 1 AND 9007199254740991) AND (typeof(config_digest)='text' AND length(CAST(config_digest AS BLOB))<=64) AND (typeof(installation_digest)='text' AND length(CAST(installation_digest AS BLOB))<=64) AND (typeof(admission_state)='text' AND length(CAST(admission_state AS BLOB))<=64) AND (typeof(message_retained_after_created_at)='null' OR (typeof(message_retained_after_created_at)='integer' AND message_retained_after_created_at BETWEEN 0 AND 9007199254740991)) AND (typeof(message_retained_after_id)='null' OR (typeof(message_retained_after_id)='text' AND length(CAST(message_retained_after_id AS BLOB))<=96)) AND (typeof(event_retained_after_sequence)='null' OR (typeof(event_retained_after_sequence)='integer' AND event_retained_after_sequence BETWEEN 0 AND 9007199254740991)) AND (typeof(config_json)='text' AND length(CAST(config_json AS BLOB))<=65536) THEN 1 ELSE 0 END AS __valid,\n  CASE WHEN (typeof(workspace_id)='text' AND length(CAST(workspace_id AS BLOB))<=96) THEN workspace_id ELSE NULL END AS workspace_id,\n  CASE WHEN (typeof(object_name)='text' AND length(CAST(object_name AS BLOB))<=512) THEN object_name ELSE NULL END AS object_name,\n  CASE WHEN (typeof(config_epoch)='integer' AND config_epoch BETWEEN 1 AND 9007199254740991) THEN config_epoch ELSE NULL END AS config_epoch,\n  CASE WHEN (typeof(config_digest)='text' AND length(CAST(config_digest AS BLOB))<=64) THEN config_digest ELSE NULL END AS config_digest,\n  CASE WHEN (typeof(installation_digest)='text' AND length(CAST(installation_digest AS BLOB))<=64) THEN installation_digest ELSE NULL END AS installation_digest,\n  CASE WHEN (typeof(admission_state)='text' AND length(CAST(admission_state AS BLOB))<=64) THEN admission_state ELSE NULL END AS admission_state,\n  CASE WHEN (typeof(message_retained_after_created_at)='null' OR (typeof(message_retained_after_created_at)='integer' AND message_retained_after_created_at BETWEEN 0 AND 9007199254740991)) THEN message_retained_after_created_at ELSE NULL END AS message_retained_after_created_at,\n  CASE WHEN (typeof(message_retained_after_id)='null' OR (typeof(message_retained_after_id)='text' AND length(CAST(message_retained_after_id AS BLOB))<=96)) THEN message_retained_after_id ELSE NULL END AS message_retained_after_id,\n  CASE WHEN (typeof(event_retained_after_sequence)='null' OR (typeof(event_retained_after_sequence)='integer' AND event_retained_after_sequence BETWEEN 0 AND 9007199254740991)) THEN event_retained_after_sequence ELSE NULL END AS event_retained_after_sequence,\n  CASE WHEN (typeof(config_json)='text' AND length(CAST(config_json AS BLOB))<=65536) THEN config_json ELSE NULL END AS config_json\nFROM workspace_metadata\nWHERE id=1 AND workspace_id=?\nORDER BY id\nLIMIT 2;",
+      "sqlSha256": "826eaa3d8feefc6241c85bcd0356c952dc5ebfa69db9cf0952266b0e0a4eba16",
+      "parameters": [
+        "workspaceId"
+      ],
+      "fields": [
+        {
+          "name": "workspace_id",
+          "type": "t96"
+        },
+        {
+          "name": "object_name",
+          "type": "t512"
+        },
+        {
+          "name": "config_epoch",
+          "type": "n1"
+        },
+        {
+          "name": "config_digest",
+          "type": "t64"
+        },
+        {
+          "name": "installation_digest",
+          "type": "t64"
+        },
+        {
+          "name": "admission_state",
+          "type": "t64"
+        },
+        {
+          "name": "message_retained_after_created_at",
+          "type": "n0?"
+        },
+        {
+          "name": "message_retained_after_id",
+          "type": "t96?"
+        },
+        {
+          "name": "event_retained_after_sequence",
+          "type": "n0?"
+        },
+        {
+          "name": "config_json",
+          "type": "t65536"
+        }
+      ],
+      "acceptedRows": 1,
+      "canonicalBytes": 16384,
+      "bridge": {
+        "rawScalarRowBytes": 66464,
+        "jsonRowBytes": 398887,
+        "rawScalarBytes": 132928,
+        "jsonArrayBytes": 797777,
+        "rows": 2
+      },
+      "paritySelector": null
+    },
+    "C": {
+      "sql": "SELECT\n  CASE WHEN (typeof(workspace_id)='text' AND length(CAST(workspace_id AS BLOB))<=96) AND (typeof(credential_id)='text' AND length(CAST(credential_id AS BLOB))<=96) AND (typeof(agent_id)='text' AND length(CAST(agent_id AS BLOB))<=96) AND (typeof(credential_version)='integer' AND credential_version BETWEEN 1 AND 9007199254740991) AND (typeof(token_sha256)='text' AND length(CAST(token_sha256 AS BLOB))<=64) AND (typeof(scopes_json)='text' AND length(CAST(scopes_json AS BLOB))<=4096) AND (typeof(project_ids_json)='text' AND length(CAST(project_ids_json AS BLOB))<=4096) AND (typeof(enabled)='integer' AND enabled BETWEEN 0 AND 1) AND (typeof(expires_at)='integer' AND expires_at BETWEEN 0 AND 9007199254740991) AND (typeof(config_epoch)='integer' AND config_epoch BETWEEN 1 AND 9007199254740991) AND (typeof(retired_at_epoch)='null' OR (typeof(retired_at_epoch)='integer' AND retired_at_epoch BETWEEN 0 AND 9007199254740991)) AND (typeof(revoked_at)='null' OR (typeof(revoked_at)='integer' AND revoked_at BETWEEN 0 AND 9007199254740991)) AND (typeof(origin)='text' AND length(CAST(origin AS BLOB))<=64) AND (typeof(label)='text' AND length(CAST(label AS BLOB))<=512) AND (typeof(created_at)='integer' AND created_at BETWEEN 0 AND 9007199254740991) AND (typeof(issued_by_principal_id)='null' OR (typeof(issued_by_principal_id)='text' AND length(CAST(issued_by_principal_id AS BLOB))<=96)) THEN 1 ELSE 0 END AS __valid,\n  CASE WHEN (typeof(workspace_id)='text' AND length(CAST(workspace_id AS BLOB))<=96) THEN workspace_id ELSE NULL END AS workspace_id,\n  CASE WHEN (typeof(credential_id)='text' AND length(CAST(credential_id AS BLOB))<=96) THEN credential_id ELSE NULL END AS credential_id,\n  CASE WHEN (typeof(agent_id)='text' AND length(CAST(agent_id AS BLOB))<=96) THEN agent_id ELSE NULL END AS agent_id,\n  CASE WHEN (typeof(credential_version)='integer' AND credential_version BETWEEN 1 AND 9007199254740991) THEN credential_version ELSE NULL END AS credential_version,\n  CASE WHEN (typeof(token_sha256)='text' AND length(CAST(token_sha256 AS BLOB))<=64) THEN token_sha256 ELSE NULL END AS token_sha256,\n  CASE WHEN (typeof(scopes_json)='text' AND length(CAST(scopes_json AS BLOB))<=4096) THEN scopes_json ELSE NULL END AS scopes_json,\n  CASE WHEN (typeof(project_ids_json)='text' AND length(CAST(project_ids_json AS BLOB))<=4096) THEN project_ids_json ELSE NULL END AS project_ids_json,\n  CASE WHEN (typeof(enabled)='integer' AND enabled BETWEEN 0 AND 1) THEN enabled ELSE NULL END AS enabled,\n  CASE WHEN (typeof(expires_at)='integer' AND expires_at BETWEEN 0 AND 9007199254740991) THEN expires_at ELSE NULL END AS expires_at,\n  CASE WHEN (typeof(config_epoch)='integer' AND config_epoch BETWEEN 1 AND 9007199254740991) THEN config_epoch ELSE NULL END AS config_epoch,\n  CASE WHEN (typeof(retired_at_epoch)='null' OR (typeof(retired_at_epoch)='integer' AND retired_at_epoch BETWEEN 0 AND 9007199254740991)) THEN retired_at_epoch ELSE NULL END AS retired_at_epoch,\n  CASE WHEN (typeof(revoked_at)='null' OR (typeof(revoked_at)='integer' AND revoked_at BETWEEN 0 AND 9007199254740991)) THEN revoked_at ELSE NULL END AS revoked_at,\n  CASE WHEN (typeof(origin)='text' AND length(CAST(origin AS BLOB))<=64) THEN origin ELSE NULL END AS origin,\n  CASE WHEN (typeof(label)='text' AND length(CAST(label AS BLOB))<=512) THEN label ELSE NULL END AS label,\n  CASE WHEN (typeof(created_at)='integer' AND created_at BETWEEN 0 AND 9007199254740991) THEN created_at ELSE NULL END AS created_at,\n  CASE WHEN (typeof(issued_by_principal_id)='null' OR (typeof(issued_by_principal_id)='text' AND length(CAST(issued_by_principal_id AS BLOB))<=96)) THEN issued_by_principal_id ELSE NULL END AS issued_by_principal_id\nFROM native_credentials\nWHERE workspace_id=?\nORDER BY credential_id\nLIMIT 9;",
+      "sqlSha256": "7eaae7f01a7e7ef2d8efd1ef09e19c3eebcabe703f134bf2af85a4cc5cb9e0a4",
+      "parameters": [
+        "workspaceId"
+      ],
+      "fields": [
+        {
+          "name": "workspace_id",
+          "type": "t96"
+        },
+        {
+          "name": "credential_id",
+          "type": "t96"
+        },
+        {
+          "name": "agent_id",
+          "type": "t96"
+        },
+        {
+          "name": "credential_version",
+          "type": "n1"
+        },
+        {
+          "name": "token_sha256",
+          "type": "t64"
+        },
+        {
+          "name": "scopes_json",
+          "type": "t4096"
+        },
+        {
+          "name": "project_ids_json",
+          "type": "t4096"
+        },
+        {
+          "name": "enabled",
+          "type": "b"
+        },
+        {
+          "name": "expires_at",
+          "type": "n0"
+        },
+        {
+          "name": "config_epoch",
+          "type": "n1"
+        },
+        {
+          "name": "retired_at_epoch",
+          "type": "n0?"
+        },
+        {
+          "name": "revoked_at",
+          "type": "n0?"
+        },
+        {
+          "name": "origin",
+          "type": "t64"
+        },
+        {
+          "name": "label",
+          "type": "t512"
+        },
+        {
+          "name": "created_at",
+          "type": "n0"
+        },
+        {
+          "name": "issued_by_principal_id",
+          "type": "t96?"
+        }
+      ],
+      "acceptedRows": 8,
+      "canonicalBytes": 16384,
+      "bridge": {
+        "rawScalarRowBytes": 9280,
+        "jsonRowBytes": 55679,
+        "rawScalarBytes": 83520,
+        "jsonArrayBytes": 501121,
+        "rows": 9
+      },
+      "paritySelector": null
+    },
+    "AG": {
+      "sql": "SELECT\n  CASE WHEN (typeof(workspace_id)='text' AND length(CAST(workspace_id AS BLOB))<=96) AND (typeof(agent_id)='text' AND length(CAST(agent_id AS BLOB))<=96) AND (typeof(agent_version)='integer' AND agent_version BETWEEN 1 AND 9007199254740991) AND (typeof(display_name)='text' AND length(CAST(display_name AS BLOB))<=512) AND (typeof(description)='text' AND length(CAST(description AS BLOB))<=2048) AND (typeof(work_role_ids_json)='text' AND length(CAST(work_role_ids_json AS BLOB))<=4096) AND (typeof(framework)='null' OR (typeof(framework)='text' AND length(CAST(framework AS BLOB))<=512)) AND (typeof(model)='null' OR (typeof(model)='text' AND length(CAST(model AS BLOB))<=512)) AND (typeof(status)='text' AND length(CAST(status AS BLOB))<=64) AND (typeof(origin)='text' AND length(CAST(origin AS BLOB))<=64) AND (typeof(config_epoch)='integer' AND config_epoch BETWEEN 1 AND 9007199254740991) AND (typeof(created_at)='integer' AND created_at BETWEEN 0 AND 9007199254740991) AND (typeof(updated_at)='integer' AND updated_at BETWEEN 0 AND 9007199254740991) THEN 1 ELSE 0 END AS __valid,\n  CASE WHEN (typeof(workspace_id)='text' AND length(CAST(workspace_id AS BLOB))<=96) THEN workspace_id ELSE NULL END AS workspace_id,\n  CASE WHEN (typeof(agent_id)='text' AND length(CAST(agent_id AS BLOB))<=96) THEN agent_id ELSE NULL END AS agent_id,\n  CASE WHEN (typeof(agent_version)='integer' AND agent_version BETWEEN 1 AND 9007199254740991) THEN agent_version ELSE NULL END AS agent_version,\n  CASE WHEN (typeof(display_name)='text' AND length(CAST(display_name AS BLOB))<=512) THEN display_name ELSE NULL END AS display_name,\n  CASE WHEN (typeof(description)='text' AND length(CAST(description AS BLOB))<=2048) THEN description ELSE NULL END AS description,\n  CASE WHEN (typeof(work_role_ids_json)='text' AND length(CAST(work_role_ids_json AS BLOB))<=4096) THEN work_role_ids_json ELSE NULL END AS work_role_ids_json,\n  CASE WHEN (typeof(framework)='null' OR (typeof(framework)='text' AND length(CAST(framework AS BLOB))<=512)) THEN framework ELSE NULL END AS framework,\n  CASE WHEN (typeof(model)='null' OR (typeof(model)='text' AND length(CAST(model AS BLOB))<=512)) THEN model ELSE NULL END AS model,\n  CASE WHEN (typeof(status)='text' AND length(CAST(status AS BLOB))<=64) THEN status ELSE NULL END AS status,\n  CASE WHEN (typeof(origin)='text' AND length(CAST(origin AS BLOB))<=64) THEN origin ELSE NULL END AS origin,\n  CASE WHEN (typeof(config_epoch)='integer' AND config_epoch BETWEEN 1 AND 9007199254740991) THEN config_epoch ELSE NULL END AS config_epoch,\n  CASE WHEN (typeof(created_at)='integer' AND created_at BETWEEN 0 AND 9007199254740991) THEN created_at ELSE NULL END AS created_at,\n  CASE WHEN (typeof(updated_at)='integer' AND updated_at BETWEEN 0 AND 9007199254740991) THEN updated_at ELSE NULL END AS updated_at\nFROM static_agents\nWHERE workspace_id=?\nORDER BY created_at,agent_id\nLIMIT 9;",
+      "sqlSha256": "c00ce3b7e589d696c5de9a65de6bdbc4fcc33e038bbbfa767980da028f389075",
+      "parameters": [
+        "workspaceId"
+      ],
+      "fields": [
+        {
+          "name": "workspace_id",
+          "type": "t96"
+        },
+        {
+          "name": "agent_id",
+          "type": "t96"
+        },
+        {
+          "name": "agent_version",
+          "type": "n1"
+        },
+        {
+          "name": "display_name",
+          "type": "t512"
+        },
+        {
+          "name": "description",
+          "type": "t2048"
+        },
+        {
+          "name": "work_role_ids_json",
+          "type": "t4096"
+        },
+        {
+          "name": "framework",
+          "type": "t512?"
+        },
+        {
+          "name": "model",
+          "type": "t512?"
+        },
+        {
+          "name": "status",
+          "type": "t64"
+        },
+        {
+          "name": "origin",
+          "type": "t64"
+        },
+        {
+          "name": "config_epoch",
+          "type": "n1"
+        },
+        {
+          "name": "created_at",
+          "type": "n0"
+        },
+        {
+          "name": "updated_at",
+          "type": "n0"
+        }
+      ],
+      "acceptedRows": 8,
+      "canonicalBytes": 16384,
+      "bridge": {
+        "rawScalarRowBytes": 8040,
+        "jsonRowBytes": 48279,
+        "rawScalarBytes": 72360,
+        "jsonArrayBytes": 434521,
+        "rows": 9
+      },
+      "paritySelector": "AG"
+    },
+    "T": {
+      "sql": "SELECT\n  CASE WHEN (typeof(workspace_id)='text' AND length(CAST(workspace_id AS BLOB))<=96) AND (typeof(id)='text' AND length(CAST(id AS BLOB))<=96) AND (typeof(title)='text' AND length(CAST(title AS BLOB))<=512) AND (typeof(description)='text' AND length(CAST(description AS BLOB))<=2048) AND (typeof(state)='text' AND length(CAST(state AS BLOB))<=64) AND (typeof(task_version)='integer' AND task_version BETWEEN 1 AND 9007199254740991) AND (typeof(proposal_version)='integer' AND proposal_version BETWEEN 0 AND 9007199254740991) AND (typeof(project_id)='null' OR (typeof(project_id)='text' AND length(CAST(project_id AS BLOB))<=96)) AND (typeof(work_role_id)='null' OR (typeof(work_role_id)='text' AND length(CAST(work_role_id AS BLOB))<=96)) AND (typeof(assigned_agent_id)='null' OR (typeof(assigned_agent_id)='text' AND length(CAST(assigned_agent_id AS BLOB))<=96)) AND (typeof(active_run_id)='null' OR (typeof(active_run_id)='text' AND length(CAST(active_run_id AS BLOB))<=96)) AND (typeof(latest_run_id)='null' OR (typeof(latest_run_id)='text' AND length(CAST(latest_run_id AS BLOB))<=96)) AND (typeof(approval_id)='null' OR (typeof(approval_id)='text' AND length(CAST(approval_id AS BLOB))<=96)) AND (typeof(current_result_id)='null' OR (typeof(current_result_id)='text' AND length(CAST(current_result_id AS BLOB))<=96)) AND (typeof(retry_count)='integer' AND retry_count BETWEEN 0 AND 9007199254740991) AND (typeof(retry_limit)='integer' AND retry_limit BETWEEN 0 AND 9007199254740991) AND (typeof(flags_json)='text' AND length(CAST(flags_json AS BLOB))<=4096) AND (typeof(created_at)='integer' AND created_at BETWEEN 0 AND 9007199254740991) AND (typeof(updated_at)='integer' AND updated_at BETWEEN 0 AND 9007199254740991) AND (typeof(next_fence)='integer' AND next_fence BETWEEN 1 AND 9007199254740991) AND (typeof(next_result_sequence)='integer' AND next_result_sequence BETWEEN 1 AND 9007199254740991) THEN 1 ELSE 0 END AS __valid,\n  CASE WHEN (typeof(workspace_id)='text' AND length(CAST(workspace_id AS BLOB))<=96) THEN workspace_id ELSE NULL END AS workspace_id,\n  CASE WHEN (typeof(id)='text' AND length(CAST(id AS BLOB))<=96) THEN id ELSE NULL END AS id,\n  CASE WHEN (typeof(title)='text' AND length(CAST(title AS BLOB))<=512) THEN title ELSE NULL END AS title,\n  CASE WHEN (typeof(description)='text' AND length(CAST(description AS BLOB))<=2048) THEN description ELSE NULL END AS description,\n  CASE WHEN (typeof(state)='text' AND length(CAST(state AS BLOB))<=64) THEN state ELSE NULL END AS state,\n  CASE WHEN (typeof(task_version)='integer' AND task_version BETWEEN 1 AND 9007199254740991) THEN task_version ELSE NULL END AS task_version,\n  CASE WHEN (typeof(proposal_version)='integer' AND proposal_version BETWEEN 0 AND 9007199254740991) THEN proposal_version ELSE NULL END AS proposal_version,\n  CASE WHEN (typeof(project_id)='null' OR (typeof(project_id)='text' AND length(CAST(project_id AS BLOB))<=96)) THEN project_id ELSE NULL END AS project_id,\n  CASE WHEN (typeof(work_role_id)='null' OR (typeof(work_role_id)='text' AND length(CAST(work_role_id AS BLOB))<=96)) THEN work_role_id ELSE NULL END AS work_role_id,\n  CASE WHEN (typeof(assigned_agent_id)='null' OR (typeof(assigned_agent_id)='text' AND length(CAST(assigned_agent_id AS BLOB))<=96)) THEN assigned_agent_id ELSE NULL END AS assigned_agent_id,\n  CASE WHEN (typeof(active_run_id)='null' OR (typeof(active_run_id)='text' AND length(CAST(active_run_id AS BLOB))<=96)) THEN active_run_id ELSE NULL END AS active_run_id,\n  CASE WHEN (typeof(latest_run_id)='null' OR (typeof(latest_run_id)='text' AND length(CAST(latest_run_id AS BLOB))<=96)) THEN latest_run_id ELSE NULL END AS latest_run_id,\n  CASE WHEN (typeof(approval_id)='null' OR (typeof(approval_id)='text' AND length(CAST(approval_id AS BLOB))<=96)) THEN approval_id ELSE NULL END AS approval_id,\n  CASE WHEN (typeof(current_result_id)='null' OR (typeof(current_result_id)='text' AND length(CAST(current_result_id AS BLOB))<=96)) THEN current_result_id ELSE NULL END AS current_result_id,\n  CASE WHEN (typeof(retry_count)='integer' AND retry_count BETWEEN 0 AND 9007199254740991) THEN retry_count ELSE NULL END AS retry_count,\n  CASE WHEN (typeof(retry_limit)='integer' AND retry_limit BETWEEN 0 AND 9007199254740991) THEN retry_limit ELSE NULL END AS retry_limit,\n  CASE WHEN (typeof(flags_json)='text' AND length(CAST(flags_json AS BLOB))<=4096) THEN flags_json ELSE NULL END AS flags_json,\n  CASE WHEN (typeof(created_at)='integer' AND created_at BETWEEN 0 AND 9007199254740991) THEN created_at ELSE NULL END AS created_at,\n  CASE WHEN (typeof(updated_at)='integer' AND updated_at BETWEEN 0 AND 9007199254740991) THEN updated_at ELSE NULL END AS updated_at,\n  CASE WHEN (typeof(next_fence)='integer' AND next_fence BETWEEN 1 AND 9007199254740991) THEN next_fence ELSE NULL END AS next_fence,\n  CASE WHEN (typeof(next_result_sequence)='integer' AND next_result_sequence BETWEEN 1 AND 9007199254740991) THEN next_result_sequence ELSE NULL END AS next_result_sequence\nFROM tasks\nWHERE workspace_id=?\nORDER BY created_at,id\nLIMIT 17;",
+      "sqlSha256": "35922293d6d14affcf4d34a3a065fd50cb8d1c3dd64c93e4ba550261a695a003",
+      "parameters": [
+        "workspaceId"
+      ],
+      "fields": [
+        {
+          "name": "workspace_id",
+          "type": "t96"
+        },
+        {
+          "name": "id",
+          "type": "t96"
+        },
+        {
+          "name": "title",
+          "type": "t512"
+        },
+        {
+          "name": "description",
+          "type": "t2048"
+        },
+        {
+          "name": "state",
+          "type": "t64"
+        },
+        {
+          "name": "task_version",
+          "type": "n1"
+        },
+        {
+          "name": "proposal_version",
+          "type": "n0"
+        },
+        {
+          "name": "project_id",
+          "type": "t96?"
+        },
+        {
+          "name": "work_role_id",
+          "type": "t96?"
+        },
+        {
+          "name": "assigned_agent_id",
+          "type": "t96?"
+        },
+        {
+          "name": "active_run_id",
+          "type": "t96?"
+        },
+        {
+          "name": "latest_run_id",
+          "type": "t96?"
+        },
+        {
+          "name": "approval_id",
+          "type": "t96?"
+        },
+        {
+          "name": "current_result_id",
+          "type": "t96?"
+        },
+        {
+          "name": "retry_count",
+          "type": "n0"
+        },
+        {
+          "name": "retry_limit",
+          "type": "n0"
+        },
+        {
+          "name": "flags_json",
+          "type": "t4096"
+        },
+        {
+          "name": "created_at",
+          "type": "n0"
+        },
+        {
+          "name": "updated_at",
+          "type": "n0"
+        },
+        {
+          "name": "next_fence",
+          "type": "n1"
+        },
+        {
+          "name": "next_result_sequence",
+          "type": "n1"
+        }
+      ],
+      "acceptedRows": 16,
+      "canonicalBytes": 16384,
+      "bridge": {
+        "rawScalarRowBytes": 7656,
+        "jsonRowBytes": 45993,
+        "rawScalarBytes": 130152,
+        "jsonArrayBytes": 781899,
+        "rows": 17
+      },
+      "paritySelector": null
+    },
+    "R": {
+      "sql": "SELECT\n  CASE WHEN (typeof(workspace_id)='text' AND length(CAST(workspace_id AS BLOB))<=96) AND (typeof(id)='text' AND length(CAST(id AS BLOB))<=96) AND (typeof(task_id)='text' AND length(CAST(task_id AS BLOB))<=96) AND (typeof(agent_id)='text' AND length(CAST(agent_id AS BLOB))<=96) AND (typeof(runtime_instance_id)='text' AND length(CAST(runtime_instance_id AS BLOB))<=96) AND (typeof(credential_id)='text' AND length(CAST(credential_id AS BLOB))<=96) AND (typeof(authority_epoch)='integer' AND authority_epoch BETWEEN 1 AND 9007199254740991) AND (typeof(status)='text' AND length(CAST(status AS BLOB))<=64) AND (typeof(run_version)='integer' AND run_version BETWEEN 1 AND 9007199254740991) AND (typeof(fence)='integer' AND fence BETWEEN 1 AND 9007199254740991) AND (typeof(lease_expires_at)='integer' AND lease_expires_at BETWEEN 0 AND 9007199254740991) AND (typeof(started_at)='integer' AND started_at BETWEEN 0 AND 9007199254740991) AND (typeof(ended_at)='null' OR (typeof(ended_at)='integer' AND ended_at BETWEEN 0 AND 9007199254740991)) THEN 1 ELSE 0 END AS __valid,\n  CASE WHEN (typeof(workspace_id)='text' AND length(CAST(workspace_id AS BLOB))<=96) THEN workspace_id ELSE NULL END AS workspace_id,\n  CASE WHEN (typeof(id)='text' AND length(CAST(id AS BLOB))<=96) THEN id ELSE NULL END AS id,\n  CASE WHEN (typeof(task_id)='text' AND length(CAST(task_id AS BLOB))<=96) THEN task_id ELSE NULL END AS task_id,\n  CASE WHEN (typeof(agent_id)='text' AND length(CAST(agent_id AS BLOB))<=96) THEN agent_id ELSE NULL END AS agent_id,\n  CASE WHEN (typeof(runtime_instance_id)='text' AND length(CAST(runtime_instance_id AS BLOB))<=96) THEN runtime_instance_id ELSE NULL END AS runtime_instance_id,\n  CASE WHEN (typeof(credential_id)='text' AND length(CAST(credential_id AS BLOB))<=96) THEN credential_id ELSE NULL END AS credential_id,\n  CASE WHEN (typeof(authority_epoch)='integer' AND authority_epoch BETWEEN 1 AND 9007199254740991) THEN authority_epoch ELSE NULL END AS authority_epoch,\n  CASE WHEN (typeof(status)='text' AND length(CAST(status AS BLOB))<=64) THEN status ELSE NULL END AS status,\n  CASE WHEN (typeof(run_version)='integer' AND run_version BETWEEN 1 AND 9007199254740991) THEN run_version ELSE NULL END AS run_version,\n  CASE WHEN (typeof(fence)='integer' AND fence BETWEEN 1 AND 9007199254740991) THEN fence ELSE NULL END AS fence,\n  CASE WHEN (typeof(lease_expires_at)='integer' AND lease_expires_at BETWEEN 0 AND 9007199254740991) THEN lease_expires_at ELSE NULL END AS lease_expires_at,\n  CASE WHEN (typeof(started_at)='integer' AND started_at BETWEEN 0 AND 9007199254740991) THEN started_at ELSE NULL END AS started_at,\n  CASE WHEN (typeof(ended_at)='null' OR (typeof(ended_at)='integer' AND ended_at BETWEEN 0 AND 9007199254740991)) THEN ended_at ELSE NULL END AS ended_at\nFROM runs\nWHERE workspace_id=?\nORDER BY id\nLIMIT 17;",
+      "sqlSha256": "c1bff001fd4796cfd43fec20bc41a691eda60362e7c6de68375dd257ff53cf05",
+      "parameters": [
+        "workspaceId"
+      ],
+      "fields": [
+        {
+          "name": "workspace_id",
+          "type": "t96"
+        },
+        {
+          "name": "id",
+          "type": "t96"
+        },
+        {
+          "name": "task_id",
+          "type": "t96"
+        },
+        {
+          "name": "agent_id",
+          "type": "t96"
+        },
+        {
+          "name": "runtime_instance_id",
+          "type": "t96"
+        },
+        {
+          "name": "credential_id",
+          "type": "t96"
+        },
+        {
+          "name": "authority_epoch",
+          "type": "n1"
+        },
+        {
+          "name": "status",
+          "type": "t64"
+        },
+        {
+          "name": "run_version",
+          "type": "n1"
+        },
+        {
+          "name": "fence",
+          "type": "n1"
+        },
+        {
+          "name": "lease_expires_at",
+          "type": "n0"
+        },
+        {
+          "name": "started_at",
+          "type": "n0"
+        },
+        {
+          "name": "ended_at",
+          "type": "n0?"
+        }
+      ],
+      "acceptedRows": 16,
+      "canonicalBytes": 16384,
+      "bridge": {
+        "rawScalarRowBytes": 696,
+        "jsonRowBytes": 4147,
+        "rawScalarBytes": 11832,
+        "jsonArrayBytes": 70517,
+        "rows": 17
+      },
+      "paritySelector": "R"
+    },
+    "P": {
+      "sql": "SELECT\n  CASE WHEN (typeof(workspace_id)='text' AND length(CAST(workspace_id AS BLOB))<=96) AND (typeof(version)='integer' AND version BETWEEN 1 AND 9007199254740991) AND (typeof(document_json)='text' AND length(CAST(document_json AS BLOB))<=16384) AND (typeof(updated_at)='integer' AND updated_at BETWEEN 0 AND 9007199254740991) AND (typeof(updated_by)='text' AND length(CAST(updated_by AS BLOB))<=96) THEN 1 ELSE 0 END AS __valid,\n  CASE WHEN (typeof(workspace_id)='text' AND length(CAST(workspace_id AS BLOB))<=96) THEN workspace_id ELSE NULL END AS workspace_id,\n  CASE WHEN (typeof(version)='integer' AND version BETWEEN 1 AND 9007199254740991) THEN version ELSE NULL END AS version,\n  CASE WHEN (typeof(document_json)='text' AND length(CAST(document_json AS BLOB))<=16384) THEN document_json ELSE NULL END AS document_json,\n  CASE WHEN (typeof(updated_at)='integer' AND updated_at BETWEEN 0 AND 9007199254740991) THEN updated_at ELSE NULL END AS updated_at,\n  CASE WHEN (typeof(updated_by)='text' AND length(CAST(updated_by AS BLOB))<=96) THEN updated_by ELSE NULL END AS updated_by\nFROM profiles\nWHERE workspace_id=?\nORDER BY workspace_id\nLIMIT 2;",
+      "sqlSha256": "fd550920511f2105f617c69d77f240575fc655509f477043ab2a50a217dfc935",
+      "parameters": [
+        "workspaceId"
+      ],
+      "fields": [
+        {
+          "name": "workspace_id",
+          "type": "t96"
+        },
+        {
+          "name": "version",
+          "type": "n1"
+        },
+        {
+          "name": "document_json",
+          "type": "t16384"
+        },
+        {
+          "name": "updated_at",
+          "type": "n0"
+        },
+        {
+          "name": "updated_by",
+          "type": "t96"
+        }
+      ],
+      "acceptedRows": 1,
+      "canonicalBytes": 16384,
+      "bridge": {
+        "rawScalarRowBytes": 16600,
+        "jsonRowBytes": 99579,
+        "rawScalarBytes": 33200,
+        "jsonArrayBytes": 199161,
+        "rows": 2
+      },
+      "paritySelector": "P"
+    }
+  },
+  "productQueries": {
+    "1": {
+      "sql": "SELECT version FROM schema_migrations ORDER BY version",
+      "sqlSha256": "0bade3b8a35bf729c4fbcc60a7ad50d284ad1ea16a9a3cfff41002ddf82b16c7",
+      "fields": [
+        {
+          "name": "version",
+          "type": "n1"
+        }
+      ],
+      "parameters": [],
+      "bound": {
+        "rawScalarRowBytes": 8,
+        "jsonRowBytes": 28,
+        "rawScalarBytes": 136,
+        "jsonArrayBytes": 494,
+        "rows": 17
+      }
+    },
+    "2": {
+      "sql": "SELECT config_epoch FROM workspace_metadata WHERE id=1",
+      "sqlSha256": "36971a7841b126c4200b30d5103b0158e6e2af20052758f8751171d742b8a15e",
+      "fields": [
+        {
+          "name": "config_epoch",
+          "type": "n1"
+        }
+      ],
+      "parameters": [],
+      "bound": {
+        "rawScalarRowBytes": 8,
+        "jsonRowBytes": 33,
+        "rawScalarBytes": 8,
+        "jsonArrayBytes": 35,
+        "rows": 1
+      }
+    },
+    "3": {
+      "sql": "SELECT * FROM maintenance_state WHERE id=1",
+      "sqlSha256": "8b2da7b153ec0ff8b155f6de4f0db67789cf15554faf4e93e2bea077399835a0",
+      "fields": [
+        {
+          "name": "id",
+          "type": "n1"
+        },
+        {
+          "name": "state",
+          "type": "t64"
+        },
+        {
+          "name": "authority_epoch",
+          "type": "n0"
+        },
+        {
+          "name": "generation",
+          "type": "n0"
+        },
+        {
+          "name": "barrier_id",
+          "type": "t96?"
+        },
+        {
+          "name": "capture_id",
+          "type": "t96?"
+        },
+        {
+          "name": "updated_at",
+          "type": "n0"
+        }
+      ],
+      "parameters": [],
+      "bound": {
+        "rawScalarRowBytes": 288,
+        "jsonRowBytes": 1697,
+        "rawScalarBytes": 288,
+        "jsonArrayBytes": 1699,
+        "rows": 1
+      }
+    },
+    "4": {
+      "sql": "SELECT admission_state FROM workspace_metadata WHERE id=1",
+      "sqlSha256": "e31a6929a25743452e1f11b02071df81af28037ea46a243d78feb35872566f9e",
+      "fields": [
+        {
+          "name": "admission_state",
+          "type": "t64"
+        }
+      ],
+      "parameters": [],
+      "bound": {
+        "rawScalarRowBytes": 64,
+        "jsonRowBytes": 406,
+        "rawScalarBytes": 64,
+        "jsonArrayBytes": 408,
+        "rows": 1
+      }
+    },
+    "5": {
+      "sql": "SELECT workspace_id,object_name,config_epoch,config_json,admission_state FROM workspace_metadata WHERE id=1",
+      "sqlSha256": "6c4c16d39b40ba33ada1abd466c4a849b7303fe162256901231d4a07341caa15",
+      "fields": [
+        {
+          "name": "workspace_id",
+          "type": "t96"
+        },
+        {
+          "name": "object_name",
+          "type": "t512"
+        },
+        {
+          "name": "config_epoch",
+          "type": "n1"
+        },
+        {
+          "name": "admission_state",
+          "type": "t64"
+        },
+        {
+          "name": "config_json",
+          "type": "t65536"
+        }
+      ],
+      "parameters": [],
+      "bound": {
+        "rawScalarRowBytes": 66216,
+        "jsonRowBytes": 397354,
+        "rawScalarBytes": 66216,
+        "jsonArrayBytes": 397356,
+        "rows": 1
+      }
+    },
+    "6": {
+      "sql": "SELECT credential_id FROM native_credentials WHERE workspace_id=? AND token_sha256=? LIMIT 2",
+      "sqlSha256": "f6831361ec30883889fc1b0051275780b102ccd0633ba61095c30c0ccdd05e24",
+      "fields": [
+        {
+          "name": "credential_id",
+          "type": "t96"
+        }
+      ],
+      "parameters": [
+        "workspaceId",
+        "actualTokenDigest"
+      ],
+      "bound": {
+        "rawScalarRowBytes": 96,
+        "jsonRowBytes": 596,
+        "rawScalarBytes": 192,
+        "jsonArrayBytes": 1195,
+        "rows": 2
+      }
+    },
+    "7": {
+      "sql": "SELECT c.*,m.config_epoch AS installed_epoch,m.admission_state,a.config_epoch AS agent_epoch\n   FROM native_credentials c JOIN workspace_metadata m ON m.workspace_id=c.workspace_id\n   JOIN static_agents a ON a.agent_id=c.agent_id AND a.workspace_id=c.workspace_id\n   WHERE c.credential_id=? AND c.workspace_id=?",
+      "sqlSha256": "621fad814be9619af6f6830fbc3638bbc1ae316369dc29ae3bce4e412077a238",
+      "fields": [
+        {
+          "name": "workspace_id",
+          "type": "t96"
+        },
+        {
+          "name": "credential_id",
+          "type": "t96"
+        },
+        {
+          "name": "agent_id",
+          "type": "t96"
+        },
+        {
+          "name": "credential_version",
+          "type": "n1"
+        },
+        {
+          "name": "token_sha256",
+          "type": "t64"
+        },
+        {
+          "name": "scopes_json",
+          "type": "t4096"
+        },
+        {
+          "name": "project_ids_json",
+          "type": "t4096"
+        },
+        {
+          "name": "enabled",
+          "type": "b"
+        },
+        {
+          "name": "expires_at",
+          "type": "n0"
+        },
+        {
+          "name": "config_epoch",
+          "type": "n1"
+        },
+        {
+          "name": "retired_at_epoch",
+          "type": "n0?"
+        },
+        {
+          "name": "revoked_at",
+          "type": "n0?"
+        },
+        {
+          "name": "origin",
+          "type": "t64"
+        },
+        {
+          "name": "label",
+          "type": "t512"
+        },
+        {
+          "name": "created_at",
+          "type": "n0"
+        },
+        {
+          "name": "issued_by_principal_id",
+          "type": "t96?"
+        },
+        {
+          "name": "installed_epoch",
+          "type": "n1"
+        },
+        {
+          "name": "admission_state",
+          "type": "t64"
+        },
+        {
+          "name": "agent_epoch",
+          "type": "n1"
+        }
+      ],
+      "parameters": [
+        "credentialId",
+        "workspaceId"
+      ],
+      "bound": {
+        "rawScalarRowBytes": 9352,
+        "jsonRowBytes": 56138,
+        "rawScalarBytes": 9352,
+        "jsonArrayBytes": 56140,
+        "rows": 1
+      }
+    },
+    "8": {
+      "sql": "SELECT config_epoch,admission_state FROM workspace_metadata WHERE workspace_id=?",
+      "sqlSha256": "6b46ee2b9fc180c20a2e3fc1fe28691caae8675790979789813bedf25abb62cc",
+      "fields": [
+        {
+          "name": "config_epoch",
+          "type": "n1"
+        },
+        {
+          "name": "admission_state",
+          "type": "t64"
+        }
+      ],
+      "parameters": [
+        "workspaceId"
+      ],
+      "bound": {
+        "rawScalarRowBytes": 72,
+        "jsonRowBytes": 438,
+        "rawScalarBytes": 72,
+        "jsonArrayBytes": 440,
+        "rows": 1
+      }
+    },
+    "9": {
+      "sql": "SELECT * FROM static_agents WHERE workspace_id=? AND agent_id=?",
+      "sqlSha256": "9a1ac47901013638da2136ca4b97c431acc40c8700500587389e0d4739aa9f22",
+      "fields": [
+        {
+          "name": "workspace_id",
+          "type": "t96"
+        },
+        {
+          "name": "agent_id",
+          "type": "t96"
+        },
+        {
+          "name": "agent_version",
+          "type": "n1"
+        },
+        {
+          "name": "display_name",
+          "type": "t512"
+        },
+        {
+          "name": "description",
+          "type": "t2048"
+        },
+        {
+          "name": "work_role_ids_json",
+          "type": "t4096"
+        },
+        {
+          "name": "framework",
+          "type": "t512?"
+        },
+        {
+          "name": "model",
+          "type": "t512?"
+        },
+        {
+          "name": "status",
+          "type": "t64"
+        },
+        {
+          "name": "origin",
+          "type": "t64"
+        },
+        {
+          "name": "config_epoch",
+          "type": "n1"
+        },
+        {
+          "name": "created_at",
+          "type": "n0"
+        },
+        {
+          "name": "updated_at",
+          "type": "n0"
+        }
+      ],
+      "parameters": [
+        "workspaceId",
+        "actorOrPreparedAgentId"
+      ],
+      "bound": {
+        "rawScalarRowBytes": 8032,
+        "jsonRowBytes": 48267,
+        "rawScalarBytes": 8032,
+        "jsonArrayBytes": 48269,
+        "rows": 1
+      }
+    },
+    "10": {
+      "sql": "SELECT token_sha256 FROM native_credentials WHERE credential_id=? AND workspace_id=?",
+      "sqlSha256": "ab7789b221a19ea0d0211d73d6a8f2a44a1b0528d09e49a11634fdf337033301",
+      "fields": [
+        {
+          "name": "token_sha256",
+          "type": "t64"
+        }
+      ],
+      "parameters": [
+        "credentialId",
+        "workspaceId"
+      ],
+      "bound": {
+        "rawScalarRowBytes": 64,
+        "jsonRowBytes": 403,
+        "rawScalarBytes": 64,
+        "jsonArrayBytes": 405,
+        "rows": 1
+      }
+    },
+    "11": {
+      "sql": "SELECT workspace_id,config_epoch,config_json,admission_state FROM workspace_metadata WHERE id=1",
+      "sqlSha256": "00ac5a208bb1cd6a56dbbf09a2acbb498adf44a3bd0ef17e173d7568c247a5c7",
+      "fields": [
+        {
+          "name": "workspace_id",
+          "type": "t96"
+        },
+        {
+          "name": "config_epoch",
+          "type": "n1"
+        },
+        {
+          "name": "admission_state",
+          "type": "t64"
+        },
+        {
+          "name": "config_json",
+          "type": "t65536"
+        }
+      ],
+      "parameters": [],
+      "bound": {
+        "rawScalarRowBytes": 65704,
+        "jsonRowBytes": 394265,
+        "rawScalarBytes": 65704,
+        "jsonArrayBytes": 394267,
+        "rows": 1
+      }
+    },
+    "12": {
+      "sql": "SELECT version,document_json FROM profiles WHERE workspace_id=?",
+      "sqlSha256": "00b0e9badd6afda7ff8f0bb8c11b63b62d60404efe8b7ec9c1785433d4c8c280",
+      "fields": [
+        {
+          "name": "version",
+          "type": "n1"
+        },
+        {
+          "name": "document_json",
+          "type": "t16384"
+        }
+      ],
+      "parameters": [
+        "workspaceId"
+      ],
+      "bound": {
+        "rawScalarRowBytes": 16392,
+        "jsonRowBytes": 98351,
+        "rawScalarBytes": 16392,
+        "jsonArrayBytes": 98353,
+        "rows": 1
+      }
+    },
+    "13": {
+      "sql": "SELECT created_at AS createdAt,agent_id AS id FROM static_agents WHERE workspace_id=? ORDER BY created_at DESC,agent_id DESC LIMIT 1",
+      "sqlSha256": "f0c0a021803047c64b262cd7399c2c733da51baff3e6281a13e2b96c808975fe",
+      "fields": [
+        {
+          "name": "createdAt",
+          "type": "n0"
+        },
+        {
+          "name": "id",
+          "type": "t96"
+        }
+      ],
+      "parameters": [
+        "workspaceId"
+      ],
+      "bound": {
+        "rawScalarRowBytes": 104,
+        "jsonRowBytes": 614,
+        "rawScalarBytes": 104,
+        "jsonArrayBytes": 616,
+        "rows": 1
+      }
+    },
+    "14": {
+      "sql": "SELECT * FROM static_agents WHERE workspace_id=? AND (created_at,agent_id)<=(?,?) ORDER BY created_at,agent_id LIMIT ?",
+      "sqlSha256": "f89da0b1ea961cee9d3706ef5e7b58b05a168e1739dd9df5d5cc7e2642cab1c2",
+      "fields": [
+        {
+          "name": "workspace_id",
+          "type": "t96"
+        },
+        {
+          "name": "agent_id",
+          "type": "t96"
+        },
+        {
+          "name": "agent_version",
+          "type": "n1"
+        },
+        {
+          "name": "display_name",
+          "type": "t512"
+        },
+        {
+          "name": "description",
+          "type": "t2048"
+        },
+        {
+          "name": "work_role_ids_json",
+          "type": "t4096"
+        },
+        {
+          "name": "framework",
+          "type": "t512?"
+        },
+        {
+          "name": "model",
+          "type": "t512?"
+        },
+        {
+          "name": "status",
+          "type": "t64"
+        },
+        {
+          "name": "origin",
+          "type": "t64"
+        },
+        {
+          "name": "config_epoch",
+          "type": "n1"
+        },
+        {
+          "name": "created_at",
+          "type": "n0"
+        },
+        {
+          "name": "updated_at",
+          "type": "n0"
+        }
+      ],
+      "parameters": [
+        "workspaceId",
+        "sqlHighCreatedAt",
+        "sqlHighId",
+        "literal51"
+      ],
+      "bound": {
+        "rawScalarRowBytes": 8032,
+        "jsonRowBytes": 48267,
+        "rawScalarBytes": 64256,
+        "jsonArrayBytes": 386145,
+        "rows": 8
+      }
+    },
+    "15": {
+      "sql": "SELECT coalesce(length(CAST(id AS BLOB)),0)+coalesce(length(CAST(workspace_id AS BLOB)),0)+coalesce(length(CAST(title AS BLOB)),0)+coalesce(length(CAST(description AS BLOB)),0)+coalesce(length(CAST(project_id AS BLOB)),0)+coalesce(length(CAST(work_role_id AS BLOB)),0)+coalesce(length(CAST(assigned_agent_id AS BLOB)),0)+coalesce(length(CAST(active_run_id AS BLOB)),0)+coalesce(length(CAST(latest_run_id AS BLOB)),0)+coalesce(length(CAST(approval_id AS BLOB)),0)+coalesce(length(CAST(current_result_id AS BLOB)),0)+coalesce(length(CAST(flags_json AS BLOB)),0) AS bytes FROM tasks WHERE workspace_id=? AND id=?",
+      "sqlSha256": "a7fecf70b44b6fa0a30023136dc34182c3f254059f8e5d7c19b82e3aa3d7a879",
+      "fields": [
+        {
+          "name": "bytes",
+          "type": "n0"
+        }
+      ],
+      "parameters": [
+        "workspaceId",
+        "preparedTaskId"
+      ],
+      "bound": {
+        "rawScalarRowBytes": 8,
+        "jsonRowBytes": 26,
+        "rawScalarBytes": 8,
+        "jsonArrayBytes": 28,
+        "rows": 1
+      }
+    },
+    "16": {
+      "sql": "SELECT * FROM tasks WHERE workspace_id=? AND id=?",
+      "sqlSha256": "7bf92dfeee24740e5c50831adda6e7f46ae33fc3f705d6d0ac00023dd8b251bb",
+      "fields": [
+        {
+          "name": "workspace_id",
+          "type": "t96"
+        },
+        {
+          "name": "id",
+          "type": "t96"
+        },
+        {
+          "name": "title",
+          "type": "t512"
+        },
+        {
+          "name": "description",
+          "type": "t2048"
+        },
+        {
+          "name": "state",
+          "type": "t64"
+        },
+        {
+          "name": "task_version",
+          "type": "n1"
+        },
+        {
+          "name": "proposal_version",
+          "type": "n0"
+        },
+        {
+          "name": "project_id",
+          "type": "t96?"
+        },
+        {
+          "name": "work_role_id",
+          "type": "t96?"
+        },
+        {
+          "name": "assigned_agent_id",
+          "type": "t96?"
+        },
+        {
+          "name": "active_run_id",
+          "type": "t96?"
+        },
+        {
+          "name": "latest_run_id",
+          "type": "t96?"
+        },
+        {
+          "name": "approval_id",
+          "type": "t96?"
+        },
+        {
+          "name": "current_result_id",
+          "type": "t96?"
+        },
+        {
+          "name": "retry_count",
+          "type": "n0"
+        },
+        {
+          "name": "retry_limit",
+          "type": "n0"
+        },
+        {
+          "name": "flags_json",
+          "type": "t4096"
+        },
+        {
+          "name": "created_at",
+          "type": "n0"
+        },
+        {
+          "name": "updated_at",
+          "type": "n0"
+        },
+        {
+          "name": "next_fence",
+          "type": "n1"
+        },
+        {
+          "name": "next_result_sequence",
+          "type": "n1"
+        }
+      ],
+      "parameters": [
+        "workspaceId",
+        "preparedTaskId"
+      ],
+      "bound": {
+        "rawScalarRowBytes": 7648,
+        "jsonRowBytes": 45981,
+        "rawScalarBytes": 7648,
+        "jsonArrayBytes": 45983,
+        "rows": 1
+      }
+    },
+    "17": {
+      "sql": "SELECT length(CAST(id AS BLOB))+length(CAST(workspace_id AS BLOB))+length(CAST(task_id AS BLOB))+length(CAST(agent_id AS BLOB))+length(CAST(runtime_instance_id AS BLOB))+length(CAST(credential_id AS BLOB)) AS bytes FROM runs WHERE workspace_id=? AND id=?",
+      "sqlSha256": "5dec52d9fe67967ae875ee75206d8a3c64d997c9dfaca21b39885c8e06229954",
+      "fields": [
+        {
+          "name": "bytes",
+          "type": "n0"
+        }
+      ],
+      "parameters": [
+        "workspaceId",
+        "preparedRunId"
+      ],
+      "bound": {
+        "rawScalarRowBytes": 8,
+        "jsonRowBytes": 26,
+        "rawScalarBytes": 8,
+        "jsonArrayBytes": 28,
+        "rows": 1
+      }
+    },
+    "18": {
+      "sql": "SELECT id,workspace_id,task_id,agent_id,runtime_instance_id,credential_id,authority_epoch,status,run_version,fence,lease_expires_at,started_at,ended_at FROM runs WHERE workspace_id=? AND id=?",
+      "sqlSha256": "5990a607202bcf52ea21465844a4a57a45680fd3020b5b3083da4c2860348a2d",
+      "fields": [
+        {
+          "name": "workspace_id",
+          "type": "t96"
+        },
+        {
+          "name": "id",
+          "type": "t96"
+        },
+        {
+          "name": "task_id",
+          "type": "t96"
+        },
+        {
+          "name": "agent_id",
+          "type": "t96"
+        },
+        {
+          "name": "runtime_instance_id",
+          "type": "t96"
+        },
+        {
+          "name": "credential_id",
+          "type": "t96"
+        },
+        {
+          "name": "authority_epoch",
+          "type": "n1"
+        },
+        {
+          "name": "status",
+          "type": "t64"
+        },
+        {
+          "name": "run_version",
+          "type": "n1"
+        },
+        {
+          "name": "fence",
+          "type": "n1"
+        },
+        {
+          "name": "lease_expires_at",
+          "type": "n0"
+        },
+        {
+          "name": "started_at",
+          "type": "n0"
+        },
+        {
+          "name": "ended_at",
+          "type": "n0?"
+        }
+      ],
+      "parameters": [
+        "workspaceId",
+        "preparedRunId"
+      ],
+      "bound": {
+        "rawScalarRowBytes": 688,
+        "jsonRowBytes": 4135,
+        "rawScalarBytes": 688,
+        "jsonArrayBytes": 4137,
+        "rows": 1
+      }
+    }
+  },
+  "perObservationLedger": {
+    "getWorkspace": {
+      "authenticationCalls": 22,
+      "finalCalls": 32,
+      "preflightCalls": 24,
+      "totalCalls": 78,
+      "productCallCounts": {
+        "1": 7,
+        "2": 7,
+        "3": 14,
+        "4": 7,
+        "5": 4,
+        "6": 4,
+        "7": 3,
+        "8": 3,
+        "9": 3,
+        "10": 1,
+        "12": 1
+      },
+      "productRawScalarBytes": 339944,
+      "productJsonArrayBytes": 2037854
+    },
+    "getConfiguration": {
+      "authenticationCalls": 22,
+      "finalCalls": 44,
+      "preflightCalls": 24,
+      "totalCalls": 90,
+      "productCallCounts": {
+        "1": 8,
+        "2": 8,
+        "3": 17,
+        "4": 8,
+        "5": 4,
+        "6": 5,
+        "7": 4,
+        "8": 4,
+        "9": 4,
+        "10": 2,
+        "11": 1,
+        "12": 1
+      },
+      "productRawScalarBytes": 424432,
+      "productJsonArrayBytes": 2544604
+    },
+    "getProfile": {
+      "authenticationCalls": 22,
+      "finalCalls": 34,
+      "preflightCalls": 24,
+      "totalCalls": 80,
+      "productCallCounts": {
+        "1": 7,
+        "2": 7,
+        "3": 15,
+        "4": 7,
+        "5": 4,
+        "6": 4,
+        "7": 3,
+        "8": 3,
+        "9": 3,
+        "10": 1,
+        "11": 1,
+        "12": 1
+      },
+      "productRawScalarBytes": 405936,
+      "productJsonArrayBytes": 2433820
+    },
+    "getAgent": {
+      "authenticationCalls": 22,
+      "finalCalls": 44,
+      "preflightCalls": 24,
+      "totalCalls": 90,
+      "productCallCounts": {
+        "1": 8,
+        "2": 8,
+        "3": 17,
+        "4": 8,
+        "5": 4,
+        "6": 5,
+        "7": 4,
+        "8": 4,
+        "9": 5,
+        "10": 2,
+        "11": 1
+      },
+      "productRawScalarBytes": 416072,
+      "productJsonArrayBytes": 2494520
+    },
+    "listAgents": {
+      "authenticationCalls": 22,
+      "finalCalls": 45,
+      "preflightCalls": 24,
+      "totalCalls": 91,
+      "productCallCounts": {
+        "1": 8,
+        "2": 8,
+        "3": 17,
+        "4": 8,
+        "5": 4,
+        "6": 5,
+        "7": 4,
+        "8": 4,
+        "9": 4,
+        "10": 2,
+        "11": 1,
+        "13": 1,
+        "14": 1
+      },
+      "productRawScalarBytes": 472400,
+      "productJsonArrayBytes": 2833012
+    },
+    "getTask": {
+      "authenticationCalls": 22,
+      "finalCalls": 35,
+      "preflightCalls": 24,
+      "totalCalls": 81,
+      "productCallCounts": {
+        "1": 7,
+        "2": 7,
+        "3": 14,
+        "4": 7,
+        "5": 4,
+        "6": 4,
+        "7": 3,
+        "8": 3,
+        "9": 3,
+        "10": 1,
+        "15": 2,
+        "16": 2
+      },
+      "productRawScalarBytes": 338864,
+      "productJsonArrayBytes": 2031523
+    },
+    "getRun": {
+      "authenticationCalls": 22,
+      "finalCalls": 47,
+      "preflightCalls": 24,
+      "totalCalls": 93,
+      "productCallCounts": {
+        "1": 8,
+        "2": 8,
+        "3": 16,
+        "4": 8,
+        "5": 4,
+        "6": 5,
+        "7": 4,
+        "8": 4,
+        "9": 4,
+        "10": 2,
+        "15": 2,
+        "16": 2,
+        "17": 1,
+        "18": 1
+      },
+      "productRawScalarBytes": 358056,
+      "productJsonArrayBytes": 2146472
+    }
+  },
+  "witness_profile": "native-selected-state-schema17-v1",
+  "schema_version": 17
+}

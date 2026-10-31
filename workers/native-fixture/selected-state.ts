@@ -3,15 +3,18 @@
  * SQL endpoint, caller-selected module, HTTP-derived membership or ActorContext.
  */
 import frozenData from './complete-selectors.json';
+import currentData from './complete-selectors-schema17.json';
 type Scalar=string|number|null;
 type Binding={W:string;C:string;human:string;principal:string;operation:string;target:string;key:string};
 type Limits={queries:number;bridgeBytes:number;canonicalBytes:number};
 type Descriptor={sql:string;parameters:string[];fields:{name:string;type:string}[];acceptedRows:number;bridgeRows:number;bridgeJsonBytes:number;fixtureCanonicalBytes:number};
 type Vector={selectors:string[];phases:string[];privateSelectAdmissions:number;step_id?:string;id?:string};
 export interface SelectedOriginal {selector:string;ordinal:number;canonical:string;byteSize:number;}
+// Private two-profile factory; callers cannot supply a catalog or select fallback.
+function selectedStateProfile(frozenData:typeof currentData|typeof import('./complete-selectors.json')) {
 const catalog:Readonly<Record<string,Descriptor>>=frozenData.catalog;
 const vectors:readonly Vector[]=[...frozenData.phaseVectors,...frozenData.externalVectors];
-const TOTAL:Limits={queries:2555,bridgeBytes:180794824,canonicalBytes:7888422};
+const TOTAL:Limits={queries:frozenData.totals.privateSelectAdmissions,bridgeBytes:frozenData.totals.bridgeJsonAdmissionBytes,canonicalBytes:frozenData.totals.canonicalAdmissionBytes};
 const encoder=new TextEncoder();
 function reject():never {throw Error('COMPLETE_SELECTED_STATE_REJECTED');}
 function requireValue(value:unknown):asserts value {if(!value)reject();}
@@ -30,7 +33,7 @@ function scalar(value:unknown,kind:string):Scalar {
 }
 /** Trusted SQLite returns plain rows. This rejects getters/custom shapes; it does
  * not claim transparent Proxy isolation in Worker JavaScript. */
-export function decodeCompleteRows(name:unknown,value:unknown){
+function decodeCompleteRows(name:unknown,value:unknown){
  const d=descriptor(name),guarded=name!=='Z';requireValue(Array.isArray(value)&&Object.getPrototypeOf(value)===Array.prototype);
  const length=Object.getOwnPropertyDescriptor(value,'length')?.value;requireValue(Number.isSafeInteger(length)&&length>=0&&length<=d.acceptedRows);
  const keys=Reflect.ownKeys(value);requireValue(keys.length===length+1&&keys.every(k=>k==='length'||typeof k==='string'&&/^(0|[1-9][0-9]*)$/.test(k)&&Number(k)<length));
@@ -44,6 +47,7 @@ export function decodeCompleteRows(name:unknown,value:unknown){
   for(const [j,key]of Object.keys(row).sort().entries()){const k=JSON.stringify(key),v=JSON.stringify(row[key]);charge((j?1:0)+encoder.encode(k).byteLength+1+encoder.encode(v).byteLength);fields.push(k+':'+v);}
   rows.push(Object.freeze(row));parts.push('{'+fields.join(',')+'}');
  }
+ if(frozenData===currentData&&name==='S')requireValue(rows.length===17&&rows.every((row,i)=>row.version===i+1));
  if(name==='Z')requireValue(rows.length===4&&['preferences','outbox','catalog_plans','import_plans'].every((label,i)=>rows[i].table_name===label&&rows[i].present===0));
  return Object.freeze({rows:Object.freeze(rows),canonical:'['+parts.join(',')+']',byteSize});
 }
@@ -55,7 +59,7 @@ function cost(v:Vector):Limits {
  const names=[...v.selectors,...(v.selectors.includes('IW')?Array<string>(28).fill('I'):[])];
  return {queries:names.length,bridgeBytes:names.reduce((n,k)=>n+catalog[k].bridgeJsonBytes,0),canonicalBytes:names.reduce((n,k)=>n+catalog[k].fixtureCanonicalBytes,0)};
 }
-export function completePhaseReservation(stepId:unknown,phase:unknown):Limits{return cost(vector(stepId,phase));}
+function completePhaseReservation(stepId:unknown,phase:unknown):Limits{return cost(vector(stepId,phase));}
 function snapshotBindings(value:unknown):Readonly<Binding>{
  const v=closed(value,['W','C','human','principal','operation','target','key']);
  for(const k of ['W','C','human','principal'])requireValue(typeof v[k]==='string'&&v[k].length>0&&v[k].length<=96&&!/[^A-Za-z0-9_-]/.test(v[k]));
@@ -63,7 +67,7 @@ function snapshotBindings(value:unknown):Readonly<Binding>{
  requireValue(typeof v.target==='string'&&v.target.length>0&&v.target.length<=192&&!/[^A-Za-z0-9_/:.-]/.test(v.target));
  requireValue(typeof v.key==='string'&&/^r2_[a-f0-9]{32}$/.test(v.key));return Object.freeze(v) as Readonly<Binding>;
 }
-export function createCompleteSelectedState(storage:DurableObjectStorage,preparedBindings:unknown,lowerLimits:unknown=TOTAL){
+function createCompleteSelectedState(storage:DurableObjectStorage,preparedBindings:unknown,lowerLimits:unknown=TOTAL){
  const binding=snapshotBindings(preparedBindings),rawLimits=closed(lowerLimits,['queries','bridgeBytes','canonicalBytes']),limits={...TOTAL};
  for(const k of Object.keys(TOTAL) as (keyof Limits)[]){const n=rawLimits[k];requireValue(typeof n==='number'&&Number.isSafeInteger(n)&&n>=0&&n<=TOTAL[k]);limits[k]=n;}
  const reserved:Limits={queries:0,bridgeBytes:0,canonicalBytes:0},used=new Set<string>();let failed=false,closedReader=false,active=false,actualQueries=0,actualCanonicalBytes=0;
@@ -106,3 +110,8 @@ export function createCompleteSelectedState(storage:DurableObjectStorage,prepare
  }
  return Object.freeze({readPhase,snapshot:()=>Object.freeze({installedAuthority:false,failed,closed:closedReader,active,actualQueries,actualCanonicalBytes,reserved:Object.freeze({...reserved})}),close:()=>{if(active)fail();closedReader=true;}});
 }
+
+return Object.freeze({decodeCompleteRows,completePhaseReservation,createCompleteSelectedState});
+}
+export const {decodeCompleteRows,completePhaseReservation,createCompleteSelectedState}=selectedStateProfile(frozenData);
+export const {decodeCompleteRows:decodeCurrentCompleteRows,completePhaseReservation:currentCompletePhaseReservation,createCompleteSelectedState:createCurrentCompleteSelectedState}=selectedStateProfile(currentData);

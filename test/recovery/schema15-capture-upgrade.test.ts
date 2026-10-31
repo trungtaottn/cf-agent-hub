@@ -3,7 +3,7 @@ import {env} from 'cloudflare:workers';
 import {runInDurableObject,evictDurableObject} from 'cloudflare:test';
 import fixture from '../fixtures/schema15-capture-upgrade.json';
 import {migrate} from '../../src/storage/migrations';
-import {TABLE_REGISTRY} from '../../src/recovery/table-registry';
+import {SCHEMA16_TABLE_REGISTRY as TABLE_REGISTRY} from '../../src/recovery/table-registry';
 import {advanceCapture,readRecoveryChunk,readRecoveryStatus} from '../../src/recovery/capture';
 import {decodeCurrentChunk,encodeCurrentChunk} from '../../src/recovery/encoding';
 import {fixtureIntegrity,recoveryContext} from '../helpers/recovery-fixture';

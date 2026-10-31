@@ -5,7 +5,7 @@ import {createHash} from 'node:crypto';
 import {types} from 'node:util';
 import {dirname,resolve} from 'node:path';
 import nativeFixture from './native-complete-fixture.json' with {type:'json'};
-import selectedCatalog from '../../workers/native-fixture/complete-selectors.json' with {type:'json'};
+import {selectNativeSelectedState} from './native-selected-state-profile.mjs';
 import applicationPlan from '../../workers/native-fixture/required-application-plan.json' with {type:'json'};
 import {canonicalCaseSubject as canonical,CASE_OPERATIONS} from './r2-case-policy.mjs';
 import {assertCompleteClientConfigBinding} from './native-complete-client-proof.mjs';
@@ -21,7 +21,7 @@ import {buildCompleteExternalPreparation,validateCompleteExternalObservation} fr
 import {buildCompleteKeyPlan,completeApplicationRequestDigest} from './native-complete-key-plan.mjs';
 import {validateCompleteRequest} from './native-complete-request.mjs';
 import {validateCompletePreparation} from './native-complete-preparation.mjs';
-freeze(applicationPlan);freeze(nativeFixture);freeze(selectedCatalog);
+freeze(applicationPlan);freeze(nativeFixture);
 const fail=()=>{throw Error('NATIVE_COMPLETE_PREPARATION_OWNER_REJECTED');},check=v=>{if(!v)fail();};
 const hash=v=>createHash('sha256').update(v).digest('hex'),sha=v=>hash(canonical(v)),same=(a,b)=>canonical(a)===canonical(b);
 const id=v=>typeof v==='string'&&v.length<=128&&/^[A-Za-z0-9_-]+$/.test(v)&&!/[\r\n]/.test(v),digest=v=>typeof v==='string'&&v.length===64&&/^[a-f0-9]+$/.test(v),int=v=>Number.isSafeInteger(v)&&v>=0&&!Object.is(v,-0);
@@ -35,9 +35,9 @@ const typed=s=>!!s.caseId||['prepare/fail-create','prepare/revoke-own-positive']
 const roles=['primary-submitter','primary-reviewer','server-foreign-submitter'],bootstrapCaps=[1167,1174,1083,1166,1173,1082,1174,1181,1090,801];
 export function createCompletePreparationOwner(input){
  try{
- const a=f(input,'config policy validationOptions fixtureContext bootstrapPlan bootstrapActions'),config=validateCompleteConfig(a.config),options=snapshot(a.validationOptions),policy=validateCompletePolicy(a.policy,options);check(config.profile==='native-r2-required-prepared-v1'&&policy.profile===config.profile&&policy.run_context.configSha256===sha(config));
+ const a=f(input,'config policy validationOptions fixtureContext bootstrapPlan bootstrapActions'),config=validateCompleteConfig(a.config),options=snapshot(a.validationOptions),policy=validateCompletePolicy(a.policy,options);check(['native-r2-required-prepared-v1','native-r2-required-schema17-v1'].includes(config.profile)&&policy.profile===config.profile&&policy.run_context.configSha256===sha(config));
  assertCompleteClientConfigBinding(config,policy,options);
- const selected=selectCompleteProfile(config.profile),slots=completeCallSchedule(config.profile).filter(s=>s.operation==='prepare-slot').map(s=>s.slot),steps=new Map(selected.scenario.steps.map(s=>[s.id,s])),registry=createCompleteNativeBindingRegistry({config});check(slots.length===64&&steps.size===62);
+ const selectedCatalog=selectNativeSelectedState(config.profile).catalog,selected=selectCompleteProfile(config.profile),slots=completeCallSchedule(config.profile).filter(s=>s.operation==='prepare-slot').map(s=>s.slot),steps=new Map(selected.scenario.steps.map(s=>[s.id,s])),registry=createCompleteNativeBindingRegistry({config});check(slots.length===64&&steps.size===62);
  const fc=snapshot(a.fixtureContext,16384);keys(fc,'scope installedAuthority native_conformance expected initial_grants observation_context');check(fc.scope==='source-derived-fixture-context'&&fc.installedAuthority===false&&fc.native_conformance===false);const expected=validateRequiredFixtureExpected(fc.expected);check(expected.origin===config.origin&&expected.workspaces.primary.id===config.workspaces.primary&&expected.workspaces.foreign.id===config.workspaces.foreign);check(Array.isArray(fc.initial_grants)&&fc.initial_grants.length===3);
  keys(fc.observation_context,'config_epoch observer_id environment_id');check(fc.observation_context.config_epoch===expected.epoch&&fc.observation_context.observer_id===policy.service_id&&typeof fc.observation_context.environment_id==='string'&&/^[a-z0-9][a-z0-9_-]{0,127}$/.test(fc.observation_context.environment_id)&&!/[\r\n]/.test(fc.observation_context.environment_id));
  const grants=new Map();for(const [i,g]of fc.initial_grants.entries()){keys(g,'role row sha256');keys(g.row,selectedCatalog.catalog.G.fields.map(f=>f.name).join(' '));check(g.role===['S','R','X'][i]&&digest(g.sha256)&&sha(g.row)===g.sha256&&g.row.agent_id===expected.actors[g.role].agent_id&&g.row.credential_id===expected.actors[g.role].credential_id&&g.row.token_sha256===expected.actors[g.role].token_sha256&&g.row.config_epoch===expected.epoch);const row=g.row;check(row.workspace_id===expected.workspaces[g.role==='X'?'foreign':'primary'].id&&row.credential_version===1&&row.scopes_json===canonical(nativeFixture.configuration_constraints.native_scopes[g.role])&&row.project_ids_json==='null'&&row.enabled===1&&row.retired_at_epoch===null&&row.revoked_at===null&&row.origin==='operator_static'&&row.agent_status==='active'&&row.agent_origin==='operator_static'&&row.agent_epoch===expected.epoch&&(row.expires_at===null||int(row.expires_at)&&row.expires_at<=253402300799999));grants.set(g.role,g);}

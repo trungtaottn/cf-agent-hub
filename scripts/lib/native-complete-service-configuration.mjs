@@ -21,7 +21,7 @@ const json=b=>JSON.parse(new TextDecoder('utf8',{fatal:true,ignoreBOM:true}).dec
 export function verifyCompleteServiceConfiguration(input){try{
  const a=fields(input,['configBytes','anchorBytes','descriptorBytes','authorityBytes','privateInputsBytes','credentials','humanBytes','serviceKeyBytes','now']);check(Number.isSafeInteger(a.now)&&a.now>=0);
  const configBytes=copy(a.configBytes,65536),anchorBytes=copy(a.anchorBytes,4096),descriptorBytes=copy(a.descriptorBytes,16384),authorityBytes=copy(a.authorityBytes,1024),privateInputsBytes=copy(a.privateInputsBytes,3446),humanBytes=copy(a.humanBytes,123),serviceKeyBytes=copy(a.serviceKeyBytes,48);check(serviceKeyBytes.length===48);
- const config=freeze(validateCompleteConfig(json(configBytes)));check(config.profile==='native-r2-required-prepared-v1');
+ const config=freeze(validateCompleteConfig(json(configBytes)));check(['native-r2-required-prepared-v1','native-r2-required-schema17-v1'].includes(config.profile));
  // Host code/source commitments are authenticated by the operator's root here;
  // the actual host separately matches them to its consumed immutable artifact.
  const preliminary=json(descriptorBytes)?.payload,subjects=completeHostSubjects(config,preliminary?.host_sha256,preliminary?.source_inventory_sha256),installation=verifyCompleteInstallationStatement({anchorBytes,descriptorBytes,subjects,now:a.now,operationalMs:config.budgets.duration_ms});

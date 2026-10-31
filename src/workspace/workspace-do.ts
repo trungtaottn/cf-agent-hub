@@ -143,7 +143,7 @@ export class WorkspaceDO extends DurableObject<WorkspaceEnvironment> {
    if(!validateRecoveryCommand(body)||body.operation!==operator.operation||body.workspace_id!==operator.workspaceId||body.capture_id!==operator.captureId||body.operation_id!==operator.operationId||body.expected_authority_epoch!==operator.expectedEpoch||body.operation!=='write-chunk'&&binary!==undefined)throw Error('INVALID_RECOVERY_COMMAND');
    const selected=withTransaction(this.ctx.storage,tx=>{
     const schema=tx.one<{version:number}>('SELECT MAX(version) AS version FROM schema_migrations')?.version;
-    if(schema!==16)return null;
+    if(schema!==16&&schema!==17)return null;
     const rows=tx.all<{id:string}>("SELECT id FROM recovery_jobs WHERE workspace_id=? AND capture_id=? AND operation='restore' LIMIT 2",[operator.workspaceId,operator.captureId]);
     if(rows.length>1)throw Error('RECOVERY_JOB_CONFLICT');return rows.length?loadCurrentRestoreJob(tx,rows[0].id):null;
    });
@@ -151,7 +151,7 @@ export class WorkspaceDO extends DurableObject<WorkspaceEnvironment> {
    // is selected from a validated persisted current manifest, never a caller flag.
    // Keep restore selection separate for admission replay and status dispatch.
    const capturedSource16=body.operation==='resume'&&!selected&&withTransaction(this.ctx.storage,tx=>{
-    if(tx.one<{version:number}>('SELECT MAX(version) AS version FROM schema_migrations')?.version!==16)return false;
+    const version=tx.one<{version:number}>('SELECT MAX(version) AS version FROM schema_migrations')?.version;if(version!==16&&version!==17)return false;
     const rows=tx.all<{id:string}>("SELECT id FROM recovery_jobs WHERE workspace_id=? AND capture_id=? AND operation='capture' LIMIT 2",[operator.workspaceId,operator.captureId]);
     if(rows.length>1)throw Error('RECOVERY_JOB_CONFLICT');
     const job=rows.length?loadCurrentCaptureJob(tx,rows[0].id):null;

@@ -1,3 +1,4 @@
+import type {AdmissionRow} from './creation-admissions';
 import {maintenanceClosed} from '../recovery/maintenance';
 import {currentConfiguration,type AuthWorkspace} from '../auth/context';
 import {authorize,resolveActor} from '../auth/authorize';
@@ -9,7 +10,7 @@ import {findOutcome,readOutcome,storeOutcome,canonicalJsonValue} from './idempot
 import {HttpError} from '../http/envelopes';
 export interface CommandOutcome<T>{status:number;data:T;}
 /** Internal owned context; never construct from HTTP JSON or serialize caller authority. */
-export interface CommandExecutionContext{workspace:AuthWorkspace;requestId:string;idempotencyKey:string;fingerprint:string;admissionEpoch:number;admissionGeneration:number;}
+export interface CommandExecutionContext{workspace:AuthWorkspace;requestId:string;idempotencyKey:string;fingerprint:string;admissionEpoch:number;admissionGeneration:number;creationAdmission?:{id:string;principalId:string;keyHash:string;bindingDigest:string};}
 export interface EventDraft{type:'import.previewed'|'import.applied'|'catalog.previewed'|'catalog.applied'|'message.accepted'|'message.acknowledged'|'profile.updated'|'preferences.updated'|'agent.created'|'agent.updated'|'agent.archived'|'credential.issued'|'credential.revoked'|'runtime.enrolled'|'runtime.heartbeat'|'task.created'|'task.updated'|'task.ready'|'task.claimed'|'task.result_submitted'|'task.result_accepted'|'task.failed'|'task.cancelled'|'task.requeued'|'run.heartbeat'|'artifact.staged'|'artifact.uploaded'|'artifact.committed';resourceType:'import'|'message'|'profile'|'preferences'|'agent'|'credential'|'runtime'|'task'|'run'|'artifact';resourceId:string;resourceVersion:number|null;threadId:string|null;/** Private history only, never Event projection or outcome. */historyReason?:string;}
 export interface CommandAccessDescriptor<B,T>{
  operation:string;target:string;
@@ -41,7 +42,7 @@ export function executeCommand<B,T>(ctx:CommandExecutionContext,identity:Verifie
 export function executeCommandDetailed<B,T>(ctx:CommandExecutionContext,identity:VerifiedIdentity,command:CommandDescriptor<B,T>,body:B):{outcome:CommandOutcome<T>;firstExecution:boolean}{
  if(!Number.isSafeInteger(ctx.admissionGeneration)||ctx.admissionGeneration<0||!Number.isSafeInteger(ctx.admissionEpoch)||ctx.admissionEpoch<=0||identity.workspaceId!==ctx.workspace.workspaceId||!ctx.idempotencyKey||!/^[a-f0-9]{64}$/.test(ctx.fingerprint)||!/^[a-z]+:[a-z]+$/.test(command.operation)||!command.target)throw new HttpError('INVALID_REQUEST',400);
  // Entropy and all async proof/fingerprint work complete before SQL. Command time is sampled inside entry.
- const eventId='event_'+Array.from(ctx.workspace.entropy.bytes(24),b=>b.toString(16).padStart(2,'0')).join('');
+ const eventId=ctx.creationAdmission?.id??'event_'+Array.from(ctx.workspace.entropy.bytes(24),b=>b.toString(16).padStart(2,'0')).join('');
  let verifiedActor:CommandContext['actor']|undefined;
  let replay:{requestId:string;eventId:string|null}|undefined;
  try{
@@ -54,17 +55,29 @@ export function executeCommandDetailed<B,T>(ctx:CommandExecutionContext,identity
    authorize(tx,actor,command.operation,synchronousResult(command.resource(tx,context,body)),nowMs);
    synchronousGuard(command.checkAccess(tx,context,body));
    const prior=findOutcome(tx,actor.principalId,command.operation,command.target,ctx.idempotencyKey,actor.workspaceId);
+   const admission=ctx.creationAdmission;
+   if(admission&&(identity.kind!=='human'||actor.principalId!==admission.principalId||!/^event_[a-f0-9]{48}$/.test(admission.id)||!['messages:send','tasks:create'].includes(command.operation)))throw new HttpError('INVALID_REQUEST',400);
    if(prior){
+    if(admission&&prior.event_id!==admission.id)throw new HttpError('IDEMPOTENCY_CONFLICT',409);
     const outcome=readOutcome<T>(prior,ctx.fingerprint);
     synchronousGuard(command.checkReplay(tx,context,body,outcome));
     replay={requestId:prior.original_request_id,eventId:prior.event_id};
     return outcome;
+   }
+   if(admission){
+    const pending=tx.one<AdmissionRow>('SELECT * FROM creation_admissions WHERE id=? AND workspace_id=? AND principal_id=?',[admission.id,actor.workspaceId,actor.principalId]);
+    if(!pending||pending.operation!==command.operation||pending.target!==command.target||pending.key_hash!==admission.keyHash||pending.fingerprint!==ctx.fingerprint||nowMs>=pending.expires_at||nowMs<pending.created_at)throw new HttpError('IDEMPOTENCY_CONFLICT',409);
    }
    const effect=synchronousResult(command.execute(tx,context,body,eventId));
    if(!effect||!effect.outcome||!Number.isInteger(effect.outcome.status)||effect.outcome.status<200||effect.outcome.status>299)throw new HttpError('INTERNAL_ERROR',500);
    // Only JSON domain output is retained. No headers, raw requests, proof, or per-attempt response envelope.
    const outcome:CommandOutcome<T>={status:effect.outcome.status,data:JSON.parse(canonicalJsonValue(effect.outcome.data)) as T};
    const event=appendEvent(tx,{...effect.event,id:eventId,workspaceId:actor.workspaceId,actor,requestId:ctx.requestId,nowMs});
+   if(admission){
+    if(effect.event.type!==(command.operation==='messages:send'?'message.accepted':'task.created'))throw new HttpError('INTERNAL_ERROR',500);
+    tx.exec('UPDATE events SET creation_binding=? WHERE id=?',[admission.bindingDigest,event.id]);
+    if(tx.all('DELETE FROM creation_admissions WHERE id=? AND workspace_id=? AND principal_id=? RETURNING id',[admission.id,actor.workspaceId,actor.principalId]).length!==1)throw new HttpError('INTERNAL_ERROR',500);
+   }
    storeOutcome(tx,{principalId:actor.principalId,operation:command.operation,target:command.target,key:ctx.idempotencyKey,workspaceId:actor.workspaceId,fingerprint:ctx.fingerprint,outcome,requestId:ctx.requestId,eventId:event.id,nowMs});
    return outcome;
   });

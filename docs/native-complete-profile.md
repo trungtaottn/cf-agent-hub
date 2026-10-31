@@ -395,3 +395,32 @@ Content composition is not role custody: the actual service resolver must own ea
 record, and report verification must enforce every fixed host counterpart. Three
 unavailable tuple controls remain deferred/unverified; no security guard, case
 roster, service-call count or cumulative release limit is changed by this correction.
+
+## Schema17 witness compatibility
+
+Schema17 source support is explicit and independent of the full/required execution roster:
+`native-r2-complete-schema17-v1` and `native-r2-required-schema17-v1` select the
+`native-selected-state-schema17-v1` witness. Historical absent/default selection and both
+`*-prepared-v1` tags retain their exact schema16 contracts. A16 profile is not valid against
+physical17, and missing identity never upgrades a request to17.
+
+The new fixture manifest commits the exact17 selected-catalog SHA256. Fixture and family
+ledger commitments then enter the existing signed config/statement, installed bootstrap,
+policy/context and preparation hashes; terminal, scan, summary and report joins retain that
+binding. Unsigned overrides, retagged old signatures, mixed fixture/ledger/catalog pairs and
+unknown profiles fail closed. The current required controller checks its source-owned17
+fixture/ledger pair before binding or domain dispatch; that pair is identity, not authority,
+and does not replace signature, issuer, capability, release or current resource checks.
+
+Both new tags have the same30-byte width as their historical counterparts. Existing wire,
+output and custody maxima therefore remain unchanged, with boundary tests. The schema
+selector accepts exactly1..17 and uses an18-row lookahead; its bridge bound is739 bytes
+rather than698. The complete admitted read schedule adds exactly5330 bridge bytes over130
+schema selections; zero-admission reuse adds none. Canonical SQL, query-count and output
+caps are not enlarged. Frozen16 catalog/fixture bytes, digests and limits remain unchanged.
+`npm run verify:generated` checks deterministic17 artifacts and their frozen input hashes.
+
+This is code compatibility, not installation or native acceptance. No existing live profile,
+credential or grant is changed automatically. Full17 retains the same unavailable-capability
+denials as full16; required17 retains the same execution roster and deferred cases. Operator
+activation, protected native execution and release evidence remain separately authorized gates.

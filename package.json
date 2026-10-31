@@ -17,7 +17,7 @@
     "verify:r1-contract": "node scripts/verify-r1-contract.mjs",
     "verify:release": "node scripts/verify-release.mjs",
     "generate:config": "node scripts/generate-config-validators.mjs",
-    "verify:generated": "node scripts/generate-config-validators.mjs --check && node scripts/generate-auth-contract.mjs --check && node scripts/generate-operator-contract.mjs --check",
+    "verify:generated": "node scripts/generate-config-validators.mjs --check && node scripts/generate-auth-contract.mjs --check && node scripts/generate-operator-contract.mjs --check && node scripts/generate-native-schema17.mjs --check",
     "generate:auth": "node scripts/generate-auth-contract.mjs",
     "test:operator": "vitest run --config vitest.operator.workers.config.ts",
     "test:current-restore-operator": "vitest run --config vitest.current-restore-operator.config.ts",

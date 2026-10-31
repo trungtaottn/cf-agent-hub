@@ -75,7 +75,7 @@ describe.runIf(enabled)('authenticated operator HTTP to current WorkspaceDO rest
 
 
  },90000);
- it('resumes a genuine captured schema16 source through authenticated HTTP at the source resume byte limit',async()=>{
+ it('resumes a genuine captured schema17 source through authenticated HTTP at the source resume byte limit',async()=>{
   const f=await currentRestoreFixture('operator_source_resume',{seed:false});
   // This installed source runs in the actual test deployment current_target.
   // Capture, probe and resume all cross the same authenticated operator→DO edge.
@@ -96,7 +96,7 @@ describe.runIf(enabled)('authenticated operator HTTP to current WorkspaceDO rest
    }
    if(capture.state==='complete')break;
   }
-  expect(capture?.manifest?.format_version).toBe(2);expect(capture?.manifest?.checkpoint.schema_version).toBe(16);expect(capture?.receipt?.status).toBe('complete');
+  expect(capture?.manifest?.format_version).toBe(2);expect(capture?.manifest?.checkpoint.schema_version).toBe(17);expect(capture?.receipt?.status).toBe('complete');
   const probe=await call(body('probe',{},'source_probe',null));expect(probe.status,await probe.clone().text()).toBe(200);
   const resume=body('resume',{receipt_id:capture!.receipt!.id,ledger,source_retirement_receipt:null,cutover_record:null},'source_resume');
   const padding=RESUME_ENVELOPE_LIMIT-new TextEncoder().encode(JSON.stringify(resume)).length;

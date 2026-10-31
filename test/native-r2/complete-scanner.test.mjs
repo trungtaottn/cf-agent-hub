@@ -91,3 +91,8 @@ test('wrong source SHA, inventory generation, ordering, duplicate, and revoked s
 });
 for(const [name,change]of Object.entries({wrongA:v=>v.phase.denial.presented_proof_sha256=h,ownB:v=>v.phase.denial.presented_proof_sha256=hash(secret(14)),nullProof:v=>v.phase.denial.presented_proof_sha256=null,targetA:v=>v.phase.transport.requests[0].path='/v2/workspaces/foreign/runtimes/runtime_3:heartbeat',wrongOrigin:v=>v.phase.transport.requests[0].origin='https://other.example',wrongMethod:v=>v.phase.transport.requests[0].method='GET',extraRequest:v=>v.phase.transport.requests.push({...v.phase.transport.requests[0]})}))test('E2 private scan rejects '+name,()=>{const e=environment();provisionOwner(e);admitCount(e,3);scanDenial(e);admitCount(e,5,3);assert.throws(()=>scanDenial(e,'E2',change));});
 test('denial error request ID accepts128 and rejects129, without broadening public request IDs',()=>{const e=environment();provisionOwner(e);admitCount(e,3);const handle={},v=denialSource(e,'E1','z'.repeat(129));e.sources.set(handle,v);assert.throws(()=>e.owner.scanExternalDenial('server-foreign-workspace-denial',handle));});
+test('explicit17 scanner accepts only its selected ledger and request profile',()=>{
+ const e=environment('native-r2-required-schema17-v1');assert.ok(e.owner);
+ const input={policy:{...e.policy,family_ledger_sha256:selectCompleteProfile('native-r2-required-prepared-v1').commitments.family_ledger_sha256},validationOptions:e.validationOptions,readSource:()=>null,readTerminal:()=>null};
+ assert.throws(()=>createCompleteScannerCore(input));
+});

@@ -1,10 +1,11 @@
+import {physicalRecoverySchema} from './target-schema';
 import {reserveArtifactCopyEffect} from './restore-artifact-effect';
 import {canonicalJson} from '../config/bootstrap';
 import {prepareRestoreAuthority,restoreAuthorityAdditions,assertRestoreAddition,type RestoreAuthorityTable} from '../config/restore-authority';
 import {withTransaction,type WorkspaceTransaction} from '../storage/transaction';
 import {canonicalBytes,digestBytes,decodeCurrentChunk,hex,type CurrentRecoveryChunk} from './encoding';
 import {verifyRecord,verifyCurrentLedger,validateManifestShape} from './manifest';
-import {TABLE_REGISTRY,tableDefinition,inspectRegistry} from './table-registry';
+import {TABLE_REGISTRY,registryForSchema,tableDefinition,inspectRegistry} from './table-registry';
 import {transitionMaintenance} from './maintenance';
 import {priorOperation,type RecoveryWorkspace,type RecoveryContext,type RecoveryManifest,type RecoveryJobProgress,type RecoveryReceipt} from './protocol';
 import {validateRecoveryJobProgress,UNRESOLVED_EFFECT_IDS_LIMIT} from './generated/recovery-validators.js';
@@ -29,7 +30,7 @@ async function sourceDigest(w:RecoveryWorkspace,job:CurrentRestoreJob,guard:()=>
 function sourceCounts(tx:WorkspaceTransaction,job:CurrentRestoreJob):void {
  const manifest=job.details.manifest,d=job.details;
  if(!d.sourceMetadata||!d.sourceMaintenance||d.counts.rows!==Object.values(manifest.database.table_counts).reduce((a,b)=>a+b,0)||d.counts.chunks!==manifest.database.chunks.length||d.counts.bytes!==manifest.database.byte_size)throw Error('RECOVERY_MANIFEST_COUNTS');
- for(const table of TABLE_REGISTRY){if(table.mode==='evidence')continue;const where=table.name==='idempotency_outcomes'?" WHERE operation NOT LIKE 'operator.%'":'';if(tx.one<{n:number}>('SELECT count(*) AS n FROM "'+table.name+'"'+where)!.n!==d.activeCounts[table.name])throw Error('RECOVERY_RESTORED_COUNT_MISMATCH');}
+ for(const table of registryForSchema(physicalRecoverySchema(tx))){if(table.mode==='evidence')continue;const where=table.name==='idempotency_outcomes'?" WHERE operation NOT LIKE 'operator.%'":'';if(tx.one<{n:number}>('SELECT count(*) AS n FROM "'+table.name+'"'+where)!.n!==(d.activeCounts[table.name]??0))throw Error('RECOVERY_RESTORED_COUNT_MISMATCH');}
 }
 function receipt(tx:WorkspaceTransaction,w:RecoveryWorkspace,job:CurrentRestoreJob):RecoveryReceipt {
  const count=tx.one<{n:number}>("SELECT count(*) AS n FROM outbox WHERE workspace_id=? AND status IN ('pending','in_flight')",[job.workspace_id])!.n;
@@ -46,7 +47,7 @@ export async function advanceCurrentVerify(w:RecoveryWorkspace,ctx:RecoveryConte
  guard=restoreGuard(w,ctx,job);await guard();const stage=job.details.stage;
  if(stage==='fixup'||stage==='validate'||stage==='transform'){
   const entry=job.details.manifest.database.chunks[job.details.verifyIndex];let chunk:CurrentRecoveryChunk|null=null;
-  if(entry){const bytes=await readCurrentRestoreChunk(w,job,entry.index,guard);chunk=decodeCurrentChunk(bytes,{...entry,capture_id:job.capture_id,schema_version:16});}
+  if(entry){const bytes=await readCurrentRestoreChunk(w,job,entry.index,guard);chunk=decodeCurrentChunk(bytes,{...entry,capture_id:job.capture_id,schema_version:job.details.manifest.checkpoint.schema_version});}
   const authority=stage==='transform'?prepareRestoreAuthority((await verifyCurrentLedger(job.details.ledger,ctx.ledgerAnchor,w,job.details.manifest.checkpoint.authority_epoch,guard)).input,job.created_at):null;await guard();
   return withTransaction(w.storage,tx=>{const current=assertCurrentRestoreJob(tx,w,ctx,job.id);
    if(chunk){if(stage==='fixup')fixupSourceChunk(tx,chunk,current);else if(stage==='validate')verifySourceChunk(tx,chunk,current);else transformSourceChunk(tx,chunk,current,authority!);current.details.verifyIndex++;}
@@ -78,7 +79,8 @@ export async function advanceCurrentVerify(w:RecoveryWorkspace,ctx:RecoveryConte
    current.details.additionOffset=page.nextOffset;if(page.done){current.details.additionIndex++;current.details.additionOffset=0;}return finishRestoreStep(tx,w,ctx,current);
   }
   const columns=tableDefinition('workspace_metadata').columns;const source=sourceRow({columns:columns.map(c=>c.name)} as CurrentRecoveryChunk,current.details.sourceMetadata!);
-  tx.exec('UPDATE workspace_metadata SET message_retained_after_created_at=?,message_retained_after_id=?,event_retained_after_sequence=? WHERE id=1',[source.message_retained_after_created_at,source.message_retained_after_id,source.event_retained_after_sequence]);inspectRegistry(tx);
+  tx.exec('UPDATE workspace_metadata SET message_retained_after_created_at=?,message_retained_after_id=?,event_retained_after_sequence=? WHERE id=1',[source.message_retained_after_created_at,source.message_retained_after_id,source.event_retained_after_sequence]);inspectRegistry(tx,physicalRecoverySchema(tx));
+  if(physicalRecoverySchema(tx)===17&&tx.one('SELECT id FROM creation_admissions LIMIT 1'))throw Error('RECOVERY_RESTORED_AUTHORITY');
   current.details.receipt=receipt(tx,w,current);current.state='complete';current.details.stage='complete';current.details.phase='complete';transitionMaintenance(tx,{state:'restored',epoch:ctx.expectedEpoch,barrierId:'barrier_'+current.id.slice(4),captureId:current.capture_id,nowMs:w.clock.nowMs(),advance:false});return finishRestoreStep(tx,w,ctx,current);
  });
 }

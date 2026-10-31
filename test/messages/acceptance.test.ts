@@ -1,3 +1,6 @@
+import {projectEvent,resourceEventVisibility} from '../../src/audit/events';
+import {resolveActor} from '../../src/auth/authorize';
+import {withTransaction} from '../../src/storage/transaction';
 import {resetLegacyAuthorityFixture} from '../helpers/legacy-migration-fixture';
 import {it,expect} from 'vitest';
 import {runInDurableObject,evictDurableObject} from 'cloudflare:test';
@@ -104,7 +107,7 @@ it('opaque_event_thread_linkage_and_closed_notification_contract',async()=>{
   const thread='opaque /?# '+ '長'.repeat(140);state.storage.sql.exec('INSERT INTO threads VALUES (?,?,?,?)',thread,'ws_example','',Date.now());state.storage.sql.exec('INSERT INTO thread_participants VALUES (?,?,?)',thread,'agent','agent_research');
   const result=await send(state.storage,name,identity,messageInput({thread_id:thread}));expect(result.data.thread_id).toBe(thread);
   const row=state.storage.sql.exec("SELECT * FROM events WHERE type='message.accepted'").one();expect(row.thread_id).toBe(thread);
-  const event:Record<string,unknown>={...row,actor:JSON.parse(row.actor_json as string),occurred_at:new Date(row.occurred_at as number).toISOString(),task_version:null,run_id:null,fence:null};delete event.actor_json;expect(validateEvent(event)).toBe(true);
+  const event=withTransaction(state.storage,tx=>projectEvent(tx,resolveActor(tx,identity,Date.now()),String(row.id),Date.now(),resourceEventVisibility));expect(event).not.toBeNull();expect(validateEvent(event)).toBe(true);expect(event!.thread_id).toBe(thread);expect(event).not.toHaveProperty('creation_binding');expect(validateEvent({...event,creation_binding:row.creation_binding})).toBe(false);
   expect(validateEvent({...event,thread_id:''})).toBe(false);expect(validateEvent({...event,thread_id:12})).toBe(false);expect(validateEvent({...event,type:'message.acknowledged'})).toBe(false);
   const payload=JSON.parse(state.storage.sql.exec<{payload_json:string}>('SELECT payload_json FROM outbox').one().payload_json);expect(validateMessageNotification({...payload,body:'secret'})).toBe(false);expect(validateMessageNotification({...payload,payload_version:2})).toBe(false);
  });

@@ -31,7 +31,7 @@ export async function replayCurrentRestoreAdmission(w:RecoveryWorkspace,ctx:Reco
 export async function beginCurrentRestore(w:RecoveryWorkspace,ctx:RecoveryContext,manifestInput:RecoveryManifest,ledgerInput:CurrentLedger):Promise<RecoveryJobProgress>{
  ctx=structuredClone(ctx);
  if(ctx.operation!=='restore'||!ctx.captureId)throw Error('INVALID_RECOVERY_CONTEXT');
- validateManifestShape(manifestInput);if(manifestInput.format_version!==2||manifestInput.checkpoint.contract_revision!=='0.2'||manifestInput.checkpoint.schema_version!==16)throw Error('RECOVERY_FORMAT_UNAVAILABLE');
+ validateManifestShape(manifestInput);if(manifestInput.format_version!==2||manifestInput.checkpoint.contract_revision!=='0.2'||manifestInput.checkpoint.schema_version!==16&&manifestInput.checkpoint.schema_version!==17)throw Error('RECOVERY_FORMAT_UNAVAILABLE');
  manifestInput=structuredClone(manifestInput);if(canonicalBytes(ledgerInput).length>65536)throw Error('RECOVERY_BYTES_LIMIT');ledgerInput=structuredClone(ledgerInput);
  const replay=await replayCurrentRestoreAdmission(w,ctx,manifestInput);if(replay)return replay;
  const fence=withTransaction(w.storage,tx=>{const f=assertRecoveryContext(tx,w,ctx);emptyTarget(tx);inspectRegistry(tx);return f;});
@@ -62,7 +62,7 @@ export async function writeCurrentRestoreChunk(w:RecoveryWorkspace,ctx:RecoveryC
  let job=withTransaction(w.storage,tx=>currentRestoreForContext(tx,w,ctx));let guard=restoreGuard(w,ctx,job);await guard();
  const entry=job.details.manifest.database.chunks[metadata.index];if(!entry||entry.sha256!==metadata.sha256||entry.byte_size!==metadata.byte_size||bytes.length!==metadata.byte_size)throw Error('RECOVERY_CHUNK_MISMATCH');
  const hash=await digestBytes(bytes);await guard();if(hash!==entry.sha256)throw Error('RECOVERY_CHUNK_MISMATCH');
- const chunk=decodeCurrentChunk(bytes,{...entry,capture_id:ctx.captureId,schema_version:16});
+ const chunk=decodeCurrentChunk(bytes,{...entry,capture_id:ctx.captureId,schema_version:job.details.manifest.checkpoint.schema_version});
  if(chunk.table==='workspace_metadata'){const source=sourceRow(chunk,chunk.rows[0]);const input=await prepareBootstrap(JSON.parse(String(source.config_json)),JSON.parse(String(source.bundle_json)),w.workspaceId,guard);if(input.installationDigest!==source.installation_digest||input.bundle.config_digest!==source.config_digest||input.config.config_epoch!==job.details.manifest.checkpoint.authority_epoch)throw Error('RECOVERY_SOURCE_AUTHORITY_MISMATCH');}
  const replay=withTransaction(w.storage,tx=>{job=assertCurrentRestoreJob(tx,w,ctx,job.id);const prior=priorOperation(tx,ctx);if(prior){if(!validateRecoveryJobProgress(prior))throw Error('RECOVERY_OPERATION_CONFLICT');return prior;}
   if(metadata.index<job.details.counts.chunks){const result=restoreProgress(job);storeOperation(tx,ctx,result,w.clock.nowMs());return result;}

@@ -89,7 +89,7 @@ export function assertCompleteInstallationCurrent(binding){
 // Fixed source bundle packaging, separate from the legacy untagged loader.
 // No installation, path override, callback provider or fabricated custody brand.
 export async function loadFixedCompleteHost(configInput){try{
- const config=freezeCompleteValue(validateCompleteConfig(configInput));check(config.profile==='native-r2-required-prepared-v1');runtime();
+ const config=freezeCompleteValue(validateCompleteConfig(configInput));check(['native-r2-required-prepared-v1','native-r2-required-schema17-v1'].includes(config.profile));runtime();
  const anchorBytes=readRootFile('/etc/agenthub-native/trust-v2.json','anchor'),descriptorBytes=readRootFile('/etc/agenthub-native/complete-v2.installation.json','descriptor'),bundleBytes=readRootFile('/opt/agenthub-native/host-v2.mjs','bundle');
  const verified=verifyCompleteHostBundle({config,anchorBytes,descriptorBytes,bundleBytes,now:Date.now()});
  // Import executes the exact root-authenticated source bundle. It does not yet
@@ -101,7 +101,7 @@ export async function loadFixedCompleteHost(configInput){try{
  * sourceInventory comes from its fixed build virtual module, not public config.
  */
 export function resolveCompleteHostContext(input){try{
- const a=closed(input,['config','sourceInventory']),config=freezeCompleteValue(validateCompleteConfig(a.config));check(config.profile==='native-r2-required-prepared-v1');runtime();
+ const a=closed(input,['config','sourceInventory']),config=freezeCompleteValue(validateCompleteConfig(a.config));check(['native-r2-required-prepared-v1','native-r2-required-schema17-v1'].includes(config.profile));runtime();
  const sourceInventory=copyCompleteHostInventory(a.sourceInventory),bundleBytes=readRootFile('/opt/agenthub-native/host-v2.mjs','bundle'),hostSha256=privateHash(bundleBytes),subjects=completeHostSubjects(config,hostSha256,nativeSourceInventoryDigest(sourceInventory));
  assertCompleteConsumedBundle(import.meta.url,hostSha256);
  const binding=resolveFixedCompleteInstallation({config,subjects,operationalMs:config.budgets.duration_ms}),materials=completeInstallationMaterials(binding),evidenceContext=freezeCompleteValue({environment_id:materials.statement.payload.environment_id,config_epoch:materials.inputs.fixture_facts.config_epoch,observer_id:materials.statement.payload.service_id,source_inventory:sourceInventory});

@@ -20,7 +20,7 @@ function blockEffects(w:RecoveryWorkspace){
  const storage=new Proxy(w.storage,{get(target,key){if(['setAlarm','deleteAlarm','put','delete','deleteAll'].includes(String(key)))return deny;const v=Reflect.get(target,key);return typeof v==='function'?v.bind(target):v;}});
  return {workspace:{...w,storage,trustedAnchor:undefined,bucket:guardBucket(w.bucket),artifactBucket:w.artifactBucket?guardBucket(w.artifactBucket):undefined,repairSchedule:async()=>{calls++;throw Error('UNEXPECTED_SCHEDULER_EFFECT');}},calls:()=>calls};
 }
-it('all seven current16 mutable controllers deny missing trusted binding without SQL or external effects',async()=>{
+it('all seven current17 mutable controllers deny missing trusted binding without SQL or external effects',async()=>{
  const f=await currentRestoreFixture('current_controller_binding_required',{artifacts:false});
  const deliveryId=await withCurrentRecoveryWorkspace(f,'source',async w=>{
   const message=messageInput();await executeCommand(await commandContext(w.storage,f.sourceName,message,'binding_message'),claimIdentity(w.storage),messageCommand(owned(w.storage,f.sourceName)),message);

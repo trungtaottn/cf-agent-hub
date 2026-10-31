@@ -26,7 +26,7 @@ export function parseControlAdmission(input:unknown):ControlAdmission {
  return structuredClone(input) as unknown as ControlAdmission;
 }
 function localState(tx:WorkspaceTransaction,w:RecoveryWorkspace,ctx:RecoveryContext):ControlLocalState {
- const fence=assertRecoveryContext(tx,w,ctx);if(recoverySchema(tx,ctx)!==16)throw Error('RECOVERY_FORMAT_UNAVAILABLE');
+ const fence=assertRecoveryContext(tx,w,ctx);if(![16,17].includes(recoverySchema(tx,ctx)))throw Error('RECOVERY_FORMAT_UNAVAILABLE');
  const m=maintenanceRow(tx),meta=tx.one<{installation_digest:string;admission_state:string}>('SELECT installation_digest,admission_state FROM workspace_metadata WHERE id=1');
  if(!meta)throw Error('RECOVERY_CONTROL_CONFLICT');
  return {epoch:fence.authorityEpoch,installationDigest:meta.installation_digest,generation:fence.maintenanceGeneration,state:m?.state??'open',barrierId:m?.barrier_id??null,captureId:m?.capture_id??null,admissionState:meta.admission_state};
@@ -54,7 +54,7 @@ function pendingJob(tx:WorkspaceTransaction,w:RecoveryWorkspace,ctx:RecoveryCont
  const row=tx.one<{id:string;operation:string}>('SELECT id,operation FROM recovery_jobs WHERE capture_id=?',[capture]);if(!row)throw Error('RECOVERY_JOB_CONFLICT');
  const scoped={...ctx,captureId:capture};
  const job=row.operation==='capture'?assertCurrentCaptureJob(tx,w,scoped,row.id):row.operation==='restore'?assertCurrentRestoreJob(tx,w,scoped,row.id):null;
- if(!job||job.state!=='complete'||job.details.receipt?.status!=='complete'||job.details.manifest?.checkpoint.schema_version!==16)throw Error('RECOVERY_CONTROL_CONFLICT');
+ if(!job||job.state!=='complete'||job.details.receipt?.status!=='complete'||![16,17].includes(job.details.manifest?.checkpoint.schema_version??0))throw Error('RECOVERY_CONTROL_CONFLICT');
  return job;
 }
 export interface ControlSession {

@@ -48,3 +48,14 @@ test('required request dispatch binds policy profile and exact346 boundary',asyn
  const preflight={...r,operation:'preflight',payload:{policy_sha256:r.policy_sha256,family_ledger_sha256:c.family_ledger_sha256,slot_roster_sha256:hash(canonicalCaseSubject(completeSlotRegistry(p.profile)))}};
  assert.deepEqual(validateCompleteRequest(preflight,p,o),preflight);
 });
+test('schema17 requests bind exact17 ledger and cannot downgrade to historical profile',async()=>{
+ const {selectCompleteProfile}=await import('../../scripts/lib/native-profile-selection.mjs');
+ for(const roster of ['complete','required']){
+  const selected=selectCompleteProfile(`native-r2-${roster}-schema17-v1`),p=structuredClone(policy),o=structuredClone(options);
+  p.profile=selected.profile.profile;p.family_ledger_sha256=selected.commitments.family_ledger_sha256;p.run_context.scenarioSha256=hash(canonicalCaseSubject(selected.scenario));o.context.scenarioSha256=p.run_context.scenarioSha256;p.coverage=completeSlotRegistry(p.profile).map(row=>({...row,supported:false,producer_id:null}));
+  const r=scan();r.profile=p.profile;r.policy_sha256=completePolicyDigest(p);assert.deepEqual(validateCompleteRequest(r,p,o),r);
+  const old=selectCompleteProfile(`native-r2-${roster}-prepared-v1`);assert.throws(()=>validateCompleteRequest({...r,profile:old.profile.profile},p,o));
+  const mixed={...p,family_ledger_sha256:old.commitments.family_ledger_sha256};assert.throws(()=>validateCompleteRequest({...r,policy_sha256:hash(canonicalCaseSubject(mixed))},mixed,o));
+  assert.throws(()=>validateCompleteRequest({...r,selected_state_profile:'native-selected-state-schema17-v1'},p,o));
+ }
+});

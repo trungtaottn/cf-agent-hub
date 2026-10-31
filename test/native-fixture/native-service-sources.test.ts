@@ -1,3 +1,4 @@
+import currentCommitments from '../../workers/native-fixture/required-schema17-commitments.json';
 import {it,expect} from 'vitest';
 import {env} from 'cloudflare:workers';
 import {runInDurableObject,evictDurableObject} from 'cloudflare:test';
@@ -49,7 +50,7 @@ it('passes seven actual P/F controller projections into Node private registry/sc
  await bridge('start',{expected,credentialExpiry:f.credentialExpiry,credentials:tokens,humanCookie:f.humanCookie,humanCsrf:f.humanCsrf});
  const run='run_test',owner='e'.repeat(64),prep='d'.repeat(64),final='f'.repeat(64),deadline=Date.now()+120000;
  let managementCalls=0;const call=async(method:string,value:unknown)=>{managementCalls++;let text:string;try{text=await controller[method](canonicalJson(value));}catch{throw Error('PRIVATE_CALL_FAILED '+method+' '+String((value as any).registration?.step_id??(value as any).registration?.phase_id??(value as any).control_id??(value as any).step_id??''));}expect(typeof text).toBe('string');const parsed=JSON.parse(text);expect(canonicalJson(parsed)).toBe(text);return {text,value:parsed};};
- const installation={run_id:run,service_id:'source_test_service',instance_id:'source_test_instance',descriptor_sha256:'a'.repeat(64),policy_sha256:'b'.repeat(64),native_config_sha256:'c'.repeat(64),fixture_config_sha256:expected.config_sha256,scenario_sha256:'1'.repeat(64),fixture_sha256:'2'.repeat(64),ledger_sha256:'3'.repeat(64),deadline,expected};await call('installRequiredRun',installation);
+ const installation={run_id:run,service_id:'source_test_service',instance_id:'source_test_instance',descriptor_sha256:'a'.repeat(64),policy_sha256:'b'.repeat(64),native_config_sha256:'c'.repeat(64),fixture_config_sha256:expected.config_sha256,scenario_sha256:'1'.repeat(64),fixture_sha256:currentCommitments.fixture_sha256,ledger_sha256:currentCommitments.family_ledger_sha256,deadline,expected};await call('installRequiredRun',installation);
  let prior:any=null,requests=0,processes=0,auxiliaries=0,scannerReads=0,held:Promise<Response>|null=null;const causal:Record<string,string>={};
  const tasks:Record<string,string>={},runs:Record<string,string>={},runtime:Record<string,any>={},dtos:Record<string,Map<string,any>>={T:new Map(),R:new Map(),U:new Map(),AR:new Map()};let artifact:string|null=null,message:string|null=null,thread:string|null=null;
  const acknowledge=async(result:{text:string;value:any})=>{const sha=await sha256(result.text);prior={source_sha256:sha,record_id:'source_issued_'+processes+'_'+auxiliaries+'_'+requiredControllerPlan.findIndex(s=>s.id===result.value.subject?.step_id),family:'process-observation-summary',sha256:final,byte_size:1};if(result.value.subject?.step_id)causal[result.value.subject.step_id]=sha;return sha;};

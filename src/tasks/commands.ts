@@ -103,6 +103,8 @@ function taskCommandAccess<B,T extends Task|TaskCommandResult>(id:string|null,op
 };}
 /** Execution-free exact creation guards shared with normal command/replay. */
 export function taskCreationAccess():CommandAccessDescriptor<TaskCreateRequest,Task>{return taskCommandAccess<TaskCreateRequest,Task>(null,'tasks:create',validateTaskCreateRequest);}
+/** Preparation validates fresh references; historical reconciliation must not reapply these admission preconditions. */
+export function taskPreparationAccess():CommandAccessDescriptor<TaskCreateRequest,Task>{const access=taskCreationAccess();return {...access,checkAccess(tx,ctx,request){access.checkAccess(tx,ctx,request);assertTaskReferences(tx,ctx.actor,references(ctx.actor,request));installedExecutionPolicy(tx,ctx.actor);}};}
 export const createTaskCommand=(taskId:string)=>command<TaskCreateRequest,Task>(null,'tasks:create','task.created',validateTaskCreateRequest,(tx,ctx,request)=>createTask(tx,{...ctx,taskId},request));
 export const patchTaskCommand=(id:string)=>command<TaskPatchRequest,Task>(id,'tasks:edit','task.updated',validateTaskPatchRequest,(tx,ctx,request)=>patchTask(tx,ctx,id,request));
 export const readyTaskCommand=(id:string)=>command<TaskVersionRequest,TaskCommandResult>(id,'tasks:schedule','task.ready',validateTaskVersionRequest,(tx,ctx,request)=>readyTask(tx,ctx,id,request));

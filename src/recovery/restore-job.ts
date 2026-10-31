@@ -1,3 +1,4 @@
+import {physicalRecoverySchema} from './target-schema';
 import {canonicalJson} from '../config/bootstrap';
 import {withTransaction,type WorkspaceTransaction} from '../storage/transaction';
 import {canonicalBytes,closed,isSlug,RECOVERY_JOB_DETAILS_LIMIT,type SqlCell} from './encoding';
@@ -5,7 +6,7 @@ import {validateRecoveryReceipt,validateCurrentLedger} from './generated/recover
 import {validateManifestShape} from './manifest';
 import {maintenanceRow,type AdmissionFence} from './maintenance';
 import {assertRecoveryContext,boundedData,type RecoveryWorkspace,type RecoveryContext,type CurrentRecoveryManifest,type CurrentLedger,type RecoveryJobProgress,type RecoveryReceipt} from './protocol';
-import {TABLE_REGISTRY,type RecoveryTableName} from './table-registry';
+import {TABLE_REGISTRY,registryForSchema,type RecoveryTableName} from './table-registry';
 import {readTrustedAnchor,type TrustedAnchorSnapshot} from './trusted-anchor';
 import type {PendingStep,RecoveryJob} from './jobs';
 export interface RestoreDetails {
@@ -24,17 +25,24 @@ const count=(x:unknown)=>Number.isSafeInteger(x)&&Number(x)>=0;
 const hash=(x:unknown)=>typeof x==='string'&&/^[a-f0-9]{64}$/.test(x);
 export function loadCurrentRestoreJob(tx:WorkspaceTransaction,id:string):CurrentRestoreJob|null {
  const row=tx.one<Stored>('SELECT * FROM recovery_jobs WHERE id=?',[id]);if(!row)return null;
+ const job=parseCurrentRestoreJobRow(row),physical=physicalRecoverySchema(tx);
+ if(physical===16&&(job.details.manifest.checkpoint.schema_version!==16||!closed(job.details.activeCounts,registryForSchema(16).map(t=>t.name))))throw Error('INVALID_RECOVERY_JOB');
+ return job;
+}
+/** Pure historical shape validation. This does not assert live execution authority. */
+export function parseCurrentRestoreJobRow(row:Stored):CurrentRestoreJob {
  if(new TextEncoder().encode(row.details_json).length>RECOVERY_JOB_DETAILS_LIMIT)throw Error('INVALID_RECOVERY_JOB');
  const d:unknown=JSON.parse(row.details_json);
  if(!closed(d,['version','kind','fence','manifest','ledger','ledgerDigest','anchor','releaseIdentity','integrityKeyId','original','sourceMetadata','sourceMaintenance','counts','activeCounts','lastKeys','phase','stage','verifyIndex','artifactIndex','artifactBytes','additionIndex','additionOffset','step','pending','receipt'])||d.version!==2||d.kind!=='restore'||row.operation!=='restore'||!['running','complete'].includes(row.state)||!hash(row.manifest_digest)||!hash(d.ledgerDigest))throw Error('INVALID_RECOVERY_JOB');
  validateManifestShape(d.manifest);const m=d.manifest;
- if(m.format_version!==2||m.checkpoint.contract_revision!=='0.2'||m.checkpoint.schema_version!==16||m.capture_id!==row.capture_id||m.workspace_id!==row.workspace_id)throw Error('INVALID_RECOVERY_JOB');
+ if(m.format_version!==2||m.checkpoint.contract_revision!=='0.2'||m.checkpoint.schema_version!==16&&m.checkpoint.schema_version!==17||m.capture_id!==row.capture_id||m.workspace_id!==row.workspace_id)throw Error('INVALID_RECOVERY_JOB');
  if(!closed(d.fence,['authorityEpoch','maintenanceGeneration'])||!count(d.fence.authorityEpoch)||!count(d.fence.maintenanceGeneration)||d.fence.authorityEpoch!==row.authority_epoch||!closed(d.original,['principalId','operationId','fingerprint','expectedEpoch'])||!isSlug(d.original.principalId)||!isSlug(d.original.operationId)||!hash(d.original.fingerprint)||d.original.expectedEpoch!==0)throw Error('INVALID_RECOVERY_JOB');
  if(!closed(d.counts,['rows','chunks','bytes'])||![d.counts.rows,d.counts.chunks,d.counts.bytes,d.verifyIndex,d.artifactIndex,d.artifactBytes,d.additionIndex,d.additionOffset,d.step].every(count)||Number(d.counts.rows)>1000000||Number(d.counts.chunks)>m.database.chunks.length||Number(d.counts.bytes)>268435456||Number(d.verifyIndex)>m.database.chunks.length||Number(d.artifactIndex)>m.artifacts.length||Number(d.additionIndex)>3||Number(d.additionOffset)>1000000)throw Error('INVALID_RECOVERY_JOB');
  if(!validateCurrentLedger(d.ledger)||canonicalBytes(d.ledger).length>65536||d.ledger.authority_epoch!==row.authority_epoch||d.ledger.workspace_id!==row.workspace_id)throw Error('INVALID_RECOVERY_JOB');
  const prefix=m.database.chunks.slice(0,Number(d.counts.chunks));if(prefix.reduce((n,c)=>n+c.row_count,0)!==d.counts.rows||prefix.reduce((n,c)=>n+c.byte_size,0)!==d.counts.bytes||Number(d.artifactBytes)>268435456)throw Error('INVALID_RECOVERY_JOB');
- const names=TABLE_REGISTRY.map(t=>t.name);if(!closed(d.activeCounts,names)||Object.values(d.activeCounts).some(v=>!count(v))||d.lastKeys===null||typeof d.lastKeys!=='object'||Array.isArray(d.lastKeys)||Object.keys(d.lastKeys).some(k=>!names.includes(k as RecoveryTableName)))throw Error('INVALID_RECOVERY_JOB');
- for(const table of TABLE_REGISTRY){if(Number(d.activeCounts[table.name])> (m.database.table_counts as Record<RecoveryTableName,number>)[table.name])throw Error('INVALID_RECOVERY_JOB');const key=(d.lastKeys as Record<string,unknown>)[table.name];if(key!==undefined&&(!Array.isArray(key)||key.length!==table.primaryKey.length||key.some(x=>typeof x!=='string'&&!Number.isSafeInteger(x))))throw Error('INVALID_RECOVERY_JOB');}
+ const targetTables=TABLE_REGISTRY,legacyCounts=m.checkpoint.schema_version===16&&closed(d.activeCounts,registryForSchema(16).map(t=>t.name));
+ const names=(legacyCounts?registryForSchema(16):targetTables).map(t=>t.name);if(!closed(d.activeCounts,names)||Object.values(d.activeCounts).some(v=>!count(v))||d.lastKeys===null||typeof d.lastKeys!=='object'||Array.isArray(d.lastKeys)||Object.keys(d.lastKeys).some(k=>!names.includes(k as RecoveryTableName)))throw Error('INVALID_RECOVERY_JOB');
+ for(const table of targetTables){if(Number(d.activeCounts[table.name]??0)> ((m.database.table_counts as Partial<Record<RecoveryTableName,number>>)[table.name]??0))throw Error('INVALID_RECOVERY_JOB');const key=(d.lastKeys as Record<string,unknown>)[table.name];if(key!==undefined&&(!Array.isArray(key)||key.length!==table.primaryKey.length||key.some(x=>typeof x!=='string'&&!Number.isSafeInteger(x))))throw Error('INVALID_RECOVERY_JOB');}
  if(d.sourceMetadata!==null&&(!Array.isArray(d.sourceMetadata)||d.sourceMetadata.length!==TABLE_REGISTRY.find(t=>t.name==='workspace_metadata')!.columns.length)||d.sourceMaintenance!==null&&(!Array.isArray(d.sourceMaintenance)||d.sourceMaintenance.length!==TABLE_REGISTRY.find(t=>t.name==='maintenance_state')!.columns.length))throw Error('INVALID_RECOVERY_JOB');
  if(!['import','fixup','validate','artifacts','transform','additions','hash','complete'].includes(String(d.stage))||!['awaiting_chunks','verify_pages','overlay_authority','hash_chunks','complete'].includes(String(d.phase))||d.stage==='import'&&d.phase!=='awaiting_chunks'||d.stage==='complete'&&(row.state!=='complete'||d.phase!=='complete')||row.state==='complete'&&d.stage!=='complete')throw Error('INVALID_RECOVERY_JOB');
  if(d.pending!==null&&(!closed(d.pending,['operationId','fingerprint','kind','endedAt','index'])||typeof d.pending.operationId!=='string'||!hash(d.pending.fingerprint)||!['write','verify','artifact','overlay','hash'].includes(String(d.pending.kind))||typeof d.pending.endedAt!=='string'||!Number.isFinite(Date.parse(d.pending.endedAt))||d.pending.index!==null&&!count(d.pending.index)))throw Error('INVALID_RECOVERY_JOB');

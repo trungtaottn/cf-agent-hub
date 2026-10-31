@@ -1,3 +1,4 @@
+import {physicalRecoverySchema} from './target-schema';
 import {stageSourceAuditEvidence,validateAndImportSourceAudit} from './restore-audit-history';
 import {appendRestoreExpiryAudit} from './restore-audit';
 import {canonicalJson,nextAuthorityVersion} from '../config/bootstrap';
@@ -13,7 +14,7 @@ const evidence=(table:string,row:SourceRow)=>tableDefinition(table).mode==='evid
 function validateSource(table:string,row:SourceRow,job:CurrentRestoreJob):void {
  const cp=job.details.manifest.checkpoint;
  if(Object.hasOwn(row,'workspace_id')&&row.workspace_id!==job.workspace_id)throw Error('RECOVERY_WORKSPACE_ROW_MISMATCH');
- if(table==='schema_migrations'&&(!Number.isSafeInteger(row.version)||Number(row.version)<1||Number(row.version)>16))throw Error('RECOVERY_SCHEMA_MISMATCH');
+ if(table==='schema_migrations'&&(!Number.isSafeInteger(row.version)||Number(row.version)<1||Number(row.version)>cp.schema_version))throw Error('RECOVERY_SCHEMA_MISMATCH');
  if(table==='workspace_metadata'&&(row.id!==1||row.object_name!==job.details.manifest.release.catalog_mapping.object_name||row.config_epoch!==cp.authority_epoch||row.admission_state!=='maintenance'))throw Error('RECOVERY_CHECKPOINT_MISMATCH');
  if(table==='maintenance_state'&&(row.id!==1||row.state!=='capturing'||row.authority_epoch!==cp.authority_epoch||row.barrier_id!==cp.barrier_id||row.capture_id!==job.capture_id))throw Error('RECOVERY_CHECKPOINT_MISMATCH');
  if(table==='events'&&(Number(row.sequence)>cp.event_sequence||Number(row.sequence)<1))throw Error('RECOVERY_EVENT_SEQUENCE');
@@ -24,9 +25,9 @@ function staged(table:string,raw:SourceRow):SourceRow {
  const row={...raw};if(table==='tasks'){if(row.state==='doing')row.state='backlog';row.active_run_id=null;row.latest_run_id=null;row.current_result_id=null;}
  if(table==='artifacts'){row.status='expired';row.active_generation_id=null;row.committed_generation_id=null;row.committed_at=null;}return row;
 }
-export function insertRow(tx:WorkspaceTransaction,tableName:string,row:SourceRow):void {const table=tableDefinition(tableName);tx.exec('INSERT INTO "'+table.name+'" ('+table.columns.map(c=>'"'+c.name+'"').join(',')+') VALUES ('+table.columns.map(()=>'?').join(',')+')',table.columns.map(c=>row[c.name]));}
-export function updateRow(tx:WorkspaceTransaction,tableName:string,row:SourceRow):void {const table=tableDefinition(tableName),cols=table.columns.filter(c=>!table.primaryKey.includes(c.name));if(!cols.length)return;tx.exec('UPDATE "'+table.name+'" SET '+cols.map(c=>'"'+c.name+'"=?').join(',')+' WHERE '+table.primaryKey.map(c=>'"'+c+'"=?').join(' AND '),[...cols.map(c=>row[c.name]),...table.primaryKey.map(c=>row[c])]);}
-function actualRow(tx:WorkspaceTransaction,tableName:string,row:SourceRow):SourceRow|null {const table=tableDefinition(tableName);return tx.one<SourceRow>('SELECT * FROM "'+table.name+'" WHERE '+table.primaryKey.map(c=>'"'+c+'"=?').join(' AND '),table.primaryKey.map(c=>row[c]));}
+export function insertRow(tx:WorkspaceTransaction,tableName:string,row:SourceRow):void {const table=tableDefinition(tableName,physicalRecoverySchema(tx));tx.exec('INSERT INTO "'+table.name+'" ('+table.columns.map(c=>'"'+c.name+'"').join(',')+') VALUES ('+table.columns.map(()=>'?').join(',')+')',table.columns.map(c=>c.name==='creation_binding'&&!Object.hasOwn(row,c.name)?null:row[c.name]));}
+export function updateRow(tx:WorkspaceTransaction,tableName:string,row:SourceRow):void {const table=tableDefinition(tableName,physicalRecoverySchema(tx)),cols=table.columns.filter(c=>!table.primaryKey.includes(c.name));if(!cols.length)return;tx.exec('UPDATE "'+table.name+'" SET '+cols.map(c=>'"'+c.name+'"=?').join(',')+' WHERE '+table.primaryKey.map(c=>'"'+c+'"=?').join(' AND '),[...cols.map(c=>row[c.name]),...table.primaryKey.map(c=>row[c])]);}
+function actualRow(tx:WorkspaceTransaction,tableName:string,row:SourceRow):SourceRow|null {const table=tableDefinition(tableName,physicalRecoverySchema(tx));return tx.one<SourceRow>('SELECT * FROM "'+table.name+'" WHERE '+table.primaryKey.map(c=>'"'+c+'"=?').join(' AND '),table.primaryKey.map(c=>row[c]));}
 export function insertSourceChunk(tx:WorkspaceTransaction,chunk:CurrentRecoveryChunk,job:CurrentRestoreJob):void {
  for(const cells of chunk.rows){const raw=sourceRow(chunk,cells);validateSource(chunk.table,raw,job);
   if(chunk.table==='workspace_metadata')job.details.sourceMetadata=cells;if(chunk.table==='maintenance_state')job.details.sourceMaintenance=cells;
@@ -46,12 +47,12 @@ function identity(tx:WorkspaceTransaction,kind:SqlValue,principal:SqlValue,agent
  else if(kind!=='system')throw Error('RECOVERY_RELATIONSHIP_MISMATCH');
 }
 export function verifySourceChunk(tx:WorkspaceTransaction,chunk:CurrentRecoveryChunk,job:CurrentRestoreJob):void {
- const table=tableDefinition(chunk.table);
+ const table=tableDefinition(chunk.table,chunk.schema_version);
  for(const cells of chunk.rows){const raw=sourceRow(chunk,cells);validateSource(chunk.table,raw,job);
   if(chunk.table==='recovery_chunks')exists(tx,"SELECT 1 FROM idempotency_outcomes WHERE principal_id='system_recovery' AND operation='operator.recovery.history' AND target=? AND key=?",[job.id,raw.job_id]);
   validateAndImportSourceAudit(tx,chunk.table,raw,job);
   if(evidence(chunk.table,raw))continue;
-  const actual=actualRow(tx,chunk.table,raw);if(!actual||canonicalJson(table.columns.map(c=>sqlCell(actual[c.name])))!==canonicalJson(cells))throw Error('RECOVERY_RESTORED_ROW_MISMATCH');
+  const actual=actualRow(tx,chunk.table,raw);if(chunk.schema_version===16&&physicalRecoverySchema(tx)===17&&chunk.table==='events'&&actual?.creation_binding!==null)throw Error('RECOVERY_RESTORED_ROW_MISMATCH');if(!actual||canonicalJson(table.columns.map(c=>sqlCell(actual[c.name])))!==canonicalJson(cells))throw Error('RECOVERY_RESTORED_ROW_MISMATCH');
   // Composite references must be checked as a single tuple, never independent columns.
   const groups=new Map<number,(readonly(string|number)[])[]>();for(const fk of table.foreignKeys){const id=Number(fk[0]);groups.set(id,[...(groups.get(id)??[]),fk]);}
   for(const parts of groups.values()){if(parts.some(p=>raw[String(p[3])]===null))continue;exists(tx,'SELECT 1 FROM "'+parts[0][2]+'" WHERE '+parts.map(p=>'"'+p[4]+'"=?').join(' AND '),parts.map(p=>raw[String(p[3])]));}
@@ -81,7 +82,10 @@ export function verifySourceChunk(tx:WorkspaceTransaction,chunk:CurrentRecoveryC
 }
 export function transformSourceChunk(tx:WorkspaceTransaction,chunk:CurrentRecoveryChunk,job:CurrentRestoreJob,authority:RestoreAuthorityPlan):void {
  for(const [offset,cells] of chunk.rows.entries()){
-  const raw=sourceRow(chunk,cells);if(evidence(chunk.table,raw))continue;let row={...raw};
+  const raw=sourceRow(chunk,cells);if(evidence(chunk.table,raw))continue;
+  // A pre-consume snapshot cannot revive authority consumed in the lost future.
+  if(chunk.table==='creation_admissions'){tx.exec('DELETE FROM creation_admissions WHERE id=?',[raw.id]);continue;}
+  let row={...raw};
   if(['human_grants','static_agents','native_credentials','runtimes'].includes(chunk.table))row=transformRestoredAuthorityRow(authority,chunk.table as RestoreAuthorityTable,raw);
   if(chunk.table==='sessions')row.revoked_at=raw.revoked_at??job.created_at;
   if(chunk.table==='login_attempts'){row.consumed_at=raw.consumed_at??job.created_at;row.nonce='';row.pkce_verifier='';}

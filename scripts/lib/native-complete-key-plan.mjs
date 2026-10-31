@@ -18,7 +18,7 @@ function fields(v,names){
 const aliases=freeze([['case/settled-no-send','prepare/fail-create'],['case/restart-no-send','case/lost-response-retained']]);
 export function buildCompleteKeyPlan(input){
  const {profile,runId}=fields(input,['profile','runId']);
- check(profile==='native-r2-required-prepared-v1'&&typeof runId==='string'&&/^run_[A-Za-z0-9_-]{1,124}$/.test(runId));
+ check(['native-r2-required-prepared-v1','native-r2-required-schema17-v1'].includes(profile)&&typeof runId==='string'&&/^run_[A-Za-z0-9_-]{1,124}$/.test(runId));
  const entries=[],owners=new Set(),keys=new Set();
  for(const p of rawPlan){
   const mutations=p.ordinals.filter(o=>o.idempotency);check(mutations.length<=1);

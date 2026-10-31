@@ -1,9 +1,12 @@
 /** Private source-only guard over actual synchronous storage. Never an authenticator or SQL simulator. */
-import {getObservationLedger,getPreflightDescriptor,getProductQueryDescriptor,validatePreflightRows,validateProductRows,PREFLIGHT_ORDER} from './descriptors.ts';
+import * as legacyDescriptors from './descriptors.ts';
+import {currentObserverDescriptors} from './descriptors.ts';
 import type {PreparedObserverBinding} from './registry.ts';
 type Row=Readonly<Record<string,string|number|null>>;
 interface Original {transaction:number;selector:string;canonical:string;byteSize:number;}
-export function createBoundedObserverStorage(actualStorage:DurableObjectStorage,binding:Readonly<PreparedObserverBinding>,actualTokenDigest:string){
+function boundedObserverProfile(schemaVersion:16|17,descriptors:typeof currentObserverDescriptors){
+const {getObservationLedger,getPreflightDescriptor,getProductQueryDescriptor,validatePreflightRows,validateProductRows,PREFLIGHT_ORDER}=descriptors;
+return function createBoundedObserverStorage(actualStorage:DurableObjectStorage,binding:Readonly<PreparedObserverBinding>,actualTokenDigest:string){
  const ledger=getObservationLedger(binding.step_id),operation=binding.step_id.slice(8);let failed=false,finished=false,active=false,generation=0,transactions=0,preflightQueries=0,productQueries=0,bridgeRawBytes=0,bridgeJsonBytes=0,retainedBytes=0,pendingCursors=0,expiresAt=Infinity;
  const counts:Record<string,number>={},originals:Original[]=[],transactionIntervals:{transaction:number;startedAt:number;endedAt:number}[]=[];
  const preRaw=PREFLIGHT_ORDER.reduce((n,k)=>n+getPreflightDescriptor(k).bridge.rawScalarBytes,0)*3,preJson=PREFLIGHT_ORDER.reduce((n,k)=>n+getPreflightDescriptor(k).bridge.jsonArrayBytes,0)*3;
@@ -17,7 +20,7 @@ export function createBoundedObserverStorage(actualStorage:DurableObjectStorage,
  let inventory:Record<string,readonly Row[]>={};
  function one(name:string):Row{const rows=inventory[name];check(rows?.length===1);return rows[0];}
  function admission(){
-  const now=Date.now(),versions=inventory.S;check(versions.length===16&&versions.every((r,i)=>r.version===i+1));const m=one('M'),f=one('F');
+  const now=Date.now(),versions=inventory.S;check(versions.length===schemaVersion&&versions.every((r,i)=>r.version===i+1));const m=one('M'),f=one('F');
   check(m.workspace_id===binding.workspace_id&&m.object_name===binding.object_name&&m.config_digest===binding.config_digest&&m.installation_digest===binding.installation_digest&&m.config_epoch===binding.expected_epoch&&m.admission_state==='installed');
   check(f.id===1&&f.state==='open'&&f.authority_epoch===binding.expected_epoch&&f.generation===binding.maintenance_generation);
   check(m.message_retained_after_created_at===null&&m.message_retained_after_id===null&&m.event_retained_after_sequence===null);
@@ -50,3 +53,7 @@ export function createBoundedObserverStorage(actualStorage:DurableObjectStorage,
  function snapshot(){return Object.freeze({transactions,preflightQueries,productQueries,totalQueries:preflightQueries+productQueries,productCounts:Object.freeze({...counts}),bridgeRawBytes,bridgeJsonBytes,retainedBytes,pendingCursors,active,failed,finished});}
  return Object.freeze({storage:Object.freeze(storage),poison(){failed=true;},snapshot,finish(){return protect(()=>{healthy();check(!active&&pendingCursors===0&&transactions===3&&preflightQueries===24&&originals.length===24&&Date.now()<expiresAt);for(const [id,n]of Object.entries(ledger.productCallCounts))check(counts[id]===n);check(productQueries===ledger.authenticationCalls+ledger.finalCalls);finished=true;return Object.freeze({originals:Object.freeze([...originals]),counts:snapshot(),expiresAt,transactionIntervals:Object.freeze([...transactionIntervals])});});}});
 }
+
+}
+export const createBoundedObserverStorage=boundedObserverProfile(16,legacyDescriptors);
+export const createCurrentBoundedObserverStorage=boundedObserverProfile(17,currentObserverDescriptors);

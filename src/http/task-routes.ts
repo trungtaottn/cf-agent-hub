@@ -24,7 +24,7 @@ export async function taskRoutes(request:Request,workspace?:AuthWorkspace):Promi
   if(request.method==='OPTIONS'){
    noQuery(url.searchParams);const {config}=withTransaction(workspace.storage,tx=>currentConfiguration(tx,workspace)),auth=config.authentication;
    const redirect=auth.redirect_uris.find(x=>x.workspace_id===workspace.workspaceId);if(!redirect)throw new HttpError('DEPENDENCY_UNAVAILABLE',503);
-   const origin=new URL(redirect.redirect_uri).origin,allowed=['content-type','idempotency-key','x-csrf-token','authorization','x-runtime-token'];
+   const origin=new URL(redirect.redirect_uri).origin,allowed=['content-type','idempotency-key','x-csrf-token','authorization','x-runtime-token',...(collection?['x-creation-admission']:[])];
    if(url.origin!==origin||request.headers.get('origin')!==origin||!auth.allowed_origins.includes(origin)||!methods.includes(request.headers.get('access-control-request-method')??'')||(request.headers.get('access-control-request-headers')??'').split(',').map(x=>x.trim().toLowerCase()).filter(Boolean).some(x=>!allowed.includes(x)))throw new HttpError('FORBIDDEN',403);
    return new Response(null,{status:204,headers:{...securityHeaders,'access-control-allow-origin':origin,'access-control-allow-credentials':'true',vary:'Origin','access-control-allow-methods':methods.join(', '),'access-control-allow-headers':allowed.join(', ')}});
   }

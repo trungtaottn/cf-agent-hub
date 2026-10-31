@@ -12,9 +12,10 @@ test('real isolated service binds and observes authorization through the private
  try{
   const outfile=join(directory,'fixture.mjs');await build({entryPoints:[join(process.cwd(),'test/helpers/native-complete/local-fixture.ts')],outfile,bundle:true,platform:'node',format:'esm',packages:'external',logLevel:'silent'});
   local=await(await import(pathToFileURL(outfile).href)).createLocalCompleteFixture();
-  const p=preparationFixture({expected:local.expected,credentialExpiry:local.credentialExpiry});
+  assert.equal(local.profile,'native-r2-required-schema17-v1');
+  const p=preparationFixture({expected:local.expected,credentialExpiry:local.credentialExpiry},local.profile);
   const initialGrantSha256=Object.fromEntries(p.input.fixtureContext.initial_grants.map(g=>[g.role,g.sha256]));
-  const f=signedFixture('native-r2-required-prepared-v1',{...local,initialGrantSha256});service=createCompleteServiceCore(f.input);let sequence=0;
+  const f=signedFixture(local.profile,{...local,initialGrantSha256});assert.equal(f.v.installation.payload.fixture_sha256,local.fixture_sha256);assert.equal(f.v.installation.payload.family_ledger_sha256,local.family_ledger_sha256);service=createCompleteServiceCore(f.input);let sequence=0;
   const send=async(operation,payload)=>{const r={...f.v.request,sequence:++sequence,request_id:'real_source_'+sequence,operation,payload};const result=await service.handle(f.wire(r));assert.equal(result.status,200);return JSON.parse(result.body);};
   assert.equal((await send('preflight',f.v.request.payload)).data.status,'ready');
   assert.equal((await send('bind-run',{policy_sha256:completePolicyDigest(f.v.policy)})).data.status,'bound');

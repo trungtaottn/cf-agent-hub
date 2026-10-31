@@ -92,7 +92,7 @@ export async function captureCurrentFixture(f:CurrentRestoreFixture,options:{evi
   progress=await withCurrentRecoveryWorkspace(f,'source',async w=>advanceCapture(w,await recoveryContext(w,'capture',{budget},f.captureId,{anchor:sourceAnchor,operationId:'capture_'+step}),budget),sourceResolver);
   if(progress.state!=='running')break;if(options.evict)await evictDurableObject(f.source);
  }
- if(progress?.state!=='complete'||!progress.manifest||progress.manifest.format_version!==2||progress.manifest.checkpoint.schema_version!==16)throw Error('Genuine current capture failed');
+ if(progress?.state!=='complete'||!progress.manifest||progress.manifest.format_version!==2||progress.manifest.checkpoint.schema_version!==17)throw Error('Genuine current capture failed');
  const manifest=progress.manifest as CurrentRecoveryManifest,chunks=[];
  for(const entry of manifest.database.chunks)chunks.push(await withCurrentRecoveryWorkspace(f,'source',async w=>readRecoveryChunk(w,await recoveryContext(w,'read-chunk',{index:entry.index},f.captureId,{anchor:sourceAnchor}),entry.index),sourceResolver));
  return {progress,manifest,chunks};

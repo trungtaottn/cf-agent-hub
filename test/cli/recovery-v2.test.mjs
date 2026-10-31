@@ -35,18 +35,18 @@ test('current decoder supports aggregate and exact reference paths and rejects s
  assert.throws(()=>decodeCliChunk(encodeCurrentChunk({...value,schema_version:15}),manifest));
  assert.throws(()=>decodeCliChunk(bytes,{format_version:1}));
 });
-import {TABLE_REGISTRY} from '../../src/recovery/table-registry.ts';
+import {registryForSchema} from '../../src/recovery/table-registry.ts';
 import {TABLE_REGISTRY as V1_TABLE_REGISTRY} from '../../src/recovery/table-registry-v1.ts';
 import {signRecord} from '../../src/recovery/manifest.ts';
 async function currentManifest(schema=16){
  const tables=['schema_migrations','workspace_metadata','maintenance_state'];
  const chunks=tables.map((table,index)=>({index,table,sha256:'a'.repeat(64),byte_size:1,row_count:index===0?schema:1}));
  const integrity={keyId:'synthetic_key',key:Buffer.alloc(32,1).toString('base64')};
- const value={format_version:2,capture_id:'capture_one',workspace_id:'ws_example',environment_id:'source_env',started_at:'2026-10-25T00:00:00Z',ended_at:'2026-10-25T00:01:00Z',checkpoint:{barrier_id:'barrier_one',event_sequence:0,schema_version:schema,contract_revision:'0.2',authority_epoch:1},release:{revision:'fixture_revision',worker_version:'fixture_worker',binding_ids:['workspace_binding','recovery_bucket'],catalog_mapping:{workspace_id:'ws_example',object_name:'source_object'}},database:{sha256:'a'.repeat(64),byte_size:3,table_counts:Object.fromEntries(TABLE_REGISTRY.map(t=>[t.name,t.name==='schema_migrations'?schema:tables.includes(t.name)?1:0])),chunks},artifacts:[],unfinished_artifact_ids:[],auth:{key_id:'synthetic_key',algorithm:'HMAC-SHA256',tag:'0'.repeat(64)}};
+ const value={format_version:2,capture_id:'capture_one',workspace_id:'ws_example',environment_id:'source_env',started_at:'2026-10-25T00:00:00Z',ended_at:'2026-10-25T00:01:00Z',checkpoint:{barrier_id:'barrier_one',event_sequence:0,schema_version:schema,contract_revision:'0.2',authority_epoch:1},release:{revision:'fixture_revision',worker_version:'fixture_worker',binding_ids:['workspace_binding','recovery_bucket'],catalog_mapping:{workspace_id:'ws_example',object_name:'source_object'}},database:{sha256:'a'.repeat(64),byte_size:3,table_counts:Object.fromEntries(registryForSchema(schema).map(t=>[t.name,t.name==='schema_migrations'?schema:tables.includes(t.name)?1:0])),chunks},artifacts:[],unfinished_artifact_ids:[],auth:{key_id:'synthetic_key',algorithm:'HMAC-SHA256',tag:'0'.repeat(64)}};
  return {manifest:await signRecord(value,integrity),integrity};
 }
-test('current manifest dispatcher authenticates16 and retained15 and rejects forged or unsupported',async()=>{
- for(const schema of [15,16]){const{manifest,integrity}=await currentManifest(schema);assert.deepEqual(await verifyCliManifest(manifest,integrity),manifest);await assert.rejects(verifyCliManifest({...manifest,environment_id:'forged'},integrity));await assert.rejects(verifyCliManifest({...manifest,checkpoint:{...manifest.checkpoint,schema_version:17}},integrity));}
+test('current manifest dispatcher authenticates17 and retained15/16 and rejects forged or unsupported',async()=>{
+ for(const schema of [15,16,17]){const{manifest,integrity}=await currentManifest(schema);assert.deepEqual(await verifyCliManifest(manifest,integrity),manifest);await assert.rejects(verifyCliManifest({...manifest,environment_id:'forged'},integrity));await assert.rejects(verifyCliManifest({...manifest,checkpoint:{...manifest.checkpoint,schema_version:18}},integrity));}
 });
 import fs from 'node:fs';
 import {retainedControlLimit,supportedControlManifest} from '../../scripts/lib/recovery-client.mjs';

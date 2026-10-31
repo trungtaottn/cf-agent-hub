@@ -3,7 +3,7 @@ import {env} from 'cloudflare:workers';
 import {runInDurableObject} from 'cloudflare:test';
 import {fixture,operator} from '../helpers/environment';
 import {prepareBootstrap,sha256,canonicalJson} from '../../src/config/bootstrap';
-import {createCompleteSelectedState,decodeCompleteRows,completePhaseReservation} from '../../workers/native-fixture/selected-state';
+import {createCurrentCompleteSelectedState as createCompleteSelectedState,decodeCompleteRows,currentCompletePhaseReservation as completePhaseReservation,decodeCurrentCompleteRows} from '../../workers/native-fixture/selected-state';
 const bindings={W:'ws_example',C:'cred_research',human:'human_owner',principal:'agent_research',operation:'domain.tasks:create',target:'tasks:create',key:'r2_'+ '1'.repeat(32)};
 async function workspace(name:string){
  const {config,bundle}=await fixture(name);
@@ -19,7 +19,7 @@ it('captures actual source SQLite phase within its atomic reservation, without a
   const reader=createCompleteSelectedState(state.storage,bindings);
   const result=reader.readPhase({stepId:'success/getWorkspace',phase:'before'});
   expect(result.scope).toBe('private-selected-state');expect(result.installedAuthority).toBe(false);
-  expect(result.originals.find(x=>x.selector==='S')?.canonical).toBe(JSON.stringify(Array.from({length:16},(_,i)=>({version:i+1}))));
+  expect(result.originals.find(x=>x.selector==='S')?.canonical).toBe(JSON.stringify(Array.from({length:17},(_,i)=>({version:i+1}))));
   expect(result.originals.find(x=>x.selector==='M')?.canonical).toContain('ws_example');
   const budget=completePhaseReservation('success/getWorkspace','before');
   expect(reader.snapshot().reserved).toEqual(budget);expect(reader.snapshot().actualQueries).toBe(result.originals.length);
@@ -72,7 +72,7 @@ it('runs the complete literal inventory and keyed effect selectors against real 
 it('actual SQLite lookahead overflow poisons the reader and keeps its reservation spent',async()=>{
  const stub=await workspace('complete-selected-overflow');
  await runInDurableObject(stub,(_instance,state)=>{
-  state.storage.sql.exec('INSERT INTO schema_migrations(version,applied_at) VALUES (?,?)',17,1);
+  state.storage.sql.exec('INSERT INTO schema_migrations(version,applied_at) VALUES (?,?)',18,1);
   const reader=createCompleteSelectedState(state.storage,bindings);
   expect(()=>reader.readPhase({stepId:'success/getWorkspace',phase:'before'})).toThrow();
   expect(reader.snapshot().reserved).toEqual(completePhaseReservation('success/getWorkspace','before'));
@@ -149,4 +149,11 @@ it('admits only complete stored domain scope operations, not CLI names or aliase
    const reader=createCompleteSelectedState(state.storage,{...bindings,operation});expect(reader.snapshot().actualQueries).toBe(0);reader.close();
   }
  });
+});
+
+it('current profile rejects historical, missing, reordered and lookahead migration sequences',()=>{
+ const rows=Array.from({length:17},(_,i)=>({__valid:1,version:i+1}));
+ expect(decodeCurrentCompleteRows('S',rows).byteSize).toBe(247);
+ for(const bad of [rows.slice(0,16),[...rows,{__valid:1,version:18}],[...rows.slice(0,16),{__valid:1,version:18}],[...rows].reverse()])expect(()=>decodeCurrentCompleteRows('S',bad)).toThrow();
+ expect(()=>decodeCompleteRows('S',rows)).toThrow();
 });

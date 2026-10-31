@@ -122,7 +122,7 @@ const ajv=new Ajv({strict:true});ajv.addSchema(schema);
 const validateShape=ajv.compile({$ref:schema.$id+'#/$defs/recovery'});
 test('frozen table enum is independently exact against source registry',()=>{
  const source=readFileSync(new URL('../../src/recovery/table-registry.ts',import.meta.url),'utf8');
- const registry=JSON.parse(source.split('export const TABLE_REGISTRY = ')[1].split(' as const')[0].trim().replace(/;$/,''));
+ const registry=JSON.parse(source.split('export const SCHEMA16_TABLE_REGISTRY = ')[1].split(' as const')[0].trim().replace(/;$/,''));
  assert.deepEqual(RECOVERY_TABLES,registry.map(x=>x.name));
 });
 test('committed empty peer remains valid while workload retains nonempty artifact',()=>{
