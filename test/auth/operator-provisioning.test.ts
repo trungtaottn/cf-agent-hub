@@ -220,3 +220,12 @@ it('operator provisioning preserves explicit execution policy in the signed conf
  const invalid=f.config(2);Object.assign(invalid.workspace_policies[0],{execution_policy:{...policy,eligibility_rules:[policy.eligibility_rules[0],policy.eligibility_rules[0]]}});
  const denied=f.create(invalid,out);expect(denied.status).not.toBe(0);expect(denied.token).toBe('');expect(existsSync(denied.bundle)).toBe(false);
 });
+
+it('operator provisioning preserves inactive decision policy through the real supported Node CLI',()=>{
+ const f=setup(),config=f.config(1),policy={policy_version:3,expiry_seconds:120,expiry_batch_limit:2,actions:[{action_id:'inactive.synthetic',schema_version:1,schema_sha256:'a'.repeat(64),reviewer_ids:['human_operator'],resource_kinds:['task']}]};
+ Object.assign(config.workspace_policies[0],{decision_policy:policy});const out=f.create(config);green(out);
+ expect(read(out.config).workspace_policies[0].decision_policy).toEqual(policy);
+ expect(read(out.bundle).config_digest).toBe(createHash('sha256').update(canonical(config)).digest('hex'));
+ const invalid=f.config(2);Object.assign(invalid.workspace_policies[0],{decision_policy:{...policy,expiry_seconds:undefined}});
+ const denied=f.create(invalid,out);expect(denied.status).not.toBe(0);expect(denied.token).toBe('');expect(existsSync(denied.bundle)).toBe(false);
+});

@@ -35,7 +35,7 @@ export type DeploymentConfig = {
 "principal_id": string;
 "issuer": string;
 "subject": string;
-"scopes": Array<"workspace:read" | "messages:send" | "messages:read" | "messages:review" | "events:read" | "profile:edit" | "operations:read" | "tasks:read" | "tasks:create" | "tasks:edit" | "tasks:schedule" | "tasks:review" | "tasks:cancel" | "agents:read" | "agents:manage" | "credentials:manage" | "artifacts:read" | "artifacts:write" | "search:read" | "imports:manage">;
+"scopes": Array<"workspace:read" | "messages:send" | "messages:read" | "messages:review" | "events:read" | "profile:edit" | "operations:read" | "tasks:read" | "tasks:create" | "tasks:edit" | "tasks:schedule" | "tasks:review" | "tasks:cancel" | "agents:read" | "agents:manage" | "credentials:manage" | "artifacts:read" | "artifacts:write" | "search:read" | "imports:manage" | "approvals:read" | "approvals:decide">;
 "project_ids": (Array<string> | null);
 "enabled": boolean;
 "delegable_native_scopes"?: Array<"workspace:read" | "messages:send" | "messages:read" | "messages:ack" | "events:read" | "tasks:read" | "tasks:create" | "tasks:edit" | "tasks:schedule" | "tasks:claim" | "tasks:execute" | "tasks:review" | "tasks:cancel" | "agents:read" | "runtimes:manage" | "artifacts:read" | "artifacts:write" | "search:read">;
@@ -61,6 +61,18 @@ export type DeploymentConfig = {
 }>;
 "retry_after_max_seconds": number;
 "execution_policy"?: ExecutionPolicy;
+"decision_policy"?: {
+"policy_version": number;
+"expiry_seconds": number;
+"expiry_batch_limit": number;
+"actions": Array<{
+"action_id": string;
+"schema_version": number;
+"schema_sha256": string;
+"reviewer_ids": Array<string>;
+"resource_kinds": Array<string>;
+}>;
+};
 }>;
 };
 export type VerificationBundle = {

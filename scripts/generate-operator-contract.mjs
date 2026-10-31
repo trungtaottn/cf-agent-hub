@@ -5,10 +5,11 @@ import standalone from 'ajv/dist/standalone/index.js';
 import {_} from 'ajv/dist/compile/codegen/index.js';
 const read=async path=>JSON.parse(await readFile(path,'utf8'));
 const executionPolicy=await read('spec/execution-policy.schema.json');
+const decisionPolicy=await read('spec/decision-policy.schema.json');
 const deployment=await read('spec/deployment-config.schema.json'),bundle=await read('spec/r1-bootstrap.schema.json'),commands=await read('spec/recovery-command.schema.json');
 const schema={$id:'urn:cf-agent-hub:operator-install',...commands.oneOf.find(x=>x.properties.operation.const==='install')};
 const ajv=new Ajv2020({strict:false,allErrors:true,code:{source:true,esm:true,formats:_`formats`}});
-addFormats(ajv);for(const item of [executionPolicy,deployment,bundle,schema])ajv.addSchema(item);
+addFormats(ajv);for(const item of [executionPolicy,decisionPolicy,deployment,bundle,schema])ajv.addSchema(item);
 const generated=standalone(ajv,{validateInstall:schema.$id}).replaceAll('require("ajv/dist/runtime/ucs2length").default','ucs2Length').replaceAll('require("ajv/dist/runtime/equal").default','equalValues');
 const js='// Generated from the canonical recovery install discriminant.\nimport formatModule from "ajv-formats/dist/formats.js";\nimport ucs2Module from "ajv/dist/runtime/ucs2length.js";\nimport equalModule from "ajv/dist/runtime/equal.js";\nconst formats=formatModule.fullFormats;\nconst ucs2Length=typeof ucs2Module==="function"?ucs2Module:ucs2Module.default;\nconst equalValues=typeof equalModule==="function"?equalModule:equalModule.default;\n'+generated+'\n';
 function type(s){
@@ -33,7 +34,7 @@ const roots={
  CutoverRecord:{$id:'urn:cf-agent-hub:cutover-record:1',...byOperation('resume').properties.payload.properties.cutover_record.anyOf[0]}
 };
 const full=new Ajv2020({strict:false,allErrors:true,code:{source:true,esm:true,formats:_`formats`}});addFormats(full);
-for(const item of [executionPolicy,deployment,bundle,commands,manifest,responses,...Object.values(roots).slice(2)])full.addSchema(item);
+for(const item of [executionPolicy,decisionPolicy,deployment,bundle,commands,manifest,responses,...Object.values(roots).slice(2)])full.addSchema(item);
 const names={...Object.fromEntries(Object.entries(roots).map(([name,s])=>['validate'+name,s.$id])),...Object.fromEntries(Object.keys(responses.$defs).map(name=>['validate'+name,responses.$id+'#/$defs/'+name]))};
 let runtime=standalone(full,names).replaceAll('require("ajv/dist/runtime/ucs2length").default','ucs2Length').replaceAll('require("ajv/dist/runtime/equal").default','equalValues');
 const effectLimit=responses.$defs.RecoveryReceipt.properties.unresolved_effect_ids.maxItems;

@@ -18,9 +18,9 @@ describe('closed decision contract, not installed authority',()=>{
   for(const key of Object.keys(policy)){const p:Record<string,unknown>={...policy};delete p[key];expect(()=>api.parseDecisionPolicy(p)).toThrow();}
   for(const patch of [{expiry_seconds:0},{expiry_seconds:Number.MAX_SAFE_INTEGER+1},{expiry_batch_limit:201},{actions:[{...policy.actions[0],reviewer_ids:['same','same']}]},{actions:[{...policy.actions[0],resource_kinds:['same','same']}]} ,{unlimited:true},{actions:[policy.actions[0],policy.actions[0]]},{actions:[{...policy.actions[0],reviewer_ids:[]}]},{actions:[{...policy.actions[0],schema_sha256:'A'.repeat(64)}]}])expect(()=>api.parseDecisionPolicy({...policy,...patch})).toThrow();
  });
- it('returns detached policy data and does not activate deployment configuration',()=>{
+ it('returns detached policy data and accepts inactive structural deployment configuration',()=>{
   const copy=api.parseDecisionPolicy(policy);copy.actions[0].reviewer_ids.length=0;expect(policy.actions[0].reviewer_ids).toHaveLength(1);
-  const candidate=structuredClone(deployment);Object.assign(candidate.workspace_policies[0],{decision_policy:validExample});expect(()=>parseDeployment(candidate)).toThrow();
+  const candidate=structuredClone(deployment);Object.assign(candidate.workspace_policies[0],{decision_policy:validExample});expect(parseDeployment(candidate).workspace_policies[0].decision_policy).toEqual(validExample);
  });
  it('models bounded reuse with immutable bindings and legitimate lifecycle increments only',()=>{
   expect(api.reuseDenials(observation())).toEqual([]); // synthetic obligation satisfaction, NOT authority

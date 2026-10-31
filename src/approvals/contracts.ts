@@ -1,18 +1,15 @@
 import {parseExactJson} from './exact-json';
-import {validateDecisionPolicyShape,type DecisionPolicy} from '../config/generated/validators.js';
+import {parseDecisionPolicy} from '../config/decision-policy-validation.ts';
+export {parseDecisionPolicy};
 export type {DecisionPolicy} from '../config/generated/validators.js';
-/** Structural configuration only. The deployment schema does not install this policy. */
-export function parseDecisionPolicy(input:unknown):DecisionPolicy {
- if(!validateDecisionPolicyShape(input)||new TextEncoder().encode(JSON.stringify(input)).length>65536)throw Error('INVALID_DECISION_POLICY');
- const seen=new Set<string>();for(const action of input.actions){if(seen.has(action.action_id))throw Error('INVALID_DECISION_POLICY');seen.add(action.action_id);}
- return structuredClone(input);
-}
 /** No operator-reviewed product action schemas exist in this source slice. */
 export function availableDecisionActions():readonly string[]{return Object.freeze([]);}
 export function resolveConfiguredAction(policy:unknown,actionId:string):never{parseDecisionPolicy(policy);void actionId;throw Error('DECISION_UNAVAILABLE');}
 export interface IntentBinding {
  workspaceId:string;taskId:string;approvalId:string;proposalVersion:number;approvalVersion:number;taskVersionAtApproval:number;retryCountAtApproval:number;originalExpiresAt:number;
- actionId:string;schemaVersion:number;schemaSha256:string;inputArtifactId:string;inputGeneration:number;inputSha256:string;
+ actionId:string;schemaVersion:number;schemaSha256:string;inputArtifactId:string;
+ /** Historical synthetic diagnostic counter, NOT native generation.id provenance. */
+ inputGeneration:number;inputSha256:string;
  policyVersion:number;policyEpoch:number;targetVersions:ReadonlyArray<{kind:string;id:string;version:number}>;
 }
 export interface NoEffectObservation {kind:'authoritative-no-dispatch'|'authoritative-provider-no-effect';reference:string;binding:IntentBinding;runId:string;fence:number;complete:true;}
@@ -77,4 +74,65 @@ export async function inspectProposalBytes(bytes:Uint8Array,mime:string):Promise
  const stack:unknown[]=[value];while(stack.length){const x=stack.pop();if(x&&typeof x==='object'){for(const v of Object.values(x))if(v&&typeof v==='object')stack.push(v);Object.freeze(x);}}
  const digest=await crypto.subtle.digest('SHA-256',snapshot),sha256=[...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('');
  return Object.freeze({sha256,byteLength:snapshot.byteLength,value});
+}
+
+/** Native metadata identity, not the historical numeric inputGeneration diagnostic. */
+export interface NativeDecisionArtifactBinding {
+ readonly artifactId:string;readonly generationId:string;readonly artifactVersion:number;
+ readonly sha256:string;readonly byteLength:number;
+ readonly associations:ReadonlyArray<Readonly<{kind:string;id:string}>>;
+}
+/** Pure equality diagnostic only. Neither operand proves committed bytes or access. */
+export function sameNativeArtifactBinding(a:NativeDecisionArtifactBinding,b:NativeDecisionArtifactBinding):boolean {
+ const key=(x:NativeDecisionArtifactBinding):string|null=>{
+  if(!x||!id(x.artifactId)||!id(x.generationId)||!positive(x.artifactVersion)||!hash(x.sha256)||!Number.isSafeInteger(x.byteLength)||x.byteLength<0||x.byteLength>10485760||!Array.isArray(x.associations)||x.associations.length>2048)return null;
+  const edges=x.associations.map(e=>e&&id(e.kind)&&id(e.id)?JSON.stringify([e.kind,e.id]):null);
+  if(edges.some(e=>e===null)||new Set(edges).size!==edges.length)return null;
+  return JSON.stringify([x.artifactId,x.generationId,x.artifactVersion,x.sha256,x.byteLength,edges.sort()]);
+ };
+ const left=key(a);return left!==null&&left===key(b);
+}
+export interface DecisionTaskReference {readonly taskId:string;readonly taskVersion:number;}
+export interface DecisionDescriptorIdentity {
+ readonly actionId:string;readonly schemaVersion:number;readonly schemaSha256:string;
+ /** Changes whenever extraction, scope, target/version interpretation or effect boundary changes. */
+ readonly semanticRevision:string;
+}
+export interface DecisionReviewerRequirements {
+ readonly principalId:string;readonly configEpoch:number;
+ readonly scopes:readonly string[];readonly projectIds:readonly string[]|null;
+}
+/** Current SQL requirements only. Input resource IDs have NOT been interpreted or authorized.
+ * These candidates are not an assignment, a final eligible resolution, or mutation authority. */
+export interface DecisionPolicyRequirements extends DecisionDescriptorIdentity {
+ readonly phase:'requirements-only';readonly requestedBy:Readonly<{kind:'agent';principalId:string;credentialId:string}>;readonly workspaceId:string;readonly taskId:string;readonly taskVersion:number;readonly taskProposalVersion:number;
+ readonly projectId:string|null;readonly proposalCanonicalJson:string;
+ readonly configEpoch:number;readonly configDigest:string;readonly installationDigest:string;readonly admissionGeneration:number;
+ readonly policyVersion:number;readonly policyCanonicalJson:string;readonly resolvedAt:number;readonly expiresAt:number;
+ readonly resourceKinds:readonly string[];readonly reviewerIds:readonly string[];readonly reviewers:readonly DecisionReviewerRequirements[];
+ readonly artifacts:readonly NativeDecisionArtifactBinding[];
+}
+export interface DecisionTargetBinding {readonly kind:string;readonly id:string;readonly version:number;readonly projectId:string|null;}
+// Deliberately unexported, uninhabited provenance brands: this slice has NO constructor,
+// deserializer, verifier, final-resolution predicate, or observation-to-authority factory.
+// #54 must supply genuine runtime-private provenance, not merely a structural cast.
+declare const verifiedProposalInput:unique symbol;
+declare const finalDecisionPolicy:unique symbol;
+export type ReadonlyDecisionJson=null|boolean|number|string|readonly ReadonlyDecisionJson[]|{readonly [key:string]:ReadonlyDecisionJson};
+export interface DecisionArtifactEdge {readonly role:'checkpoint'|'proposal'|'input';readonly artifact:NativeDecisionArtifactBinding;}
+/** Exact installed policy/workspace identity; also required on standalone verified input.
+ * Later private minting/rechecks must enforce equality with the final resolution. */
+export interface DecisionPolicyIdentity {
+ readonly workspaceId:string;readonly policyVersion:number;readonly policyCanonicalJson:string;
+ readonly configEpoch:number;readonly configDigest:string;readonly installationDigest:string;readonly admissionGeneration:number;
+}
+export interface VerifiedProposalInput {
+ readonly [verifiedProposalInput]:true;readonly policy:DecisionPolicyIdentity;readonly artifact:NativeDecisionArtifactBinding;
+ readonly descriptor:DecisionDescriptorIdentity;readonly byteLength:number;readonly sha256:string;
+ readonly value:ReadonlyDecisionJson;readonly targetBindings:readonly DecisionTargetBinding[];
+}
+export interface DecisionPolicyResolution extends Omit<DecisionPolicyRequirements,'phase'> {
+ readonly [finalDecisionPolicy]:true;readonly phase:'resolved';readonly input:VerifiedProposalInput;
+ readonly artifactEdges:readonly DecisionArtifactEdge[];
+ readonly targetBindings:readonly DecisionTargetBinding[];
 }

@@ -23,3 +23,24 @@ describe('deployment catalog', () => {
   expect(()=>parseDeployment({...example,extra:true})).toThrow();
  });
 });
+
+describe('inactive structural decision policy installation',()=>{
+ const policy={policy_version:1,expiry_seconds:120,expiry_batch_limit:2,actions:[{action_id:'inactive.synthetic',schema_version:1,schema_sha256:'a'.repeat(64),reviewer_ids:['synthetic_reviewer'],resource_kinds:['task']}]};
+ it('accepts structurally valid inactive selections without registering any action',()=>{
+  const c=structuredClone(example);Object.assign(c.workspace_policies[0],{decision_policy:policy});
+  expect(parseDeployment(c).workspace_policies[0]).toHaveProperty('decision_policy',policy);
+ });
+ it('recognizes existing approval scopes only on human grants',()=>{
+  const c=structuredClone(example);Object.assign(c.human_grants[0],{scopes:['approvals:read','approvals:decide']});
+  expect(parseDeployment(c).human_grants[0].scopes).toEqual(['approvals:read','approvals:decide']);
+  for(const scope of ['approvals:read','approvals:decide']){
+   const native=structuredClone(example);Object.assign(native.static_credential_refs[0],{scopes:[scope]});expect(()=>parseDeployment(native)).toThrow();
+   const delegated=structuredClone(example);Object.assign(delegated.human_grants[0],{delegable_native_scopes:[scope]});expect(()=>parseDeployment(delegated)).toThrow();
+  }
+ });
+ it('rejects malformed structural policies but does not require a known descriptor',()=>{
+  for(const patch of [{expiry_seconds:undefined},{extra:true},{actions:[{...policy.actions[0],schema_sha256:'A'.repeat(64)}]},{actions:[policy.actions[0],policy.actions[0]]}]){
+   const c=structuredClone(example);Object.assign(c.workspace_policies[0],{decision_policy:{...policy,...patch}});expect(()=>parseDeployment(c)).toThrow();
+  }
+ });
+});
