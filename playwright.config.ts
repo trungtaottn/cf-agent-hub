@@ -1,6 +1,6 @@
 import { defineConfig } from '@playwright/test';
 export default defineConfig({
- testDir:'./test/ui',timeout:30_000,workers:1,fullyParallel:false,
+ testDir:'./test/ui',testMatch:'**/*.spec.ts',timeout:30_000,workers:1,fullyParallel:false,
  use:{ignoreHTTPSErrors:false},
  webServer:{
   command:'node scripts/start-ui-test-server.mjs',
