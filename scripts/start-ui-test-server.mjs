@@ -99,6 +99,14 @@ try {
    return {snapshot:{tasks,events,outcomes,dropped:taskCompositionProbe.receipts}};
   }
 
+  if(['drop-artifact-stage-response','drop-artifact-upload-response','drop-artifact-commit-response'].includes(action)){compositionProbe.armArtifact(action.split('-')[2]);return;}
+  if(action==='message-upload-snapshot'){
+   const state=await worker.getDurableObjectStorage('WORKSPACE',{name:currentName});
+   const artifacts=await state.exec("SELECT id,status,artifact_version,byte_size,sha256,owner_principal_id FROM artifacts WHERE workspace_id='ws_example' ORDER BY id");
+   const links=await state.exec("SELECT message_id,artifact_id,ordinal FROM message_artifacts WHERE workspace_id='ws_example' ORDER BY message_id,ordinal");
+   const artifactEvents=await state.exec("SELECT type,resource_id FROM events WHERE workspace_id='ws_example' AND type IN ('artifact.staged','artifact.uploaded','artifact.committed') ORDER BY sequence");
+   return {snapshot:{artifacts,links,artifactEvents,dropped:compositionProbe.artifactReceipts}};
+  }
   if(action==='drop-preparation-responses'){compositionProbe.armPreparation();return;}
   if(action==='drop-composition-responses'){compositionProbe.arm();return;}
   if(action==='resume-composition-responses'){compositionProbe.resume();return;}

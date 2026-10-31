@@ -40,7 +40,7 @@ function eraseComposition(broadcast=true){
  if(scope)void compositionStorage.erase(scope);
 }
 composeChannel?.addEventListener('message',event=>{const value=event.data;if(value&&typeof value==='object'&&value.type==='erase'&&value.workspaceId===workspace&&typeof value.principalId==='string'&&value.principalId===(composeScope?.principalId??session?.actor.principal_id)){eraseComposition(false);++connectionGeneration;notice.textContent='Composition cleared in another tab. Refresh current session before composing.';}});
-async function verifyCompositionAuthority(kind:'message'|'task'='message'):Promise<boolean>{
+async function verifyCompositionAuthority(kind:'message'|'task'|'upload'='message'):Promise<boolean>{
  const generation=authority,connection=connectionGeneration,principal=session?.actor.principal_id;
  const auth=await compositionRequest(()=>client.request<AuthSession>('getAuthSession',{}),true);
  if(!auth.ok||generation!==authority||connection!==connectionGeneration)return false;
@@ -49,21 +49,25 @@ async function verifyCompositionAuthority(kind:'message'|'task'='message'):Promi
  if(!access.ok||generation!==authority||connection!==connectionGeneration)return false;
  if(access.data.id!==workspace||access.data.actor.principal_id!==principal){invalidateAll(401,access.requestId);return false;}
  if(!(kind==='task'?['tasks:create'] as const:['messages:send','messages:read','agents:read'] as const).every(scope=>access.data.effective_scopes.includes(scope))){invalidateAll(403,access.requestId);return false;}
+ if(kind==='upload'&&!(['artifacts:read','artifacts:write'] as const).every(scope=>access.data.effective_scopes.includes(scope)))return false;
  client.setCsrfToken(auth.data.csrf_token);return true;
 }
-async function openComposition(){
+async function openComposition(replyThread?:string){
  hideComposition();const viewGeneration=composeViewGeneration;
  if(viewGeneration!==composeViewGeneration||!compositionBinding()||!models.workspace.state.data?.effective_scopes.includes('messages:send')||(!models.workspace.state.data.effective_scopes.includes('messages:read')||!models.workspace.state.data.effective_scopes.includes('agents:read')))return;
  if(!messageComposition){
   const store=compositionStorage.store;
-  messageComposition=new MessageComposition({store,currentBinding:compositionBinding,changed:()=>messageForm?.update(),read:(operation,input,options)=>compositionRequest(()=>client.read(operation,input,options),true),
+  messageComposition=new MessageComposition({store,currentBinding:compositionBinding,changed:()=>messageForm?.update(),read:(operation,input,options)=>compositionRequest(()=>client.read(operation,input,options)),
+   getThread:id=>compositionRequest(()=>client.request<Message[]>('getThread',{thread_id:id,limit:100})),
+   canUpload:()=>models.workspace.state.status==='ready'&&(['artifacts:read','artifacts:write'] as const).every(scope=>models.workspace.state.data?.effective_scopes.includes(scope)),
+   artifact:(operation,input,options)=>compositionRequest(()=>client.artifact(operation,input,options)),verifyUploadAuthority:()=>verifyCompositionAuthority('upload'),
    verifyAuthority:()=>verifyCompositionAuthority('message'),
    prepare:(operation,input,options)=>compositionRequest(()=>client.prepareCreation(operation,input,options),true),
    reconcile:(operation,input,options)=>compositionRequest(()=>client.reconcileCreation(operation,input,options),true),
-   send:(operation,input,options)=>compositionRequest(()=>client.compose(operation,input,options),true)});
+   send:async(operation,input,options)=>{const result=await compositionRequest(()=>client.compose(operation,input,options));if(!result.ok&&result.status===403)await verifyCompositionAuthority('message');return result;}});
   messageForm=new MessageForm(messageComposition,id=>{hideComposition();navigate('activity',id);});byId('main').append(messageForm.element);
  }
- composeScope={workspaceId:workspace,principalId:session!.actor.principal_id};await messageComposition.open();if(viewGeneration!==composeViewGeneration||messageComposition.state.status==='inactive')return;messageForm!.update();messageForm!.element.hidden=false;messageForm!.body.focus();
+ composeScope={workspaceId:workspace,principalId:session!.actor.principal_id};await messageComposition.open();if(replyThread&&viewGeneration===composeViewGeneration)await messageComposition.selectThread(replyThread);if(viewGeneration!==composeViewGeneration||messageComposition.state.status==='inactive')return;messageForm!.update();messageForm!.element.hidden=false;messageForm!.body.focus();
 }
 
 
@@ -305,7 +309,7 @@ function threadSection():HTMLElement{
   for(const message of messages){
    const item=el('li');item.append(el('h3','Message '+message.id),el('p','Sender: '+message.sender.principal_id,{class:'muted'}),el('p',message.body,{class:'message-body'}));
    const labels=el('div',undefined,{class:'record-labels'});labels.append(el('span','Stored: '+message.created_at),el('span','Transport: Not reported by thread history'),el('span',message.acknowledged_at?'ACK: '+message.acknowledged_at:'ACK: Not reported for human history'));
-   item.append(labels);list.append(item);
+   item.append(labels);if(compositionBinding()&&models.workspace.state.data?.effective_scopes.includes('messages:send'))item.append(button('Reply in thread '+message.thread_id,()=>void openComposition(message.thread_id),{class:'secondary'}));list.append(item);
   }
   container.append(list);
  },'No messages were returned for this authorized thread response.');

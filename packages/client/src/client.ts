@@ -1,13 +1,13 @@
-import {clientOperations} from '../../../src/http/generated/client-operations';
-import {prepareNativeOperation} from './native-request';
+import {clientOperations,artifactClientMaxBytes} from '../../../src/http/generated/client-operations';
+import {prepareNativeOperation,snapshot} from './native-request';
 import type {HttpOperationData} from '../../../src/http/dto';
-import type {BrowserComposeOperation,BrowserComposeOptions,BrowserComposeReconciliation,BrowserReadOperation,BrowserTaskCommandOperation,BrowserTaskCommandOptions,RequestFor} from './types';
+import type {BrowserArtifactOperation,BrowserArtifactOptions,BrowserComposeOperation,BrowserComposeOptions,BrowserComposeReconciliation,BrowserReadOperation,BrowserTaskCommandOperation,BrowserTaskCommandOptions,RequestFor} from './types';
 import {HttpTransport,Deadline,ClientFault,failure,faultResult} from './transport';
 import type {ApiResult,HubClientOptions,Operation,OperationInputs,RequestOptions} from './types';
 import {
  validateAuthStartRequest,validateAuthLogoutRequest,validateAuthStartData,validateAuthSession,validateAuthLogoutData,validateProfileWriteRequest,validatePreferencesWriteRequest,
  validateWorkspace,validateConfiguration,validateProfileData,validateProfilePreview,validateProfileExport,validatePreferencesData,
- validateOperations,validateEvent,validateMessage
+ validateArtifact,validateOperations,validateEvent,validateMessage
 } from '../../../src/http/generated/auth-validators.js';
 import {httpFieldNames} from '../../../src/http/generated/http-schemas';
 
@@ -184,6 +184,33 @@ export class HubClient {
   const contract=clientOperations[operation],deadline=new Deadline(30_000,signal);
   try{
    const response=await this.#transport.open(prepared.path,{method:prepared.method,headers,body:prepared.canonicalBody,credentials:'same-origin',mode:'same-origin',redirect:'error',cache:'no-store',signal:deadline.signal},deadline);
+   if(response.status===401||response.status===403)this.#csrfToken=null;
+   return await this.#transport.json<HttpOperationData[K]>(response,{status:contract.status,validateEnvelope:contract.validateResponse,maxBytes:1048576,deadline});
+  }catch(error){return faultResult(error);}finally{deadline.dispose();}
+ }
+ /** Closed human-cookie artifact lane. Caller owns frozen keys and reconciliation; no retries. */
+ async artifact<K extends BrowserArtifactOperation>(operation:K,input:RequestFor<K>,options:BrowserArtifactOptions<K>):Promise<ApiResult<HttpOperationData[K]>>{
+  if(operation!=='stageArtifact'&&operation!=='uploadArtifactContent'&&operation!=='commitArtifact')return failure('OPERATION_UNAVAILABLE','Operation unavailable in browser artifact surface');
+  let prepared:ReturnType<typeof prepareNativeOperation>,headers:Headers,body:BodyInit,signal:AbortSignal|undefined;
+  try{
+   const upload=operation==='uploadArtifactContent',allowed=upload?['idempotencyKey','signal','blob','artifact']:['idempotencyKey','signal'];
+   if(!record(options)||Object.keys(options).some(key=>!allowed.includes(key)))throw new ClientFault('INVALID_REQUEST');
+   const key=options.idempotencyKey;signal=options.signal;
+   if(!nonempty(key)||key.trim()!==key||/[\r\n]/.test(key)||signal!==undefined&&!(signal instanceof AbortSignal))throw new ClientFault('INVALID_REQUEST');
+   prepared=prepareNativeOperation('https://browser.invalid',this.#workspaceId,operation,input);
+   body=prepared.canonicalBody;
+   if(upload){
+    const metadata=snapshot(options.artifact),blob=options.blob;
+    if(!validateArtifact(metadata)||metadata.workspace_id!==this.#workspaceId||metadata.id!==(prepared.request.path as Record<string,unknown>).artifact_id||!['staged','uploaded'].includes(metadata.status)||!Number.isSafeInteger(metadata.byte_size)||metadata.byte_size<0||metadata.byte_size>artifactClientMaxBytes||!(blob instanceof Blob)||Object.getOwnPropertyDescriptor(Blob.prototype,'size')!.get!.call(blob)!==metadata.byte_size)throw new ClientFault('INVALID_REQUEST');
+    body=blob;
+   }
+   if(!this.#csrfToken)return failure('CSRF_REQUIRED','Session CSRF token required');
+   // Browsers own Content-Length. Never copy native bearer/runtime/proof headers.
+   headers=new Headers({accept:'application/json','content-type':upload?'application/octet-stream':'application/json','idempotency-key':key,'x-csrf-token':this.#csrfToken});
+  }catch{return failure('INVALID_REQUEST','Invalid request');}
+  const contract=clientOperations[operation],deadline=new Deadline(30_000,signal);
+  try{
+   const response=await this.#transport.open(prepared.path,{method:prepared.method,headers,body,credentials:'same-origin',mode:'same-origin',redirect:'error',cache:'no-store',signal:deadline.signal},deadline);
    if(response.status===401||response.status===403)this.#csrfToken=null;
    return await this.#transport.json<HttpOperationData[K]>(response,{status:contract.status,validateEnvelope:contract.validateResponse,maxBytes:1048576,deadline});
   }catch(error){return faultResult(error);}finally{deadline.dispose();}

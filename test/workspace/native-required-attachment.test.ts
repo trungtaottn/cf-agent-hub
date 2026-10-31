@@ -46,21 +46,40 @@ it.each([true,false])('current17 workspace projection exactly binds tasks:create
  expect(()=>reconcileRequiredFamilySchema17(changed)).toThrow('REQUIRED_FAMILY_REJECTED');
  const extra=structuredClone(input);extra.responses[0].data.data.effective_scopes.push('agents:manage');expect(()=>reconcileRequiredFamilySchema17(extra)).toThrow();
 });
+it.each([true,false])('current17 workspace projection exactly binds artifacts:write to selected grant (%s)',granted=>{
+ const scopes=['workspace:read',...(granted?['artifacts:write']:[])];
+ const selected=[{selector:'M',canonical:canonicalJson([{workspace_id:'ws_example',admission_state:'installed'}])},{selector:'F',canonical:canonicalJson([{state:'open'}])},{selector:'G',canonical:canonicalJson([{scopes_json:JSON.stringify(scopes)}])}];
+ const data={id:'ws_example',display_name:neutralProfile.display_name,contract_revision:'0.1',actor:{kind:'agent',principal_id:'agent_research',agent_id:'agent_research'},effective_scopes:[...scopes].sort()};
+ const input={step_id:'success/getWorkspace',before:selected,after:selected,bindings:{},actor:{agent_id:'agent_research',credential_id:'cred_s'},responses:[{operation:'getWorkspace',status:200,data:{data,request_id:'req_projection'}}]};
+ expect(()=>reconcileRequiredFamilySchema17(input)).not.toThrow();
+ if(granted){expect(()=>reconcileRequiredFamily(input)).toThrow('REQUIRED_FAMILY_REJECTED');const old=structuredClone(input);old.responses[0].data.data.effective_scopes=['workspace:read'];expect(()=>reconcileRequiredFamily(old)).not.toThrow();}
+ const changed=structuredClone(input);changed.responses[0].data.data.effective_scopes=granted?['workspace:read']:['artifacts:write','workspace:read'];
+ expect(()=>reconcileRequiredFamilySchema17(changed)).toThrow('REQUIRED_FAMILY_REJECTED');
+ const extra=structuredClone(input);extra.responses[0].data.data.effective_scopes.push('agents:manage');expect(()=>reconcileRequiredFamilySchema17(extra)).toThrow();
+});
 
 it('current17 workspace response and actual CLI formatter fit unchanged capture and process offers',()=>{
- const display=['workspace:read','agents:read','messages:send','messages:read','messages:ack','events:read','tasks:read','tasks:create','tasks:schedule','tasks:cancel','tasks:review','artifacts:read'];
+ const display=['workspace:read','agents:read','messages:send','messages:read','messages:ack','events:read','tasks:read','tasks:create','tasks:schedule','tasks:cancel','tasks:review','artifacts:read','artifacts:write'];
  const id='a'.repeat(64),requestId='r'.repeat(128),encode=new TextEncoder();
  const cap=requiredApplicationPlan.find(p=>p.step_id==='success/getWorkspace')!.ordinals[0].capture_limits.responseBodyBytes;
  const offer=processOffers.find(p=>p.step_id==='success/getWorkspace')!.output_bytes;
  expect(cap).toBe(733);expect(offer).toBe(2048);
- const cases=[...(['S','R','X'] as const).map(role=>({scopes:manifest.configuration_constraints.native_scopes[role].filter(scope=>display.includes(scope)).sort(),name:neutralProfile.display_name})),{scopes:[...display].sort(),name:id}];
+ const cases=[...(['S','R','X'] as const).map(role=>({scopes:manifest.configuration_constraints.native_scopes[role].filter(scope=>display.includes(scope)).sort(),name:neutralProfile.display_name})),{scopes:[...display].sort(),name:neutralProfile.display_name}];
  for(const [index,item]of cases.entries()){
   const data={id,display_name:item.name,contract_revision:'0.1',actor:{kind:'agent',principal_id:id,agent_id:id},effective_scopes:item.scopes};
   const body=JSON.stringify({data,request_id:requestId}),out=formatResult({ok:true,status:200,data,requestId});
-  expect(encode.encode(body).length).toBe([639,578,502,724][index]);
+  expect(encode.encode(body).length).toBe([657,578,502,687][index]);
   expect(encode.encode(body).length).toBeLessThanOrEqual(cap);
   expect(out).toEqual({exitCode:0,stdout:body+'\n',stderr:''});
   expect(encode.encode(out.stdout).length).toBeLessThanOrEqual(offer);
+  // Provisioning requires an empty P selector; only the neutral profile is admitted.
+  // The historical hypothetical 64-character profile is not a supported witness.
+  const selected=[{selector:'M',canonical:canonicalJson([{workspace_id:id,admission_state:'installed'}])},{selector:'F',canonical:canonicalJson([{state:'open'}])},{selector:'G',canonical:canonicalJson([{scopes_json:JSON.stringify(item.scopes)}])}];
+  const input={step_id:'success/getWorkspace',before:selected,after:selected,bindings:{},actor:{agent_id:id,credential_id:'cred_s'},responses:[{operation:'getWorkspace',status:200,data:{data,request_id:requestId}}]};
+  expect(()=>reconcileRequiredFamilySchema17(input)).not.toThrow();
+  const unsupported=structuredClone(input);unsupported.responses[0].data.data.display_name=id;
+  expect(()=>reconcileRequiredFamilySchema17(unsupported)).toThrow('REQUIRED_FAMILY_REJECTED');
+  if(index===3)expect(encode.encode(JSON.stringify(unsupported.responses[0].data)).length).toBe(742);
  }
 });
 
