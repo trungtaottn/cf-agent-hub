@@ -12,6 +12,90 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
+R2_SOURCE_FEATURES = frozenset({f'F{number:02}' for number in range(11, 27)} | {'F29', 'F34', 'F40'})
+
+
+def r2_implemented_allowed(feature_id: str, round_id: str, status: str, candidate_valid: bool) -> bool:
+    return candidate_valid and round_id == 'R2' and feature_id in R2_SOURCE_FEATURES and status == 'Implemented'
+
+
+def validate_r2_source_candidate(root: Path, candidate: object, check) -> tuple[dict, bool]:
+    """Validate a source-only amendment, never runtime acceptance or Git provenance."""
+    if candidate is None:
+        return {}, False
+    errors = []
+
+    def require(ok, message):
+        if not ok:
+            errors.append(message)
+        check(ok, message)
+
+    def reference(value, prefixes, suffixes):
+        if not isinstance(value, str) or not value or '\\' in value:
+            return False
+        relative = Path(value)
+        path = (root / relative).resolve()
+        return (not relative.is_absolute() and '..' not in relative.parts
+                and value.startswith(prefixes) and path.is_relative_to(root.resolve())
+                and path.is_file() and path.suffix in suffixes and path.stat().st_size > 0)
+
+    shape = isinstance(candidate, dict) and set(candidate) == {
+        'implementation_path', 'amendment_review_path', 'source_revision', 'source_tree', 'feature_references',
+    }
+    require(shape, 'R2 source candidate must use its closed source-only shape.')
+    if not shape:
+        return {}, False
+    require(reference(candidate['implementation_path'], ('docs/',), ('.md',)), 'R2 implementation note missing.')
+    for key in ('source_revision', 'source_tree'):
+        require(isinstance(candidate[key], str) and re.fullmatch(r'[0-9a-f]{40}', candidate[key]) is not None,
+                'R2 source identity must contain exact Git SHA-1 values: ' + key)
+    refs = candidate['feature_references']
+    require(isinstance(refs, dict) and set(refs) == R2_SOURCE_FEATURES,
+            'R2 source references must cover exactly F11-F26, F29, F34 and F40.')
+    if not isinstance(refs, dict):
+        refs = {}
+    for feature, evidence in refs.items():
+        valid_shape = isinstance(evidence, dict) and set(evidence) == {'implementation', 'tests'}
+        require(valid_shape, feature + ': invalid R2 source reference shape.')
+        if valid_shape:
+            for key, prefixes in [('implementation', ('src/', 'packages/', 'workers/')), ('tests', ('test/',))]:
+                paths = evidence[key]
+                require(isinstance(paths, list) and bool(paths) and all(reference(
+                    path, prefixes, ('.ts', '.tsx', '.js', '.mjs', '.mts')) for path in paths),
+                    feature + ': missing or invalid R2 ' + key + ' reference.')
+    review = None
+    if reference(candidate['amendment_review_path'], ('validation/',), ('.json',)):
+        try:
+            review = json.loads((root / candidate['amendment_review_path']).read_text())
+        except (OSError, ValueError):
+            pass
+    review_shape = isinstance(review, dict) and set(review) == {
+        'scope', 'round', 'source_revision', 'source_tree', 'independent_review',
+        'product_runtime_tests_run', 'open_blocking_findings', 'reviewed_at', 'summary', 'reviewed_paths',
+    }
+    require(review_shape, 'R2 source amendment review missing or invalid shape.')
+    if review_shape:
+        try:
+            dated = datetime.fromisoformat(review['reviewed_at'].replace('Z', '+00:00')).tzinfo is not None
+        except (ValueError, TypeError, AttributeError):
+            dated = False
+        paths = review['reviewed_paths']
+        required_paths = {candidate['implementation_path'], 'docs/feature-matrix.md',
+                          'validation/implementation-plan-register.json', 'scripts/validate_plans.py'}
+        require(review['scope'] == 'r2-source-status-amendment-only' and review['round'] == 'R2'
+                and review['source_revision'] == candidate['source_revision']
+                and review['source_tree'] == candidate['source_tree']
+                and review['independent_review'] is True and review['product_runtime_tests_run'] is False
+                and review['open_blocking_findings'] == [] and dated
+                and isinstance(review['summary'], str) and bool(review['summary'].strip())
+                and isinstance(paths, list) and all(isinstance(path, str) for path in paths)
+                and required_paths.issubset(paths)
+                and all(reference(path, ('docs/', 'validation/', 'scripts/', 'test/', 'src/', 'packages/', 'workers/'),
+                                  ('.md', '.json', '.py', '.ts', '.tsx', '.js', '.mjs', '.mts')) for path in paths),
+                'R2 source review must bind this source identity and preserve pending runtime acceptance.')
+    return refs, not errors
+
+
 def validate(root: Path) -> dict:
     errors: list[str] = []
     checks = 0
@@ -59,6 +143,8 @@ def validate(root: Path) -> dict:
               'R1 source references must cover exactly its feature set.')
         if not isinstance(references, dict):
             references = {}
+
+    r2_references, r2_valid = validate_r2_source_candidate(root, register.get("r2_source_candidate"), check)
 
     tasks = {}
     plan_digests = {}
@@ -120,11 +206,12 @@ def validate(root: Path) -> dict:
         if feature_id in canonical:
             check(feature['round'] == canonical[feature_id]['gate'], f'{feature_id}: release gate conflicts with baseline.')
             status = canonical[feature_id]['status']
-            implemented = candidate_mode and feature['round'] == 'R1' and status == 'Implemented'
+            implemented = ((candidate_mode and feature['round'] == 'R1' and status == 'Implemented')
+                           or r2_implemented_allowed(feature_id, feature['round'], status, r2_valid))
             check(status == 'Specified' or implemented,
                   f'{feature_id}: runtime status advanced without product evidence.')
             if implemented:
-                evidence = references.get(feature_id, {})
+                evidence = (references if feature['round'] == 'R1' else r2_references).get(feature_id, {})
                 valid_shape = isinstance(evidence, dict) and set(evidence) == {'implementation', 'tests'}
                 check(valid_shape, f'{feature_id}: missing source and test references for Implemented status.')
                 if valid_shape:
@@ -196,7 +283,7 @@ def validate(root: Path) -> dict:
             'Checks coverage, dependency identities, required structure and reviewed file digests.',
             'Does not execute future commands, prove design completeness or replace independent review.',
             'Does not run product tests, create a repository, deploy software or verify recovery.',
-            'Implemented R1 references establish reviewable source only; Verified and Released require separate runtime/release evidence.',
+            'Implemented R1/R2 references establish reviewable source only; Verified and Released require separate runtime/release evidence.',
         ],
     }
 
