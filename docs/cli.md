@@ -73,3 +73,13 @@ Before distributing a CLI, verify command-to-operation mapping, JSON/error envel
 ## R2 recovery contract boundary
 
 The [issue #22 recovery decision](adr/r2-recovery-contract.md) defines the closed V1/V2 envelope, simultaneous SQL-plus-artifact bounds, trusted private bindings and bounded future restart state. This is a contract, not enabled V2 recovery. Current runtime remains V1-only; nonzero artifact capture budgets and V2 restore are unavailable. No new CLI command or caller-selected bucket/key/URL is added. Existing protected files, HMAC authentication, separate AES-GCM file protection, operator Access identity, current ledger, maintenance and explicit resume remain required.
+
+## Local shared-client prerequisite (issue38)
+
+The typed native facade and bounded stream hooks now exist in source; a distributed CLI, protected credential store, durable journal and cross-platform support do not. The [client contract](http-api.md#local-typed-native-client-facade) reuses the browser's transport without using browser cookies or human-only administration. Generated operation support is not proof that a deployment enables that route.
+
+Enrollment deliberately uses `enrollRuntime` with mandatory protected capture and returns safe `Runtime` metadata only. Its process-local receipt rejects forged/copied/cross-provider provenance but is not a durable store format. Issue41 must validate protected-store integrity/writer ownership and restore/import associations before trusting persisted bindings. Arbitrary token imports remain unbound for ordinary mutations until a supported explicit binding flow succeeds. No parsed bearer identifier or caller principal label is evidence. Credential rotation cannot silently rebind unresolved journal entries.
+
+The earlier proposed CLI JSON projection remains a CLI presentation rule: after confirmed secure capture, issue41 may construct its documented redacted enrollment envelope. The shared transport does not falsify wire `RuntimeIssue.revealed` or return a secret-bearing response to ordinary callers. `CREDENTIAL_CHANGED`, `REQUEST_TIMEOUT`, `REQUEST_ABORTED`, network failure and capture failure can occur after dispatch; the error code alone never authorizes clearing or replaying a journal entry. Journaled calls must preserve and pass `expectedBinding` with the exact target/body/key, then apply the reviewed finite replay horizon and no-send reconciliation rules.
+
+There is no implemented all-pages helper. Artifact consumers must await stream completion and their own destination write, and must not treat receipt of binary response headers as a completed download. Source tests and synthetic Workers transfers do not establish installed CLI, package distribution or deployed-native conformance.
