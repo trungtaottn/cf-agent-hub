@@ -1,8 +1,17 @@
 import {test,expect,appOrigin} from '../helpers/browser';
 import {login,fixtureControl} from '../helpers/ui';
 import type {Page} from '@playwright/test';
-async function open(page:Page){await page.getByRole('button',{name:'New message',exact:true}).click();await expect(page.getByTestId('message-composer')).toBeVisible();await expect(page.getByRole('checkbox',{name:/agent_research/})).toBeVisible();}
-test.beforeEach(async({page})=>{await page.goto(appOrigin+'/health/live');await fixtureControl(page,'r2-board');await login(page);});
+// Bounded test-only startup evidence: fixed phases and endpoint/status enums, never bodies or headers.
+const diagnostics=new WeakMap<Page,{phase:string;events:string[];omitted:number}>();
+function phase(page:Page,value:string){const d=diagnostics.get(page);if(d)d.phase=value;console.log('COMPOSE_PHASE',value);}
+function observe(page:Page){const d={phase:'fixture navigation',events:[] as string[],omitted:0};diagnostics.set(page,d);
+ const add=(event:string)=>{if(d.events.length<24)d.events.push(event);else d.omitted++;};
+ page.on('pageerror',()=>add('page-error'));
+ page.on('response',response=>{const path=new URL(response.url()).pathname;const endpoint=path==='/v2/workspaces/ws_example/auth/session'?'session':path==='/v2/workspaces/ws_example'?'workspace':path==='/v2/workspaces/ws_example/agents'?'agents':path==='/__ui_fixture/control'?'fixture-control':null;if(endpoint)add(endpoint+':'+response.status());});
+}
+async function open(page:Page){phase(page,'composer button readiness');const trigger=page.getByRole('button',{name:'New message',exact:true});await expect(trigger).toBeEnabled();phase(page,'composer click');await trigger.click();phase(page,'composer visible');await expect(page.getByTestId('message-composer')).toBeVisible();phase(page,'recipient visible');await expect(page.getByRole('checkbox',{name:/agent_research/})).toBeVisible();phase(page,'composer ready');}
+test.beforeEach(async({page})=>{observe(page);phase(page,'fixture navigation');await page.goto(appOrigin+'/health/live');phase(page,'fixture control');await fixtureControl(page,'r2-board');phase(page,'login');await login(page);phase(page,'login settled');});
+test.afterEach(async({page})=>{console.log('COMPOSE_DIAGNOSTIC',JSON.stringify(diagnostics.get(page)??{phase:'not observed'}));});
 test('keyboard_composition_creates_one_real_message_and_keeps_delivery_unknown',async({page})=>{
  let posts=0;page.on('request',r=>{if(r.method()==='POST'&&new URL(r.url()).pathname==='/v2/workspaces/ws_example/messages')posts++;});
  await open(page);await page.getByRole('checkbox',{name:/agent_research/}).check();await page.getByLabel('Message text',{exact:true}).fill('Keyboard <img src=x onerror="window.injected=1">');
