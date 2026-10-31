@@ -1,0 +1,2106 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.invalid/r2-recovery-evidence.schema.json",
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "opaque": {
+      "type": "string",
+      "pattern": "^[ -~]+$",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "uint": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "time": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "table": {
+      "enum": [
+        "schema_migrations",
+        "workspace_metadata",
+        "human_grants",
+        "static_agents",
+        "native_credentials",
+        "login_attempts",
+        "sessions",
+        "profiles",
+        "preferences",
+        "threads",
+        "thread_participants",
+        "messages",
+        "inbox",
+        "events",
+        "idempotency_outcomes",
+        "outbox",
+        "scheduler_state",
+        "maintenance_state",
+        "recovery_jobs",
+        "recovery_chunks",
+        "probe_receipts",
+        "runtimes",
+        "tasks",
+        "runs",
+        "task_results",
+        "task_acceptances",
+        "task_history",
+        "artifacts",
+        "artifact_generations",
+        "result_artifacts",
+        "artifact_associations",
+        "message_artifacts",
+        "catalog_plans",
+        "import_plans",
+        "import_mappings",
+        "artifact_inventory_state"
+      ]
+    },
+    "artifact_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256",
+        "byte_size"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "byte_size": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      }
+    },
+    "state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rows",
+        "sha256"
+      ],
+      "properties": {
+        "rows": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "anchor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "binding_id",
+        "workspace_id",
+        "environment_id",
+        "object_name",
+        "authority_epoch",
+        "ledger_sha256",
+        "generation",
+        "observed_at",
+        "record_sha256"
+      ],
+      "properties": {
+        "binding_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "workspace_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "environment_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "object_name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "authority_epoch": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "ledger_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "generation": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "observed_at": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "record_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "workspace_id",
+        "capture_id",
+        "source_job_id",
+        "target_job_id",
+        "source_environment_id",
+        "target_environment_id",
+        "source_object_name",
+        "target_object_name",
+        "source_epoch",
+        "target_epoch",
+        "schema_version"
+      ],
+      "properties": {
+        "workspace_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "capture_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "source_job_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "target_job_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "source_environment_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "target_environment_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "source_object_name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "target_object_name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "source_epoch": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "target_epoch": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "schema_version": {
+          "const": 16
+        }
+      }
+    },
+    "provider_mapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "environment_id",
+        "object_name",
+        "deployment_id",
+        "namespace_id",
+        "binding_id",
+        "record_sha256"
+      ],
+      "properties": {
+        "environment_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "object_name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "deployment_id": {
+          "type": "string",
+          "pattern": "^[ -~]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "namespace_id": {
+          "type": "string",
+          "pattern": "^[ -~]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "binding_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "record_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "prepared_recovery_subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identity",
+        "original_manifest_sha256",
+        "source_ledger_sha256",
+        "current_ledger_sha256",
+        "restore_job_created_at",
+        "source_provider",
+        "target_provider"
+      ],
+      "properties": {
+        "identity": {
+          "$ref": "#/$defs/identity"
+        },
+        "original_manifest_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "source_ledger_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "current_ledger_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "restore_job_created_at": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "source_provider": {
+          "$ref": "#/$defs/provider_mapping"
+        },
+        "target_provider": {
+          "$ref": "#/$defs/provider_mapping"
+        }
+      }
+    },
+    "restore_input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "version",
+        "revision",
+        "tree_sha256",
+        "environment_id",
+        "command_id",
+        "observed_at",
+        "observer_id",
+        "record_sha256",
+        "composition_sha256",
+        "workspace_id",
+        "capture_id",
+        "target_job_id",
+        "target_environment_id",
+        "target_object_name",
+        "target_epoch",
+        "original_manifest_sha256",
+        "current_ledger_sha256",
+        "restore_job_created_at",
+        "original_job_record_sha256",
+        "prepared_input_record_sha256"
+      ],
+      "properties": {
+        "type": {
+          "const": "r2-restore-input-context"
+        },
+        "version": {
+          "const": 1
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "tree_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "environment_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "command_id": {
+          "type": "string",
+          "pattern": "^[ -~]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "observed_at": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "observer_id": {
+          "type": "string",
+          "pattern": "^[ -~]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "record_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "composition_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "workspace_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "capture_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "target_job_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "target_environment_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "target_object_name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "target_epoch": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "original_manifest_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "current_ledger_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "restore_job_created_at": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "original_job_record_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "prepared_input_record_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "expected_transform": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "version",
+        "revision",
+        "tree_sha256",
+        "environment_id",
+        "command_id",
+        "observed_at",
+        "observer_id",
+        "record_sha256",
+        "composition_sha256",
+        "workspace_id",
+        "capture_id",
+        "target_job_id",
+        "source_checkpoint_sha256",
+        "original_manifest_sha256",
+        "current_ledger_sha256",
+        "restore_input_sha256",
+        "restore_job_created_at",
+        "schema_version",
+        "target_checkpoint_sha256",
+        "tables"
+      ],
+      "properties": {
+        "type": {
+          "const": "r2-expected-transform"
+        },
+        "version": {
+          "const": 1
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "tree_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "environment_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "command_id": {
+          "type": "string",
+          "pattern": "^[ -~]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "observed_at": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "observer_id": {
+          "type": "string",
+          "pattern": "^[ -~]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "record_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "composition_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "workspace_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "capture_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "target_job_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "source_checkpoint_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "original_manifest_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "current_ledger_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "restore_input_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "restore_job_created_at": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "schema_version": {
+          "const": 16
+        },
+        "target_checkpoint_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "tables": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "source",
+              "expected",
+              "disposition"
+            ],
+            "properties": {
+              "name": {
+                "$ref": "#/$defs/table"
+              },
+              "source": {
+                "$ref": "#/$defs/state"
+              },
+              "expected": {
+                "$ref": "#/$defs/state"
+              },
+              "disposition": {
+                "enum": [
+                  "preserve",
+                  "current-transform"
+                ]
+              }
+            }
+          },
+          "minItems": 36,
+          "maxItems": 36
+        }
+      }
+    },
+    "control": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operation",
+        "command_id",
+        "record_sha256",
+        "receipt_id",
+        "started_at",
+        "ended_at",
+        "probe_checked_at",
+        "workspace_id",
+        "capture_id",
+        "job_id",
+        "environment_id",
+        "object_name",
+        "authority_epoch",
+        "manifest_sha256",
+        "anchor_generation",
+        "ledger_sha256",
+        "current_read",
+        "admitted_at",
+        "before_generation",
+        "after_generation",
+        "source_retirement_sha256",
+        "probe_receipt_sha256",
+        "replay_command_id",
+        "replay_observed_at",
+        "replay_current_read",
+        "replay_record_sha256",
+        "original_outcome_sha256",
+        "replay_outcome_sha256",
+        "replay_before_state_sha256",
+        "replay_after_state_sha256",
+        "original_transport_correlation_sha256",
+        "replay_transport_correlation_sha256",
+        "protocol_receipt_sha256"
+      ],
+      "properties": {
+        "operation": {
+          "enum": [
+            "capture",
+            "restore",
+            "probe",
+            "resolve-delivery",
+            "retire",
+            "resume"
+          ]
+        },
+        "command_id": {
+          "type": "string",
+          "pattern": "^[ -~]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "record_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "receipt_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "started_at": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "ended_at": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "probe_checked_at": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "workspace_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "capture_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "job_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "environment_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "object_name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "authority_epoch": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "manifest_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "anchor_generation": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "ledger_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "current_read": {
+          "$ref": "#/$defs/anchor"
+        },
+        "admitted_at": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "before_generation": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "after_generation": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "source_retirement_sha256": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "probe_receipt_sha256": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "replay_command_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[ -~]+$",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "replay_observed_at": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "replay_current_read": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/anchor"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "replay_record_sha256": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "original_outcome_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "replay_outcome_sha256": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "replay_before_state_sha256": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "replay_after_state_sha256": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "original_transport_correlation_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "replay_transport_correlation_sha256": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "protocol_receipt_sha256": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    },
+    "recovery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "version",
+        "revision",
+        "tree_sha256",
+        "environment_id",
+        "command_id",
+        "observed_at",
+        "observer_id",
+        "record_sha256",
+        "composition_sha256",
+        "identity",
+        "restore_input",
+        "expected_transform",
+        "original_manifest_sha256",
+        "source_ledger_sha256",
+        "current_ledger_sha256",
+        "source_checkpoint_sha256",
+        "target_checkpoint_sha256",
+        "restore_job_created_at",
+        "manifest",
+        "tables",
+        "source_anchor",
+        "target_anchor",
+        "capture_finalization",
+        "local_verification",
+        "controls",
+        "cutover",
+        "holds",
+        "authority",
+        "restart"
+      ],
+      "properties": {
+        "type": {
+          "const": "r2-recovery"
+        },
+        "version": {
+          "const": 1
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "tree_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "environment_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "command_id": {
+          "type": "string",
+          "pattern": "^[ -~]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "observed_at": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "observer_id": {
+          "type": "string",
+          "pattern": "^[ -~]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "record_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "composition_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "identity": {
+          "$ref": "#/$defs/identity"
+        },
+        "restore_input": {
+          "$ref": "#/$defs/artifact_ref"
+        },
+        "expected_transform": {
+          "$ref": "#/$defs/artifact_ref"
+        },
+        "original_manifest_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "source_ledger_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "current_ledger_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "source_checkpoint_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "target_checkpoint_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "restore_job_created_at": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "manifest": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "format_version",
+            "contract_revision",
+            "schema_version",
+            "canonical_byte_size",
+            "database_sha256",
+            "database_byte_size",
+            "rows",
+            "event_sequence",
+            "barrier_id",
+            "chunks",
+            "artifacts",
+            "unfinished_artifact_ids"
+          ],
+          "properties": {
+            "format_version": {
+              "const": 2
+            },
+            "contract_revision": {
+              "const": "0.2"
+            },
+            "schema_version": {
+              "const": 16
+            },
+            "canonical_byte_size": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65536
+            },
+            "database_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "database_byte_size": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 268435456
+            },
+            "rows": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000
+            },
+            "event_sequence": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "barrier_id": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "chunks": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "index",
+                  "table",
+                  "row_count",
+                  "byte_size",
+                  "sha256"
+                ],
+                "properties": {
+                  "index": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "table": {
+                    "$ref": "#/$defs/table"
+                  },
+                  "row_count": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 200
+                  },
+                  "byte_size": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1048576
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                }
+              },
+              "minItems": 0,
+              "maxItems": 256
+            },
+            "artifacts": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "artifact_id",
+                  "generation_id",
+                  "artifact_version",
+                  "source_object_key_sha256",
+                  "recovery_object_key_sha256",
+                  "declared",
+                  "source_verified",
+                  "target_verified"
+                ],
+                "properties": {
+                  "artifact_id": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "generation_id": {
+                    "type": "string",
+                    "pattern": "^generation_[a-f0-9]{48}$"
+                  },
+                  "artifact_version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9007199254740991
+                  },
+                  "source_object_key_sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "recovery_object_key_sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "declared": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "sha256",
+                      "byte_size"
+                    ],
+                    "properties": {
+                      "sha256": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "byte_size": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 10485760
+                      }
+                    }
+                  },
+                  "source_verified": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "sha256",
+                      "byte_size"
+                    ],
+                    "properties": {
+                      "sha256": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "byte_size": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 10485760
+                      }
+                    }
+                  },
+                  "target_verified": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "sha256",
+                      "byte_size"
+                    ],
+                    "properties": {
+                      "sha256": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "byte_size": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 10485760
+                      }
+                    }
+                  }
+                }
+              },
+              "minItems": 0,
+              "maxItems": 1000
+            },
+            "unfinished_artifact_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "minItems": 0,
+              "maxItems": 1000
+            }
+          }
+        },
+        "tables": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "source",
+              "target"
+            ],
+            "properties": {
+              "name": {
+                "$ref": "#/$defs/table"
+              },
+              "source": {
+                "$ref": "#/$defs/state"
+              },
+              "target": {
+                "$ref": "#/$defs/state"
+              }
+            }
+          },
+          "minItems": 36,
+          "maxItems": 36
+        },
+        "source_anchor": {
+          "$ref": "#/$defs/anchor"
+        },
+        "target_anchor": {
+          "$ref": "#/$defs/anchor"
+        },
+        "capture_finalization": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "original_record_sha256",
+            "job_id",
+            "draft_sha256",
+            "authority_epoch",
+            "maintenance_generation",
+            "anchor_generation",
+            "index",
+            "total",
+            "artifact_ids"
+          ],
+          "properties": {
+            "original_record_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "job_id": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "draft_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "authority_epoch": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "maintenance_generation": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "anchor_generation": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "index": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "total": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "artifact_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "minItems": 0,
+              "maxItems": 1000
+            }
+          }
+        },
+        "local_verification": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "command_id",
+            "record_sha256",
+            "observed_at",
+            "manifest_sha256",
+            "outcome",
+            "transport_requests"
+          ],
+          "properties": {
+            "command_id": {
+              "type": "string",
+              "pattern": "^[ -~]+$",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "record_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "observed_at": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "manifest_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "outcome": {
+              "const": "verified_local"
+            },
+            "transport_requests": {
+              "const": 0
+            }
+          }
+        },
+        "controls": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/control"
+          },
+          "minItems": 6,
+          "maxItems": 6
+        },
+        "cutover": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "original_record_sha256",
+            "capture_id",
+            "workspace_id",
+            "source_environment_id",
+            "target_environment_id",
+            "source_epoch",
+            "target_epoch",
+            "source_retirement_receipt_id",
+            "target_object_name",
+            "cutover_at"
+          ],
+          "properties": {
+            "original_record_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "capture_id": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "workspace_id": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "source_environment_id": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "target_environment_id": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "source_epoch": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "target_epoch": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "source_retirement_receipt_id": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "target_object_name": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "cutover_at": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          }
+        },
+        "holds": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "observer_record_sha256",
+            "observed_at",
+            "unresolved_effect_count",
+            "unresolved_effect_ids",
+            "unresolved_effect_ids_complete",
+            "unresolved_artifact_copy_count",
+            "unresolved_artifact_copy_ids",
+            "unresolved_artifact_copy_ids_complete"
+          ],
+          "properties": {
+            "observer_record_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "observed_at": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "unresolved_effect_count": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "unresolved_effect_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "minItems": 0,
+              "maxItems": 64
+            },
+            "unresolved_effect_ids_complete": {
+              "type": "boolean"
+            },
+            "unresolved_artifact_copy_count": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "unresolved_artifact_copy_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "minItems": 0,
+              "maxItems": 1000
+            },
+            "unresolved_artifact_copy_ids_complete": {
+              "type": "boolean"
+            }
+          }
+        },
+        "authority": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "observer_record_sha256",
+            "observed_at",
+            "old_credential_attempts",
+            "old_credential_denials",
+            "old_proof_attempts",
+            "old_proof_denials",
+            "archived_identities_resurrected",
+            "fresh_credential_issued_at",
+            "fresh_runtime_created_at",
+            "fresh_native_command_record_sha256"
+          ],
+          "properties": {
+            "observer_record_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "observed_at": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "old_credential_attempts": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "old_credential_denials": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "old_proof_attempts": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "old_proof_denials": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "archived_identities_resurrected": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "fresh_credential_issued_at": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "fresh_runtime_created_at": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "fresh_native_command_record_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        },
+        "restart": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "command_id",
+            "observed_at",
+            "original_record_sha256",
+            "source_state",
+            "target_admission",
+            "target_epoch"
+          ],
+          "properties": {
+            "command_id": {
+              "type": "string",
+              "pattern": "^[ -~]+$",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "observed_at": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "original_record_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "source_state": {
+              "const": "retired"
+            },
+            "target_admission": {
+              "const": "installed"
+            },
+            "target_epoch": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          }
+        }
+      }
+    },
+    "edge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "event_id",
+        "event_workspace_id",
+        "event_type",
+        "resource_id",
+        "actor_principal_id",
+        "outcome_event_id",
+        "outcome_workspace_id",
+        "outcome_principal_id",
+        "outcome_status",
+        "outcome_data_sha256",
+        "outcome_request_fingerprint",
+        "outcome_key_sha256",
+        "history_event_id",
+        "history_workspace_id",
+        "history_kind",
+        "history_task_id",
+        "history_run_id",
+        "history_count"
+      ],
+      "properties": {
+        "event_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "event_workspace_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "event_type": {
+          "enum": [
+            "task.result_submitted",
+            "task.result_accepted"
+          ]
+        },
+        "resource_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "actor_principal_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "outcome_event_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "outcome_workspace_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "outcome_principal_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "outcome_status": {
+          "const": 200
+        },
+        "outcome_data_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "outcome_request_fingerprint": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "outcome_key_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "history_event_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "history_workspace_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "history_kind": {
+          "enum": [
+            "task.result_submitted",
+            "task.result_accepted"
+          ]
+        },
+        "history_task_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "history_run_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "history_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      }
+    },
+    "result_graph": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "version",
+        "revision",
+        "tree_sha256",
+        "environment_id",
+        "command_id",
+        "observed_at",
+        "observer_id",
+        "record_sha256",
+        "composition_sha256",
+        "workspace_id",
+        "task",
+        "run",
+        "result",
+        "acceptance",
+        "submit",
+        "accept",
+        "replay"
+      ],
+      "properties": {
+        "type": {
+          "const": "r2-result-graph"
+        },
+        "version": {
+          "const": 1
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "tree_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "environment_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "command_id": {
+          "type": "string",
+          "pattern": "^[ -~]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "observed_at": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "observer_id": {
+          "type": "string",
+          "pattern": "^[ -~]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "record_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "composition_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "workspace_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "task": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "workspace_id",
+            "state",
+            "latest_run_id",
+            "current_result_id"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "workspace_id": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "state": {
+              "const": "done"
+            },
+            "latest_run_id": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "current_result_id": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        },
+        "run": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "workspace_id",
+            "task_id",
+            "status",
+            "agent_id"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "workspace_id": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "task_id": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "status": {
+              "const": "submitted"
+            },
+            "agent_id": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        },
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "workspace_id",
+            "task_id",
+            "run_id",
+            "submitted_principal_id",
+            "submitted_agent_id"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "workspace_id": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "task_id": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "run_id": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "submitted_principal_id": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "submitted_agent_id": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        },
+        "acceptance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "workspace_id",
+            "task_id",
+            "result_id",
+            "run_id",
+            "reviewer_principal_id",
+            "reviewer_agent_id",
+            "count"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "workspace_id": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "task_id": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "result_id": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "run_id": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "reviewer_principal_id": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "reviewer_agent_id": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "count": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          }
+        },
+        "submit": {
+          "$ref": "#/$defs/edge"
+        },
+        "accept": {
+          "$ref": "#/$defs/edge"
+        },
+        "replay": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "submit_original_outcome_sha256",
+            "submit_replay_outcome_sha256",
+            "accept_original_outcome_sha256",
+            "accept_replay_outcome_sha256",
+            "before_sha256",
+            "after_sha256",
+            "submit_original_record_sha256",
+            "submit_replay_record_sha256",
+            "accept_original_record_sha256",
+            "accept_replay_record_sha256",
+            "submit_transport_correlation_sha256",
+            "accept_transport_correlation_sha256"
+          ],
+          "properties": {
+            "submit_original_outcome_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "submit_replay_outcome_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "accept_original_outcome_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "accept_replay_outcome_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "before_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "after_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "submit_original_record_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "submit_replay_record_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "accept_original_record_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "accept_replay_record_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "submit_transport_correlation_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "accept_transport_correlation_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/recovery"
+    },
+    {
+      "$ref": "#/$defs/result_graph"
+    },
+    {
+      "$ref": "#/$defs/restore_input"
+    },
+    {
+      "$ref": "#/$defs/expected_transform"
+    }
+  ]
+}

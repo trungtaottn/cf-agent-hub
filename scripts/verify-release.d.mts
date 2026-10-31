@@ -4,3 +4,5 @@ export function verifyRelease(input:unknown,files:ReadonlyMap<string,string|Uint
 export function sha256(value:string|Uint8Array):string;
 export function canonical(value:unknown):string;
 export function fileManifest(files:ReadonlyMap<string,string|Uint8Array>):Array<{path:string;sha256:string;byte_size:number;mode:string}>;
+
+export function runCli(argv?:string[],root?:string):number;

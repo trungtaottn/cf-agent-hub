@@ -88,3 +88,11 @@ export function routeExpectation(operation,lane){
  }
  return {status,error_code:status===400?'INVALID_REQUEST':status===401?'UNAUTHENTICATED':status===403?'FORBIDDEN':null,mutations};
 }
+
+// Additive exact dispatch; historical R1 exports and expectations above remain unchanged.
+import {R2_FEATURES,R2_KINDS} from './r2-release-policy.mjs';
+export function releasePolicy(version,round){
+ if(version===1&&round==='R1')return {features:R1_FEATURES,kinds:REQUIRED_KINDS};
+ if(version===2&&round==='R2')return {features:R2_FEATURES,kinds:R2_KINDS};
+ throw Error('UNSUPPORTED_RELEASE_POLICY');
+}
