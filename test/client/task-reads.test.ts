@@ -83,3 +83,9 @@ it('next history page 404 purges task but an older selection 404 cannot purge th
  await model.select('task_one');fail=true;await model.nextResults();expect(model.task.state.data).toBeNull();
  fail=false;const old=model.select('old');await Promise.resolve();await Promise.resolve();await model.select('new');late.resolve(bad());await old;expect(model.task.state.data?.id).toBe('new');
 });
+it('a command preparation 404 redacts the target from board pages without clearing another selected task',async()=>{
+ const {model}=setup(async(op,input)=>op==='listTasks'?ok(input.query.state==='ready'?[task('missing'),task('other')]:[]):op==='getTask'?ok(task(input.path.task_id)):ok([]));
+ await model.refreshBoard();await model.select('other');model.forgetTask('missing','missing-request');
+ expect(model.columns.ready.read.state.data?.map(row=>row.id)).toEqual(['other']);expect(model.task.state.data?.id).toBe('other');
+ model.forgetTask('other','other-request');expect(model.task.state.data).toBeNull();expect(model.columns.ready.read.state.data).toEqual([]);
+});

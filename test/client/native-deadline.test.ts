@@ -3,20 +3,46 @@ import {buildSync} from 'esbuild';
 import {spawnSync} from 'node:child_process';
 import {mkdtempSync,rmSync} from 'node:fs';
 import {join,resolve} from 'node:path';
-it('terminates infinite zero-progress producers in a guarded subprocess',()=>{
- // Task-owned temporary directory; this is not a recovery fixture or protected-I/O bypass.
+it('separates zero-progress rejection from deadline precedence in a guarded subprocess',()=>{
+ // Task-owned synthetic clock only; the parent watchdog remains real and unchanged.
  const directory=mkdtempSync(resolve('.native-deadline-'));
  try{
   const file=join(directory,'probe.mjs');buildSync({stdin:{resolveDir:process.cwd(),contents:`
    import {boundedStream} from './packages/client/src/streams';
    import {Deadline,HttpTransport} from './packages/client/src/transport';
-   const empty=()=>new ReadableStream({pull(c){c.enqueue(new Uint8Array());}},{highWaterMark:0});
-   const deadline=new Deadline(50);const relay=boundedStream(empty(),1,deadline,()=>deadline.check());
-   try{await relay.body.getReader().read();}catch{}const stream=await relay.completion;deadline.dispose();
-   const jsonDeadline=new Deadline(50);const result=await new HttpTransport(fetch).json(new Response(empty(),{headers:{'content-type':'application/json'}}),{maxBytes:1024,deadline:jsonDeadline});jsonDeadline.dispose();
-   if(stream.ok||result.ok)process.exitCode=1;else console.log(JSON.stringify({stream:stream.error.code,json:result.error.code}));
+   const counts={streamPulls:0,streamCancelled:0,jsonPulls:0,jsonCancelled:0,expiredReads:0,expiredCancelled:0};
+   const empty=kind=>new ReadableStream({pull(c){counts[kind+'Pulls']++;c.enqueue(new Uint8Array());},cancel(){counts[kind+'Cancelled']++;}},{highWaterMark:0});
+   // Response/fetch setup is not part of a controlled consumption interval.
+   const source=empty('stream'),response=new Response(empty('json'),{headers:{'content-type':'application/json'}}),transport=new HttpTransport(fetch);
+   const expiredHeaders=new Headers({'content-type':'application/json'});
+   let clock=0,nextTimer=0,timerCallbacks=0;const timers=new Map(),deadlines=[];
+   const oldNow=Object.getOwnPropertyDescriptor(performance,'now'),oldSet=globalThis.setTimeout,oldClear=globalThis.clearTimeout;
+   const advance=(elapsed,fire)=>{clock+=elapsed;if(fire)for(const [id,timer] of [...timers])if(timer.at<=clock){timers.delete(id);timerCallbacks++;timer.fn(...timer.args);}};
+   Object.defineProperty(performance,'now',{configurable:true,value:()=>clock});
+   globalThis.setTimeout=(fn,delay,...args)=>{const id=++nextTimer;timers.set(id,{at:clock+delay,fn,args});return id;};
+   globalThis.clearTimeout=id=>{timers.delete(id);};
+   const deadline=()=>{const value=new Deadline(50);deadlines.push(value);return value;};
+   try{
+    const streamDeadline=deadline(),relay=boundedStream(source,1,streamDeadline,()=>streamDeadline.check());
+    try{await relay.body.getReader().read();}catch{}const stream=await relay.completion;streamDeadline.dispose();
+    const jsonDeadline=deadline(),json=await transport.json(response,{maxBytes:1024,deadline:jsonDeadline});jsonDeadline.dispose();
+    const expiredDeadline=deadline();
+    const expired=await transport.json({status:200,headers:expiredHeaders,body:{getReader:()=>({
+     read:()=>{counts.expiredReads++;return Promise.resolve().then(()=>{advance(51,false);return {done:false,value:new Uint8Array()};});},
+     cancel:async()=>{counts.expiredCancelled++;},releaseLock:()=>{}
+    })}},{maxBytes:1024,deadline:expiredDeadline});expiredDeadline.dispose();
+    // Exercise the real Deadline timer callback as well as its monotonic check.
+    const timerDeadline=deadline();advance(50,true);let timer='UNEXPECTED_SUCCESS';
+    try{timerDeadline.check();}catch(error){timer=error.code;}const timerAborted=timerDeadline.signal.aborted;timerDeadline.dispose();
+    if(stream.ok||json.ok||expired.ok)process.exitCode=1;
+    else console.log(JSON.stringify({stream:stream.error.code,json:json.error.code,expired:expired.error.code,timer,timerAborted,timerCallbacks,...counts,pendingTimers:timers.size}));
+   }finally{
+    for(const value of deadlines)value.dispose();timers.clear();globalThis.setTimeout=oldSet;globalThis.clearTimeout=oldClear;
+    if(oldNow)Object.defineProperty(performance,'now',oldNow);else delete performance.now;
+   }
   `},outfile:file,bundle:true,format:'esm',platform:'node',logLevel:'silent'});
-  const result=spawnSync(process.execPath,[file],{timeout:2000,encoding:'utf8'});expect(result.error).toBeUndefined();expect(result.status).toBe(0);expect(JSON.parse(result.stdout.trim())).toEqual({stream:'STREAM_INVALID',json:'INVALID_RESPONSE'});
+  const result=spawnSync(process.execPath,[file],{timeout:2000,encoding:'utf8'});expect(result.error).toBeUndefined();expect(result.status).toBe(0);
+  expect(JSON.parse(result.stdout.trim())).toEqual({stream:'STREAM_INVALID',json:'INVALID_RESPONSE',expired:'REQUEST_TIMEOUT',timer:'REQUEST_TIMEOUT',timerAborted:true,timerCallbacks:1,streamPulls:1,streamCancelled:1,jsonPulls:1,jsonCancelled:1,expiredReads:1,expiredCancelled:1,pendingTimers:0});
  }finally{rmSync(directory,{recursive:true,force:true});}
 });
 

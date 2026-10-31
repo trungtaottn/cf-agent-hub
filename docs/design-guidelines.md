@@ -27,7 +27,7 @@ Do not label a request “Completed” because a webhook returned success. Do no
 
 ## Interaction and concurrency
 
-Use command-specific controls instead of unrestricted state editing. A drag from Ready to Doing must represent an authorized claim with the same domain checks as the API. If a movement cannot express the required command or actor, open a task detail or disable the movement with an explanation. A generic metadata editor must not set owner, run, state, decision, or fence fields.
+Use command-specific controls instead of unrestricted state editing. The current human board must not drag Ready to Doing: only a bound native runtime can claim execution. Optional Backlog-to-Ready and Review-to-Done drags open the same version-bound confirmation as keyboard buttons. If a movement cannot express the required command or actor, open a task detail or disable the movement with an explanation. A generic metadata editor must not set owner, run, state, decision, or fence fields.
 
 While a mutation is pending, the control must prevent accidental duplicate submission and preserve its idempotency identity. A stale-version conflict must explain that the task changed and offer a current-state review. It must not silently replay the user's intent against new facts. After a lost response, the client must reconcile the original operation before inviting another attempt.
 
@@ -38,6 +38,8 @@ A decision dialog must show the precise current proposal, scope, relevant artifa
 Use text labels and icons in addition to color for state, errors, and urgency. Maintain usable keyboard focus, logical tab order, descriptive field labels, and announced status changes. Kanban must have an equivalent list or table path for reading and acting without drag gestures. Narrow layouts must preserve task identity, state, and the next action without forcing a full desktop board into tiny cards.
 
 Dialogs must move focus predictably, retain it while open, and restore it to a sensible control when closed. Form errors must identify the affected field and how to correct it. Respect reduced-motion preferences; motion should explain a change, not delay an operation. Accessibility acceptance should use the relevant [WCAG 2.2](https://www.w3.org/TR/WCAG22/) criteria; this baseline claims no conformance certification.
+
+The local issue45 task dialog is mounted outside replaced read projections. It retains one reason input node, names the exact reviewed task/result, and uses an ordinary disclosure with normal tab order. Escape hides the dialog without cancelling an in-flight command. Completion focus belongs to the original interaction token, not merely the same page; a newer dialog or navigation invalidates that ownership. Only a fresh destination observation may receive moved-card focus. Current source/structural verification is not browser accessibility certification.
 
 ## Branding and trust boundaries
 
