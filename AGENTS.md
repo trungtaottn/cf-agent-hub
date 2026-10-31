@@ -162,7 +162,7 @@ Keep this file short enough to use at session start, but specific enough to prev
 
 A coding agent's final responsibility is to leave a **traceable, reviewable, evidence-grounded handoff**. If a requested action is not authorized, cannot be verified or would violate an active required gate, stop at that boundary and report the precise blocker.
 
-# Definition of done
+## Definition of done
 Do not report success based on implementation alone.
 Provide reproducible evidence that the acceptance criteria are met.
 Be unreasonable about quality,
