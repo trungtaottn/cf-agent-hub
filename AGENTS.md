@@ -1,6 +1,6 @@
 # CF Agent Hub — Agent Contributor Guide
 
-Status: Repository-wide agent guidance · R1 source implemented; application releases and active GitHub branch protection remain pending verification.
+Status: Repository-wide agent guidance · R1/R2 source integrated on dev; live acceptance and releases remain pending. Active enforcement must be read separately.
 
 This is the **canonical instruction entry point for coding and automation agents working in this repository**. Read it before changing files, creating an issue/PR, running a deployment, or reporting completion. [`AGENT.md`](AGENT.md) is a compatibility pointer, not a separate policy. [`docs/agents.md`](docs/agents.md) specifies how **product users' external runtime agents** behave; it is not a substitute for this contributor guide.
 
@@ -10,7 +10,7 @@ This is the **canonical instruction entry point for coding and automation agents
 
 The planned deployment comprises a Cloudflare Worker for authenticated entry, a workspace-scoped SQLite-backed Durable Object for authoritative domain state and the durable outbox, and R2 for private artifact bytes when the relevant capability exists. The HTTP API, UI, CLI, MCP, and future A2A adapters must share **one** domain command/authorization model.
 
-**Do not mistake a design contract, committed code, a green source test, or an opened PR for a released feature.** The authoritative [capability matrix](docs/feature-matrix.md) tracks the progression **Specified → Implemented → Verified → Released**, with exact evidence. Published `dev` contains the R1 source implementation; the exact observed baseline and remaining gates are recorded in [R1 implementation and acceptance](docs/r1-implementation.md). Do not infer the contents of `main` or any other checkout from that observation. Source publication or integration must not be counted as verification or release until the applicable defects, toolchain review and real acceptance gates are resolved.
+**Do not mistake a design contract, committed code, a green source test, or an opened PR for a released feature.** The authoritative [capability matrix](docs/feature-matrix.md) tracks the progression **Specified → Implemented → Verified → Released**, with exact evidence. Published `dev` contains R1 and the reviewed R2 source stack; the exact integrated revision and remaining gates are recorded in [R2 source integration](docs/r2-source-integration-2026-10-31.md) and [R1 implementation and acceptance](docs/r1-implementation.md). Do not infer the contents of `main` or any other checkout from that observation. Source publication or integration must not be counted as verification or release until the applicable defects, toolchain review and real acceptance gates are resolved.
 
 **Authority and conflict resolution:**
 
@@ -47,7 +47,7 @@ The planned deployment comprises a Cloudflare Worker for authenticated entry, a 
 
 Read the [round plans](docs/superpowers/plans/README.md) **and** current child issues before implementing. R2–R4 are not an excuse to expose unfinished routes in R1. The complete list of 42 capabilities and their actual evidence is in the [feature matrix](docs/feature-matrix.md); never turn “Specified” into “Verified” from a plan checkbox.
 
-**Dated context (2026-10-26; always recheck):** R1 source is published on `dev`, without implying deployed acceptance. Its remaining toolchain review is owned by [R1-TOOLCHAIN #11](https://github.com/trungtaottn/cf-agent-hub/issues/11), and integrated acceptance by [R1-ACCEPT #17](https://github.com/trungtaottn/cf-agent-hub/issues/17). Earlier R1 source passes are not deployment/release evidence. The governance and Semantic Release proposals are separate PRs and must not be treated as already active just because their files or branches exist.
+**Dated context (2026-10-31; always recheck):** R2 PRs #94–123 are merged into `dev` under the owner's later explicit merge direction. Earlier draft-only prohibitions are historical for that completed stack. Source integration is not deployed acceptance, release, or general authorization for future merges. R1 toolchain/acceptance and R2 native/security/release evidence remain tracked separately in the current integration handoff.
 
 ## 4. Non-negotiable product invariants
 
@@ -90,7 +90,7 @@ Owner intent, existing tests, retained evidence and historical GitHub state must
 
 ## 6. Branch and pull-request contract (Beta / Stable)
 
-**These are required operating rules even before GitHub enforces them.** Actual repository-level enforcement is separately verified; as of 2026-10-25, GitHub Rulesets had not been activated. Read [governance PR #89](https://github.com/trungtaottn/cf-agent-hub/pull/89) and, once present, `docs/branching-and-releases.md`.
+**These are required operating rules even before GitHub enforces them.** Actual repository-level enforcement is separately verified. After the owner's explicit administrative approval, the 2026-10-31 readback confirmed dev requires all seven source checks with strict up-to-date enforcement. Main still requires only `branch-policy` without strict checks; do not infer stable-branch protection from dev. Read `docs/branching-and-releases.md`; any later administrative change requires fresh readback.
 
 | Branch | Role | Allowed inbound path |
 | --- | --- | --- |
@@ -103,7 +103,7 @@ Owner intent, existing tests, retained evidence and historical GitHub state must
 - Keep `main` as the default/stable branch. Do not use it as a scratch branch or merge unverified R1 into either long-lived branch to get a green-looking baseline.
 - Target `dev` for normal fixes and completed features. To promote to Stable, open `dev → main` PR; a `hotfix/* → main` PR is the only exceptional source. Reject same-name source branches from forks pretending to be local `dev`.
 - **Preserve constituent Conventional Commit history** when promoting `dev → main`. Use a merge commit rather than squashing the entire promotion, or semantic-release can compute the wrong version. Normal work PRs into `dev` can use a reviewed squash commit whose message preserves the Conventional Commit title.
-- Read **actual** required checks and merge restrictions from active GitHub Rulesets; the draft JSON in `docs/github-rulesets/` and workflows in PRs do **not** enforce protection on their own. Expect `branch-policy`, `source`, `dependencies` and, if adopted, `release-toolchain` to become required checks. A missing, skipped or failing required check is not a pass.
+- Read **actual** required checks and merge restrictions from active GitHub Rulesets; the draft JSON in `docs/github-rulesets/` and workflows in PRs do **not** enforce protection on their own. The reviewed dev target is `branch-policy`, `source`, `dependencies`, `native-source`, `local-sandbox`, `native-build` and `native-service`, with strict up-to-date checks. Conditional `release-evidence` is not an always-required source check; do not invent a `release-toolchain` job. A missing, skipped or failing required check is not a pass.
 - GitHub **Rulesets/branch protection are administrative operations**. The owner restricts Cloud Harness privileges: use a **directly authorized GitHub administration integration** for these settings, never elevate or route around that restriction through Cloud Harness credentials. If the connected GitHub tool cannot write Rulesets, report the permission/tool gap and ask the owner to apply the reviewed configuration in GitHub Settings. **Read back active enforcement** after any setup.
 - The branch model is a policy contract, **not** an assertion that Beta/Stable release automation or production deployment has already happened.
 

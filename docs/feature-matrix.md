@@ -1,12 +1,10 @@
 # Feature and evidence matrix
 
-Status: R1/R2 local source candidate · Contract revision 0.2 · Isolated acceptance pending; no released artifact.
+Status: R1/R2 source integrated · Contract revision 0.2 · Implemented only; isolated acceptance pending; no released artifact.
 
-Issue24 adds the schema 8 persistence boundary (35 application tables and a complete typed registry). Issue25 adds local agent identity and native credential lifecycle source, without enabling task commands. Issue26 adds local native runtime enrollment and presence. Issue27 adds local task metadata/Ready and authorized task/result query source; publication and live acceptance remain separate. Issue 28 adds local catalog preview/apply and index-only schema 9. Issue 30 adds shared fail/expiry scheduling and index-only schema 10. Issue31 adds cancellation/requeue and private reason schema11. Issue32 adds gated immutable artifact source and admission schema12. Issue33 adds bounded cleanup exclusion, conditional artifact ingress and schema13 scheduling/drain evidence. Issue34 adds current task/artifact message references and index-only schema14. Issue35 adds atomic result submission and independent current-authority acceptance using existing schema14. Current schema14 operational recovery/probe is intentionally unavailable until #39/#43; historical V1 / schema 7 tests are not current recovery acceptance. See [storage execution evidence](r2-task-plans/issue-024-execution.md) and [identity execution evidence](r2-task-plans/issue-025-execution.md).
+The reviewed R2 stack is integrated on `dev` at `55dba1444d8633c9425ba537836f1f28e64db678`, tree `0274c79e40333838f9bd520ddd5f3b1b9dcd33a5`. The [dated integration record](r2-source-integration-2026-10-31.md) maps the source slices, exact CI and remaining acceptance gates. Current recovery source supports schema16; old schema14-only checkpoint notes below are historical.
 
-Issue47 adds the [R2 structural evidence controller](r2-release-evidence.md), with no promotion to Verified or Released. Original live records and independent acceptance remain pending.
-
-This is the canonical capability-status register. **The formal register retains 14 R1 capabilities as Implemented and 28 later-release capabilities as Specified. Issues25–35 supply local R2 implementation source; formal status promotion awaits the separately reviewed R2 evidence-register amendment. None are claimed Verified or Released.** Implementation references and reproducible local checks are recorded in [R1 implementation and acceptance](r1-implementation.md). Real isolated deployment, recovery, toolchain and final evidence gates remain pending. A specification means behavior and acceptance expectations exist, not that every later-release field or UI has been finalized. Protocol adapters and team administration still require the additional contract work named in their pages.
+This is the canonical capability-status register. **Fourteen R1 and nineteen R2 capabilities are Implemented (reviewable integrated source), while nine R3/R4 capabilities remain Specified. None is promoted to Verified or Released by this amendment.** F14 source isolation tests are not an independent security certification; F24 client/runner source is not actual protected native conformance; F40 recovery tooling is not a completed integrated restore rehearsal. Real isolated deployment, toolchain, security and acceptance evidence remain outstanding. Protocol adapters and team administration require their own later contracts and implementation.
 
 Status advances in order: **Specified** → **Implemented** → **Verified** → **Released**. Implemented requires reviewable code; Verified requires reproducible evidence for the selected release; Released requires a tagged artifact, operator documentation and completed release gate. A screenshot, mocked response or successful documentation validator does not advance a runtime capability.
 
@@ -29,22 +27,22 @@ Status advances in order: **Specified** → **Implemented** → **Verified** →
 
 | ID | Capability | Gate | Status | Required evidence |
 | --- | --- | --- | --- | --- |
-| F11 | Dynamic logical-agent registry | R2 | Specified | Local issue25 source: human-authorized create/edit/archive, bounded reads and retained attribution; live acceptance pending |
-| F12 | Workspace-scoped native credential lifecycle | R2 | Specified | Local issue25 source: one-time reveal, safe replay, current ceilings and revocation; replacement is explicit issuance/revoke, runtime rotation integration and live acceptance pending |
-| F13 | Runtime registration and presence | R2 | Specified | Local issue26 source: exact credential proof, initial-only reveal, current replay/deadline checks and presence-only heartbeat; publication and live acceptance pending |
-| F14 | Workspace isolation across resources | R2 | Specified | Two-workspace deny matrix for tasks/messages/artifacts/search/cursors and adapter calls |
-| F15 | Durable task creation and metadata | R2 | Specified | Local issue 27 source: server-owned Backlog, guarded metadata/Ready, current replay and bounded authorized reads; [local evidence](r2-task-plans/issue-027-execution.md), formal promotion/live acceptance pending |
-| F16 | Six-column Kanban and archive | R2 | Specified | Persisted state after restart; permitted command actions; cancelled tasks retained |
-| F17 | Atomic claim, lease and fence | R2 | Specified | Competing claims yield one owner; stale runtime cannot submit or renew |
-| F18 | Assignment, eligibility and WIP | R2 | Specified | Last-slot race enforces policy; labels do not grant permission |
-| F19 | Run heartbeat and expiry | R2 | Specified | Clock-boundary tests; only run_version changes on renewal; expiry checked on command |
-| F20 | Idempotent mutations and version conflicts | R2 | Specified | Identical replay, changed-payload conflict, cross-principal scoping and lost-response recovery |
-| F21 | Result submission and independent acceptance | R2 | Specified | Review before Done; alternate credential/runtime cannot bypass submitter exclusion |
-| F22 | Failure budget, requeue and cancellation | R2 | Specified | Bounded retries, exhaustion flag, no reset through requeue; cancellation wins against stale owner |
-| F23 | Artifact stage/upload/commit/download | R2 | Specified | Implemented locally with composed32/33 source review; formal R2 evidence-register promotion pending: immutable generations, bounded cleanup/drain and conditional authenticated ingress. [Cleanup evidence](r2-task-plans/issue-033-execution.md); explicit separate product binding required, default/dev unbound. Not Verified or Released; no live acceptance |
-| F24 | Native HTTP contract and CLI | R2 | Specified | Request/response conformance and failure exit behavior against a real isolated deployment |
-| F25 | Workspace-scoped search | R2 | Specified | Underlying read scopes enforced; no hidden-resource snippets, counts or cross-workspace results |
-| F26 | External task import and reconciliation | R2 | Specified | Dry run, provenance map, repeated-import behavior, rejected rows and post-import counts |
+| F11 | Dynamic logical-agent registry | R2 | Implemented | Issue25 source: human-authorized create/edit/archive, bounded reads and retained attribution; live acceptance pending |
+| F12 | Workspace-scoped native credential lifecycle | R2 | Implemented | Issue25 source: one-time reveal, safe replay, current ceilings and revocation; replacement is explicit issuance/revoke, runtime rotation integration and live acceptance pending |
+| F13 | Runtime registration and presence | R2 | Implemented | Issue26 source: exact credential proof, initial-only reveal, current replay/deadline checks and presence-only heartbeat; live acceptance pending |
+| F14 | Workspace isolation across resources | R2 | Implemented | Two-workspace deny matrix for tasks/messages/artifacts/search/cursors and adapter calls |
+| F15 | Durable task creation and metadata | R2 | Implemented | Local issue 27 source: server-owned Backlog, guarded metadata/Ready, current replay and bounded authorized reads; [local evidence](r2-task-plans/issue-027-execution.md), live acceptance pending |
+| F16 | Six-column Kanban and archive | R2 | Implemented | Persisted state after restart; permitted command actions; cancelled tasks retained |
+| F17 | Atomic claim, lease and fence | R2 | Implemented | Competing claims yield one owner; stale runtime cannot submit or renew |
+| F18 | Assignment, eligibility and WIP | R2 | Implemented | Last-slot race enforces policy; labels do not grant permission |
+| F19 | Run heartbeat and expiry | R2 | Implemented | Clock-boundary tests; only run_version changes on renewal; expiry checked on command |
+| F20 | Idempotent mutations and version conflicts | R2 | Implemented | Identical replay, changed-payload conflict, cross-principal scoping and lost-response recovery |
+| F21 | Result submission and independent acceptance | R2 | Implemented | Review before Done; alternate credential/runtime cannot bypass submitter exclusion |
+| F22 | Failure budget, requeue and cancellation | R2 | Implemented | Bounded retries, exhaustion flag, no reset through requeue; cancellation wins against stale owner |
+| F23 | Artifact stage/upload/commit/download | R2 | Implemented | Integrated composed32/33 source: immutable generations, bounded cleanup/drain and conditional authenticated ingress. [Cleanup evidence](r2-task-plans/issue-033-execution.md); explicit separate product binding required, default/dev unbound. Not Verified or Released; no live acceptance |
+| F24 | Native HTTP contract and CLI | R2 | Implemented | Request/response conformance and failure exit behavior against a real isolated deployment |
+| F25 | Workspace-scoped search | R2 | Implemented | Underlying read scopes enforced; no hidden-resource snippets, counts or cross-workspace results |
+| F26 | External task import and reconciliation | R2 | Implemented | Dry run, provenance map, repeated-import behavior, rejected rows and post-import counts |
 
 ## Personalization and human interaction
 
@@ -52,12 +50,12 @@ Status advances in order: **Specified** → **Implemented** → **Verified** →
 | --- | --- | --- | --- | --- |
 | F27 | Neutral branding and empty catalog | R1 | Implemented | Fresh workspace has no personal branding/activity; examples require explicit import |
 | F28 | Typed workspace profile | R1 | Implemented | Closed schema; forbidden policy/auth keys rejected; last valid profile survives invalid input |
-| F29 | Stable projects and work roles | R2 | Specified | Upsert preserves omitted records; referenced archive/remap explicit and audited |
+| F29 | Stable projects and work roles | R2 | Implemented | Upsert preserves omitted records; referenced archive/remap explicit and audited |
 | F30 | User theme, density and view preference | R1 | Implemented | Allowlisted override; forbidden resources remain inaccessible; keyboard access preserved |
 | F31 | Message/task composition UI | R3 | Specified | Same domain validation as API; duplicate submit/lost response safe; draft recovery without secrets |
 | F32 | Checkpoint and versioned human proposal | R3 | Specified | Waiting releases run; checkpoint retained; only current human-scoped decision accepted |
 | F33 | Approval/rejection/expiry interface | R3 | Specified | Exact scope/version shown; stale decision denied; expiry never auto-approves |
-| F34 | Accessible command and conflict UI | R2 | Specified | Keyboard alternatives to drag, focus recovery and preserved input on version conflict |
+| F34 | Accessible command and conflict UI | R2 | Implemented | Keyboard alternatives to drag, focus recovery and preserved input on version conflict |
 
 ## Adapters, teams and operations
 
@@ -68,11 +66,11 @@ Status advances in order: **Specified** → **Implemented** → **Verified** →
 | F37 | A2A adapter | R4 | Specified | Exact version/subset, task mapping, authentication and unsupported-operation behavior |
 | F38 | Team membership and invitations | R4 | Specified | Recipient-bound single-use invitation, expiry, revocation, last-admin recovery and isolation |
 | F39 | Real external connectors | R4 | Specified | Provider permissions, genuine source IDs/timestamps, disconnect and stale-source handling |
-| F40 | Backup, restore and import provenance | R2 | Specified | Rehearsed coordinated metadata/artifact restoration with reconciliation report |
+| F40 | Backup, restore and import provenance | R2 | Implemented | Rehearsed coordinated metadata/artifact restoration with reconciliation report |
 | F41 | Health, readiness and operational signals | R1 | Implemented | Distinct liveness/readiness, redacted diagnostics, due-work visibility and failure recovery |
 | F42 | Retention, resource quotas and advanced operations | R4 | Specified | Enforced policy, recoverable maintenance, load evidence and documented capacity limits |
 
-## R1 candidate identity and evidence
+## Historical R1 candidate identity and evidence
 
 The source baseline observed on published `dev` on 2026-10-26 is [`fcbe6139c65f9baafee9804a5c50867a1fcc0968`](https://github.com/trungtaottn/cf-agent-hub/commit/fcbe6139c65f9baafee9804a5c50867a1fcc0968). This is committed and published source, not an uncommitted candidate, deployed-byte attestation or tagged release. Subsequent changes require their own exact revision and evidence; this baseline does not attest the current working diff. See the [dated historical-plan amendment](superpowers/plans/2026-10-26-r1-source-reconciliation.md). The [source and check mapping](r1-implementation.md#source-and-executable-checks) covers every R1 row; the [remaining acceptance gates](r1-implementation.md#acceptance-still-required-before-verified) are explicit exceptions to promotion. Later-release contracts and fixtures do not imply that their routes or interfaces are available.
 
@@ -86,7 +84,11 @@ R2 offers independent result acceptance through authorized native/human calls. T
 
 A status change must include implementation references, exact revision, test commands/environment, expected/observed outcomes and any exceptions. Record evidence in the release's review material and link it from the corresponding row; never overwrite this baseline with an unsupported “complete.” If a feature is disabled or removed, document user-visible behavior, retained data and recovery rather than leaving a stale green badge.
 
-## R1 contract amendment status
+## Historical source-checkpoint notes
+
+The following paragraphs preserve what each earlier slice did and did not implement at its original revision. Their references to unavailable later source, unchanged formal rows, pending publication or no merge are **historical**, superseded for current source status by the register and dated integration record above. Their unrun live/security/acceptance limitations are not erased.
+
+### R1 contract amendment status
 
 ADR [0007](adr/0007-r1-ingress-and-settings.md) closes the proposed static grant/credential, OIDC session, settings, event-discovery, notification and operator recovery contracts for F01–F10, F27, F28, F30 and F41. Their source status is **Implemented**, with local runtime checks and independent scoped reviews recorded for the candidate; deployed verification remains pending. F03 now includes explicit operator-provisioned hashes, immutable credential IDs, scoped grants and monotonic install, without claiming R2 F12 dynamic credential management. F28 includes profile preview/apply/export with revision and size bounds; F30 includes caller-owned preferences and policy overrides; F41 includes public minimal liveness, human-only redacted readiness/operations and an authenticated operator probe. R1 owns first logical SQL/message/outbox recovery; R2 F40 expands it for task/runtime/fence and artifact-byte invariants. Unavailable R2 routes and task/artifact message references do not become R1 features merely because later-release schemas or fixtures exist.
 

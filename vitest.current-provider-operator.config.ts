@@ -7,7 +7,7 @@ import {defineConfig} from 'vitest/config';
 import {operatorFixture} from './test/helpers/operator-fixture';
 const issuer=await operatorFixture();
 const provider=await build({entryPoints:['./workers/recovery-anchor/src/index.ts'],bundle:true,write:false,format:'esm',platform:'browser',target:'es2022',external:['cloudflare:*','node:*']});
-const names=['provider_flow','provider_rotate','provider_missing','provider_persist','provider_copy','provider_benchmark','provider_legacy','provider_replay','provider_final','provider_sql'];
+const names=['provider_flow','provider_rotate','provider_missing','provider_persist','provider_copy','provider_benchmark','provider_legacy','provider_replay','provider_final','provider_sql','provider_secrets'];
 const worker=(lane:'source'|'target')=>{
  const identities=names.map(name=>({workspace_id:'ws_example',object_name:name+'_'+lane}));
  return {name:'anchor-'+lane,compatibilityDate:'2026-10-19',modules:[{type:'ESModule' as const,path:'anchor.mjs',contents:provider.outputFiles[0].text}],bindings:{ANCHOR_POLICY:JSON.stringify({environment_id:'current_'+lane,identities,writers:{rotation:identities,bootstrap:identities}})},durableObjects:{ANCHORS:{className:'RecoveryAnchorDO',useSQLite:true}}};

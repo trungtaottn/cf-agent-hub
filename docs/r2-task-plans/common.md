@@ -1,18 +1,18 @@
 # R2 Common Agent Pickup Contract
 
-Status: R2 MVP development authorized on isolated stacked draft PRs; technical prerequisites and live acceptance remain pending.
+Status: R2 source integrated into dev on 2026-10-31; historical planning records retained; live acceptance remains pending, deferred and unpassed.
 
-## Authority and base
+## Historical planning authority and base
 
 These are plan-only branches authorized by the owner, one per existing issue19–50. Candidate baseline: 4c8e487eee7b8a3d4f76562ecca2369819aa0a9a (PR93); dev at analysis: fcbe6139c65f9baafee9804a5c50867a1fcc0968. They do not contain accepted predecessor implementations. Before execution create/reconcile a work branch from then-current accepted dev and integrate all hard predecessors; do not implement directly against stale planning code. Read AGENTS and live issue state. No labels/body edits, automatic PR, merge, deployment or release are authorized by plan publication.
 
-#17 remains outstanding live acceptance, but is no longer a development start gate under the [owner amendment](owner-development-amendment-2026-10-26.md). The owner authorized sequential R2 MVP development and deferred live acceptance until after R4 development. Current coding scope is R2 only. #19 remains planning/reconciliation. #11 embedded tooling findings and #10/#14–18 evidence remain unresolved; source CI, review or a PR is not acceptance. All PRs stay draft and unmerged; each successor starts from and targets the preceding PR branch. Technical dependencies, contract review and source tests remain required.
+#17 remains outstanding live acceptance, but is no longer a development start gate under the [owner amendment](owner-development-amendment-2026-10-26.md). The owner authorized sequential R2 MVP development and deferred live acceptance until after R4 development. Current coding scope is R2 only. #19 remains planning/reconciliation. #11 embedded tooling findings and #10/#14–18 evidence remain unresolved; source CI, review or a PR is not acceptance. That amendment originally kept the stack draft and unmerged. The later owner-authorized ordered integration is now complete; see the current direction below. Technical dependencies, contract review and source tests remain required.
 
 ## Canonical design and invariants
 
 Read docs/superpowers/plans/2026-10-23-r2-durable-work.md and owning OpenAPI/security/task/recovery docs. Preserve historical approvals. One workspace DO, one synchronous SQL transaction for domain/event/outbox/sanitized replay; no async hook or second authority engine. Current session/credential/proof and maintenance generation rechecked after every await. 60-second lease, 20-second suggested renewal, 90-second presence; presence is not lease. Submit is Review; independent current-authority acceptance is Done. Unknown/exhausted holds never auto-retry. R3 approval routes remain unavailable. Raw secrets never persist in normal replay/log/export.
 
-## Shared proposed decisions
+## Historical shared proposed decisions
 
 
 | ID | Decision | Recommendation, not approval | Blocking consumers |
@@ -24,7 +24,7 @@ Read docs/superpowers/plans/2026-10-23-r2-durable-work.md and owning OpenAPI/sec
 | D-JOURNAL | CLI journal storage cap/retention | Select explicit reviewed values; unresolved operations never silently evict, block new admission at limit. Local retention does not extend server replay guarantees; expired/unknown windows require no-send reconciliation. | #41/#44 |
 | D4 | Final planning-branch base | Publication is now authorized as32 separate docs/r2-NNN-plan branches and corresponding issue comments, not32 PRs. Pin one base and reconcile accepted dev before runtime pickup. | Source-drift review; no additional publication approval needed |
 
-These are not invented approvals or a request to redesign already-fixed constants. Detailed canonical policy limits, catalog semantics, import bounds and search rules are retained. D1/D2 are gaps revealed by current code; they cannot be silently settled by a coding agent.
+This table preserves the original planning questions, not a fresh claim that the integrated implementation lacks these boundaries. Consult each execution record and actual source for its resolved implementation; any new policy change still needs explicit review. These are not invented approvals or a request to redesign already-fixed constants. Detailed canonical policy limits, catalog semantics, import bounds and search rules are retained. D1/D2 were gaps identified at the original planning baseline; their historical wording does not reopen resolved integrated contracts. A new design change cannot be silently settled by a coding agent.
 
 
 ## Whole-system issue/dependency index
@@ -86,6 +86,8 @@ The owner approved complete immutable CLI request/principal binding, conservativ
 
 Repository AGENTS.md and the current issue remain authority. Inspect actual installed AgentKit CLI/version/help and available skill files; read the applicable ak-plan red-team/validate workflow before planning. CLI plan parse/validate checks format, not semantic review or owner approval. Record exact plan/source hashes, source-evidenced findings, user decisions and a whole-plan consistency sweep; preserve unresolved blockers. Only after explicit implementation authorization and all gates clear, read the actual installed ak-cook workflow and follow its applicable bounded task/TDD steps. Use installed ak-code-review for independent review and ak-debug for diagnosed failures when available; if unavailable, report the gap rather than invent commands. Never enable automatic execution flags, emulate unsupported ak-team, assume hooks are active, or create another transaction/workflow authority. Existing one-or-two-subtask handoffs, nonzero test collection and truthful evidence requirements still apply. W1 records the owner's requested workflow synchronization, not a newly discovered defect or implementation permission.
 
-## Current owner direction — development and stacked PRs
+## Current owner direction — source integration completed
 
-The [2026-10-26 owner amendment](owner-development-amendment-2026-10-26.md) supersedes conflicting historical start-gate and publication-only clauses above and in retained task plans. It authorizes current R2 code, tests, review and issue-scoped commits/draft PRs on own cloud, not merge, deployment, credentials, live operations or release. Earlier review status/authorization paragraphs remain historical records. Do not use the old #17 start condition to block this authorized development; do not infer D1/D2/D3/D-HISTORY/D-JOURNAL approval.
+The owner subsequently authorized Ready transitions and ordered merges of the reviewed R2 stack. PRs #94–123 were merged into `dev`; final integration is `55dba1444d8633c9425ba537836f1f28e64db678`, tree `0274c79e40333838f9bd520ddd5f3b1b9dcd33a5`. The original draft-only/no-merge direction is superseded for that completed stack, not a standing authorization for unrelated future merges. Branches were retained; `main`, deployment and release were not changed.
+
+Use the [current source integration and acceptance handoff](../r2-source-integration-2026-10-31.md) rather than replaying historical planning branches. R1 live gates, issue40 independent security evidence, issue48 protected execution, issue49 integrated acceptance and issue50 release remain distinct. The three explicitly deferred tuple cases remain unverified until R4; this is not a general test waiver. No source test or merge marks acceptance passed. The owner deferred formal integrated acceptance until after R4 development.

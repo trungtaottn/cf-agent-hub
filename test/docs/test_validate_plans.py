@@ -34,6 +34,17 @@ class PlanValidationTests(unittest.TestCase):
         for references in candidate['feature_references'].values():
             paths.update(references['implementation'])
             paths.update(references['tests'])
+        # Copy the optional closed R2 source record's real evidence as well.
+        # Missing-evidence tests still remove files after this complete fixture.
+        r2_candidate = register.get('r2_source_candidate')
+        if r2_candidate is not None:
+            r2_review_path = r2_candidate['amendment_review_path']
+            r2_review = json.loads((ROOT / r2_review_path).read_text())
+            paths.update({r2_candidate['implementation_path'], r2_review_path})
+            paths.update(r2_review['reviewed_paths'])
+            for references in r2_candidate['feature_references'].values():
+                paths.update(references['implementation'])
+                paths.update(references['tests'])
         for relative in paths:
             destination = self.root / relative
             destination.parent.mkdir(parents=True, exist_ok=True)
@@ -81,11 +92,13 @@ class PlanValidationTests(unittest.TestCase):
     def test_verified_released_and_later_round_implementation_are_rejected(self):
         path = self.root / 'docs/feature-matrix.md'
         original = path.read_text()
-        for feature, before, after in [('F01', 'Implemented', 'Verified'), ('F01', 'Implemented', 'Released'), ('F11', 'Specified', 'Implemented')]:
+        for feature, before, after in [('F01', 'Implemented', 'Verified'), ('F01', 'Implemented', 'Released'), ('F11', 'Implemented', 'Verified'), ('F11', 'Implemented', 'Released'), ('F31', 'Specified', 'Implemented'), ('F36', 'Specified', 'Implemented')]:
             with self.subTest(feature=feature, status=after):
                 lines = original.splitlines()
                 lines = [line.replace('| ' + before + ' |', '| ' + after + ' |') if line.startswith('| ' + feature + ' |') else line for line in lines]
-                path.write_text('\n'.join(lines) + '\n')
+                changed = '\n'.join(lines) + '\n'
+                self.assertNotEqual(changed, original, 'Negative control must mutate its target status')
+                path.write_text(changed)
                 self.assertEqual(self.result()['status'], 'failed')
         path.write_text(original)
 

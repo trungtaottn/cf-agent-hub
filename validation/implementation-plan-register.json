@@ -920,5 +920,192 @@
         ]
       }
     }
+  },
+  "r2_source_candidate": {
+    "implementation_path": "docs/r2-source-integration-2026-10-31.md",
+    "amendment_review_path": "validation/r2-source-status-amendment-review.json",
+    "source_revision": "55dba1444d8633c9425ba537836f1f28e64db678",
+    "source_tree": "0274c79e40333838f9bd520ddd5f3b1b9dcd33a5",
+    "feature_references": {
+      "F11": {
+        "implementation": [
+          "src/agents/commands.ts",
+          "src/agents/reads.ts"
+        ],
+        "tests": [
+          "test/agents/identity-lifecycle.test.ts"
+        ]
+      },
+      "F12": {
+        "implementation": [
+          "src/auth/native-credentials.ts",
+          "src/auth/credential-authority.ts"
+        ],
+        "tests": [
+          "test/agents/first-response.test.ts",
+          "test/agents/revoke-replay-ceiling.test.ts"
+        ]
+      },
+      "F13": {
+        "implementation": [
+          "src/runtimes/commands.ts",
+          "src/auth/runtime-proof.ts"
+        ],
+        "tests": [
+          "test/runtimes/proof-lifecycle.test.ts"
+        ]
+      },
+      "F14": {
+        "implementation": [
+          "src/auth/authorize.ts",
+          "src/auth/resource-visibility.ts"
+        ],
+        "tests": [
+          "test/acceptance/r2-isolation.test.ts"
+        ]
+      },
+      "F15": {
+        "implementation": [
+          "src/tasks/commands.ts",
+          "src/tasks/reads.ts"
+        ],
+        "tests": [
+          "test/tasks/metadata.test.ts"
+        ]
+      },
+      "F16": {
+        "implementation": [
+          "src/ui/kanban.ts",
+          "src/ui/task-reads.ts"
+        ],
+        "tests": [
+          "test/ui/r2-kanban-read.spec.ts"
+        ]
+      },
+      "F17": {
+        "implementation": [
+          "src/tasks/claim.ts",
+          "src/tasks/lease.ts"
+        ],
+        "tests": [
+          "test/tasks/claim-concurrency.test.ts",
+          "test/tasks/lease-boundary.test.ts"
+        ]
+      },
+      "F18": {
+        "implementation": [
+          "src/tasks/claim.ts",
+          "src/config/execution-policy.ts"
+        ],
+        "tests": [
+          "test/tasks/policy.test.ts",
+          "test/tasks/claim-concurrency.test.ts"
+        ]
+      },
+      "F19": {
+        "implementation": [
+          "src/tasks/lease.ts",
+          "src/tasks/failure.ts"
+        ],
+        "tests": [
+          "test/tasks/lease-boundary.test.ts",
+          "test/tasks/expiry-scheduler.test.ts"
+        ]
+      },
+      "F20": {
+        "implementation": [
+          "src/tasks/commands.ts",
+          "src/imports/commands.ts"
+        ],
+        "tests": [
+          "test/tasks/cancellation-race.test.ts",
+          "test/imports/races-rollback.test.ts"
+        ]
+      },
+      "F21": {
+        "implementation": [
+          "src/tasks/results.ts"
+        ],
+        "tests": [
+          "test/tasks/independent-review.test.ts"
+        ]
+      },
+      "F22": {
+        "implementation": [
+          "src/tasks/failure.ts",
+          "src/tasks/commands.ts"
+        ],
+        "tests": [
+          "test/tasks/failure-recovery.test.ts",
+          "test/tasks/cancellation-race.test.ts"
+        ]
+      },
+      "F23": {
+        "implementation": [
+          "src/artifacts/commands.ts",
+          "src/artifacts/content.ts",
+          "src/artifacts/reconcile.ts"
+        ],
+        "tests": [
+          "test/artifacts/commit-integrity.test.ts",
+          "test/artifacts/cleanup-race.test.ts"
+        ]
+      },
+      "F24": {
+        "implementation": [
+          "packages/client/src/native-client.ts",
+          "packages/cli/src/main.ts",
+          "packages/cli/src/journal.ts"
+        ],
+        "tests": [
+          "test/client/native-conformance.test.ts",
+          "test/native-r2/complete-config.test.mjs"
+        ]
+      },
+      "F25": {
+        "implementation": [
+          "src/search/query.ts"
+        ],
+        "tests": [
+          "test/search/authorized-search.test.ts"
+        ]
+      },
+      "F26": {
+        "implementation": [
+          "src/imports/commands.ts",
+          "src/imports/provenance.ts"
+        ],
+        "tests": [
+          "test/imports/reconciliation.test.ts"
+        ]
+      },
+      "F29": {
+        "implementation": [
+          "src/config/catalog-commands.ts"
+        ],
+        "tests": [
+          "test/config/catalog-lifecycle.test.ts"
+        ]
+      },
+      "F34": {
+        "implementation": [
+          "src/ui/task-actions.ts",
+          "src/ui/task-action-view.ts"
+        ],
+        "tests": [
+          "test/ui/r2-kanban.spec.ts"
+        ]
+      },
+      "F40": {
+        "implementation": [
+          "src/recovery/capture-current.ts",
+          "src/recovery/restore-current.ts"
+        ],
+        "tests": [
+          "test/recovery/current-restore.test.ts",
+          "test/recovery/r2-capture.test.ts"
+        ]
+      }
+    }
   }
 }

@@ -1,6 +1,6 @@
 # R2 Issue 48 — Prove native CLI conformance against a real isolated HTTPS deployment
 
-Status: (2026-10-30) Reviewed fixed factory/entry/build/authority and Worker attachment source exists; full protected factory execution and authentic deployed conformance remain pending and incomplete. Draft PR #123 records an earlier source checkpoint, not proof of the latest public stack or completed execution. MVP source development is owner-authorized; formal integrated acceptance is deferred until after R4, not deemed passed.
+Status: (2026-10-31) Required-profile fixed source is integrated through merged PR #123; full protected factory execution and authentic deployed conformance remain pending and incomplete. Formal integrated acceptance remains deferred until after R4, not deemed passed. See [current integration evidence](../r2-source-integration-2026-10-31.md).
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -51,9 +51,9 @@ Status: (2026-10-30) Reviewed fixed factory/entry/build/authority and Worker att
 
 Implement only issue #48; other issue numbers in subsystem context identify producers/consumers, not extra assigned tasks. Read [common authority and integration contract](common.md).
 
-**Current state:** SOURCE INTEGRATION INCOMPLETE / LIVE BLOCKED — source development is owner-authorized; deployed conformance and final acceptance remain separate. Do not mark #48 complete from green ordinary CI.
+**Current state:** REVIEWED SOURCE INTEGRATED / PROTECTED EXECUTION AND LIVE ACCEPTANCE BLOCKED — source development is owner-authorized; deployed conformance and final acceptance remain separate. Do not mark #48 complete from green ordinary CI.
 **Hard:** #44. **Interface:** none additional. **Evidence:** #40.
-**Branch purpose:** reviewed partial source delivery on stacked unmerged PRs. Reconcile the exact current public predecessor before every source addition; preserve original plan history.
+**Branch purpose:** historical stacked source delivery is complete through merged PR #123. Any follow-up starts from current `dev`, with a bounded reviewed PR; preserve original plan history and do not reopen completed source merely because acceptance remains pending.
 
 ## Task #48 — Real isolated HTTPS conformance of the built CLI
 
@@ -101,4 +101,4 @@ The exclusive `--local-sandbox` and observer-local commands remain separate synt
 
 Operator questions remain about **actual custody and authorization**, not a missing configurable adapter API: who owns the pinned runtime and isolated deployments; who supplies current grant/proof/state and scoped fault/revocation authority; which protected references admit exact stores/inputs; and who reviews retained uncertainty and authorizes cleanup? Do not put tokens or proofs in issues/chat/config examples. Failure preserves originals and intent; no automatic new key, redispatch or hold release follows.
 
-Issue40 owner permission is operational authorization, not an independent security-scan result. Denied review actions are not retried through another route. All live acceptance checkboxes above remain open; ordinary source CI, backups and unmerged PR publication do not pass acceptance or close issue48. Formal integrated acceptance remains after R4.
+Issue40 owner permission is operational authorization, not an independent security-scan result. Denied review actions are not retried through another route. All live acceptance checkboxes above remain open; ordinary source CI, backups and merged source publication do not pass acceptance or close issue48. Formal integrated acceptance remains after R4.

@@ -1,10 +1,10 @@
 # Implementation roadmap
 
-Status: R1 source candidate · Contract revision 0.2 · Isolated release acceptance pending.
+Status: R1/R2 source integrated on dev · Contract revision 0.2 · Isolated release acceptance pending.
 
 The roadmap is organized by verifiable release gates, not dates. Each gate builds on the previous gate's trust and persistence rules. The [feature matrix](feature-matrix.md) tracks individual capability status; this page explains ordering and deliverables. There is no runtime release in this package.
 
-R1 source and local verification are tracked in [R1 implementation and acceptance](r1-implementation.md). Its deployed identity/recovery, dependency and final evidence gates remain open. R2 work does not begin from a local test pass or this roadmap entry.
+R1 source and local verification are tracked in [R1 implementation and acceptance](r1-implementation.md). Its deployed identity/recovery, dependency and final evidence gates remain open. The owner authorized R2 MVP development and subsequently merged its reviewed source stack. The [dated R2 integration handoff](r2-source-integration-2026-10-31.md) records the exact revision and source checks; formal integrated acceptance remains after R4. This does not silently authorize R3 or erase its issue-specific prerequisites.
 
 ## R1 — Neutral foundation and reliable relay
 
