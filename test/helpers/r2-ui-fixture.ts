@@ -8,9 +8,9 @@ export const r2FixtureTitles={review:'Review evidence <img src=x onerror="window
 const digest=(value:string|Uint8Array)=>createHash('sha256').update(value).digest('hex');
 export function configureR2UiFixture(config:DeploymentConfig):void{
  const owner=config.human_grants[0]!;
- owner.scopes=[...new Set([...owner.scopes,'tasks:read','tasks:create','tasks:edit','tasks:schedule','tasks:cancel','tasks:review','artifacts:read','artifacts:write'] as DeploymentConfig['human_grants'][number]['scopes'])];
+ owner.scopes=[...new Set([...owner.scopes,'tasks:read','tasks:create','tasks:edit','tasks:schedule','tasks:cancel','tasks:review','agents:read','artifacts:read','artifacts:write'] as DeploymentConfig['human_grants'][number]['scopes'])];
  config.human_grants.push({...structuredClone(owner),principal_id:'human_tasks_only',subject:'tasks-only-subject',scopes:['workspace:read','tasks:read']});
- config.static_credential_refs[0]!.scopes=['workspace:read','tasks:read','tasks:claim','tasks:execute','runtimes:manage','artifacts:read','artifacts:write'];
+ config.static_credential_refs[0]!.scopes=['workspace:read','tasks:read','tasks:claim','tasks:execute','runtimes:manage','messages:read','artifacts:read','artifacts:write'];
  const policy=config.workspace_policies[0]!;
  policy.notification_destinations=[];
  policy.execution_policy={policy_version:1,agent_wip_limit:10,task_retry_limit:2,artifact_upload_ttl_seconds:900,eligibility_rules:[{project_id:null,work_role_id:null,eligible_agent_ids:['agent_research']}],replay_safety_rules:[]};

@@ -34,6 +34,8 @@
     "test/client/task-rendering.test.ts",
     "test/client/focus-restoration.test.ts",
     "src/ui/task-action-view.ts",
-    "test/client/task-action-view.test.ts"
+    "test/client/task-action-view.test.ts",
+    "src/ui/compose/message-form-view.ts",
+    "test/client/message-form-view.test.ts"
   ]
 }
