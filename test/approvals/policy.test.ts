@@ -21,11 +21,23 @@ describe('inactive policy source boundaries',()=>{
   expect(contracts.sameNativeArtifactBinding(a,{...a,associations:[{kind:'task',id:'task_b'}]})).toBe(false);
  });
  it('production bundle has no test registry, test descriptor, or configurable registry entrypoint',async()=>{
-  const result=await build({entryPoints:['src/approvals/policy.ts'],bundle:true,write:false,metafile:true,platform:'browser',format:'esm',target:'es2023'});
-  expect(Object.keys(result.metafile!.inputs).some(path=>path.startsWith('test/')||path.includes('fixtures'))).toBe(false);
-  const source=result.outputFiles[0].text;
-  expect(source).not.toContain('synthetic.task-review');expect(source).not.toContain('ExampleApprovalInputs');
-  expect(result.metafile!.outputs[Object.keys(result.metafile!.outputs)[0]].exports).toEqual(['lookupPolicyRequirements']);
+  for(const [entry,exports] of [['src/approvals/policy.ts',['lookupPolicyRequirements']],['src/approvals/input-binding.ts',['recheckProposalInput','verifyProposalInput']]] as const){
+   const result=await build({entryPoints:[entry],bundle:true,write:false,metafile:true,platform:'browser',format:'esm',target:'es2023'});
+   expect(Object.keys(result.metafile!.inputs).some(path=>path.startsWith('test/')||path.includes('fixtures'))).toBe(false);
+   const source=result.outputFiles[0].text;
+   expect(source).not.toContain('synthetic.task-review');expect(source).not.toContain('ExampleApprovalInputs');
+   expect(result.metafile!.outputs[Object.keys(result.metafile!.outputs)[0]].exports).toEqual(exports);
+  }
   expect(contracts.availableDecisionActions()).toEqual([]);
  });
+});
+
+it('scope_target_ID_boundary_is_not_narrowed_by_artifact_role_serialization_limits',async()=>{
+ const {proposalSnapshot}=await import('../../src/approvals/policy-source');
+ const ids=Array.from({length:64},(_,index)=>String(index).padStart(3,'0')+'x'.repeat(125));
+ expect(new TextEncoder().encode(JSON.stringify(ids)).byteLength).toBe(8385);
+ const proposal={summary:'Synthetic boundary only',action:'inactive-action',scope:{project_id:null,resource_ids:ids},artifact_ids:[],inputs:{artifact_id:'input_a',sha256:'a'.repeat(64)}};
+ const snapshot=proposalSnapshot(proposal);expect(snapshot).toEqual(proposal);expect(snapshot).not.toBe(proposal);
+ expect(()=>proposalSnapshot({...proposal,scope:{project_id:null,resource_ids:[...ids,'extra']}})).toThrow('DECISION_UNAVAILABLE');
+ expect(()=>proposalSnapshot({...proposal,scope:{project_id:null,resource_ids:['x'.repeat(129)]}})).toThrow('DECISION_UNAVAILABLE');
 });

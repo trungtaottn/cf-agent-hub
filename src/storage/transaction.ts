@@ -4,6 +4,12 @@ export interface WorkspaceTransaction {
  one<T>(sql:string,bindings?:readonly SqlValue[]):T|null;
  exec(sql:string,bindings?:readonly SqlValue[]):void;
 }
+// Native in-process origin/liveness; transaction-shaped observations cannot mint it.
+const transactionStorage=new WeakMap<object,DurableObjectStorage>();
+/** Internal consuming-boundary guard. No transaction factory/deserializer is exposed. */
+export function assertTransactionStorage(tx:WorkspaceTransaction,storage:DurableObjectStorage):void{
+ if(transactionStorage.get(tx)!==storage)throw Error('TRANSACTION_STORAGE_MISMATCH');
+}
 /** SQL-only synchronous scope. Escaped references become unusable on return or throw. */
 export function withTransaction<T>(storage:DurableObjectStorage,body:(tx:WorkspaceTransaction)=>T):T {
  return storage.transactionSync(()=>{
@@ -14,10 +20,12 @@ export function withTransaction<T>(storage:DurableObjectStorage,body:(tx:Workspa
    one:<R>(sql:string,bindings:readonly SqlValue[]=[])=>{assertActive();const rows=storage.sql.exec(sql,...bindings).toArray();return (rows[0]??null) as R|null;},
    exec:(sql,bindings=[])=>{assertActive();storage.sql.exec(sql,...bindings);}
   };
+  Object.freeze(tx);
+  transactionStorage.set(tx,storage);
   try {
    const result=body(tx);
    if(result!==null&&(typeof result==='object'||typeof result==='function')&&typeof (result as {then?:unknown}).then==='function')throw Error('ASYNC_TRANSACTION');
    return result;
-  } finally {active=false;}
+  } finally {active=false;transactionStorage.delete(tx);}
  });
 }

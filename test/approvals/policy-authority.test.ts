@@ -27,7 +27,7 @@ it('reads real installed policy and all assigned humans without inventing review
   const p=await inputArtifact(s.storage,f.name,now),actor=decisionActor(s.storage,now),lookup=await testLookup(),before=snapshot(s.storage);
   expect(before.runs).toHaveLength(1);
   const result=withTransaction(s.storage,tx=>lookup(readOnly(tx),actor,task,p,now));
-  expect(result).toMatchObject({phase:'requirements-only',workspaceId:'ws_example',taskId:'task_a',taskVersion:2,configEpoch:1,admissionGeneration:0,policyVersion:3,semanticRevision:'synthetic-task-review@1',expiresAt:now+120000,reviewerIds:['human_operator','human_reviewer'],configDigest:f.input.bundle.config_digest,installationDigest:f.input.installationDigest});
+  expect(result).toMatchObject({phase:'requirements-only',workspaceId:'ws_example',taskId:'task_a',taskVersion:2,configEpoch:1,admissionGeneration:0,policyVersion:3,semanticRevision:'synthetic-task-review@2',expiresAt:now+120000,reviewerIds:['human_operator','human_reviewer'],configDigest:f.input.bundle.config_digest,installationDigest:f.input.installationDigest});
   expect(result.reviewers.every(reviewer=>reviewer.scopes.includes('approvals:read')&&reviewer.scopes.includes('approvals:decide'))).toBe(true);
   expect(result.artifacts[0]).toMatchObject({artifactId:'input_a',artifactVersion:3,sha256:p.inputs.sha256});expect(typeof result.artifacts[0].generationId).toBe('string');
   expect(Object.isFrozen(result)).toBe(true);expect(Object.isFrozen(result.reviewerIds)).toBe(true);expect(Object.isFrozen(result.artifacts[0])).toBe(true);
@@ -115,7 +115,7 @@ it('rechecks exact policy digests semantic revision and native metadata without 
   const metadata=s.storage.sql.exec<{config_digest:string;installation_digest:string}>('SELECT config_digest,installation_digest FROM workspace_metadata').one();
   for(const column of ['config_digest','installation_digest'] as const){s.storage.sql.exec('UPDATE workspace_metadata SET '+column+'=?','f'.repeat(64));expect(()=>withTransaction(s.storage,tx=>lookup.assertCurrent(tx,actor,task,p,now+1,requirements))).toThrow('DECISION_UNAVAILABLE');s.storage.sql.exec('UPDATE workspace_metadata SET '+column+'=?',metadata[column]);}
   const {descriptor}=await import('../helpers/decision-policy'),{createPolicyRequirementsLookup}=await import('../../src/approvals/policy-source');
-  const changed=createPolicyRequirementsLookup([{...descriptor,semanticRevision:'synthetic-task-review@2'}]);
+  const changed=createPolicyRequirementsLookup([{...descriptor,semanticRevision:'synthetic-task-review@3'}]);
   expect(()=>withTransaction(s.storage,tx=>changed.assertCurrent(tx,actor,task,p,now+1,requirements))).toThrow('DECISION_UNAVAILABLE');
   const original=s.storage.sql.exec<{committed_generation_id:string}>("SELECT committed_generation_id FROM artifacts WHERE id='input_a'").one().committed_generation_id;
   // Metadata-only replacement fixture: no claim of committed replacement R2 bytes or final provenance.

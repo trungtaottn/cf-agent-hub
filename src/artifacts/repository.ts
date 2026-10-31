@@ -4,7 +4,7 @@ import type {Artifact,MessageReference} from '../http/dto';
 import {validateArtifact} from '../http/generated/auth-validators.js';
 import {refreshActor} from '../auth/authorize';
 import {HttpError} from '../http/envelopes';
-import {assertResourceReferences,actorResourceGrant,type RelationshipGrant} from '../auth/resource-visibility';
+import {assertResourceReferences,actorResourceGrant,type RelationshipGrant,type ReferenceBudget} from '../auth/resource-visibility';
 import {assertStoredScalarBytes,assertTaskItemFits} from '../tasks/bounds';
 export const ARTIFACT_MAX_BYTES=10485760;
 export const ATTACHMENT_MAX_BYTES=26214400;
@@ -43,16 +43,16 @@ export function artifactAssociationReferences(tx:WorkspaceTransaction,grant:Rela
  }
  return refs;
 }
-export function assertArtifactAssociations(tx:WorkspaceTransaction,actor:ActorContext,row:ArtifactRow,_nowMs:number):void{
- assertResourceReferences(tx,actorResourceGrant(actor),artifactAssociationReferences(tx,actor,row));
+export function assertArtifactAssociations(tx:WorkspaceTransaction,actor:ActorContext,row:ArtifactRow,_nowMs:number,budget?:ReferenceBudget):void{
+ assertResourceReferences(tx,actorResourceGrant(actor),artifactAssociationReferences(tx,actor,row),budget);
 }
 export function committedGeneration(tx:WorkspaceTransaction,row:ArtifactRow):GenerationRow{
  if(row.status!=='committed'||row.committed_at===null||row.expires_at!==null||row.committed_generation_id===null||(row.active_generation_id!==null&&row.active_generation_id!==row.committed_generation_id))inaccessible();
  const g=generationRecord(tx,row.workspace_id,row.id,row.committed_generation_id!);
  if(g.state!=='committed'||g.expected_sha256!==row.sha256||g.observed_sha256!==row.sha256||g.expected_byte_size!==row.byte_size||g.observed_byte_size!==row.byte_size)inaccessible();return g;
 }
-export function authorizeArtifactRead(tx:WorkspaceTransaction,ctx:Pick<CommandContext,'actor'|'nowMs'>,id:string):{artifact:Artifact;objectKey:string}{
- const actor=artifactActor(tx,ctx,'artifacts:read'),row=artifactRecord(tx,actor.workspaceId,id),generation=committedGeneration(tx,row);assertArtifactAssociations(tx,actor,row,ctx.nowMs);return {artifact:artifactView(row),objectKey:generation.object_key};
+export function authorizeArtifactRead(tx:WorkspaceTransaction,ctx:Pick<CommandContext,'actor'|'nowMs'>,id:string,budget?:ReferenceBudget):{artifact:Artifact;objectKey:string}{
+ const actor=artifactActor(tx,ctx,'artifacts:read'),row=artifactRecord(tx,actor.workspaceId,id),generation=committedGeneration(tx,row);assertArtifactAssociations(tx,actor,row,ctx.nowMs,budget);return {artifact:artifactView(row),objectKey:generation.object_key};
 }
 export function getArtifact(tx:WorkspaceTransaction,ctx:Pick<CommandContext,'actor'|'nowMs'>,id:string):Artifact{
  const actor=artifactActor(tx,ctx,'artifacts:read'),row=artifactRecord(tx,actor.workspaceId,id);

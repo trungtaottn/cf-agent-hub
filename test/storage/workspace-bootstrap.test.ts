@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { FixedClock } from '../helpers/clock';
 import { env, exports } from 'cloudflare:workers';
 import { runInDurableObject, evictDurableObject } from 'cloudflare:test';
-import { withTransaction } from '../../src/storage/transaction';
+import { withTransaction,assertTransactionStorage } from '../../src/storage/transaction';
 import { migrate, FOUNDATION_SQL } from '../../src/storage/migrations';
 import { prepareBootstrap, sha256, canonicalJson, installConfiguration } from '../../src/config/bootstrap';
 import { prepared, fixture, operator, nowMs } from '../helpers/environment';
@@ -218,5 +218,46 @@ describe('controlled reconciliation clock',()=>{
   expect(await denied(name,operator(),input)).toBe('CREDENTIAL_EXPIRY');
   expect(await snapshot(name)).toEqual(before);
   expect(await runInDurableObject(stub(name),(_object,state)=>state.storage.sql.exec('SELECT * FROM events').toArray())).toEqual([]);
+ });
+});
+
+
+it('transaction_origin_is_private_live_and_preserves_nested_transaction_compatibility',async()=>{
+ await runInDurableObject(stub('transaction-origin'),(_object,state)=>{
+  let inner!:import('../../src/storage/transaction').WorkspaceTransaction,outer!:typeof inner;
+  withTransaction(state.storage,tx=>{
+   outer=tx;expect(()=>assertTransactionStorage(tx,state.storage)).not.toThrow();
+   expect(()=>assertTransactionStorage({...tx},state.storage)).toThrow('TRANSACTION_STORAGE_MISMATCH');
+   const other=new Proxy(state.storage,{});expect(()=>assertTransactionStorage(tx,other)).toThrow('TRANSACTION_STORAGE_MISMATCH');
+   withTransaction(state.storage,nested=>{inner=nested;assertTransactionStorage(nested,state.storage);assertTransactionStorage(tx,state.storage);expect(nested.one('SELECT 1 AS value')).toEqual({value:1});});
+   expect(()=>assertTransactionStorage(inner,state.storage)).toThrow('TRANSACTION_STORAGE_MISMATCH');assertTransactionStorage(tx,state.storage);expect(tx.one('SELECT 2 AS value')).toEqual({value:2});
+  });
+  expect(()=>assertTransactionStorage(outer,state.storage)).toThrow('TRANSACTION_STORAGE_MISMATCH');
+ });
+});
+it('throw_and_callback_thenable_rollback_remove_transaction_origin_without_running_then',async()=>{
+ await runInDurableObject(stub('transaction-thenable'),(_object,state)=>{
+  let escaped!:import('../../src/storage/transaction').WorkspaceTransaction,called=0;
+  for(const mode of ['throw','thenable']){
+   expect(()=>withTransaction(state.storage,tx=>{escaped=tx;assertTransactionStorage(tx,state.storage);tx.exec('INSERT INTO scheduler_state(id,next_due_at) VALUES(1,99)');if(mode==='throw')throw Error('body_failure');return {then(){called++;}};})).toThrow(mode==='throw'?'body_failure':'ASYNC_TRANSACTION');
+   expect(state.storage.sql.exec('SELECT * FROM scheduler_state').toArray()).toEqual([]);expect(()=>assertTransactionStorage(escaped,state.storage)).toThrow('TRANSACTION_STORAGE_MISMATCH');expect(()=>escaped.one('SELECT 1')).toThrow('TRANSACTION_CLOSED');
+  }
+  expect(called).toBe(0);
+ });
+});
+
+it('transaction_origin_cannot_be_rebound_by_replacing_genuine_query_methods',async()=>{
+ await runInDurableObject(stub('transaction-method-binding'),(_object,state)=>{
+  const original=state.storage,foreign=new Proxy(original,{get(target,key){
+   if(key==='sql')return {exec:()=>original.sql.exec("SELECT 'foreign' AS marker")};
+   const value=Reflect.get(target,key,target);return typeof value==='function'?value.bind(target):value;
+  }});
+  withTransaction(original,tx=>withTransaction(foreign,other=>{
+   expect(other.one("SELECT 'original' AS marker")).toEqual({marker:'foreign'});
+   expect(()=>Object.assign(tx,other)).toThrow(TypeError);
+   expect(Object.isFrozen(tx)).toBe(true);expect(Object.isFrozen(other)).toBe(true);
+   expect(()=>Object.defineProperty(tx,'one',{value:other.one})).toThrow(TypeError);
+   assertTransactionStorage(tx,original);expect(tx.one("SELECT 'original' AS marker")).toEqual({marker:'original'});
+  }));
  });
 });
