@@ -18,6 +18,12 @@ The reviewed first source unit may implement optional structural deployment `dec
 
 This records partial inactive-source progress, not Task 1 completion: no actual operator-reviewed product action/schema/target-effect semantics has been selected. The existing instruction to stop action-dependent implementation for an unresolved schema remains in force. This clarification does not unlock action-specific request-decision, approve/reject, claim or dispatch work or clear the literal issue 52/54 dependencies. See [the source contract](../../contracts/r3-decisions.md).
 
+## Adjacent bounded inactive-source clarification — issue 54
+
+The adjacent source-only unit may compose a read-only exact-input verifier against the same **empty production registry**: ordinary committed R2 original bytes/native string generation identity, the existing bounded exact parser, a source-owned closed schema and pure synchronous target extractor, all assigned humans and reference roles, private object-identity provenance, and fresh current-SQL rechecks. Isolated synthetic descriptors remain test-only. A final consuming command must recheck in its own synchronous transaction; a returned resolution is evidence, not run/fence/effect authority. No checkpoint storage, routes, mutation consumers, live configuration, approval lifetime/defaults or actual product action is authorized.
+
+This remains partial inactive source for both issues 52 and 54, not Task 1 completion or literal dependency closure. The unresolved-action-schema stop above and in Task 1 remains in force: **stop action-dependent implementation while a product action/schema/target-effect interpretation is unresolved**. This clarification does not unlock request-decision, approve/reject, claim or dispatch activation. Persisted checkpoint ownership and the full future ingress envelope require their own reviewed integration; synthetic source proof is not deployed acceptance.
+
 ## Global Constraints
 
 - R1/R2 implementation and runtime evidence are prerequisites. Documentation validation cannot mark F31–F33/F35 Implemented, Verified or Released.

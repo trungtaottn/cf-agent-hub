@@ -51,7 +51,7 @@
   "reviewed_plan_sha256": {
     "R1": "b483052fa12f9b11550e46b160dd7eceeed67d5da168164f8f3ab972fd7a448e",
     "R2": "7bd7520370bf058ca4e69218210666bce4544d468cb2312f7f813bc320cc6c1b",
-    "R3": "f29643534f631789b7e551791d6d47615bda598cd8034d094f9e40267b390be3",
+    "R3": "e3abb54fa5d8faa9c53378f7d8f1c76832db5c7392bda115bad8488015c1a1a3",
     "R4": "efe60d3a7eef00532bb6084c25433769ab603a66fe3c46cec9742e8b04ec6b38"
   },
   "reviewed_shared_sha256": {
@@ -497,6 +497,34 @@
         "This is not a new full-plan review or issue52 completion.",
         "Implementation code review, runtime and exact-head CI remain separate.",
         "No product action, default expiry, human assignment, live grant or route activation authorized."
+      ]
+    },
+    {
+      "id": "r3-issue54-inactive-input-verifier-source",
+      "scope": "R3 issue54 six-line inactive verifier clarification only",
+      "reviewer_role": "independent scoped plan-amendment reviewer",
+      "reviewed_at": "2026-10-31T20:41:00Z",
+      "status": "approved-in-scoped-review",
+      "plan_path": "docs/superpowers/plans/2026-10-23-r3-decisions-mcp.md",
+      "from_plan_sha256": "f29643534f631789b7e551791d6d47615bda598cd8034d094f9e40267b390be3",
+      "to_plan_sha256": "e3abb54fa5d8faa9c53378f7d8f1c76832db5c7392bda115bad8488015c1a1a3",
+      "to_plan_bytes": 31563,
+      "source_base_commit": "f726238ead02a056cc4e5aef6624ed22afddb853",
+      "source_base_tree": "5b94e517aaebab39837d4eb24601cbca7a233208",
+      "review_report_sha256": "18f5abbc4c4b7cbdd287b248d88f22d69c8a5a49afa502a7ad2f4f871afc1766",
+      "review_report_bytes": 1627,
+      "changed_scope": [
+        "Separately reviewed inactive real-R2 committed-byte verifier and query-only current-SQL recheck with private provenance and empty production registry.",
+        "Preserve unresolved product action/schema/target-effect stop and literal issue52/54 dependencies.",
+        "Future consuming transaction/run/fence, persisted checkpoint and complete ingress-envelope proof remain separate."
+      ],
+      "open_blocking_findings": [],
+      "product_runtime_tests_run": false,
+      "review_basis": "Controller accepted actual independent exact six-line plan-delta review. Historical full-plan review date, counts, records and other round identities remain unchanged. Code findings and runtime acceptance are separate.",
+      "limitations": [
+        "Not a new full-plan review or full issue54 completion.",
+        "No routes, domain writes, live configuration, approval defaults or action activation authorized.",
+        "Code review and exact-head runtime/CI evidence remain separate."
       ]
     }
   ]

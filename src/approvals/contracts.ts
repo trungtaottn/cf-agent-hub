@@ -106,16 +106,17 @@ export interface DecisionReviewerRequirements {
  * These candidates are not an assignment, a final eligible resolution, or mutation authority. */
 export interface DecisionPolicyRequirements extends DecisionDescriptorIdentity {
  readonly phase:'requirements-only';readonly requestedBy:Readonly<{kind:'agent';principalId:string;credentialId:string}>;readonly workspaceId:string;readonly taskId:string;readonly taskVersion:number;readonly taskProposalVersion:number;
- readonly projectId:string|null;readonly proposalCanonicalJson:string;
+ readonly projectId:string|null;readonly proposalCanonicalJson:string;readonly checkpointCanonicalJson:string|null;
  readonly configEpoch:number;readonly configDigest:string;readonly installationDigest:string;readonly admissionGeneration:number;
- readonly policyVersion:number;readonly policyCanonicalJson:string;readonly resolvedAt:number;readonly expiresAt:number;
+ readonly policyVersion:number;readonly policyCanonicalJson:string;
+ /** Provisional candidate freshness only, NEVER admitted approval timestamps. */
+ readonly resolvedAt:number;readonly expiresAt:number;
  readonly resourceKinds:readonly string[];readonly reviewerIds:readonly string[];readonly reviewers:readonly DecisionReviewerRequirements[];
  readonly artifacts:readonly NativeDecisionArtifactBinding[];
 }
 export interface DecisionTargetBinding {readonly kind:string;readonly id:string;readonly version:number;readonly projectId:string|null;}
-// Deliberately unexported, uninhabited provenance brands: this slice has NO constructor,
-// deserializer, verifier, final-resolution predicate, or observation-to-authority factory.
-// #54 must supply genuine runtime-private provenance, not merely a structural cast.
+// Compile-time brands remain private. input-binding-source owns runtime WeakMap
+// provenance; structural casts/deserialization never establish membership.
 declare const verifiedProposalInput:unique symbol;
 declare const finalDecisionPolicy:unique symbol;
 export type ReadonlyDecisionJson=null|boolean|number|string|readonly ReadonlyDecisionJson[]|{readonly [key:string]:ReadonlyDecisionJson};
@@ -131,6 +132,8 @@ export interface VerifiedProposalInput {
  readonly descriptor:DecisionDescriptorIdentity;readonly byteLength:number;readonly sha256:string;
  readonly value:ReadonlyDecisionJson;readonly targetBindings:readonly DecisionTargetBinding[];
 }
+/** Inherited resolvedAt/expiresAt remain candidate freshness, not admitted approval time.
+ * Current evidence only: never a reusable run, fence or external-effect permit. */
 export interface DecisionPolicyResolution extends Omit<DecisionPolicyRequirements,'phase'> {
  readonly [finalDecisionPolicy]:true;readonly phase:'resolved';readonly input:VerifiedProposalInput;
  readonly artifactEdges:readonly DecisionArtifactEdge[];
