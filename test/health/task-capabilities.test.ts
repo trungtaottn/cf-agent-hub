@@ -10,14 +10,15 @@ import type {Workspace,UserPreferences} from '../../src/http/dto';
 
 const rootRequest=(f:Awaited<ReturnType<typeof ingressFixture>>)=>{const request=f.req('','GET',undefined,'read',undefined,true);return new Request(request.url.replace(/\/$/,''),request);};
 
-it('workspace discovery exposes only current implemented task/artifact read grants, never extra write authority',async()=>{
+it('workspace discovery exposes current implemented task-create grants and removes revoked authority',async()=>{
  const f=await ingressFixture('board-capabilities');
  const response=await f.stub.fetch(rootRequest(f));expect(response.status).toBe(200);
  const data=(await response.json() as {data:Workspace}).data;
- expect(data.effective_scopes).toContain('tasks:read');expect(data.effective_scopes).toContain('artifacts:read');expect(data.effective_scopes).not.toContain('tasks:create');
+ expect(data.effective_scopes).toContain('tasks:read');expect(data.effective_scopes).toContain('artifacts:read');expect(data.effective_scopes).toContain('tasks:create');
  await runInDurableObject(f.stub,(_o,state)=>state.storage.sql.exec("UPDATE human_grants SET scopes_json='[\"workspace:read\",\"tasks:read\"]',project_ids_json='[]' WHERE principal_id='human_operator'"));
  const partial=(await (await f.stub.fetch(rootRequest(f))).json() as {data:Workspace}).data;
  expect(partial.effective_scopes).toEqual(['tasks:read','workspace:read']);
+ expect((await f.send('tasks','POST',{title:'Revoked create',description:''},'revoked-create',undefined,true)).status).toBe(403);
  const page=await f.send('tasks','GET',undefined,'tasks',undefined,true);expect(page.status).toBe(200);expect((await page.json() as {data:unknown[]}).data).toEqual([]);
  await runInDurableObject(f.stub,(_o,state)=>state.storage.sql.exec("UPDATE human_grants SET scopes_json='[\"workspace:read\"]' WHERE principal_id='human_operator'"));
  expect((await (await f.stub.fetch(rootRequest(f))).json() as {data:Workspace}).data.effective_scopes).toEqual(['workspace:read']);
