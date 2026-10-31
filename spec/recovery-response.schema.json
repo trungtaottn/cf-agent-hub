@@ -275,7 +275,10 @@
             "hash_chunks",
             "overlay_authority",
             "complete",
-            "failed"
+            "failed",
+            "capture_drain",
+            "capture_artifacts",
+            "capture_finalize"
           ]
         },
         "step": {
