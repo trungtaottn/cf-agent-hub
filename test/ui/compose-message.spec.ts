@@ -17,7 +17,7 @@ test('keyboard_composition_creates_one_real_message_and_keeps_delivery_unknown',
  await open(page);await page.getByRole('checkbox',{name:/agent_research/}).check();await page.getByLabel('Message text',{exact:true}).fill('Keyboard <img src=x onerror="window.injected=1">');
  await page.getByRole('button',{name:'Send message',exact:true}).focus();await page.keyboard.press('Enter');
  await expect(page.getByTestId('message-compose-status')).toContainText('Durably admitted message');await expect(page.getByTestId('message-compose-status')).toContainText('Delivery and recipient ACK are not established');expect(posts).toBe(1);
- await page.getByRole('button',{name:'Read admitted thread',exact:true}).click();await expect(page.getByTestId('thread')).toContainText('Keyboard <img');await expect(page.locator('#view img')).toHaveCount(0);
+ await page.getByRole('button',{name:'Read admitted thread',exact:true}).click();await expect(page.getByTestId('thread-section')).toContainText('Keyboard <img');await expect(page.locator('#view img')).toHaveCount(0);
 });
 test('actual_page_reload_restores_text_and_logout_clears_indexeddb_scope',async({page})=>{
  await open(page);await page.getByRole('checkbox',{name:/agent_research/}).check();await page.getByLabel('Message text',{exact:true}).fill('Private draft survives reload');
