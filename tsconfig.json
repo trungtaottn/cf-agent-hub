@@ -18,7 +18,8 @@
     "*.config.ts",
     "worker-configuration.d.ts",
     "src/**/*.ts",
-    "packages/client/**/*.ts"
+    "packages/client/**/*.ts",
+    "packages/cli/**/*.ts"
   ],
   "exclude": [
     "test/auth/operator-gateway.test.ts",

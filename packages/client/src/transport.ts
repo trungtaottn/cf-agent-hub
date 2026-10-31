@@ -32,7 +32,7 @@ function safeDetails(value:unknown):Record<string,unknown>{
 export class ClientFault extends Error {constructor(readonly code:string){super(code);}}
 export function faultResult(error:unknown,status:number|null=null,id:string|null=null):ApiResult<never>{
  const supplied=error instanceof ClientFault?error.code:'NETWORK_ERROR';
- const descriptions:Record<string,string>={REQUEST_TIMEOUT:'Request timed out; reconcile the original intent',REQUEST_ABORTED:'Request aborted',CREDENTIAL_CHANGED:'Credential binding changed',CREDENTIAL_UNBOUND:'Verified credential provenance required',CREDENTIAL_UNAVAILABLE:'Credential unavailable',INVALID_RESPONSE:'Invalid server response',INVALID_REQUEST:'Invalid request',CAPTURE_FAILED:'Enrollment may have succeeded; proof capture failed',ENROLLMENT_PROOF_UNAVAILABLE:'Enrollment proof unavailable; explicitly enroll a fresh runtime',STREAM_INVALID:'Invalid artifact stream'};
+ const descriptions:Record<string,string>={REQUEST_TIMEOUT:'Request timed out; reconcile the original intent',REQUEST_ABORTED:'Request aborted',CREDENTIAL_CHANGED:'Credential binding changed',CREDENTIAL_UNBOUND:'Verified credential provenance required',CREDENTIAL_UNAVAILABLE:'Credential unavailable',INVALID_RESPONSE:'Invalid server response',INVALID_REQUEST:'Invalid request',CAPTURE_FAILED:'Enrollment may have succeeded; proof capture failed',ENROLLMENT_PROOF_UNAVAILABLE:'Enrollment proof unavailable; explicitly enroll a fresh runtime',STREAM_INVALID:'Invalid artifact stream',JOURNAL_RECONCILIATION_REQUIRED:'Retained intent requires read/manual reconciliation; no new request sent'};
  const code=Object.hasOwn(descriptions,supplied)?supplied:'NETWORK_ERROR';
  return failure(code,descriptions[code]??'Network request failed',status,false,id);
 }
