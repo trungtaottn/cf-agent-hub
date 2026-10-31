@@ -1,3 +1,6 @@
+import {MessageComposition} from './compose/message-form';
+import {MessageForm} from './compose/message-form-view';
+import {DraftStore,IndexedComposeDatabase} from './compose/draft-store';
 import {HubClient} from '../../packages/client/src/client';
 import type {ApiResult,Workspace,AuthSession,AuthStartData,Configuration,ProfileData,PreferencesData,Operations,Event,Message,Operation,OperationInputs,RequestOptions} from '../../packages/client/src/types';
 import {ReadModel,summarizeReadStates,type ReadState} from './read-state';
@@ -22,6 +25,42 @@ const models={
 let connectionGeneration=0;
 let client:HubClient,authority=0,session:AuthSession|null=null,denied=false,currentView=location.pathname.slice(1)||'overview',threadId:string|null=null,eventCursor:string|null=null,threadCursor:string|null=null;
 let eventsAvailable=false,operationsAvailable=false,profileAvailable=false,preferencesAvailable=false,tasksAvailable=false;
+let messageComposition:MessageComposition|null=null,messageForm:MessageForm|null=null,composeViewGeneration=0;
+let composeScope:{workspaceId:string;principalId:string}|null=null,composeErasing:Promise<void>|null=null,composeEraseFailed=false;
+const composeChannel=typeof BroadcastChannel==='function'?new BroadcastChannel('cfhub-compose-clear-v1'):null;
+function compositionBinding(){return session?.actor.kind==='human'&&!denied&&navigator.onLine&&!composeErasing&&!composeEraseFailed?{workspaceId:workspace,principalId:session.actor.principal_id,generation:connectionGeneration}:null;}
+function hideComposition(){++composeViewGeneration;messageComposition?.invalidate();if(messageForm)messageForm.element.hidden=true;}
+function eraseComposition(broadcast=true){
+ ++composeViewGeneration;const scope=composeScope;if(messageForm)messageForm.element.hidden=true;
+ if(broadcast&&scope)composeChannel?.postMessage({type:'erase',...scope});
+ if(!messageComposition||composeErasing)return;
+ const owner=messageComposition;composeErasing=owner.logout().then(()=>{composeEraseFailed=owner.state.status==='storage-error';}).catch(()=>{composeEraseFailed=true;}).finally(()=>{composeErasing=null;if(denied)notice.textContent=composeEraseFailed?'Visible private state cleared, but local draft erasure failed. Composition is blocked; local storage requires attention.':'Visible state and local composition drafts cleared. This does not cancel server writes already sent.';});
+}
+composeChannel?.addEventListener('message',event=>{const value=event.data;if(value&&typeof value==='object'&&value.type==='erase'&&value.workspaceId===workspace&&typeof value.principalId==='string'&&value.principalId===(composeScope?.principalId??session?.actor.principal_id)){eraseComposition(false);++connectionGeneration;notice.textContent='Composition cleared in another tab. Refresh current session before composing.';}});
+async function verifyCompositionAuthority():Promise<boolean>{
+ const generation=authority,connection=connectionGeneration,principal=session?.actor.principal_id;
+ const auth=await request<AuthSession>('getAuthSession',{});
+ if(!auth.ok||generation!==authority||connection!==connectionGeneration)return false;
+ if(auth.data.actor.kind!=='human'||auth.data.actor.principal_id!==principal){invalidateAll(401,auth.requestId);return false;}
+ const access=await request<Workspace>('getWorkspace',{});
+ if(!access.ok||generation!==authority||connection!==connectionGeneration)return false;
+ if(access.data.id!==workspace||access.data.actor.principal_id!==principal){invalidateAll(401,access.requestId);return false;}
+ if(!['messages:send','messages:read','agents:read'].every(scope=>access.data.effective_scopes.includes(scope as 'messages:send'|'messages:read'|'agents:read'))){invalidateAll(403,access.requestId);return false;}
+ client.setCsrfToken(auth.data.csrf_token);return true;
+}
+async function openComposition(){
+ const viewGeneration=++composeViewGeneration;if(messageForm)messageForm.element.hidden=true;messageComposition?.invalidate();
+ if(composeErasing)await composeErasing;if(viewGeneration!==composeViewGeneration||!compositionBinding()||!models.workspace.state.data?.effective_scopes.includes('messages:send')||(!models.workspace.state.data.effective_scopes.includes('messages:read')||!models.workspace.state.data.effective_scopes.includes('agents:read')))return;
+ if(!messageComposition){
+  const store=new DraftStore(new IndexedComposeDatabase());
+  messageComposition=new MessageComposition({store,currentBinding:compositionBinding,changed:()=>messageForm?.update(),read:readCommandPreparation,
+   verifyAuthority:verifyCompositionAuthority,
+   send:async(operation,input,options)=>{const result=await client.compose(operation,input,options);if(!result.ok&&(result.status===401||result.status===403))invalidateAll(result.status,result.requestId);return result;}});
+  messageForm=new MessageForm(messageComposition,id=>{hideComposition();navigate('activity',id);});byId('main').append(messageForm.element);
+ }
+ composeScope={workspaceId:workspace,principalId:session!.actor.principal_id};await messageComposition.open();if(viewGeneration!==composeViewGeneration||messageComposition.state.status==='inactive')return;messageForm!.update();messageForm!.element.hidden=false;messageForm!.body.focus();
+}
+
 const taskReads=new TaskReads({workspaceId:workspace,request:(async(operation,input,options)=>{
  const started=authority,result=await client.read(operation,input,options);
  if(!result.ok&&(result.status===401||result.status===403)){invalidateAll(result.status,result.requestId);return result;}
@@ -89,13 +128,14 @@ const settings=new SettingsPanel({
  preferencesSaved(result){void models.preferences.refresh(async()=>result).then(()=>{applyPresentation();render();});}
 });
 function invalidateAll(status:401|403,id:string|null):void{
+ eraseComposition();
  ++authority;++connectionGeneration;denied=true;session=null;client?.setCsrfToken(null);eventCursor=null;threadCursor=null;threadId=null;
  for(const model of Object.values(models))model.invalidate(status===401?'UNAUTHENTICATED':'FORBIDDEN',id);
  taskReads.invalidate(status===401?'UNAUTHENTICATED':'FORBIDDEN',id);tasksAvailable=false;
  taskActions.invalidateAuthority();taskActionPanel.navigation();
  settings.invalidate();eventsAvailable=false;operationsAvailable=false;profileAvailable=false;preferencesAvailable=false;
  document.documentElement.dataset.theme='system';document.documentElement.dataset.density='comfortable';delete document.documentElement.dataset.accent;
- byId('workspace-name').textContent='';notice.textContent='Cached sensitive records, settings drafts and pending write data have been cleared.';
+ byId('workspace-name').textContent='';notice.textContent=composeErasing?'Visible private state cleared; local composition draft erasure is pending. Server writes already sent are not cancelled.':composeEraseFailed?'Visible state cleared, but local draft erasure failed. Composition remains blocked.':'Visible cached records and settings drafts cleared. Server writes already sent are not cancelled.';
  renderSession();render();
 }
 async function request<T>(operation:Operation,input:OperationInputs[Operation],options?:RequestOptions):Promise<ApiResult<T>>{
@@ -130,6 +170,7 @@ function selectThread(id:string|null):void{
  models.thread.reset();threadCursor=null;threadId=id;
 }
 function navigate(name:string,selectedThread:string|null=null):void{
+ hideComposition();
  taskActions.invalidatePreparation();taskActionPanel.navigation();
  currentView=name;selectThread(selectedThread);
  const query=new URLSearchParams({workspace});if(selectedThread)query.set('thread',selectedThread);
@@ -139,6 +180,7 @@ function navigate(name:string,selectedThread:string|null=null):void{
  if(selectedThread)void refreshThread(selectedThread,false);
 }
 function navigateTask(id:string|null):void{
+ hideComposition();
  taskActions.invalidatePreparation();taskActionPanel.navigation();
  currentView='tasks';selectThread(null);const query=new URLSearchParams({workspace});if(id)query.set('task',id);
  history.pushState(null,'','/tasks?'+query.toString());void taskReads.select(id);render();byId('main').focus();
@@ -236,6 +278,7 @@ function threadSection():HTMLElement{
 }
 function render():void{
  renderNavigation();
+ const composeButton=byId('compose-message-open') as HTMLButtonElement|null;if(composeButton)composeButton.disabled=!compositionBinding()||models.workspace.state.status!=='ready'||!models.workspace.state.data?.effective_scopes.includes('messages:send')||(!models.workspace.state.data.effective_scopes.includes('messages:read')||!models.workspace.state.data.effective_scopes.includes('agents:read'));
  const heading=document.querySelector('h1')!;
  heading.textContent=currentView==='tasks'?(taskReads.selectedId?'Task detail':'Workspace tasks'):threadId?'Thread history':currentView==='activity'?'Workspace activity':currentView==='settings'?'Workspace settings':currentView==='inbox'?'Agent inbox':'Workspace overview';
  const active=currentView==='tasks'?(taskReads.selectedId?[taskReads.task.state,taskReads.run.state,taskReads.results.read.state,taskReads.events.read.state,taskReads.artifacts.state]:Object.values(taskReads.columns).map(page=>page.read.state)):currentView==='inbox'?[]:threadId?[models.thread.state]:currentView==='settings'?[models.workspace.state,models.profile.state,models.preferences.state]:[models.configuration.state,...(eventsAvailable||denied?[models.events.state]:[]),...(operationsAvailable?[models.operations.state]:[])];
@@ -310,7 +353,7 @@ async function boot():Promise<void>{
   sessionElement.textContent='Choose a configured workspace';
   const form=el('form'),label=el('label','Workspace ID'),input=el('input',undefined,{name:'workspace',required:'',pattern:'[a-zA-Z0-9_-]{1,128}',autocomplete:'off'});label.append(input);form.append(label,el('button','Open workspace',{type:'submit'}));form.method='get';form.action='/overview';view.replaceChildren(form);return;
  }
- client=new HubClient(workspace);byId('read-actions').replaceChildren(button('Refresh reads',()=>void refreshReads(),{class:'secondary'}));
+ client=new HubClient(workspace);byId('read-actions').replaceChildren(button('Refresh reads',()=>void refreshReads(),{class:'secondary'}),button('New message',()=>void openComposition(),{id:'compose-message-open',title:'Requires current online human session with messages:send, messages:read and agents:read; local storage must be available'}));
  render();
  const result=await request<AuthSession>('getAuthSession',{});if(!result.ok){renderSession();return;}
  session=result.data;denied=false;client.setCsrfToken(session.csrf_token);renderSession();notice.textContent='';await refreshReads();
@@ -320,8 +363,8 @@ async function boot():Promise<void>{
   const preferred=models.preferences.state.data.effective.default_view;if(preferred==='activity'&&eventsAvailable)navigate('activity');else if(preferred==='tasks'&&tasksAvailable)navigate('tasks');
  }
 }
-addEventListener('popstate',()=>{taskActions.invalidatePreparation();taskActionPanel.navigation();currentView=location.pathname.slice(1)||'overview';selectThread(new URL(location.href).searchParams.get('thread'));render();if(threadId)void refreshThread(threadId);if(currentView==='tasks'){void taskReads.select(new URL(location.href).searchParams.get('task'));void taskReads.refreshBoard();}});
-addEventListener('offline',()=>{++connectionGeneration;taskActions.invalidatePreparation();for(const model of Object.values(models))model.disconnect();taskReads.disconnect();render();});
-addEventListener('online',()=>{++connectionGeneration;taskActions.invalidatePreparation();void refreshReads();});
+addEventListener('popstate',()=>{hideComposition();taskActions.invalidatePreparation();taskActionPanel.navigation();currentView=location.pathname.slice(1)||'overview';selectThread(new URL(location.href).searchParams.get('thread'));render();if(threadId)void refreshThread(threadId);if(currentView==='tasks'){void taskReads.select(new URL(location.href).searchParams.get('task'));void taskReads.refreshBoard();}});
+addEventListener('offline',()=>{hideComposition();++connectionGeneration;taskActions.invalidatePreparation();for(const model of Object.values(models))model.disconnect();taskReads.disconnect();render();});
+addEventListener('online',()=>{hideComposition();++connectionGeneration;taskActions.invalidatePreparation();void refreshReads();});
 setInterval(()=>{taskReads.markStale(Date.now(),60_000);for(const model of Object.values(models))model.markStale(Date.now(),60_000);if(models.workspace.state.status!=='ready'&&taskActions.state.status==='ready')taskActions.invalidatePreparation();render();},15_000);
 void boot();

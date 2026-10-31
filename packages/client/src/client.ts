@@ -83,7 +83,7 @@ export class HubClient {
  /** Read-only cookie lane uses the same generated map, bounds and transport as native reads.
   * A map entry is implementation support, not a current permission/capability assertion. */
  async read<K extends BrowserReadOperation>(operation:K,input:RequestFor<K>,options:Pick<RequestOptions,'signal'>={}):Promise<ApiResult<HttpOperationData[K]>>{
-  const allowed:readonly string[]=['listTasks','getTask','getRun','listTaskResults','getArtifact','listEvents'];
+  const allowed:readonly string[]=['listTasks','getTask','getRun','listTaskResults','getArtifact','listEvents','listAgents','getAgent'];
   if(!allowed.includes(operation))return failure('OPERATION_UNAVAILABLE','Operation unavailable in the browser read surface');
   let prepared:ReturnType<typeof prepareNativeOperation>;
   try{

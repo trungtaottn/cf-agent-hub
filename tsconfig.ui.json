@@ -20,6 +20,7 @@
     "test/client/task-rendering.test.ts",
     "test/helpers/dom-fixture.ts",
     "test/client/focus-restoration.test.ts",
-    "test/client/task-action-view.test.ts"
+    "test/client/task-action-view.test.ts",
+    "test/client/message-form-view.test.ts"
   ]
 }

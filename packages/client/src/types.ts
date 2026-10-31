@@ -126,7 +126,7 @@ export interface NativeClient {
 }
 
 /** Deliberately read-only browser board surface; canonical DTOs remain server-owned. */
-export type BrowserReadOperation='listTasks'|'getTask'|'getRun'|'listTaskResults'|'getArtifact'|'listEvents';
+export type BrowserReadOperation='listTasks'|'getTask'|'getRun'|'listTaskResults'|'getArtifact'|'listEvents'|'listAgents'|'getAgent';
 export type BrowserReadRequest=<K extends BrowserReadOperation>(operation:K,input:RequestFor<K>,options?:Pick<RequestOptions,'signal'>)=>Promise<ApiResult<DTO.HttpOperationData[K]>>;
 
 /** Cookie/CSRF-only task commands. Current authorization remains server-owned. */
