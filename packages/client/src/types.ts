@@ -133,3 +133,8 @@ export type BrowserReadRequest=<K extends BrowserReadOperation>(operation:K,inpu
 export type BrowserTaskCommandOperation='readyTask'|'cancelTask'|'requeueTask'|'acceptTaskResult';
 export type BrowserTaskCommandOptions={idempotencyKey:string;signal?:AbortSignal};
 export type BrowserTaskCommandRequest=<K extends BrowserTaskCommandOperation>(operation:K,input:RequestFor<K>,options:BrowserTaskCommandOptions)=>Promise<ApiResult<DTO.HttpOperationData[K]>>;
+
+/** Browser composition uses only the session cookie/CSRF lane. */
+export type BrowserComposeOperation='createMessage'|'createTask';
+export type BrowserComposeOptions={idempotencyKey:string;signal?:AbortSignal};
+export type BrowserComposeRequest=<K extends BrowserComposeOperation>(operation:K,input:RequestFor<K>,options:BrowserComposeOptions)=>Promise<ApiResult<DTO.HttpOperationData[K]>>;
