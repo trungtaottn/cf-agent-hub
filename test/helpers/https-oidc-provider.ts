@@ -103,7 +103,7 @@ export async function startHttpsFixture(worker:FixtureWorker,options:{clientSecr
    upstream.headers.forEach((value,key)=>{if(key!=='set-cookie')response.setHeader(key,value);});
    const cookies=upstream.headers.getSetCookie();if(cookies.length)response.setHeader('set-cookie',cookies);
    response.end(Buffer.from(await upstream.arrayBuffer()));
-  })().catch(error=>{if(error instanceof Error&&error.message==='FIXTURE_DROP_COMMITTED_RESPONSE'){response.destroy();return;}if(!response.headersSent)json(response,502,{error:'fixture_worker_failure'});else response.destroy();});}));
+  })().catch(error=>{if(error instanceof Error&&(error.message==='FIXTURE_DROP_COMMITTED_RESPONSE'||error.message==='FIXTURE_DROP_COMMITTED_COMPOSITION_RESPONSE')){response.destroy();return;}if(!response.headersSent)json(response,502,{error:'fixture_worker_failure'});else response.destroy();});}));
   const negativePort=await listen(httpsServer({key:negative.key,cert:negative.cert},(_request,response)=>{response.end('invalid unpinned fixture certificate');}));
   const proxy=async(appTarget:number)=>{
    const server=httpServer((_request,response)=>{response.writeHead(403);response.end();});

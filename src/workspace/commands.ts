@@ -11,25 +11,27 @@ export interface CommandOutcome<T>{status:number;data:T;}
 /** Internal owned context; never construct from HTTP JSON or serialize caller authority. */
 export interface CommandExecutionContext{workspace:AuthWorkspace;requestId:string;idempotencyKey:string;fingerprint:string;admissionEpoch:number;admissionGeneration:number;}
 export interface EventDraft{type:'import.previewed'|'import.applied'|'catalog.previewed'|'catalog.applied'|'message.accepted'|'message.acknowledged'|'profile.updated'|'preferences.updated'|'agent.created'|'agent.updated'|'agent.archived'|'credential.issued'|'credential.revoked'|'runtime.enrolled'|'runtime.heartbeat'|'task.created'|'task.updated'|'task.ready'|'task.claimed'|'task.result_submitted'|'task.result_accepted'|'task.failed'|'task.cancelled'|'task.requeued'|'run.heartbeat'|'artifact.staged'|'artifact.uploaded'|'artifact.committed';resourceType:'import'|'message'|'profile'|'preferences'|'agent'|'credential'|'runtime'|'task'|'run'|'artifact';resourceId:string;resourceVersion:number|null;threadId:string|null;/** Private history only, never Event projection or outcome. */historyReason?:string;}
-export interface CommandDescriptor<B,T>{
+export interface CommandAccessDescriptor<B,T>{
  operation:string;target:string;
  resource(tx:WorkspaceTransaction,ctx:CommandContext,body:B):ResourceAccess|undefined;
  /** Current resource/owner checks only. Must remain valid for an original authorized replay. */
  checkAccess(tx:WorkspaceTransaction,ctx:CommandContext,body:B):undefined;
  /** Checks visibility of the original returned resource; never current revision/preconditions. */
  checkReplay(tx:WorkspaceTransaction,ctx:CommandContext,body:B,outcome:CommandOutcome<T>):undefined;
+}
+export interface CommandDescriptor<B,T> extends CommandAccessDescriptor<B,T>{
  /** First execution owns domain/outbox writes and business preconditions. Wrapper owns event/outcome. */
  execute(tx:WorkspaceTransaction,ctx:CommandContext,body:B,acceptedEventId:string):{outcome:CommandOutcome<T>;event:EventDraft};
 }
 /** Fail closed on any async descriptor result, consuming rejection without awaiting inside SQL. */
-function synchronousResult<T>(result:T):T{
+export function synchronousResult<T>(result:T):T{
  if(result!==null&&(typeof result==='object'||typeof result==='function')&&typeof (result as {then?:unknown}).then==='function'){
   void Promise.resolve(result).catch(()=>{});
   throw new HttpError('INTERNAL_ERROR',500);
  }
  return result;
 }
-function synchronousGuard(result:undefined):void{
+export function synchronousGuard(result:undefined):void{
  if(synchronousResult(result)!==undefined)throw new HttpError('INTERNAL_ERROR',500);
 }
 export function executeCommand<B,T>(ctx:CommandExecutionContext,identity:VerifiedIdentity,command:CommandDescriptor<B,T>,body:B):CommandOutcome<T>{

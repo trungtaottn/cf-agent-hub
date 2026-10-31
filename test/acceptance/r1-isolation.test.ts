@@ -3,7 +3,7 @@ import {runInDurableObject} from 'cloudflare:test';
 import spec from '../../spec/openapi.json';
 import {control} from '../helpers/auth';
 import {acceptanceFixture,apiRequest,sqlSnapshot} from '../helpers/r1-acceptance';
-import {validateError,validateMessage} from '../../src/http/generated/auth-validators.js';
+import {validateError,validateMessage,validateMessageCreationReconciliationResponse} from '../../src/http/generated/auth-validators.js';
 
 beforeEach(async()=>{await control('reset');});
 const unavailable=Object.entries(spec.paths).flatMap(([path,item])=>Object.entries(item).flatMap(([method,value])=>{
@@ -18,7 +18,8 @@ const artifactOperations=new Set(['listArtifacts','getArtifact','downloadArtifac
 const importOperations=new Set(['previewImport','applyImport','getImport']);
 const availableOperations=new Set([...identityOperations,...taskOperations,...catalogOperations,...artifactOperations,...importOperations,'searchWorkspace']);
 const identityBody:Record<string,unknown>={previewImport:{source_namespace:'source_denied',source_revision:'revision1',rows:[]},applyImport:{expected_import_version:1,preview_sha256:'0'.repeat(64),accept_rejected_rows:false},submitTaskResult:{expected_version:1,run_id:'unavailable_run',fence:1,result:{summary:'Denied',artifact_ids:[]}},acceptTaskResult:{expected_version:1,reason:'Denied'},stageArtifact:{task_id:null,run_id:null,filename:'denied.txt',media_type:'text/plain',byte_size:0,sha256:'0'.repeat(64)},commitArtifact:{expected_artifact_version:1},claimTask:{expected_version:1,runtime_instance_id:'unavailable_runtime'},failTask:{expected_version:1,run_id:'unavailable_run',fence:1,reason:'Denied',outcome_unknown:true},cancelTask:{expected_version:1,reason:'Denied'},requeueTask:{expected_version:1,reason:'Denied'},heartbeatRun:{expected_run_version:1,fence:1},previewCatalogChange:{expected_profile_revision:1,kind:'project',id:'project_a',operation:'archive',replacement_id:null,reason:'Denied'},applyCatalogChange:{preview_id:'plan_denied',expected_profile_revision:1},createTask:{title:'Denied synthetic task',description:''},patchTask:{expected_version:1,title:'Denied'},readyTask:{expected_version:1},createRuntime:{label:'Denied runtime'},heartbeatRuntime:{expected_runtime_version:1},createAgent:{display_name:'Denied synthetic',description:'',work_role_ids:[]},patchAgent:{expected_agent_version:1,description:'Denied'},archiveAgent:{expected_agent_version:1,reason:'Denied'},createCredential:{agent_id:'agent_research',label:'Denied',scopes:['messages:read'],project_ids:null,expires_at:new Date(Date.now()+3600000).toISOString()},revokeCredential:{expected_credential_version:1,reason:'Denied'}};
-for(const route of unavailable)it((availableOperations.has(route.operation)?'ungranted operation ':'unavailable ')+route.operation+' has no R1 mutation surface',async()=>{
+const recoveryOperations=new Set(['reconcileMessageCreation','reconcileTaskCreation']);
+for(const route of unavailable.filter(route=>!recoveryOperations.has(route.operation)))it((availableOperations.has(route.operation)?'ungranted operation ':'unavailable ')+route.operation+' has no R1 mutation surface',async()=>{
  const f=await acceptanceFixture(('r1_unavailable_'+route.operation).toLowerCase());
  const path=route.path.replace('/v2/workspaces/{workspace_id}','').replace(/\{[^}]+\}/g,'unavailable_fixture')+(route.operation==='searchWorkspace'?'?q=needle':'');
  // Keep the old canonical R1 grant/config unchanged. A real scoped target makes
@@ -67,3 +68,28 @@ for(const mismatch of ['human_grant_epoch','native_credential_epoch','schema_ver
  expect(['UNAUTHENTICATED','DEPENDENCY_UNAVAILABLE']).toContain(value.error.code);expect('data'in value).toBe(false);
  expect((await sqlSnapshot(f.a)).digest).toBe(before.digest);expect((await sqlSnapshot(f.b)).digest).toBe(other.digest);
 });
+
+// R3 recovery is a read of original admission, not a new R1 creation grant.
+// Only these exact reviewed routes leave the generic unavailable-operation matrix.
+for(const [operation,path] of [['reconcileMessageCreation','/messages:reconcile'],['reconcileTaskCreation','/tasks:reconcile']] as const)it(operation+' preserves current R1 authority and browser-only read isolation',async()=>{
+ expect(unavailable.filter(route=>route.operation===operation)).toEqual([{path:'/v2/workspaces/{workspace_id}'+path,method:'POST',operation}]);
+ const f=await acceptanceFixture(('r1_recovery_'+operation).toLowerCase());
+ const body=operation==='reconcileMessageCreation'?{thread_id:f.threadId,recipient_agent_ids:['agent_research'],body:'Unsubmitted R1 recovery',refs:[],artifact_ids:[]}:{title:'Unsubmitted R1 recovery',description:''};
+ const beforeA=await sqlSnapshot(f.a),beforeB=await sqlSnapshot(f.b);
+ const headers={cookie:f.sessionCookie,'x-csrf-token':f.csrf,'idempotency-key':'r1_unsubmitted_recovery'};
+ const lanes=[
+  {name:'current human',target:f.a,headers,status:operation==='reconcileMessageCreation'?200:403,code:'FORBIDDEN'},
+  {name:'missing CSRF',target:f.a,headers:{...headers,'x-csrf-token':''},status:403,code:'FORBIDDEN'},
+  {name:'native bearer',target:f.a,headers:{authorization:'Bearer '+f.a.token,'idempotency-key':headers['idempotency-key']},status:400,code:'INVALID_REQUEST'},
+  {name:'conflicting lanes',target:f.a,headers:{...headers,authorization:'Bearer '+f.a.token},status:400,code:'INVALID_REQUEST'},
+  {name:'foreign workspace',target:f.b,headers,status:401,code:'UNAUTHENTICATED'},
+ ];
+ for(const lane of lanes){
+  const response=await f.http(apiRequest(lane.target,path,'POST',body,lane.headers as Record<string,string>));
+  expect(response.status,lane.name).toBe(lane.status);const value=await response.json() as {data?:unknown;error?:{code:string}};
+  if(lane.status===200){expect(validateMessageCreationReconciliationResponse(value)).toBe(true);expect(value.data).toEqual({status:'unknown'});}
+  else{expect(validateError(value)).toBe(true);expect(value.error?.code).toBe(lane.code);expect('data'in value).toBe(false);}
+  expect((await sqlSnapshot(f.a)).digest,lane.name+' cannot mutate original workspace').toBe(beforeA.digest);
+  expect((await sqlSnapshot(f.b)).digest,lane.name+' cannot mutate foreign workspace').toBe(beforeB.digest);
+ }
+},30_000);

@@ -1,7 +1,7 @@
 import type {Message,MessageCreateRequest} from '../http/dto';
 import {validateMessage,validateMessageCreateRequest} from '../http/generated/auth-validators.js';
 import type {CommandContext} from '../workspace/context';
-import type {CommandDescriptor} from '../workspace/commands';
+import type {CommandDescriptor,CommandAccessDescriptor} from '../workspace/commands';
 import type {WorkspaceTransaction} from '../storage/transaction';
 import {withTransaction} from '../storage/transaction';
 import {currentConfiguration,type AuthWorkspace} from '../auth/context';
@@ -53,9 +53,15 @@ export function messageCommand(workspace:AuthWorkspace):CommandDescriptor<Messag
  const config=withTransaction(workspace.storage,tx=>currentConfiguration(tx,workspace)).config,policy=config.workspace_policies.find(x=>x.workspace_id===workspace.workspaceId);
  if(!policy)throw new HttpError('DEPENDENCY_UNAVAILABLE',503);
  const prepared:PreparedMessage={messageId:id('message_'),threadId:id('thread_'),deliveries:new Map(policy.notification_destinations.map(d=>[d.destination_id,{deliveryId:id('delivery_'),retryMultiplier:.8+.2*workspace.entropy.bytes(1)[0]/255}]))};
+ return {...messageCreationAccess(),
+  execute(tx,ctx,input,acceptedEventId){const data=createMessage(tx,{...ctx,prepared},input);insertNotifications(tx,planNotifications(tx,{...data,actor:ctx.actor,deliveries:prepared.deliveries},acceptedEventId,ctx.nowMs));return {outcome:{status:201,data},event:{type:'message.accepted',resourceType:'message',resourceId:data.id,resourceVersion:null,threadId:data.thread_id}};}
+ };
+}
+
+/** Current creation/replay guards, with no preparation, entropy or execute capability. */
+export function messageCreationAccess():CommandAccessDescriptor<MessageCreateRequest,Message>{
  return {operation:'messages:send',target:'messages',resource:(_tx,_ctx,input)=>({kind:'message',id:input.thread_id??'messages',projectId:null}),
   checkAccess(tx,ctx,input){validateInput(input);settingsPolicy(tx,ctx.actor);const participants=participantsFor(tx,ctx,input);validateMessageReferences(tx,ctx.actor,participants,input.refs,input.artifact_ids,ctx.nowMs);},
-  checkReplay(tx,ctx,_input,outcome){if(!validateMessage(outcome.data)||outcome.data.workspace_id!==ctx.actor.workspaceId)throw new HttpError('INTERNAL_ERROR',500);assertMessageVisible(tx,ctx.actor,outcome.data.id,ctx.nowMs);},
-  execute(tx,ctx,input,acceptedEventId){const data=createMessage(tx,{...ctx,prepared},input);insertNotifications(tx,planNotifications(tx,{...data,actor:ctx.actor,deliveries:prepared.deliveries},acceptedEventId,ctx.nowMs));return {outcome:{status:201,data},event:{type:'message.accepted',resourceType:'message',resourceId:data.id,resourceVersion:null,threadId:data.thread_id}};}
+  checkReplay(tx,ctx,_input,outcome){if(!validateMessage(outcome.data)||outcome.data.workspace_id!==ctx.actor.workspaceId)throw new HttpError('INTERNAL_ERROR',500);assertMessageVisible(tx,ctx.actor,outcome.data.id,ctx.nowMs);}
  };
 }

@@ -33,11 +33,16 @@ export const isolationOperations:IsolationOperation[]=[
  ...group(['getOperations','getReadiness'],['human'],'operations:read + human-only'),
  ...group(['previewImport','applyImport','getImport'],['human'],'imports:manage + tasks:read; apply also tasks:create; owner/current reference graph'),
 ];
+// These two R3 browser-only reads have executable isolation/nonmutation coverage in
+// test/workspace/creation-reconciliation.test.ts. They must not expand frozen R2
+// acceptance receipts. Any other new operation still fails this exact split.
+const r3RecoveryOperations=group(['reconcileMessageCreation','reconcileTaskCreation'],['human'],'current creation authority + retained resource replay visibility');
 export function assertIsolationCoverage(cases:readonly IsolationOperation[]):void{
- const expected=Object.keys(clientOperations).sort(),actual=cases.map(x=>x.operation).sort();
+ for(const row of r3RecoveryOperations){const operation=clientOperations[row.operation];if(!operation||operation.native||operation.runtimeProof||operation.method!=='POST'||operation.status!==200)throw Error('R3 recovery operation boundary mismatch: '+row.operation);}
+ const expected=Object.keys(clientOperations).filter(name=>!r3RecoveryOperations.some(row=>row.operation===name)).sort(),actual=cases.map(x=>x.operation).sort();
  if(new Set(actual).size!==actual.length||JSON.stringify(expected)!==JSON.stringify(actual))throw Error('Isolation operation coverage mismatch: missing '+expected.filter(x=>!actual.includes(x as EnabledOperationId)).join(',')+' extra '+actual.filter(x=>!expected.includes(x)).join(','));
  const canonical=new Map(Object.values(spec.paths).flatMap(item=>Object.values(item).filter(value=>value&&typeof value==='object'&&'operationId' in value).map(value=>{const op=value as {operationId:string;security?:Record<string,unknown>[]};return [op.operationId,op.security??[]] as const;})));
- for(const row of cases){const security=canonical.get(row.operation)!;const lanes: IsolationLane[]=security.length===0?['public']:[...(security.some(x=>'HumanSession'in x)?['human' as const]:[]),...(security.some(x=>'NativeBearer'in x)?['native' as const]:[])];if(JSON.stringify([...row.lanes].sort())!==JSON.stringify(lanes.sort()))throw Error('Isolation lane coverage mismatch: '+row.operation);if(!row.lanes.length||new Set(row.lanes).size!==row.lanes.length||!row.authority)throw Error('Isolation lane coverage missing: '+row.operation);if(clientOperations[row.operation].native!==row.lanes.includes('native'))throw Error('Native lane mismatch: '+row.operation);}
+ for(const row of [...cases,...r3RecoveryOperations]){const security=canonical.get(row.operation)!;const lanes: IsolationLane[]=security.length===0?['public']:[...(security.some(x=>'HumanSession'in x)?['human' as const]:[]),...(security.some(x=>'NativeBearer'in x)?['native' as const]:[])];if(JSON.stringify([...row.lanes].sort())!==JSON.stringify(lanes.sort()))throw Error('Isolation lane coverage mismatch: '+row.operation);if(!row.lanes.length||new Set(row.lanes).size!==row.lanes.length||!row.authority)throw Error('Isolation lane coverage missing: '+row.operation);if(clientOperations[row.operation].native!==row.lanes.includes('native'))throw Error('Native lane mismatch: '+row.operation);}
 }
 export const isolationCells=()=>isolationOperations.flatMap(row=>row.lanes.map(lane=>({...row,lane})));
 /** Receipts are written only after real assertions finish; metadata/collection alone never counts. */

@@ -11,7 +11,7 @@ import Ajv,{type ValidateFunction} from 'ajv';
 import {createHash} from 'node:crypto';
 import {caseSchemas,CASE_LIMITS,CASE_OPERATIONS} from '../../scripts/lib/r2-case-policy.mjs';
 import {makeCaseEvidence,caseHash} from './r2-case-fixtures';
-import {requiredIsolationEvidence} from '../helpers/r2-isolation-matrix';
+import {assertIsolationCoverage,isolationOperations,requiredIsolationEvidence} from '../helpers/r2-isolation-matrix';
 import {clientOperations} from '../../src/http/generated/client-operations';
 const ajv=new Ajv({strict:true,allErrors:false,inlineRefs:false});ajv.addSchema(caseSchemas);
 const shapeNames=['r2-case-preparations','r2-isolation','r2-gates','r2-native','r2-browser'] as const;
@@ -56,7 +56,14 @@ describe('prepared request applicability',()=>{
  it('a no-runtime-proof getWorkspace cannot claim a proof hash',()=>{const f=makeCaseEvidence(),entry=f.preparations.subjects.find((x:any)=>x.case_id==='native/revoked-after-disable');entry.subject.proof_sha256=caseHash('inapplicable-proof');entry.subject_sha256=caseHash(entry.subject);f.subjectDigests.set(entry.case_id,entry.subject_sha256);expect(validatePreparations(f.preparations,f.context).some(x=>x.code==='R2_CASE_SUBJECT')).toBe(true);});
 });
 
-it('frozen54-operation catalog exactly matches canonical generated source descriptors',()=>{expect(Object.keys(CASE_OPERATIONS)).toHaveLength(54);for(const [name,actual] of Object.entries(clientOperations)){const {validateRequest,validateResponse,byteRules,...descriptor}=actual;expect(CASE_OPERATIONS[name]).toEqual(descriptor);}});
+it('frozen54-operation R2 catalog excludes exactly the two reviewed R3 browser recovery reads',()=>{
+ const r3Only=['reconcileMessageCreation','reconcileTaskCreation'];
+ expect(Object.keys(CASE_OPERATIONS)).toHaveLength(54);
+ for(const name of r3Only){expect(Object.hasOwn(CASE_OPERATIONS,name)).toBe(false);const actual=clientOperations[name as keyof typeof clientOperations];expect(actual).toMatchObject({native:false,runtimeProof:false,method:'POST',status:200});}
+ const r2=Object.entries(clientOperations).filter(([name])=>!r3Only.includes(name));
+ expect(r2.map(([name])=>name).sort()).toEqual(Object.keys(CASE_OPERATIONS).sort());
+ for(const [name,actual] of r2){const {validateRequest,validateResponse,byteRules,...descriptor}=actual;expect(CASE_OPERATIONS[name]).toEqual(descriptor);}
+});
 
 describe('closed bounds and independent negative controls',()=>{
  it('128 escaped ID characters are admitted by shape,129 are not',()=>{const f=makeCaseEvidence(),entry=f.preparations.subjects[0];entry.subject.fixture_record_sha256=caseHash('fixture');entry.subject.task_id='"'.repeat(128);expect(shape('r2-case-preparations')(f.preparations)).toBe(true);entry.subject.task_id+='"';expect(shape('r2-case-preparations')(f.preparations)).toBe(false);});
@@ -84,3 +91,7 @@ describe('zero-byte digests retain their actual SHA256 meaning',()=>{
  it('native zero-byte source/target pair cannot carry a nonempty hash',()=>{const f=makeCaseEvidence(),r=record(f,'native/downloadArtifactContent/success');r.observations.source_bytes=r.observations.target_bytes=0;r.observations.source_sha256=r.observations.target_sha256=caseHash('not empty');expect(validateCaseFamily(f.receipts.native,f.context).length).toBeGreaterThan(0);});
  it('source facade zero-byte expected/actual pair cannot carry a nonempty hash',()=>{const f=makeCaseEvidence(),r=record(f,'downloadArtifactContent/native/native-facade');r.observations.artifact_expected_bytes=r.observations.artifact_actual_bytes=0;r.observations.artifact_expected_sha256=r.observations.artifact_actual_sha256=caseHash('not empty');expect(validateCaseFamily(f.receipts.isolation,f.context).length).toBeGreaterThan(0);});
 });
+
+// Run the same coverage guards independently of the Workers suite's all-executed receipt hook.
+it('R2 isolation coverage keeps exactly54 cases alongside reviewed R3 recovery reads',()=>{expect(isolationOperations).toHaveLength(54);expect(()=>assertIsolationCoverage(isolationOperations)).not.toThrow();});
+it('R2 isolation coverage still rejects omitted operations and empty actor lanes',()=>{expect(()=>assertIsolationCoverage(isolationOperations.filter(x=>x.operation!=='searchWorkspace'))).toThrow('missing searchWorkspace');expect(()=>assertIsolationCoverage(isolationOperations.map(x=>x.operation==='getWorkspace'?{...x,lanes:[]}:x))).toThrow('lane coverage');});

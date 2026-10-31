@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
-    "title": "CF Agent Hub \u2014 Proposed Native HTTP API",
+    "title": "CF Agent Hub — Proposed Native HTTP API",
     "version": "0.1.0-design",
     "description": "Pre-implementation design baseline dated 2026-10-23; contract revision 0.1. All operations are proposed and require implementation verification. No running service, SDK, protocol certification or exactly-once external execution is claimed. docs/http-api.md defines authorization, pagination, idempotency and concurrency semantics. docs/limits.md owns numerical operational limits. All JSON writes reject unknown fields and enforce UTF-8 envelope limits. Runtime-bound writes additionally require X-Runtime-Token proof; native bearer alone is insufficient. R1 amendment r1-foundation-1 specifies identity, settings, audit and protected recovery contracts; implementation remains pending. Portable contracts stay 0.1; deployment is 0.2.",
     "x-amendment-id": "r1-foundation-1"
@@ -5556,6 +5556,202 @@
           }
         }
       }
+    },
+    "/v2/workspaces/{workspace_id}/messages:reconcile": {
+      "parameters": [
+        {
+          "name": "workspace_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque stable identifier; never infer authority from its value."
+          }
+        }
+      ],
+      "post": {
+        "operationId": "reconcileMessageCreation",
+        "summary": "Read an exact retained message creation admission",
+        "description": "Human cookie session, exact Origin and CSRF only. Non-mutating lookup of the original create body and Idempotency-Key under current original operation/resource/replay guards. Missing or mismatched retained outcome returns unknown, never proves absence or permits a new write. A matching retained original201 receipt can confirm admission even after GC eligibility, without extending retention. No execution, cleanup, domain event, outbox or outcome writes. Returned entity is the original historical creation DTO, not current state or completion.",
+        "security": [
+          {
+            "HumanSession": []
+          }
+        ],
+        "x-required-scopes": [
+          "messages:send"
+        ],
+        "x-actor-kind": "human",
+        "x-contract-status": "source",
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "410": {
+            "$ref": "#/components/responses/Gone"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          },
+          "200": {
+            "description": "Exact retained admission or unknown; neither delivery nor execution completion.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageCreationReconciliationResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-idempotency": "original creation key is lookup identity only; no outcome insertion or renewal; unknown never authorizes retry",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/CsrfToken"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MessageCreateRequest"
+              }
+            }
+          }
+        },
+        "x-r1-available": false
+      }
+    },
+    "/v2/workspaces/{workspace_id}/tasks:reconcile": {
+      "parameters": [
+        {
+          "name": "workspace_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque stable identifier; never infer authority from its value."
+          }
+        }
+      ],
+      "post": {
+        "operationId": "reconcileTaskCreation",
+        "summary": "Read an exact retained task creation admission",
+        "description": "Human cookie session, exact Origin and CSRF only. Non-mutating lookup of the original create body and Idempotency-Key under current original operation/resource/replay guards. Missing or mismatched retained outcome returns unknown, never proves absence or permits a new write. A matching retained original201 receipt can confirm admission even after GC eligibility, without extending retention. No execution, cleanup, domain event, outbox or outcome writes. Returned entity is the original historical creation DTO, not current state or completion.",
+        "security": [
+          {
+            "HumanSession": []
+          }
+        ],
+        "x-required-scopes": [
+          "tasks:create"
+        ],
+        "x-actor-kind": "human",
+        "x-contract-status": "source",
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "410": {
+            "$ref": "#/components/responses/Gone"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          },
+          "200": {
+            "description": "Exact retained admission or unknown; neither delivery nor execution completion.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskCreationReconciliationResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-idempotency": "original creation key is lookup identity only; no outcome insertion or renewal; unknown never authorizes retry",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/CsrfToken"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskCreateRequest"
+              }
+            }
+          }
+        },
+        "x-r1-available": false
+      }
     }
   },
   "components": {
@@ -6557,7 +6753,7 @@
           "created_at",
           "acknowledged_at"
         ],
-        "description": "Nonrecipient accepted/view DTO acknowledgment is null; recipient reads expose only that actor\u2019s ACK. acknowledged_at is not execution or completion."
+        "description": "Nonrecipient accepted/view DTO acknowledgment is null; recipient reads expose only that actor’s ACK. acknowledged_at is not execution or completion."
       },
       "AckResult": {
         "type": "object",
@@ -10841,6 +11037,106 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 128
+          }
+        },
+        "required": [
+          "data",
+          "request_id"
+        ]
+      },
+      "MessageCreationReconciliation": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "status": {
+                "const": "unknown"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "status": {
+                "const": "confirmed"
+              },
+              "message": {
+                "$ref": "#/components/schemas/Message"
+              }
+            },
+            "required": [
+              "status",
+              "message"
+            ]
+          }
+        ]
+      },
+      "MessageCreationReconciliationResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/MessageCreationReconciliation"
+          },
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque stable identifier; never infer authority from its value."
+          }
+        },
+        "required": [
+          "data",
+          "request_id"
+        ]
+      },
+      "TaskCreationReconciliation": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "status": {
+                "const": "unknown"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "status": {
+                "const": "confirmed"
+              },
+              "task": {
+                "$ref": "#/components/schemas/Task"
+              }
+            },
+            "required": [
+              "status",
+              "task"
+            ]
+          }
+        ]
+      },
+      "TaskCreationReconciliationResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TaskCreationReconciliation"
+          },
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque stable identifier; never infer authority from its value."
           }
         },
         "required": [

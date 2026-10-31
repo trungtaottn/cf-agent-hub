@@ -49,6 +49,18 @@ export class DraftStore {
  admit(b:DraftBinding,name:string,key:string):Promise<SubmitIntent>{if(!id(name)||!id(key))return Promise.reject(Error('INVALID_INTENT'));return this.#change(b,r=>{const e=r.entries[name];if(e?.intent)return e.intent;if(!e?.draft)fail('DRAFT_REQUIRED');const d=e!.draft!;let bodyJson:string;try{bodyJson=prepareNativeOperation('https://browser.invalid',b.workspaceId,d.operation,{body:JSON.parse(d.bodyJson)}).canonicalBody;}catch{fail('INVALID_REQUEST');}return e!.intent={operation:d.operation,bodyJson:bodyJson!,key,draftRevision:d.revision,status:'prepared',entityId:null};});}
  claimDispatch(b:DraftBinding,name:string,key:string):Promise<boolean>{return this.#change(b,r=>{const i=r.entries[name]?.intent;if(!i||i.key!==key)fail('INTENT_CHANGED');if(i!.status!=='prepared')return false;i!.status='uncertain';return true;});}
  settle(b:DraftBinding,name:string,key:string,status:'confirmed'|'rejected'|'uncertain',entityId:string|null=null):Promise<SubmitIntent>{return this.#change(b,r=>{const i=r.entries[name]?.intent;if(!i||i.key!==key||i.status!=='uncertain')fail('INTENT_CHANGED');if(!['confirmed','rejected','uncertain'].includes(status)||status==='confirmed'&&!opaque(entityId)||status!=='confirmed'&&entityId!==null)fail('INVALID_RESULT');i!.status=status;i!.entityId=entityId;return i!;});}
+ /** Positive retained-admission receipt only; exact immutable identity compare-and-set. */
+ confirmReconciled(b:DraftBinding,name:string,expected:Readonly<SubmitIntent>,entityId:string):Promise<SubmitIntent>{
+  if(!id(name)||!opaque(entityId))return Promise.reject(Error('INVALID_RESULT'));
+  const identity=clone(expected);
+  return this.#change(b,r=>{
+   const current=r.entries[name]?.intent;
+   if(!current||current.operation!==identity.operation||current.key!==identity.key||current.bodyJson!==identity.bodyJson||current.draftRevision!==identity.draftRevision)fail('INTENT_CHANGED');
+   if(current!.status==='confirmed'){if(current!.entityId!==entityId)fail('INTENT_CHANGED');return current!;}
+   if(current!.status!=='uncertain')fail('RECONCILIATION_REQUIRED');
+   current!.status='confirmed';current!.entityId=entityId;return current!;
+  });
+ }
  abandonPrepared(b:DraftBinding,name:string,key:string):Promise<null>{return this.#change(b,r=>{const e=r.entries[name];if(!e?.intent||e.intent.key!==key)fail('INTENT_CHANGED');if(e!.intent!.status!=='prepared')fail('RECONCILIATION_REQUIRED');e!.intent=null;if(!e!.draft)delete r.entries[name];return null;});}
  acknowledge(b:DraftBinding,name:string):Promise<null>{return this.#change(b,r=>{const e=r.entries[name];if(e?.intent){if(!['confirmed','rejected'].includes(e.intent.status))fail('RECONCILIATION_REQUIRED');if(e.draft?.revision===e.intent.draftRevision)e.draft=null;e.intent=null;if(!e.draft)delete r.entries[name];}return null;});}
  clearScope(b:DraftBinding):Promise<null>{scopeValid(b);const stable={...b};if(!integer(stable.epoch))return Promise.reject(Error('INVALID_SCOPE'));return this.database.transact(stable,raw=>{if(plain(raw)&&integer(raw.epoch)&&raw.epoch!==stable.epoch)fail('SCOPE_CHANGED');const epoch=stable.epoch+1;if(!integer(epoch))fail('STORAGE_UNAVAILABLE');return {record:{version:1,workspaceId:stable.workspaceId,principalId:stable.principalId,epoch,entries:{}},value:null};});}

@@ -60,6 +60,7 @@ async function openComposition(){
   const store=new DraftStore(new IndexedComposeDatabase());
   messageComposition=new MessageComposition({store,currentBinding:compositionBinding,changed:()=>messageForm?.update(),read:readCommandPreparation,
    verifyAuthority:verifyCompositionAuthority,
+   reconcile:async(operation,input,options)=>{const result=await client.reconcileCreation(operation,input,options);if(!result.ok&&(result.status===401||result.status===403))invalidateAll(result.status,result.requestId);return result;},
    send:async(operation,input,options)=>{const result=await client.compose(operation,input,options);if(!result.ok&&(result.status===401||result.status===403))invalidateAll(result.status,result.requestId);return result;}});
   messageForm=new MessageForm(messageComposition,id=>{hideComposition();navigate('activity',id);});byId('main').append(messageForm.element);
  }

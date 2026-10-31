@@ -24,10 +24,11 @@ try {
  buildDirectory=await mkdtemp(resolve('.superpowers/tmp/ui-build-'));
  const modulePath=join(buildDirectory,'fixture.mjs');
  await build({
-  stdin:{contents:`export * from './test/helpers/https-oidc-provider.ts'; export * from './test/helpers/environment.ts'; export * from './src/config/bootstrap.ts'; export * from './test/helpers/r2-ui-fixture.ts';`,resolveDir:process.cwd()},
+  stdin:{contents:`export * from './test/helpers/https-oidc-provider.ts'; export * from './test/helpers/environment.ts'; export * from './src/config/bootstrap.ts'; export * from './test/helpers/r2-ui-fixture.ts'; export * from './test/helpers/composition-fixture.ts';`,resolveDir:process.cwd()},
   outfile:modulePath,bundle:true,platform:'node',format:'esm',packages:'external',logLevel:'silent'
  });
- const {startHttpsFixture,APP_ORIGIN,ISSUER_ORIGIN,fixture:configurationFixture,operator,prepareBootstrap,sha256,canonicalJson,configureR2UiFixture,seedR2UiFixture}=await import(pathToFileURL(modulePath).href);
+ const {startHttpsFixture,APP_ORIGIN,ISSUER_ORIGIN,fixture:configurationFixture,operator,prepareBootstrap,sha256,canonicalJson,configureR2UiFixture,seedR2UiFixture,CompositionFixtureProbe}=await import(pathToFileURL(modulePath).href);
+ const compositionProbe=new CompositionFixtureProbe();
  let worker,r2Fixture=null,currentName='ui-fixture',dropPreferencesResponse=false,control=async(_action)=>{throw Error('FIXTURE_NOT_READY');};
  const providerClientSecret=randomBytes(32).toString('base64url'),csrfSecret=randomBytes(32).toString('base64url'),cursorSecret=randomBytes(32).toString('hex');
  fixture=await startHttpsFixture({fetch:async(input,init)=>{
@@ -35,13 +36,13 @@ try {
   if(url.pathname==='/__ui_fixture/control'){
    if(request.method!=='POST'||request.headers.get('origin')!==APP_ORIGIN)return new Response(null,{status:403});
    const value=await request.json();if(Object.keys(value).length!==1||typeof value.action!=='string')return new Response(null,{status:400});
-   await control(value.action);return Response.json({ok:true});
+   const result=await control(value.action);return Response.json({ok:true,...(result??{})});
   }
   const response=await worker.fetch(input,init);
   if(dropPreferencesResponse&&request.method==='PUT'&&url.pathname==='/v2/workspaces/ws_example/preferences'){
    if(response.ok){await response.arrayBuffer();throw Error('FIXTURE_DROP_COMMITTED_RESPONSE');}
   }
-  return response;
+  return compositionProbe.observe(request,response);
  }},{clientSecret:providerClientSecret,subjects:['synthetic-subject','restricted-subject','tasks-only-subject']});
  globalThis.fetch=fixture.dispatch;
  const probePath=join(buildDirectory,'egress-probe.mjs');
@@ -87,13 +88,24 @@ try {
  await fixture.selfCheck(async(input,init)=>{const request=new Request(input,init);const response=await probe.fetch(request.url,{method:request.method,headers:Object.fromEntries(request.headers),body:request.body?await request.arrayBuffer():undefined,redirect:'manual'});if(response.headers.get('x-fixture-egress-denied')==='1')throw Error('FIXTURE_EGRESS_DENIED');return response;});
  // These controls exist only in the isolated HTTPS fixture, never in production Worker routes.
  control=async action=>{
+  if(action==='drop-composition-responses'){compositionProbe.arm();return;}
+  if(action==='resume-composition-responses'){compositionProbe.resume();return;}
+  if(action==='composition-snapshot'){
+   const state=await worker.getDurableObjectStorage('WORKSPACE',{name:currentName});
+   const messages=await state.exec("SELECT id,workspace_id,thread_id,body FROM messages WHERE workspace_id='ws_example' ORDER BY id");
+   const events=await state.exec("SELECT * FROM events WHERE workspace_id='ws_example' AND type='message.accepted' ORDER BY sequence");
+   const outcomes=await state.exec("SELECT * FROM idempotency_outcomes WHERE workspace_id='ws_example' AND operation='domain.messages:send' ORDER BY principal_id,target,key");
+   // Stable admission fields only: alarm-driven delivery status may advance independently of lookup.
+   const outbox=await state.exec("SELECT id,workspace_id,message_id,destination_id,notification_id,created_at FROM outbox WHERE workspace_id='ws_example' ORDER BY id");
+   return {snapshot:{messages,events,outcomes,outbox,dropped:compositionProbe.receipts}};
+  }
   if(action==='drop-next-preferences-response'){dropPreferencesResponse=true;return;}
   if(action==='resume-preferences-responses'){dropPreferencesResponse=false;return;}
   if(action==='restart'){await worker.evictDurableObject('WORKSPACE',{name:currentName});return;}
   if(action==='r2-advance-backlog'){if(!r2Fixture)throw Error('R2_FIXTURE_NOT_READY');await r2Fixture.advanceBacklog();return;}
   if(action==='r2-revoke-human'){if(!r2Fixture)throw Error('R2_FIXTURE_NOT_READY');await r2Fixture.revokeHumans();return;}
   if(action==='fresh'||action==='r2-board'){
-   input.config=structuredClone(baselineConfig);input.bundle.config_epoch=1;dropPreferencesResponse=false;r2Fixture=null;
+   input.config=structuredClone(baselineConfig);input.bundle.config_epoch=1;dropPreferencesResponse=false;r2Fixture=null;compositionProbe.reset();
    if(action==='r2-board')configureR2UiFixture(input.config);
    currentName='ui-fixture-'+randomBytes(8).toString('hex');
    input.config.workspace_catalog[0].object_name=currentName;

@@ -7,12 +7,12 @@ describe('generated workspace operation contract',()=>{
  it('has one reviewed inventory, covering every OpenAPI operation explicitly',async()=>{
   const inventory=JSON.parse(readFileSync('src/contracts/client-operations.json','utf8'));
   expect([...inventory.supported,...Object.keys(inventory.excluded)].sort()).toEqual(operations.map(o=>o.operationId).sort());
-  expect(inventory.supported).toHaveLength(54);
+  expect(inventory.supported).toHaveLength(56);
   for(const id of disabled)expect(inventory.excluded[id]).toBe('R3 unavailable');
  });
  it('derives every supported method, path, native lane and proof exactly from OpenAPI',async()=>{
   const {clientOperations}=await import('../../src/http/generated/client-operations');
-  expect(Object.keys(clientOperations)).toHaveLength(54);
+  expect(Object.keys(clientOperations)).toHaveLength(56);
   let native=0,proof=0;
   for(const [id,contract] of Object.entries(clientOperations)){
    const op=operations.find(o=>o.operationId===id)!;
@@ -22,6 +22,7 @@ describe('generated workspace operation contract',()=>{
    native+=Number(contract.native);proof+=Number(contract.runtimeProof);
   }
   expect(native).toBe(33);expect(proof).toBe(8);
+  for(const id of ['reconcileMessageCreation','reconcileTaskCreation'] as const)expect(clientOperations[id]).toMatchObject({native:false,runtimeProof:false,method:'POST',status:200});
   for(const id of disabled)expect(Object.hasOwn(clientOperations,id)).toBe(false);
  });
 });

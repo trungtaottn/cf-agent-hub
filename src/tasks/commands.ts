@@ -1,7 +1,7 @@
 import type {WorkspaceTransaction} from '../storage/transaction';
 import type {ActorContext,CommandContext} from '../workspace/context';
 import type {Task,TaskCreateRequest,TaskPatchRequest,TaskVersionRequest,TaskReasonRequest,TaskCommandResult} from '../http/dto';
-import type {CommandDescriptor} from '../workspace/commands';
+import type {CommandDescriptor,CommandAccessDescriptor} from '../workspace/commands';
 import {validateTask,validateTaskCreateRequest,validateTaskPatchRequest,validateTaskVersionRequest,validateTaskReasonRequest,validateTaskCommandResult} from '../http/generated/auth-validators.js';
 import {HttpError} from '../http/envelopes';
 import {assertTaskReferences,assertTaskEligible,installedExecutionPolicy} from '../config/execution-policy';
@@ -86,7 +86,10 @@ function reasonCommand(id:string,action:'cancel'|'requeue'):CommandDescriptor<Ta
 export const cancelTaskCommand=(id:string)=>reasonCommand(id,'cancel');
 export const requeueTaskCommand=(id:string)=>reasonCommand(id,'requeue');
 function resultTask(data:Task|TaskCommandResult):Task{return 'task' in data?data.task:data;}
-function command<B,T extends Task|TaskCommandResult>(id:string|null,operation:'tasks:create'|'tasks:edit'|'tasks:schedule',type:'task.created'|'task.updated'|'task.ready',validate:(input:unknown)=>boolean,run:(tx:WorkspaceTransaction,ctx:CommandContext,request:B)=>T):CommandDescriptor<B,T>{return {
+function command<B,T extends Task|TaskCommandResult>(id:string|null,operation:'tasks:create'|'tasks:edit'|'tasks:schedule',type:'task.created'|'task.updated'|'task.ready',validate:(input:unknown)=>boolean,run:(tx:WorkspaceTransaction,ctx:CommandContext,request:B)=>T):CommandDescriptor<B,T>{return {...taskCommandAccess<B,T>(id,operation,validate),
+ execute(tx,ctx,request){const data=run(tx,ctx,request),task=resultTask(data);return {outcome:{status:id===null?201:200,data},event:{type,resourceType:'task',resourceId:task.id,resourceVersion:null,threadId:null}};}
+};}
+function taskCommandAccess<B,T extends Task|TaskCommandResult>(id:string|null,operation:'tasks:create'|'tasks:edit'|'tasks:schedule',validate:(input:unknown)=>boolean):CommandAccessDescriptor<B,T>{return {
  operation,target:id===null?'tasks:create':'tasks:'+id+':'+(operation==='tasks:edit'?'patch':'ready'),
  resource(tx,ctx,request){body(request,validate);taskAccess(tx,ctx.actor,operation,null,ctx.nowMs);if(id===null)return {kind:'task',id:'new',projectId:(request as TaskCreateRequest).project_id??null};const row=taskRecord(tx,ctx.actor.workspaceId,id);return {kind:'task',id,projectId:row.project_id};},
  checkAccess(tx,ctx){const actor=taskAccess(tx,ctx.actor,operation,id,ctx.nowMs);if(id!==null)taskView(tx,actor,taskRecord(tx,actor.workspaceId,id),ctx.nowMs);},
@@ -96,9 +99,10 @@ function command<B,T extends Task|TaskCommandResult>(id:string|null,operation:'t
   // Current resource and original retained references are independently checked;
   // replay deliberately does not reapply stale version/state/eligibility guards.
   taskAccess(tx,actor,operation,task.id,ctx.nowMs);assertTaskOutcomeVisible(tx,actor,task,ctx.nowMs);
- },
- execute(tx,ctx,request){const data=run(tx,ctx,request),task=resultTask(data);return {outcome:{status:id===null?201:200,data},event:{type,resourceType:'task',resourceId:task.id,resourceVersion:null,threadId:null}};}
+ }
 };}
+/** Execution-free exact creation guards shared with normal command/replay. */
+export function taskCreationAccess():CommandAccessDescriptor<TaskCreateRequest,Task>{return taskCommandAccess<TaskCreateRequest,Task>(null,'tasks:create',validateTaskCreateRequest);}
 export const createTaskCommand=(taskId:string)=>command<TaskCreateRequest,Task>(null,'tasks:create','task.created',validateTaskCreateRequest,(tx,ctx,request)=>createTask(tx,{...ctx,taskId},request));
 export const patchTaskCommand=(id:string)=>command<TaskPatchRequest,Task>(id,'tasks:edit','task.updated',validateTaskPatchRequest,(tx,ctx,request)=>patchTask(tx,ctx,id,request));
 export const readyTaskCommand=(id:string)=>command<TaskVersionRequest,TaskCommandResult>(id,'tasks:schedule','task.ready',validateTaskVersionRequest,(tx,ctx,request)=>readyTask(tx,ctx,id,request));
