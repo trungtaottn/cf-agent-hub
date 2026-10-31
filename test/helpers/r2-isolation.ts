@@ -10,13 +10,13 @@ export const isolationProjectCases={unrestricted:null,none:[],allowed:['project_
 export const isolationDisabledFeature={feature:'approvals',path:'approvals',method:'GET'} as const;
 export const isolationTokens={reader:'A'.repeat(43),other:'B'.repeat(42)+'A',searchOnly:'C'.repeat(42)+'A',foreign:'Q'.repeat(43)};
 /** Two independently installed mapped DOs; all HTTP callers use real bearer/session verification. */
-export async function r2IsolationFixture(name:string,options:{human?:boolean;configure?:(input:Awaited<ReturnType<typeof fixture>>)=>void}={}){
+export async function r2IsolationFixture(name:string,options:{human?:boolean;nativeScopes?:readonly Awaited<ReturnType<typeof fixture>>['config']['static_credential_refs'][number]['scopes'][number][];configure?:(input:Awaited<ReturnType<typeof fixture>>)=>void}={}){
  const raw=await fixture(name),config=raw.config,bundle=raw.bundle;
  const read=['workspace:read','search:read','tasks:read','messages:read','messages:send','artifacts:read','runtimes:manage'] as const;
  config.human_grants[0].scopes=[...new Set([...config.human_grants[0].scopes,...read.filter(scope=>scope!=='runtimes:manage'),'tasks:create','tasks:edit','tasks:schedule'] as typeof config.human_grants[0]['scopes'])];
  config.workspace_policies[0].notification_destinations=[];
  options.configure?.(raw);
- const base=config.static_credential_refs[0];base.scopes=[...read];
+ const base=config.static_credential_refs[0];base.scopes=[...(options.nativeScopes??read)];
  config.static_participants.push({workspace_id:'ws_example',agent_id:'agent_other',display_name:'Other synthetic participant'});
  config.static_credential_refs.push({...base,credential_id:'credential_other',agent_id:'agent_other'},{...base,credential_id:'credential_search_only',scopes:['search:read']});
  bundle.credentials[0].token_sha256=await sha256(isolationTokens.reader);
