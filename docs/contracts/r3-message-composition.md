@@ -1,31 +1,40 @@
-# R3 text-only message composition
+# R3 message composition
 
-Status: Partial R3 source implementation; acceptance pending; no released artifact.
+Status: complete-flow source candidate; exact-head browser/full CI acceptance pending. No released artifact or merge/deployment claim.
 
 ## Scope and baseline
 
-This bounded issue 55 slice consumes the green issue 53 durable draft/controller and cookie/CSRF composition client from PR127, plus the independent decision contracts in PR128. The baseline is PR128 head `8991aedef34e7bfa574645bea07236a46bb4c8d8`, tree `04bf43a05e3d6d84b0cfd363eacca5047bc50e7f`. Source work does not authorize R3 merging or R4 acceptance.
+The original PR129 text-only slice left references, replies and attachments unimplemented. This continuation starts from PR134 head `bc9247ab6796dcae9021a40b3e6e8308aa241480`, tree `4e948996232e079b0289c5178d5251606f9a4364` (equivalent local `08e81100fc3fa9435d18451a37157a1440bdf960`). It retains the reviewed shared admission controller, exact prepared admission identity and legacy-UNKNOWN safety behavior.
 
-The app offers a text-only **new message** form. Recipients are selected by canonical agent ID from current authorized pages; saved IDs outside the current page stay visibly selected until deliberately removed. The server remains the authority. Browser list/get agent reads use the existing generated map and cookie lane; the feature adds no grant. Current `messages:send`, `messages:read` and `agents:read` are required. A fresh session and workspace check precedes loading a private saved draft and precedes dispatch; selected agents are individually re-read for exact ID/workspace/active status. Stale or unavailable observations do not authorize sending.
+The semantic form uses canonical `MessageCreateRequest`: current agent IDs, body, optional thread ID, authorized references and committed artifact IDs. No second message endpoint, membership rule or grant is introduced. Current human `messages:send`, `messages:read` and `agents:read` are required. Resource observations precede the final fresh session/workspace check: optional denied reads intentionally clear the client CSRF token, so cached tokens are never restored. Server preparation and mutation remain authoritative.
 
-`refs` and `artifact_ids` are empty in this slice. Attachment stage/upload/commit, references, reply membership and deliberate new-thread workflows beyond new messages remain future issue 55 work. No file bytes, bearer credentials, CSRF or session tokens enter draft storage. User-entered text can itself contain sensitive material; no universal secret-free-text claim is made.
+## References and replies
 
-## Durable intent and truthful status
+Task and artifact IDs are checked through current native reads; artifacts must be committed. Message references are selected from a deliberately read, currently authorized thread. A restored message-reference ID without its current thread observation remains held for review, not resolved through guesses or a new endpoint. Unavailable, foreign, stale and revoked references preserve text and block fresh admission.
 
-The existing IndexedDB transaction owner persists one payload/key before command handoff. Edits have their own revision. A failed save cannot dispatch an older saved payload as though it were the visible edit. Double activation shares one operation. Transport loss remains uncertain, retained across page reload, without automatic resend, guessed lookup, replacement key or wall-clock retention inference.
+Reply selection is limited to the observed sender/recipient subset from the authorized thread response. A page is not a complete membership roster, and a human with `messages:review` may read without permission to reply. The server still checks actual membership and every participant's visibility. Native rejection retains the reply draft; **Start new thread** is an explicit action that preserves text and clears recipient selection rather than silently widening the old thread. Prior history is not copied into the new message.
 
-A successful command is **durably admitted**, not delivered, acknowledged or completed. Only the actual live success response supplies a thread link. A restored confirmed record has message ID only; it does not guess a thread ID or reissue a request to discover one. Explicit acknowledgement clears the settled intent under the existing draft-revision guard. Prepared validation failures require deliberate review before changing the frozen request; uncertain requests cannot be discarded as resolved.
+## Attachments and ambiguity
 
-The body and envelope use existing canonical limits, including 32768 UTF-8 body bytes and 65536 envelope bytes. Browser forms do not redefine admission, thread visibility or ACK semantics.
+The browser cookie lane uses the existing generated stage/content/commit contracts, same-origin CSRF and bounded Blob content. It never supplies bearer/runtime credentials or a forbidden Content-Length header. Upload requires current `artifacts:read` and `artifacts:write`; exposing an implemented capability only intersects existing grants. Frozen native schema16 behavior remains unchanged; the fixed current17 projection has matching bounded expected output.
 
-## Local privacy lifecycle
+Files, hashes, keys and upload state are ephemeral. Only committed IDs reach durable message storage. The owner reserves count/bytes before hashing, captures detached scope and item ownership, and fences every awaited completion. Navigation/logout disposes local bytes and aborts local requests; it cannot undo an already sent server write.
 
-Navigation and offline transitions invalidate preparation and hide local text; online return does not submit in the background. Reopening requires fresh session verification. Logout, changed principal or rejected authority clears the remembered scoped record with a new storage epoch and invalidates stale bindings. Same-origin cross-tab messages are bounded local invalidation hints, not authentication evidence or permission to erase another principal's data.
+- Stage-response loss stays **unknown**, with no stage retry: outcome GC could make even the same key a new allocation. Explicit abandonment removes only local state; a new upload is a new deliberate operation, not recovery.
+- Upload/commit ambiguity with a known ID first reads exact current metadata. Immutable descriptor, workspace, owner and expected status/version must match. A matching committed version3 can be attached without another commit; otherwise deliberate retry retains the exact upload/commit key and body/version. Missing, inaccessible or mismatched metadata never proves noncommit.
+- Selected incomplete uploads block new message admission until committed or explicitly abandoned. Text remains independent.
+- Removing an upload or attachment removes local bytes/association intent only. Staged/uploaded artifacts follow existing server expiry/cleanup; committed but unassociated artifacts are not claimed automatically deleted or expired.
 
-Visible clearing is distinguished from asynchronous durable erasure. Failure remains blocked and is not reported as successful cleanup. Local erasure cannot cancel or undo a server write already sent. The stable semantic form preserves text/focus through unrelated read refreshes and renders remote labels/message text inertly.
+Independent limits are 32,768 UTF-8 body bytes, 65,536 complete JSON envelope bytes, 8,192 serialized reference bytes, 10,485,760 binary bytes per file, five distinct artifacts (including artifact references), and 26,214,400 aggregate artifact bytes. Binary bytes are not character counts or base64 sizes.
 
-## Evidence boundaries
+## Durable admission and privacy
 
-Focused source tests cover generation/storage races, current-agent identity, UTF-8 limits, failed-save admission, duplicate activation, restored unknown no-send and explicit erase failure. DOM tests are structural, not layout/keyboard proof. Actual browser cases are selected by the existing spec-only Playwright configuration and run only in ordinary CI: real permitted command admission, keyboard operation, double activation, reload/IndexedDB erasure and cross-tab invalidation. The transport-abort scenario is not claimed as committed-response loss. A changed-session response fixture is a privacy race test, not a second real identity-provider login acceptance.
+One immutable prepared payload/key/handle is persisted before dispatch. Duplicate activation shares one operation; lost response stays uncertain across reload without blind resend or a replacement key. Historical lookup verifies current authority but does not reapply fresh recipient/reference admission eligibility. The server applies current visibility gates to retained evidence.
 
-The isolated R2 browser fixture adds only synthetic owner `agents:read` and recipient `messages:read` needed to exercise existing command guards; product configuration and real permissions are unchanged. The restricted human fixture remains restricted. No local browser/protected fixture execution or full live issue 55 acceptance is inferred from source tests. Exact CI receipts belong to the draft PR; issue 55 remains open for the omitted flows and acceptance criteria.
+Admission is not delivery, recipient ACK or task completion. A minimal historical receipt cannot invent a current Message DTO or unknown thread ID. The actual successful message response may supply a thread link; reading that link is independently authorized. Scope changes immediately hide private state before host teardown; logout/authority erasure retains storage-failure blocking semantics and cross-tab epoch fences.
+
+## Reproduction and evidence boundaries
+
+Run `npm test`, `npm run typecheck`, `npm run build:ui`, `npm run verify:generated`, `python -B scripts/validate_docs.py`, affected health/native Workers suites, and `npm run test:ui -- test/ui/compose-message.spec.ts` on the exact candidate. Source tests include actual HubClient transport validation, isolated model/DOM tests, ownership/retention regressions and independent exact/+1 byte/count boundaries. Synthetic model tests are not live operator acceptance.
+
+The browser spec uses the production app, real fixture human session/CSRF, R2 upload path and persisted SQL. Test-only fault injection consumes actual successful stage/commit/message responses before dropping them; stage/commit ambiguity is distinguished from pre-dispatch network abort. Genuine Tab/Shift+Tab traversal, invalid-submit focus, hostile text, reply/reference flow, reload/privacy and no-duplicate receipts must execute in supported CI. Local browser execution remains unavailable in this environment; listing/bundling specs is not browser acceptance. Historical local launcher/checkout guard failures are not erased by source tests. Exact CI receipts belong to the draft PR; this document does not close issue55 or declare all R3 complete.

@@ -145,3 +145,8 @@ export type BrowserComposeReconcileRequest=<K extends BrowserComposeOperation>(o
 
 export type BrowserComposePreparation=DTO.CreationPreparation;
 export type BrowserComposePrepareRequest=<K extends BrowserComposeOperation>(operation:K,input:RequestFor<K>,options:Pick<BrowserComposeOptions,'idempotencyKey'|'signal'>)=>Promise<ApiResult<BrowserComposePreparation>>;
+
+/** Fixed human-cookie artifact writes. Binary bytes and metadata are ephemeral, never credentials. */
+export type BrowserArtifactOperation='stageArtifact'|'uploadArtifactContent'|'commitArtifact';
+export type BrowserArtifactOptions<K extends BrowserArtifactOperation>={idempotencyKey:string;signal?:AbortSignal}&(K extends 'uploadArtifactContent'?{blob:Blob;artifact:DTO.Artifact}:{blob?:never;artifact?:never});
+export type BrowserArtifactRequest=<K extends BrowserArtifactOperation>(operation:K,input:RequestFor<K>,options:BrowserArtifactOptions<K>)=>Promise<ApiResult<DTO.HttpOperationData[K]>>;

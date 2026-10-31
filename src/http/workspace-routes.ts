@@ -8,7 +8,7 @@ import type {Workspace,Scope} from './dto';
 import {validateWorkspace} from './generated/auth-validators.js';
 import {HttpError,securityHeaders,toHttpError,toHttpResponse} from './envelopes';
 export const workspacePath=/^\/v2\/workspaces\/([a-zA-Z0-9_-]{1,128})$/;
-const implementedDisplayScopes=new Set<string>(['workspace:read','agents:read','profile:edit','messages:send','messages:read','messages:ack','messages:review','events:read','operations:read','tasks:read','tasks:create','tasks:schedule','tasks:cancel','tasks:review','artifacts:read']);
+const implementedDisplayScopes=new Set<string>(['workspace:read','agents:read','profile:edit','messages:send','messages:read','messages:ack','messages:review','events:read','operations:read','tasks:read','tasks:create','tasks:schedule','tasks:cancel','tasks:review','artifacts:read','artifacts:write']);
 export async function workspaceRoutes(request:Request,workspace:AuthWorkspace):Promise<Response>{
  const requestId=crypto.randomUUID(),headers=new Headers(securityHeaders);
  try{
