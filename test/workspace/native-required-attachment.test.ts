@@ -1,3 +1,5 @@
+import {formatResult} from '../../packages/cli/src/output';
+import processOffers from '../../scripts/lib/native-complete-processes.json';
 import {neutralProfile} from '../../src/config/profile';
 import {it,expect} from 'vitest';
 import {env} from 'cloudflare:workers';
@@ -7,7 +9,7 @@ import {login,request as authRequest} from '../helpers/auth';
 import {prepareBootstrap,canonicalJson,sha256} from '../../src/config/bootstrap';
 import manifest from '../../scripts/lib/native-complete-fixture.json';
 import {RequiredPhaseAttachment,requiredApplicationPlan,readRequiredPhaseCapture} from '../../workers/native-fixture/required-phase-attachment';
-import {reconcileRequiredFamily,requiredBody,assertRequiredNegativeKeyAbsent,type RequiredBindings} from '../../workers/native-fixture/required-family-reducers';
+import {reconcileRequiredFamilySchema17,reconcileRequiredFamily,requiredBody,assertRequiredNegativeKeyAbsent,type RequiredBindings} from '../../workers/native-fixture/required-family-reducers';
 it('compiles the entire selected required process schedule without a subset or deferred tuple phases',()=>{
  expect(requiredApplicationPlan).toHaveLength(53);
  expect(requiredApplicationPlan.reduce((n,p)=>n+p.ordinals.length,0)).toBe(51);
@@ -31,6 +33,35 @@ it.each([true,false])('independent workspace projection binds agents:read to sel
  const changed=structuredClone(input);changed.responses[0].data.data.effective_scopes=granted?['workspace:read']:['agents:read','workspace:read'];
  expect(()=>reconcileRequiredFamily(changed)).toThrow('REQUIRED_FAMILY_REJECTED');
  const extra=structuredClone(input);extra.responses[0].data.data.effective_scopes.push('agents:manage');expect(()=>reconcileRequiredFamily(extra)).toThrow();
+});
+
+it.each([true,false])('current17 workspace projection exactly binds tasks:create to selected grant (%s)',granted=>{
+ const scopes=['workspace:read',...(granted?['tasks:create']:[])];
+ const selected=[{selector:'M',canonical:canonicalJson([{workspace_id:'ws_example',admission_state:'installed'}])},{selector:'F',canonical:canonicalJson([{state:'open'}])},{selector:'G',canonical:canonicalJson([{scopes_json:JSON.stringify(scopes)}])}];
+ const data={id:'ws_example',display_name:neutralProfile.display_name,contract_revision:'0.1',actor:{kind:'agent',principal_id:'agent_research',agent_id:'agent_research'},effective_scopes:[...scopes].sort()};
+ const input={step_id:'success/getWorkspace',before:selected,after:selected,bindings:{},actor:{agent_id:'agent_research',credential_id:'cred_s'},responses:[{operation:'getWorkspace',status:200,data:{data,request_id:'req_projection'}}]};
+ expect(()=>reconcileRequiredFamilySchema17(input)).not.toThrow();
+ if(granted){expect(()=>reconcileRequiredFamily(input)).toThrow('REQUIRED_FAMILY_REJECTED');const old=structuredClone(input);old.responses[0].data.data.effective_scopes=['workspace:read'];expect(()=>reconcileRequiredFamily(old)).not.toThrow();}
+ const changed=structuredClone(input);changed.responses[0].data.data.effective_scopes=granted?['workspace:read']:['tasks:create','workspace:read'];
+ expect(()=>reconcileRequiredFamilySchema17(changed)).toThrow('REQUIRED_FAMILY_REJECTED');
+ const extra=structuredClone(input);extra.responses[0].data.data.effective_scopes.push('agents:manage');expect(()=>reconcileRequiredFamilySchema17(extra)).toThrow();
+});
+
+it('current17 workspace response and actual CLI formatter fit unchanged capture and process offers',()=>{
+ const display=['workspace:read','agents:read','messages:send','messages:read','messages:ack','events:read','tasks:read','tasks:create','tasks:schedule','tasks:cancel','tasks:review','artifacts:read'];
+ const id='a'.repeat(64),requestId='r'.repeat(128),encode=new TextEncoder();
+ const cap=requiredApplicationPlan.find(p=>p.step_id==='success/getWorkspace')!.ordinals[0].capture_limits.responseBodyBytes;
+ const offer=processOffers.find(p=>p.step_id==='success/getWorkspace')!.output_bytes;
+ expect(cap).toBe(733);expect(offer).toBe(2048);
+ const cases=[...(['S','R','X'] as const).map(role=>({scopes:manifest.configuration_constraints.native_scopes[role].filter(scope=>display.includes(scope)).sort(),name:neutralProfile.display_name})),{scopes:[...display].sort(),name:id}];
+ for(const [index,item]of cases.entries()){
+  const data={id,display_name:item.name,contract_revision:'0.1',actor:{kind:'agent',principal_id:id,agent_id:id},effective_scopes:item.scopes};
+  const body=JSON.stringify({data,request_id:requestId}),out=formatResult({ok:true,status:200,data,requestId});
+  expect(encode.encode(body).length).toBe([639,578,502,724][index]);
+  expect(encode.encode(body).length).toBeLessThanOrEqual(cap);
+  expect(out).toEqual({exitCode:0,stdout:body+'\n',stderr:''});
+  expect(encode.encode(out.stdout).length).toBeLessThanOrEqual(offer);
+ }
 });
 
 const tokens={S:'A'.repeat(43),R:'B'.repeat(42)+'A',X:'C'.repeat(42)+'A'};

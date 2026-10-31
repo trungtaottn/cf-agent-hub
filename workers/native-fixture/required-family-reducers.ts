@@ -87,7 +87,9 @@ export function requiredBody(stepId:string,s:readonly SelectedOriginal[],b:Requi
  default:return null;
  }
 }
-export function reconcileRequiredFamily(value:unknown):Readonly<{family:string;sourceOnly:true}>{
+// Fixed exports retain historical16 display semantics; only the statically wired
+// current17 witness recognizes the newly implemented capability advertisement.
+function familyReducer(current17:boolean){return function(value:unknown):Readonly<{family:string;sourceOnly:true}>{
  const v=value as RequiredReduction;requiredAssert(v&&typeof v==='object'&&typeof v.step_id==='string');const step=plan.find(p=>p.step_id===v.step_id);requiredAssert(step&&Array.isArray(v.before)&&Array.isArray(v.after)&&Array.isArray(v.responses));
  const s=v.after,b=v.bindings,actor=v.actor;requiredAssert(b&&actor);
  if(step.step_id==='prepare/retain-artifact'){requiredAssert(v.before.length===0&&s.length===0&&v.responses.length===0);return Object.freeze({family:'host-artifact-only',sourceOnly:true});}
@@ -106,7 +108,7 @@ export function reconcileRequiredFamily(value:unknown):Readonly<{family:string;s
  }
  switch(op){
  case 'revokeCredential':{const old=one(v.before,'CW',actor.credential_id,'credential_id'),now=one(s,'CW',actor.credential_id,'credential_id');requiredAssert(old.enabled===1&&old.revoked_at===null&&now.revoked_at!==null);same(now,{...old,enabled:0,revoked_at:now.revoked_at,credential_version:old.credential_version+1});same(data,credentialView(now as CredentialRow,now.revoked_at));for(const name of ['S','F','M','HG','SE','LA'])same(requiredRows(v.before,name),requiredRows(s,name));same(requiredRows(s,'U'),requiredRows(v.before,'U').map(r=>r.credential_id===actor.credential_id&&r.revoked_at===null?{...r,runtime_version:r.runtime_version+1,status:'expired',revoked_at:now.revoked_at}:r));break;}
- case 'getWorkspace':{const g=one(s,'G');const display=new Set(['workspace:read','agents:read','messages:send','messages:read','messages:ack','events:read','tasks:read','tasks:schedule','tasks:cancel','tasks:review','artifacts:read']);same(data,{id:m.workspace_id,display_name:neutralProfile.display_name,contract_revision:'0.1',actor:{kind:'agent',principal_id:actor.agent_id,agent_id:actor.agent_id},effective_scopes:JSON.parse(g.scopes_json).filter((x:string)=>display.has(x)).sort()});break;}
+ case 'getWorkspace':{const g=one(s,'G');const display=new Set(['workspace:read','agents:read','messages:send','messages:read','messages:ack','events:read','tasks:read',...(current17?['tasks:create']:[]),'tasks:schedule','tasks:cancel','tasks:review','artifacts:read']);same(data,{id:m.workspace_id,display_name:neutralProfile.display_name,contract_revision:'0.1',actor:{kind:'agent',principal_id:actor.agent_id,agent_id:actor.agent_id},effective_scopes:JSON.parse(g.scopes_json).filter((x:string)=>display.has(x)).sort()});break;}
  case 'getConfiguration':{const scopes=JSON.parse(one(s,'G').scopes_json),features=['workspace','profile'];if(scopes.includes('messages:read')||scopes.includes('messages:send'))features.push('messages');if(scopes.includes('events:read'))features.push('events');same(data,{config_epoch:m.config_epoch,profile_revision:1,preferences_revision:null,allowed_user_overrides:[],enabled_features:features});break;}
  case 'getProfile':requiredAssert(requiredRows(s,'P').length===0);same(data,{profile_revision:1,profile:neutralProfile});break;
  case 'listAgents':page(envelope,sorted(requiredRows(s,'AG'),'agent_id').map(r=>agentView(r as AgentRow)));break;
@@ -137,4 +139,6 @@ export function reconcileRequiredFamily(value:unknown):Readonly<{family:string;s
  default:requiredAssert(false);
  }
  return Object.freeze({family:String(op),sourceOnly:true});
-}
+}; }
+export const reconcileRequiredFamily=familyReducer(false);
+export const reconcileRequiredFamilySchema17=familyReducer(true);
