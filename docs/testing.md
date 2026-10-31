@@ -66,3 +66,9 @@ Negative schema cases should cover unknown keys, prohibited profile fields, dupl
 Before a gate is promoted, run its required scenarios against the actual selected runtime and an isolated test deployment. Include one restore rehearsal, credential revocation check and a truthful UI journey for exposed features. Load testing must precede any capacity claim and should report workload, data size and environment.
 
 The documentation validator's output must explicitly state that product tests were not run. Follow [documentation maintenance](docs-maintenance.md) for those checks and the [release checklist](release-checklist.md) for implementation gates.
+
+## Local issue36 search evidence
+
+`test/helpers/r2-isolation.ts` provides two independently installed mapped workspaces, real session/native proof lanes, separate agent runtime proofs, project restriction cases and a genuinely unavailable approval capability. `test/search/` covers exact literal/NFC matching, all underlying graph permissions, confidential authorized-only continuation, candidate/response/ledger budgets, maximum supported cursor bindings, retention, restart, original-proof and graph changes during crypto, and actual Workers SQL plans/rowsRead. `test/auth/native-token-lookup.test.ts` exercises legacy duplicate ambiguity and10,000 retained credentials; storage tests reconstruct original1–14 before schema15 and fault/evict it.
+
+These tests are local source evidence, not live acceptance. Focused and full suites run serially with task-owned Workers SQL temporary storage. Recovery CLI uses its unchanged default temporary path and marker guard; absent pinned browsers remain blocked, not substituted. The [execution record](r2-task-plans/issue-036-execution.md) and [query study](research/r2-search-runtime.md) retain failure explanations and measured limitations.

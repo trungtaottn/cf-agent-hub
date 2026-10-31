@@ -29,7 +29,7 @@ const rows=(storage:DurableObjectStorage,table:string)=>storage.sql.exec('SELECT
 describe('R2 schema8 actual Workers SQLite storage (no domain activation)',()=>{
  it('historical_schema8_still_matches_immutable_manifest_and_current_registry_adds_only_reviewed_reason_and_artifact_admission',async()=>{
   await runInDurableObject(stub('fresh'),async(_o,state)=>{
-   expect(withTransaction(state.storage,inspectRegistry).schemaVersion).toBe(14);
+   expect(withTransaction(state.storage,inspectRegistry).schemaVersion).toBe(15);
    expect(TABLE_REGISTRY.filter(t=>t.name!=='artifact_inventory_state').map(t=>({...t,columns:t.columns.filter(c=>!({task_history:['reason'],artifacts:['admission_generation','expiry_check_at'],artifact_generations:['artifact_version','upload_idempotency_sha256','cleanup_next_at','cleanup_error_code','delete_admission_epoch','delete_admission_generation']} as Record<string,string[]>)[t.name]?.includes(c.name))}))).toEqual(manifest.tables);
    await state.storage.deleteAll();migrate(state.storage,[...v7,{version:8,sql:m8}]);
    expect(schema(state.storage)).toEqual(manifest.sqlite_schema);
@@ -56,7 +56,7 @@ describe('R2 schema8 actual Workers SQLite storage (no domain activation)',()=>{
    expect(rows(state.storage,'workspace_metadata')).toEqual(before.workspace_metadata);
    expect(rows(state.storage,'maintenance_state')).toEqual(before.maintenance_state);
    for(const row of rows(state.storage,'static_agents'))expect(row).toMatchObject({origin:'operator_static',agent_version:1,description:'',work_role_ids_json:'[]',framework:null,model:null,created_at:before.workspace_metadata[0].installed_at});
-   expect(withTransaction(state.storage,inspectRegistry).schemaVersion).toBe(14);
+   expect(withTransaction(state.storage,inspectRegistry).schemaVersion).toBe(15);
   });
  });
  it('collision_rolls_back_schema_and_rows',async()=>{
@@ -82,7 +82,7 @@ describe('R2 schema8 actual Workers SQLite storage (no domain activation)',()=>{
   const before=await runInDurableObject(target,(_o,state)=>{migrate(state.storage);migrate(state.storage);return {schema:schema(state.storage),agents:rows(state.storage,'static_agents'),versions:rows(state.storage,'schema_migrations')};});
   await evictDurableObject(target);
   expect(await runInDurableObject(target,(_o,state)=>({schema:schema(state.storage),agents:rows(state.storage,'static_agents'),versions:rows(state.storage,'schema_migrations')}))).toEqual(before);
-  expect(before.versions).toHaveLength(14);
+  expect(before.versions).toHaveLength(15);
  });
 });
 
@@ -93,7 +93,7 @@ describe('R2 migration fault and static bootstrap compatibility',()=>{
    const before={schema:schema(state.storage),agents:rows(state.storage,'static_agents'),credentials:rows(state.storage,'native_credentials'),versions:rows(state.storage,'schema_migrations')};
    expect(()=>migrate(state.storage,[...v7,{version:8,sql:m8+" INSERT INTO missing_fault_table VALUES(1);"}])).toThrow();
    expect({schema:schema(state.storage),agents:rows(state.storage,'static_agents'),credentials:rows(state.storage,'native_credentials'),versions:rows(state.storage,'schema_migrations')}).toEqual(before);
-   migrate(state.storage);expect(rows(state.storage,'schema_migrations')).toHaveLength(14);
+   migrate(state.storage);expect(rows(state.storage,'schema_migrations')).toHaveLength(15);
   });
  });
  it('fresh_static_metadata_uses_trusted_install_time_without_changing_revocations',async()=>{

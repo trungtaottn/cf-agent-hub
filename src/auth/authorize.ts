@@ -1,3 +1,4 @@
+import {uniqueNativeCredential} from './native-token-lookup';
 import {credentialGrantAllowed,type CredentialAuthorityRow} from './credential-authority';
 import {admissionOpen} from '../recovery/maintenance';
 import type { WorkspaceTransaction } from '../storage/transaction';
@@ -8,6 +9,8 @@ export interface SessionRecord {id:string;workspace_id:string;principal_id:strin
 export function resolveActor(tx:WorkspaceTransaction,identity:VerifiedIdentity,nowMs:number):ActorContext {
  if(!admissionOpen(tx))deny();
  if(identity.kind==='agent') {
+  // Recheck ambiguity at every current-authority boundary, including after async crypto.
+  if(uniqueNativeCredential(tx,identity.workspaceId,identity.tokenDigest)!==identity.credentialId)deny();
   const row=tx.one<NativeRecord>(`SELECT c.*,m.config_epoch AS installed_epoch,m.admission_state,a.config_epoch AS agent_epoch
    FROM native_credentials c JOIN workspace_metadata m ON m.workspace_id=c.workspace_id
    JOIN static_agents a ON a.agent_id=c.agent_id AND a.workspace_id=c.workspace_id
