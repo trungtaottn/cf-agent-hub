@@ -12,6 +12,12 @@ Status: Implementation plan reviewed · Implementation pending.
 
 **Spec:** [Roadmap](../../roadmap.md), [feature matrix](../../feature-matrix.md), [task lifecycle](../../task-lifecycle.md), [HTTP API](../../http-api.md), [MCP API](../../mcp-api.md), [security model](../../security-model.md), [delivery semantics](../../delivery-semantics.md), [limits](../../limits.md), [testing](../../testing.md), [OpenAPI](../../../spec/openapi.json) and `examples/http/fixture-map.json`. Read these alongside the plan. `ExampleApprovalInputs` is fixture data, not a built-in product action.
 
+## Narrow inactive-source clarification — issue 52
+
+The reviewed first source unit may implement optional structural deployment `decision_policy`, canonical human-only approval scope recognition, closed two-phase types and a query-only transaction-current requirements adapter against a fixed **empty production registry**. Synthetic trusted test composition is not runtime configuration or an enabled product action. Its returned pre-parse requirements are not final eligible resolution or verified input; issue 54 separately owns exact R2 bytes, schema validation/target extraction, runtime-private provenance and final current-SQL authorization. No final constructor or mutation/route is supplied in the first unit.
+
+This records partial inactive-source progress, not Task 1 completion: no actual operator-reviewed product action/schema/target-effect semantics has been selected. The existing instruction to stop action-dependent implementation for an unresolved schema remains in force. This clarification does not unlock action-specific request-decision, approve/reject, claim or dispatch work or clear the literal issue 52/54 dependencies. See [the source contract](../../contracts/r3-decisions.md).
+
 ## Global Constraints
 
 - R1/R2 implementation and runtime evidence are prerequisites. Documentation validation cannot mark F31–F33/F35 Implemented, Verified or Released.

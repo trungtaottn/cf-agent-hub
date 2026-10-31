@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:cf-agent-hub:decision-policy:1",
-  "title": "Standalone R3 decision policy contract",
-  "description": "Structural configuration only. Not installed deployment policy, not an actor grant, and no product actions are enabled by this schema.",
+  "title": "R3 inactive decision policy contract",
+  "description": "Optional structural deployment policy only; not an actor grant, and no product actions are enabled by this schema.",
   "type": "object",
   "additionalProperties": false,
   "required": [

@@ -241,7 +241,9 @@
                 "artifacts:read",
                 "artifacts:write",
                 "search:read",
-                "imports:manage"
+                "imports:manage",
+                "approvals:read",
+                "approvals:decide"
               ]
             },
             "maxItems": 1000,
@@ -473,6 +475,10 @@
           "execution_policy": {
             "$ref": "urn:cf-agent-hub:execution-policy:1",
             "description": "Optional operator-owned task execution policy. Omission disables policy-dependent task admission and scheduling; it never supplies defaults."
+          },
+          "decision_policy": {
+            "$ref": "urn:cf-agent-hub:decision-policy:1",
+            "description": "Optional structural selection only; source-owned descriptors decide availability. No default or enabled product actions."
           }
         },
         "required": [
