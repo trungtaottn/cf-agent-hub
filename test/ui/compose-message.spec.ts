@@ -44,3 +44,20 @@ test('changed_session_response_cannot_reveal_cached_private_draft',async({page})
  await page.route('**/v2/workspaces/ws_example/auth/session',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({data:{actor:{kind:'human',principal_id:'different_principal',agent_id:null},csrf_token:'synthetic_changed_session',expires_at:'2030-01-01T00:00:00Z'},request_id:'changed_session'})}));
  await page.getByRole('button',{name:'New message',exact:true}).click();await expect(page.getByTestId('message-composer')).toBeHidden();await expect(page.getByTestId('session-status')).not.toContainText('human_operator');await expect(page.locator('body')).not.toContainText('Old principal private draft');
 });
+
+test('reload_then_logout_without_opening_composer_erases_verified_scope',async({page})=>{
+ await open(page);await page.getByRole('checkbox',{name:/agent_research/}).check();await page.getByLabel('Message text',{exact:true}).fill('Private unopened reload draft');
+ await expect.poll(()=>compositionEntries(page)).toContain('Private unopened reload draft');
+ await page.reload();await expect(page.getByTestId('session-status')).toContainText('human_operator');await expect(page.getByTestId('message-composer')).toHaveCount(0);
+ await page.getByRole('button',{name:'Sign out',exact:true}).click();await expect(page.getByTestId('session-status')).not.toContainText('human_operator');
+ await expect.poll(()=>compositionEntries(page)).toBe('{}');
+});
+test('logout_from_unopened_second_tab_erases_scope_and_hides_open_sibling',async({page,context})=>{
+ await open(page);await page.getByRole('checkbox',{name:/agent_research/}).check();await page.getByLabel('Message text',{exact:true}).fill('Private sibling draft');
+ await expect.poll(()=>compositionEntries(page)).toContain('Private sibling draft');
+ const other=await context.newPage();await other.goto(appOrigin+'/overview?workspace=ws_example');await expect(other.getByTestId('session-status')).toContainText('human_operator');await expect(other.getByTestId('message-composer')).toHaveCount(0);
+ await other.getByRole('button',{name:'Sign out',exact:true}).click();await expect(page.getByTestId('message-composer')).toBeHidden();await expect.poll(()=>compositionEntries(page)).toBe('{}');await other.close();
+});
+async function compositionEntries(page:Page){
+ return page.evaluate(async()=>{const db=await new Promise<IDBDatabase>((resolve,reject)=>{const r=indexedDB.open('cfhub-composition-v1',1);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});try{return await new Promise<string>((resolve,reject)=>{const r=db.transaction('scopes').objectStore('scopes').get(['ws_example','human_operator']);r.onsuccess=()=>resolve(JSON.stringify(r.result?.entries));r.onerror=()=>reject(r.error);});}finally{db.close();}});
+}
