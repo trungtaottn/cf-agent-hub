@@ -1,3 +1,4 @@
+import currentIdentity from '../../workers/native-fixture/selected-state-schema17-profile.json';
 import {it,expect} from 'vitest';
 import {env} from 'cloudflare:workers';
 import {runInDurableObject} from 'cloudflare:test';
@@ -6,8 +7,8 @@ import {login,request as authRequest} from '../helpers/auth';
 import {prepareBootstrap,canonicalJson,sha256} from '../../src/config/bootstrap';
 import manifest from '../../scripts/lib/native-complete-fixture.json';
 import selectorData from '../../workers/native-fixture/complete-selectors.json';
-import {createCompleteSelectedState,decodeCompleteRows} from '../../workers/native-fixture/selected-state';
-import {admitCompleteFixture,readFixtureAdmissionCapture} from '../../workers/native-fixture/fixture-admission';
+import {createCurrentCompleteSelectedState as createCompleteSelectedState,decodeCompleteRows} from '../../workers/native-fixture/selected-state';
+import {admitCompleteFixture as admitSchema16Fixture,admitCurrentCompleteFixture as admitCompleteFixture,readCurrentFixtureAdmissionCapture as readFixtureAdmissionCapture} from '../../workers/native-fixture/fixture-admission';
 const P='ws_example',F='ws_foreign';
 async function installed(name:string,modify?:(config:Awaited<ReturnType<typeof fixture>>['config'])=>void,humanLogin=true){
  const raw=await fixture(name+'-p'),config=raw.config,c=manifest.configuration_constraints;
@@ -45,6 +46,10 @@ it('admits genuine initial P/F source snapshots after real local login, without 
   expect(result.scope).toBe('source-fixture-baseline');expect(result.installedAuthority).toBe(false);expect(result.human_authentication).toBe('not-performed');
   expect(result.captureStartedAt).toBeLessThanOrEqual(result.captureEndedAt);expect(result.captureEndedAt).toBeLessThanOrEqual(result.validatedAt);
   const capture=readFixtureAdmissionCapture(result);expect(capture.originals).toHaveLength(31);expect(()=>readFixtureAdmissionCapture(result)).toThrow();
+  const commitments=await Promise.all(capture.originals.map(async r=>({selector:r.selector,sha256:await sha256(r.canonical),byte_size:r.byteSize})));
+  expect(result.selectedStateSha256).toBe(await sha256(canonicalJson({profile:currentIdentity.profile,catalog_sha256:currentIdentity.catalog_sha256,commitments})));
+  expect(result.selectedStateSha256).not.toBe(await sha256(canonicalJson(commitments)));
+  await expect(admitSchema16Fixture(state.storage,{...expected,role})).rejects.toThrow();
   expect(JSON.stringify(result)).not.toContain('token_sha256');expect(JSON.stringify(result)).not.toContain('config_json');
  });
 });

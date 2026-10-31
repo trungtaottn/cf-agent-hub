@@ -18,7 +18,7 @@ export async function messageRoutes(request:Request,workspace:AuthWorkspace):Pro
   if(request.method==='OPTIONS'){
    const {config}=withTransaction(workspace.storage,tx=>currentConfiguration(tx,workspace)),auth=config.authentication;
    const redirect=auth.redirect_uris.find(x=>x.workspace_id===workspace.workspaceId);if(!redirect)throw new HttpError('DEPENDENCY_UNAVAILABLE',503);
-   const origin=new URL(redirect.redirect_uri).origin,allowed=['content-type','idempotency-key','x-csrf-token','authorization'];
+   const origin=new URL(redirect.redirect_uri).origin,allowed=['content-type','idempotency-key','x-csrf-token','authorization',...(route==='messages'?['x-creation-admission']:[])];
    if(url.origin!==origin||request.headers.get('origin')!==origin||!auth.allowed_origins.includes(origin)||request.headers.get('access-control-request-method')!==(read?'GET':'POST')||url.searchParams.size||
     (request.headers.get('access-control-request-headers')??'').split(',').map(x=>x.trim().toLowerCase()).filter(Boolean).some(x=>!allowed.includes(x)))throw new HttpError('FORBIDDEN',403);
    return new Response(null,{status:204,headers:{...securityHeaders,'access-control-allow-origin':origin,'access-control-allow-credentials':'true',vary:'Origin','access-control-allow-methods':read?'GET':'POST','access-control-allow-headers':allowed.join(', ')}});

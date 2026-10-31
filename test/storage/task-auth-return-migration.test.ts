@@ -53,9 +53,9 @@ it('schema16 upgrades genuine15 without rewriting any retained attempt, index, d
  const after=await runInDurableObject(stub,(_object,{storage})=>{
   const before=snapshot(storage),sessions=storage.sql.exec('SELECT rowid,* FROM sessions').toArray();
   expect(()=>insert(storage,'pre16_tasks','/tasks')).toThrow();
-  migrate(storage);expect(CURRENT_SCHEMA_VERSION).toBe(16);expect(()=>withTransaction(storage,assertCurrentSchema)).not.toThrow();
-  expect(attempts(storage)).toEqual(before.attempts);expect(history(storage).slice(0,15)).toEqual(before.history);expect(history(storage).map(row=>row.version)).toEqual(Array.from({length:16},(_,i)=>i+1));
-  expect(metadata(storage)).toEqual(before.metadata);expect(schema(storage).filter(row=>row.tbl_name!=='login_attempts')).toEqual(before.schema.filter(row=>row.tbl_name!=='login_attempts'));
+  migrate(storage);expect(CURRENT_SCHEMA_VERSION).toBe(17);expect(()=>withTransaction(storage,assertCurrentSchema)).not.toThrow();
+  expect(attempts(storage)).toEqual(before.attempts);expect(history(storage).slice(0,15)).toEqual(before.history);expect(history(storage).map(row=>row.version)).toEqual(Array.from({length:17},(_,i)=>i+1));
+  expect(metadata(storage)).toEqual(before.metadata);expect(schema(storage).filter(row=>!['login_attempts','events','creation_admissions'].includes(String(row.tbl_name)))).toEqual(before.schema.filter(row=>!['login_attempts','events'].includes(String(row.tbl_name))));
   expect(storage.sql.exec('SELECT rowid,* FROM sessions').toArray()).toEqual(sessions);expect(storage.sql.exec('PRAGMA foreign_key_check').toArray()).toEqual([]);
   insert(storage,'exact_tasks','/tasks');expect(storage.sql.exec("SELECT return_path FROM login_attempts WHERE id='exact_tasks'").one().return_path).toBe('/tasks');
   const current=snapshot(storage);migrate(storage);expect(snapshot(storage)).toEqual(current);return current;
@@ -64,7 +64,7 @@ it('schema16 upgrades genuine15 without rewriting any retained attempt, index, d
 });
 it('schema16 fresh schema accepts only exact old paths and exact tasks path',async()=>{
  await runInDurableObject(env.WORKSPACE.getByName('task_auth_return_fresh'),(_object,{storage})=>{
-  expect(CURRENT_SCHEMA_VERSION).toBe(16);for(const [i,path]of [...oldPaths,'/tasks'].entries())insert(storage,'allowed_'+i,path);
+  expect(CURRENT_SCHEMA_VERSION).toBe(17);for(const [i,path]of [...oldPaths,'/tasks'].entries())insert(storage,'allowed_'+i,path);
   const before=attempts(storage);
   for(const [i,path]of ['https://outside.example.invalid/tasks','//outside.example.invalid/tasks','/tasks?workspace=ws_example','/tasks#item','/tasks/','/%74asks','/ta%73ks','%2Ftasks','/tasks%3Fx=1','\\tasks','/\\tasks','/Tasks','/kanban','/tasks\u0000'].entries())expect(()=>insert(storage,'denied_'+i,path)).toThrow();
   expect(attempts(storage)).toEqual(before);

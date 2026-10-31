@@ -13,7 +13,7 @@ export function maintenanceRow(tx:WorkspaceTransaction):MaintenanceRow|null {
 export function maintenanceClosed(tx:WorkspaceTransaction):boolean {
  try {const row=maintenanceRow(tx);return row!==null&&row.state!=='open';}catch{return true;}
 }
-export function readAdmissionFence(tx:WorkspaceTransaction,schemaVersion:7|8|9|10|11|12|13|14|15|16=CURRENT_SCHEMA_VERSION):AdmissionFence {
+export function readAdmissionFence(tx:WorkspaceTransaction,schemaVersion:7|8|9|10|11|12|13|14|15|16|17=CURRENT_SCHEMA_VERSION):AdmissionFence {
  assertSchemaVersion(tx,schemaVersion);
  const epoch=tx.one<{config_epoch:number}>('SELECT config_epoch FROM workspace_metadata WHERE id=1')?.config_epoch??0;
  const row=maintenanceRow(tx);
@@ -21,15 +21,15 @@ export function readAdmissionFence(tx:WorkspaceTransaction,schemaVersion:7|8|9|1
  return {authorityEpoch:epoch,maintenanceGeneration:row?.generation??0};
 }
 export function sameFence(a:AdmissionFence,b:AdmissionFence):boolean {return a.authorityEpoch===b.authorityEpoch&&a.maintenanceGeneration===b.maintenanceGeneration;}
-export function assertFence(tx:WorkspaceTransaction,expected:AdmissionFence,schemaVersion:7|8|9|10|11|12|13|14|15|16=CURRENT_SCHEMA_VERSION):AdmissionFence {
+export function assertFence(tx:WorkspaceTransaction,expected:AdmissionFence,schemaVersion:7|8|9|10|11|12|13|14|15|16|17=CURRENT_SCHEMA_VERSION):AdmissionFence {
  const actual=readAdmissionFence(tx,schemaVersion);if(!sameFence(actual,expected))throw Error('STALE_ADMISSION_FENCE');return actual;
 }
-export function assertAdmissionOpen(tx:WorkspaceTransaction,expected?:AdmissionFence,schemaVersion:7|8|9|10|11|12|13|14|15|16=CURRENT_SCHEMA_VERSION):AdmissionFence {
+export function assertAdmissionOpen(tx:WorkspaceTransaction,expected?:AdmissionFence,schemaVersion:7|8|9|10|11|12|13|14|15|16|17=CURRENT_SCHEMA_VERSION):AdmissionFence {
  const actual=readAdmissionFence(tx,schemaVersion);
  if(tx.one<{admission_state:string}>('SELECT admission_state FROM workspace_metadata WHERE id=1')?.admission_state!=='installed'||maintenanceClosed(tx))throw Error('ADMISSION_CLOSED');
  if(expected&&!sameFence(actual,expected))throw Error('STALE_ADMISSION_FENCE');return actual;
 }
-export function admissionOpen(tx:WorkspaceTransaction,expected?:AdmissionFence,schemaVersion:7|8|9|10|11|12|13|14|15|16=CURRENT_SCHEMA_VERSION):boolean {try{assertAdmissionOpen(tx,expected,schemaVersion);return true;}catch{return false;}}
+export function admissionOpen(tx:WorkspaceTransaction,expected?:AdmissionFence,schemaVersion:7|8|9|10|11|12|13|14|15|16|17=CURRENT_SCHEMA_VERSION):boolean {try{assertAdmissionOpen(tx,expected,schemaVersion);return true;}catch{return false;}}
 /** Called only by a guarded installation transaction. Never deletes or resets the generation. */
 export function retainOpenMaintenance(tx:WorkspaceTransaction,epoch:number,nowMs:number):void {
  const row=maintenanceRow(tx);if(row&&row.state!=='open')throw Error('ADMISSION_CLOSED');
@@ -52,6 +52,6 @@ export function transitionMaintenance(tx:WorkspaceTransaction,input:{state:Maint
 export function assertArtifactEffectsDrained(tx:WorkspaceTransaction):void {
  if(tx.one<{version:number}>('SELECT MAX(version) AS version FROM schema_migrations')?.version===7){assertSchemaVersion(tx,7);return;}
  const version=tx.one<{version:number}>('SELECT MAX(version) AS version FROM schema_migrations')?.version;
- if(version!==15&&version!==16)throw Error('UNSUPPORTED_SCHEMA');assertSchemaVersion(tx,version);
+ if(version!==15&&version!==16&&version!==17)throw Error('UNSUPPORTED_SCHEMA');assertSchemaVersion(tx,version);
  if(tx.one("SELECT id FROM artifact_generations WHERE effect_state IN ('in_flight','uncertain') LIMIT 1"))throw Error('ARTIFACT_EFFECTS_NOT_DRAINED');
 }

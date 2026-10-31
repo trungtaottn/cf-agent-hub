@@ -117,3 +117,71 @@ Source and local service-binding tests do not prove deployed ownership, operatio
 Current16 capture additionally retains its exact admitted provider generation outside the exported capture projection. A pre-amendment current16 capture job lacking that record cannot silently resume under a newly observed anchor; status/chunk compatibility remains separate. Final verification advances a bounded per-artifact cursor tied to the immutable draft/job/provider/fence, then verifies the SQL digest before signed publication. Historical exact running-operation replay returns its original receipt under current authority checks, not a new current-status assertion; corrupt cursor state cannot authorize a fresh continuation or final publication.
 
 Guarded current16 readers require the pinned Workers BYOB readAtLeast behavior, verified locally against actual R2. Artifacts use64KiB views and SQL chunks at most1MiB views plus their bounded output buffer. This preserves streamed full hashes while bounding fragmentation-driven awaits. Missing support fails closed and cleans up pending streams without clearing dispatched-effect uncertainty. Platform eligibility remains separate: paid10000 subrequests is a provisional minimum, free1000 support is not asserted, and the documented32 Worker-invocation interpretation has not been resolved from pinned evidence. Local runs do not enforce deployed resource limits.
+
+
+## Schema17 creation-admission recovery
+
+New captures use schema17 and the complete 37-table registry. Protected SQL includes
+pending `creation_admissions` and nullable private `events.creation_binding`; the public
+Event DTO is unchanged. Ordinary restart preserves live pending reservations. Restore
+imports and validates their source evidence while maintenance remains closed, then deletes
+**every** reservation before completion. Completion and restored-target resume independently
+require the reservation table to be empty. This also invalidates a pre-consumption snapshot:
+a handle consumed after capture cannot become executable by restoring that capture.
+Historical event bindings are retained, not granted execution authority; reconciliation still
+requires current authorization and retained exact evidence.
+
+Existing authenticated schema16 captures remain supported restore inputs. Their original
+36-table registry, columns, chunks, hashes, signatures, and source checkpoint remain16.
+The isolated target runs schema17: source migration rows are evidence, never replacements
+for target migration history; source16 events gain only a NULL private binding at insertion,
+and their extra target column is explicitly verified NULL. Schema16 cannot supply a
+reservation table or binding column. The restore receipt remains bound to the original
+source manifest; target schema17 is reported by target readiness/probe evidence. Neither
+receipt nor source bytes are rewritten as schema17. Frozen15 capture/read compatibility is
+unchanged and does not authorize15 restore. Historical snapshot/receipt fixtures are not
+regenerated to make current tests pass.
+
+
+A new binary also retains coherent physical16 captures and existing16 restore jobs across
+restart. Existing16 imports continue under their original16 registry, then remain16 while
+captured/restored/retired maintenance is closed. Retirement stays16 and cannot reopen
+ordinary admission. An authorized resume uses the physical16 probe and commits the open
+transition, canonical migration17, and control outcome atomically; a migration fault rolls
+back all three. Only after schema17 inspection can scheduling or ordinary admission run.
+This compatibility lane does not admit new empty16 restores or source17 chunks into16.
+
+Schema compatibility is not cross-build execution permission. Retained16 mutable jobs and
+controls keep their exact declared release revision/worker version and binding fences.
+A different declared release identity is rejected without rewriting old authority. The
+same-boundary continuation tests do not authorize relabeling a new deployment as the old
+build; changing that boundary requires a separately reviewed explicit re-admission contract.
+Fresh17 restoration of an authenticated16 backup has its own current target authority.
+
+### Frozen16 fixture provenance and reproduction
+
+The three `test/fixtures/genuine-schema16*.json` fixtures were produced using the original
+schema16 encoder/capture code at local commit `8c9114ca212b008c9f981bc10165ad9463995578`.
+For a fetchable source reference, published [PR132](https://github.com/trungtaottn/cf-agent-hub/pull/132)
+head `b9e88dc2019caf194179f1ccabd457a2a9411847` has the identical source tree
+`895535a2bede1c3154f7e1d4fe5a077e0df96730`. The local commit in fixture provenance is
+preserved, not substituted with a claim that it was published.
+
+Stored fixture SHA256 values are:
+
+- `genuine-schema16-bundle.json`: `6e00dfe948058a370aa232af80121c6a93459786cb175b4057c1faa655f924a7`.
+- `genuine-schema16-snapshot-bundle.json`: `69cc32cf470e001ae6dac2a5e6f35acb70bf146ad83ba3f19b995cfc4eeb0e06`.
+- `genuine-schema16-restore-lifecycle-bundle.json`: `3af3dfb2df6078f8682177631266021363c82fa947894a19d748f8d208a029c8`.
+
+Run the `schema16-restore-upgrade`, `schema16-frozen-controls` and
+`schema16-restore-continuity` Workers tests to verify these stored signed captures and
+continuation snapshots against current code. Regenerating a capture from the equivalent
+published source produces fresh random identities and timestamps; it is not expected to
+reproduce byte-identical fixtures. Do not regenerate or rewrite historical signed bytes
+merely to satisfy a current decoder. All fixture contents are synthetic, not customer data
+or evidence of a live recovery.
+
+Schema17 also requires the explicit [current native witness profile](native-complete-profile.md#schema17-witness-compatibility)
+when exercising the native source verification tools. Historical16 proofs are not silently
+expanded or relabeled as17. Supporting the new profile in source does not activate it in any
+installed environment or waive recovery release fences.

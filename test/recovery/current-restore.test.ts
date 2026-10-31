@@ -7,11 +7,11 @@ import {fixtureIntegrity,recoveryContext} from '../helpers/recovery-fixture';
 import {TABLE_REGISTRY} from '../../src/recovery/table-registry';
 import {currentRestoreFixture,captureCurrentFixture,restoreCurrentFixture,withCurrentRecoveryWorkspace,targetArtifactBucket,mutateAuthenticatedCapture} from './current-restore-fixture';
 
-describe('current schema16 isolated restore from genuine capture',()=>{
+describe('current schema17 isolated restore from genuine capture',()=>{
  it('restores real committed bytes, terminal result and active replay-safe run without resurrecting authority',async()=>{
   const f=await currentRestoreFixture('restore_current_fixture');
   const capture=await captureCurrentFixture(f,{evict:true});
-  expect(capture.manifest.checkpoint.schema_version).toBe(16);
+  expect(capture.manifest.checkpoint.schema_version).toBe(17);
   expect(Object.keys(capture.manifest.database.table_counts).sort()).toEqual(TABLE_REGISTRY.map(t=>t.name).sort());
   expect(capture.manifest.artifacts).toHaveLength(1);
   expect(capture.manifest.database.table_counts.tasks).toBe(2);
@@ -101,7 +101,7 @@ describe('current restore fail-closed admission',()=>{
   const manifest=await signRecord({...capture.manifest,checkpoint:{...capture.manifest.checkpoint,schema_version:15 as const}},fixtureIntegrity);
   await withCurrentRecoveryWorkspace(f,'target',async w=>{
    const ctx=await recoveryContext(w,'restore',{manifest,ledger:f.ledger},f.captureId,{anchor:f.anchor,operationId:'deny15_restore'});
-   await expect(beginRestore(w,ctx,manifest,f.ledger)).rejects.toThrow();
+   await expect(beginRestore(w,ctx,manifest as unknown as import('../../src/recovery/protocol').RecoveryManifest,f.ledger)).rejects.toThrow();
    expect(w.storage.sql.exec('SELECT count(*) AS n FROM recovery_jobs').one().n).toBe(0);
    expect(w.storage.sql.exec('SELECT count(*) AS n FROM workspace_metadata').one().n).toBe(0);
   });

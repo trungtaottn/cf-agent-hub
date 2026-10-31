@@ -1,3 +1,4 @@
+import {selectCompleteProfile} from '../../scripts/lib/native-profile-selection.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash,generateKeyPairSync} from 'node:crypto';
@@ -15,8 +16,9 @@ test('new fixed parser requires closed authenticated facts while old parser rema
 for(const [name,edit]of Object.entries({epoch:f=>f.config_epoch=0,fraction:f=>f.config_epoch=1.5,negativeGeneration:f=>f.workspaces[0].generation=-1,sameObject:f=>f.workspaces[1].object_name=f.workspaces[0].object_name,workspaceOrder:f=>f.workspaces.reverse(),credentialOrder:f=>f.credentials.reverse(),version:f=>f.credentials[0].credential_version=2,expiry:f=>f.credentials[0].expires_at=253402300800000,issuer:f=>f.human.issuer='https://localhost',escapedIssuer:f=>f.human.issuer='https://a.example/"',humanExtra:f=>f.human.client_id='extra',arbitraryScopes:f=>f.credentials[0].scopes=['tasks:review'],aliasEpoch:f=>f.signing_epoch=7,digest:f=>f.config_sha256='A'.repeat(64)}))test('rejects invalid fixture facts '+name,()=>{const f=full();edit(f.inputs.fixture_facts);assert.throws(()=>parse(f));});
 test('fixture facts cap rejects one-over before JSON decode',()=>{const f=full(),old=JSON.parse;let calls=0;JSON.parse=(...args)=>{calls++;return old(...args);};try{assert.throws(()=>parseCompleteFixtureInputs({wire:Buffer.alloc(3447),config:f.config,authRef:f.authRef}));assert.equal(calls,0);}finally{JSON.parse=old;}});
 
-test('exact3446 maximal specimen and old2280 base remain independently bounded',()=>{
+for(const schema17 of [false,true])test('exact maximal specimen independently bounded schema17='+schema17,()=>{
  const f=full(),long=c=>c.repeat(64),ids=['s','r','x'];f.config.workspaces={primary:long('p'),foreign:long('f')};
+ if(schema17){const selected=selectCompleteProfile('native-r2-required-schema17-v1');f.config.profile=f.inputs.profile=selected.profile.profile;f.config.fixture_sha256=selected.commitments.fixture_sha256;f.config.family_ledger_sha256=selected.commitments.family_ledger_sha256;f.config.budgets={...selected.profile.reservation,duration_ms:60000};}
  f.config.actors.forEach((row,i)=>{row.agent_id=long(ids[i]);row.principal_id=row.agent_id;});f.config.fixture_stores[0].agent_id=long('s');f.config.fixture_stores[0].principal_id=long('s');
  f.inputs.credentials.forEach((row,i)=>{row.credential_ref=long(['a','b','c'][i]);row.credential_id=long(['d','e','g'][i]);row.agent_id=long(ids[i]);row.principal_id=row.agent_id;row.workspace_id=i===2?long('f'):long('p');});
  f.inputs.human={human_ref:long('h'),principal_id:long('i'),session_id:long('j'),workspace_id:long('p')};f.authRef=long('k');

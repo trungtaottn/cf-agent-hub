@@ -56,8 +56,8 @@ describe('prepared request applicability',()=>{
  it('a no-runtime-proof getWorkspace cannot claim a proof hash',()=>{const f=makeCaseEvidence(),entry=f.preparations.subjects.find((x:any)=>x.case_id==='native/revoked-after-disable');entry.subject.proof_sha256=caseHash('inapplicable-proof');entry.subject_sha256=caseHash(entry.subject);f.subjectDigests.set(entry.case_id,entry.subject_sha256);expect(validatePreparations(f.preparations,f.context).some(x=>x.code==='R2_CASE_SUBJECT')).toBe(true);});
 });
 
-it('frozen54-operation R2 catalog excludes exactly the two reviewed R3 browser recovery reads',()=>{
- const r3Only=['reconcileMessageCreation','reconcileTaskCreation'];
+it('frozen54-operation R2 catalog excludes exactly the four reviewed R3 browser preparation/recovery operations',()=>{
+ const r3Only=['reconcileMessageCreation','reconcileTaskCreation','prepareMessageCreation','prepareTaskCreation'];
  expect(Object.keys(CASE_OPERATIONS)).toHaveLength(54);
  for(const name of r3Only){expect(Object.hasOwn(CASE_OPERATIONS,name)).toBe(false);const actual=clientOperations[name as keyof typeof clientOperations];expect(actual).toMatchObject({native:false,runtimeProof:false,method:'POST',status:200});}
  const r2=Object.entries(clientOperations).filter(([name])=>!r3Only.includes(name));

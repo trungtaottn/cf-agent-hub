@@ -56,7 +56,9 @@
     "applyImport",
     "getImport",
     "reconcileMessageCreation",
-    "reconcileTaskCreation"
+    "reconcileTaskCreation",
+    "prepareMessageCreation",
+    "prepareTaskCreation"
   ],
   "excluded": {
     "requestTaskDecision": "R3 unavailable",

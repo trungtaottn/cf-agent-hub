@@ -5,11 +5,16 @@
 import manifest from '../../scripts/lib/native-complete-fixture.json';
 import {parseDeployment} from '../../src/config/deployment';
 import {canonicalJson,sha256} from '../../src/config/bootstrap';
-import {createCompleteSelectedState,completePhaseReservation,type SelectedOriginal} from './selected-state';
+import * as selected from './selected-state';
+import type {SelectedOriginal} from './selected-state';
+import currentIdentity from './selected-state-schema17-profile.json';
 type Row=Record<string,string|number|null>;
 type Workspace={id:string;object_name:string;installation_sha256:string;generation:number};
 type NativeActor={agent_id:string;credential_id:string;token_sha256:string};
 interface Expected {role:'primary'|'foreign';epoch:number;config_sha256:string;origin:string;audience:string;workspaces:{primary:Workspace;foreign:Workspace};actors:{S:NativeActor;R:NativeActor;X:NativeActor};human:{principal_id:string;issuer:string;subject:string;session_id:string;token_sha256:string;csrf_sha256:string};}
+function admissionProfile(schemaVersion:16|17){
+const createCompleteSelectedState=schemaVersion===16?selected.createCompleteSelectedState:selected.createCurrentCompleteSelectedState;
+const completePhaseReservation=schemaVersion===16?selected.completePhaseReservation:selected.currentCompletePhaseReservation;
 const privateCaptures=new WeakMap<object,Readonly<{originals:readonly Readonly<SelectedOriginal>[]}>>();
 function freezeSource(value:unknown):void {if(value!==null&&typeof value==='object'){for(const child of Object.values(value))freezeSource(child);Object.freeze(value);}}
 freezeSource(manifest);
@@ -55,8 +60,8 @@ function configuration(text:string,e:Expected){
  same(c,fixed);return c;
 }
 /** Consumes only an actually issued private handle. No arbitrary supplied capture. */
-export function readFixtureAdmissionCapture(result:unknown){check(result!==null&&typeof result==='object');const capture=privateCaptures.get(result);check(capture);privateCaptures.delete(result);return capture;}
-export async function admitCompleteFixture(storage:DurableObjectStorage,input:unknown){
+function readFixtureAdmissionCapture(result:unknown){check(result!==null&&typeof result==='object');const capture=privateCaptures.get(result);check(capture);privateCaptures.delete(result);return capture;}
+async function admitCompleteFixture(storage:DurableObjectStorage,input:unknown){
  try{
   const e=expected(input),w=e.workspaces[e.role],actor=e.actors[e.role==='primary'?'S':'X'];let captureStartedAt=0,captureEndedAt=0,transactions=0;
   // Static source-owned wrapper records time in the very transaction doing reads.
@@ -64,7 +69,7 @@ export async function admitCompleteFixture(storage:DurableObjectStorage,input:un
   const limits=completePhaseReservation('control/provision',e.role),reader=createCompleteSelectedState(timed,{W:w.id,C:actor.credential_id,human:e.human.principal_id,principal:actor.agent_id,operation:'domain.tasks:create',target:'tasks:create',key:'r2_'+'0'.repeat(32)},limits);
   let capture:ReturnType<typeof reader.readPhase>;try{capture=reader.readPhase({stepId:'control/provision',phase:e.role});}finally{reader.close();}
   check(transactions===1&&captureStartedAt<=captureEndedAt);const rows:Record<string,Row[]>={};for(const r of capture.originals){check(!Object.hasOwn(rows,r.selector));rows[r.selector]=JSON.parse(r.canonical) as Row[];}
-  check(capture.originals.length===31);check(rows.S.length===16&&rows.S.every((r,i)=>r.version===i+1));
+  check(capture.originals.length===31);check(rows.S.length===schemaVersion&&rows.S.every((r,i)=>r.version===i+1));
   const m=one(rows.M),f=one(rows.F);check(m.workspace_id===w.id&&m.object_name===w.object_name&&m.config_epoch===e.epoch&&m.config_digest===e.config_sha256&&m.installation_digest===w.installation_sha256&&m.admission_state==='installed');
   check(m.message_retained_after_created_at===null&&m.message_retained_after_id===null&&m.event_retained_after_sequence===null);
   check(f.id===1&&f.state==='open'&&f.authority_epoch===e.epoch&&f.generation===w.generation&&f.barrier_id===null&&f.capture_id===null);
@@ -88,8 +93,13 @@ export async function admitCompleteFixture(storage:DurableObjectStorage,input:un
   }
   check(await sha256(m.config_json)===e.config_sha256);
   const commitments=[];for(const r of capture.originals)commitments.push({selector:r.selector,sha256:await sha256(r.canonical),byte_size:r.byteSize});
-  const selectedStateSha256=await sha256(canonicalJson(commitments)),validatedAt=Date.now();check(validatedAt>=captureEndedAt&&expiresAt>validatedAt);
+  const selectedStateSha256=await sha256(canonicalJson(schemaVersion===16?commitments:{profile:currentIdentity.profile,catalog_sha256:currentIdentity.catalog_sha256,commitments})),validatedAt=Date.now();check(validatedAt>=captureEndedAt&&expiresAt>validatedAt);
   const result=Object.freeze({scope:'source-fixture-baseline' as const,installedAuthority:false,native_conformance:false,human_authentication:'not-performed' as const,role:e.role,workspaceId:w.id,configSha256:e.config_sha256,installationSha256:w.installation_sha256,epoch:e.epoch,maintenanceGeneration:w.generation,captureStartedAt,captureEndedAt,validatedAt,expiresAt,selectedStateSha256,actualQueries:reader.snapshot().actualQueries});
   privateCaptures.set(result,Object.freeze({originals:capture.originals}));return result;
  }catch{return reject();}
 }
+
+return Object.freeze({admitCompleteFixture,readFixtureAdmissionCapture});
+}
+export const {admitCompleteFixture,readFixtureAdmissionCapture}=admissionProfile(16);
+export const {admitCompleteFixture:admitCurrentCompleteFixture,readFixtureAdmissionCapture:readCurrentFixtureAdmissionCapture}=admissionProfile(17);

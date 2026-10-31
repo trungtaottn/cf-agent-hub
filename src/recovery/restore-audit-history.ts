@@ -2,7 +2,7 @@ import {canonicalJson} from '../config/bootstrap';
 import type {WorkspaceTransaction,SqlValue} from '../storage/transaction';
 import type {Event} from '../http/dto';
 import {closed,canonicalBytes} from './encoding';
-import {loadCurrentRestoreJob,type CurrentRestoreJob} from './restore-job';
+import {loadCurrentRestoreJob,parseCurrentRestoreJobRow,type CurrentRestoreJob} from './restore-job';
 import {RESTORE_EXPIRY_SUMMARY,type Evidence} from './restore-audit';
 
 type Row=Record<string,SqlValue>;
@@ -44,7 +44,7 @@ export function isCompletedRestoreAuditJob(job:CurrentRestoreJob):boolean {
 function summaryFromRow(raw:Row):Summary|null {
  if(raw.operation!=='restore'||raw.state!=='complete')return null;
  try{
-  const job=loadCurrentRestoreJob({one:()=>raw} as unknown as WorkspaceTransaction,String(raw.id));
+  const job=parseCurrentRestoreJobRow(raw as unknown as Parameters<typeof parseCurrentRestoreJobRow>[0]);
   if(!job||!isCompletedRestoreAuditJob(job))return null;
   const value:Summary={version:1,job_id:job.id,manifest_digest:job.manifest_digest!,created_at:job.created_at,task_pages:job.details.manifest.database.chunks.filter(c=>c.table==='tasks').map(c=>[c.index,c.row_count])};
   bounded(value);return value;

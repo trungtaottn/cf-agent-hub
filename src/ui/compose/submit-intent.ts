@@ -1,15 +1,15 @@
 import type {Message,Task} from '../../http/dto';
 import {validateMessageCreationReconciliation,validateTaskCreationReconciliation} from '../../http/generated/auth-validators.js';
-import type {ApiResult,BrowserComposeOperation,BrowserComposeRequest,BrowserComposeReconcileRequest} from '../../../packages/client/src/types';
+import type {ApiResult,BrowserComposeOperation,BrowserComposeRequest,BrowserComposeReconcileRequest,BrowserComposePrepareRequest} from '../../../packages/client/src/types';
 import {classifyWriteResult} from '../write-intent';
-import {DraftStore,type DraftBinding,type DraftEntry,type DraftScope,type SubmitIntent} from './draft-store';
+import {DraftStore,validAdmission,type DraftBinding,type DraftEntry,type DraftScope,type SubmitIntent} from './draft-store';
 export interface ComposeBinding extends DraftScope {generation:number;}
-export interface SubmitState {status:'inactive'|'ready'|'preparing'|'pending'|'confirmed'|'rejected'|'reconciliation-required'|'revalidation-required'|'storage-error'|'checking';entry:DraftEntry|null;}
+export interface SubmitState {status:'inactive'|'ready'|'preparing'|'pending'|'confirmed'|'rejected'|'reconciliation-required'|'revalidation-required'|'storage-error'|'checking'|'preparation-error';entry:DraftEntry|null;}
 export interface SubmitOptions {
  draftId:string;store:DraftStore;currentBinding:()=>ComposeBinding|null;
  /** Trusted host reads current session/workspace and referenced resources. Saved records grant nothing. */
  revalidate:(operation:BrowserComposeOperation,body:unknown)=>Promise<boolean>;
- send:BrowserComposeRequest;reconcile?:BrowserComposeReconcileRequest;newKey?:()=>string;
+ prepare:BrowserComposePrepareRequest;send:BrowserComposeRequest;reconcile?:BrowserComposeReconcileRequest;newKey?:()=>string;
 }
 /** Durable browser intent owner. No automatic retry or guessed lookup-by-key reconciliation. */
 export class SubmitController {
@@ -26,12 +26,19 @@ export class SubmitController {
   try{
    const entry=await this.options.store.load(b,this.options.draftId);if(!this.#same(g,c))return;
    if(entry?.intent&&entry.intent.status!=='prepared'){this.#show(entry);return;}
-   const intent=await this.options.store.admit(b,this.options.draftId,(this.options.newKey??(()=>crypto.randomUUID()))());if(!this.#same(g,c))return;
+   let intent=await this.options.store.admit(b,this.options.draftId,(this.options.newKey??(()=>crypto.randomUUID()))());if(!this.#same(g,c))return;
    const valid=await this.options.revalidate(intent.operation,JSON.parse(intent.bodyJson));if(!this.#same(g,c))return;
    if(!valid){const observed=await this.options.store.load(b,this.options.draftId);if(this.#same(g,c))this.#state={status:'revalidation-required',entry:observed};return;}
-   if(!await this.options.store.claimDispatch(b,this.options.draftId,intent.key)){const observed=await this.options.store.load(b,this.options.draftId);if(this.#same(g,c))this.#show(observed);return;}
+   if(intent.legacy){const observed=await this.options.store.load(b,this.options.draftId);if(this.#same(g,c))this.#state={status:'revalidation-required',entry:observed};return;}
+   if(!intent.admission){
+    let preparation;try{preparation=await this.options.prepare(intent.operation,{body:JSON.parse(intent.bodyJson)},{idempotencyKey:intent.key});}catch{preparation=null;}
+    if(!this.#same(g,c))return;
+    if(!preparation?.ok||!validAdmission(preparation.data)){const observed=await this.options.store.load(b,this.options.draftId);if(this.#same(g,c)){if(observed?.intent?.status==='prepared')this.#state={status:'preparation-error',entry:observed};else this.#show(observed);}return;}
+    intent=await this.options.store.freezeAdmission(b,this.options.draftId,intent,preparation.data);if(!this.#same(g,c))return;
+   }
+   if(!await this.options.store.claimDispatch(b,this.options.draftId,intent.key,intent)){const observed=await this.options.store.load(b,this.options.draftId);if(this.#same(g,c))this.#show(observed);return;}
    if(!this.#same(g,c))return;const pending=await this.options.store.load(b,this.options.draftId);if(!this.#same(g,c))return;this.#state={status:'pending',entry:pending};
-   let result:ApiResult<unknown>;try{result=await this.options.send(intent.operation,{body:JSON.parse(intent.bodyJson)},{idempotencyKey:intent.key});}catch{result={ok:false,status:null,error:{code:'NETWORK_ERROR',message:'Request outcome unknown',retryable:false},requestId:null};}
+   let result:ApiResult<unknown>;try{result=await this.options.send(intent.operation,{body:JSON.parse(intent.bodyJson)},{idempotencyKey:intent.key,admissionId:intent.admission!.admission_id});}catch{result={ok:false,status:null,error:{code:'NETWORK_ERROR',message:'Request outcome unknown',retryable:false},requestId:null};}
    if(!this.#same(g,c))return;
    const classification=classifyWriteResult(result);let status:'confirmed'|'rejected'|'uncertain'=classification==='succeeded'?'confirmed':classification==='uncertain'?'uncertain':'rejected';let entityId:string|null=null;
    if(result.ok){const data=result.data as Record<string,unknown>|null;if(!data||typeof data!=='object'||typeof data.id!=='string'||data.workspace_id!==c.workspaceId)status='uncertain';else entityId=data.id;}
@@ -51,8 +58,16 @@ export class SubmitController {
    original=entry?.intent??null;if(!original||!['uncertain','confirmed'].includes(original.status)){this.#show(entry);return null;}
    this.#state={status:'checking',entry};
    if(!await this.options.revalidate(original.operation,JSON.parse(original.bodyJson))||!this.#same(g,c))return null;
-   const result=await this.options.reconcile(original.operation,{body:JSON.parse(original.bodyJson)},{idempotencyKey:original.key});if(!this.#same(g,c))return null;
+   const result=await this.options.reconcile(original.operation,{body:JSON.parse(original.bodyJson)},{idempotencyKey:original.key,...(original.admission?{admissionId:original.admission.admission_id}:{})});if(!this.#same(g,c))return null;
    if(!result.ok||result.status!==200)return null;
+   const validReceipt=original.operation==='createMessage'?validateMessageCreationReconciliation(result.data):validateTaskCreationReconciliation(result.data);
+   if(validReceipt&&result.data.status==='admitted'){
+    if(!original.admission||result.data.admission.event_id!==original.admission.admission_id)return null;
+    await this.options.store.confirmReconciled(b,this.options.draftId,original,result.data.admission.entity_id);
+    return null; // Historical admission only, never a fabricated current entity/thread.
+   }
+   // A legacy DTO has no attempt identity: never attribute it to a prepared or uncertain write.
+   if(original.admission||original.status!=='confirmed'||!original.entityId)return null;
    let entity:Message|Task;
    if(original.operation==='createMessage'){
     if(!validateMessageCreationReconciliation(result.data)||result.data.status!=='confirmed')return null;
@@ -61,7 +76,7 @@ export class SubmitController {
     if(!validateTaskCreationReconciliation(result.data)||result.data.status!=='confirmed')return null;
     entity=result.data.task;
    }
-   if(entity.workspace_id!==c.workspaceId)return null;
+   if(entity.workspace_id!==c.workspaceId||entity.id!==original.entityId)return null;
    await this.options.store.confirmReconciled(b,this.options.draftId,original,entity.id);if(!this.#same(g,c))return null;
    const observed=await this.options.store.load(b,this.options.draftId);if(!this.#same(g,c))return null;
    this.#show(observed);const receipt=observed?.intent;

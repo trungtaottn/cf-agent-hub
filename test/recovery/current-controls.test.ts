@@ -31,7 +31,7 @@ describe('current control admission and exact post-transition replay',()=>{
  it('probes and resumes captured authority, replays completed receipt without another alarm repair',async()=>{
   const {f,capture,ledger}=await sourceFixture('control_resume');
   const probe=await withCurrentRecoveryWorkspace(f,'source',async w=>recordProbe(w,await recoveryContext(w,'probe',{},null,{anchor:f.resolver.anchor,operationId:'probe_exact'})));
-  expect(probe.schema_version).toBe(16);expect(probe.checks.every(c=>c.passed)).toBe(true);
+  expect(probe.schema_version).toBe(17);expect(probe.checks.every(c=>c.passed)).toBe(true);
   const body={receipt_id:capture.progress.receipt!.id,ledger,source_retirement_receipt:null,cutover_record:null};let repairs=0;
   const resume=()=>withCurrentRecoveryWorkspace(f,'source',async w=>{w.repairSchedule=async()=>{repairs++;return {armed:false,nextDueAt:null,generation:0,dirty:false};};return resumeWorkspace(w,await recoveryContext(w,'resume',body,f.captureId,{anchor:f.resolver.anchor,operationId:'resume_exact'}),body);});
   const receipt=await resume();expect(repairs).toBe(1);await evictDurableObject(f.source);expect(await resume()).toEqual(receipt);expect(repairs).toBe(1);

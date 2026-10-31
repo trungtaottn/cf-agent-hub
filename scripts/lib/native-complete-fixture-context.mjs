@@ -3,18 +3,18 @@
  * mandatory. Stable initial G identity is deliberately not current revoked G. */
 import {createHash} from 'node:crypto';
 import {types} from 'node:util';
-import fixture from './native-complete-fixture.json' with {type:'json'};
+import {selectCompleteProfile} from './native-profile-selection.mjs';
 import {canonicalCaseSubject as canonical} from './r2-case-policy.mjs';
 import {validateCompleteConfig} from './native-complete-config.mjs';
 import {parseCompleteFixtureInputs,parseCompleteCredential,parseCompleteHuman,COMPLETE_FIXTURE_INPUT_LIMIT} from './native-complete-installed-inputs.mjs';
 import {buildCompletePolicyFromStatement} from './native-complete-policy-bootstrap.mjs';
 import {snapshotCompleteValue as snapshot,freezeCompleteValue as freeze,completeKeys as keys} from './native-complete-protocol.mjs';
-freeze(fixture);
+
 const hash=v=>createHash('sha256').update(v).digest('hex');
 const check=v=>{if(!v)throw Error('NATIVE_COMPLETE_FIXTURE_CONTEXT_REJECTED');};
 function args(v){check(v&&!types.isProxy(v)&&Object.getPrototypeOf(v)===Object.prototype);const names=['config','inputs','credentials','human','installation','runId'],d=Object.getOwnPropertyDescriptors(v);check(Reflect.ownKeys(d).length===names.length);return Object.fromEntries(names.map(k=>{check(d[k]?.enumerable&&Object.hasOwn(d[k],'value'));return[k,d[k].value];}));}
 export function deriveCompleteFixtureContext(input){try{
- const a=args(input),config=validateCompleteConfig(a.config),installation=snapshot(a.installation,16384);
+ const a=args(input),config=validateCompleteConfig(a.config),fixture=selectCompleteProfile(config.profile).profile.fixture,installation=snapshot(a.installation,16384);
  buildCompletePolicyFromStatement({config,installation,runId:a.runId});
  const wire=Buffer.from(canonical(snapshot(a.inputs,COMPLETE_FIXTURE_INPUT_LIMIT)));
  check(hash(wire)===installation.payload.private_inputs_sha256);

@@ -1,9 +1,9 @@
 import type {Agent,MessageCreateRequest} from '../../http/dto';
-import type {BrowserReadRequest,BrowserComposeRequest,BrowserComposeReconcileRequest} from '../../../packages/client/src/types';
+import type {BrowserReadRequest,BrowserComposeRequest,BrowserComposeReconcileRequest,BrowserComposePrepareRequest} from '../../../packages/client/src/types';
 import {prepareNativeOperation,canonicalBody} from '../../../packages/client/src/native-request';
 import {DraftStore} from './draft-store';
 import {SubmitController,type ComposeBinding} from './submit-intent';
-export interface MessageCompositionOptions {store:DraftStore;currentBinding:()=>ComposeBinding|null;verifyAuthority:()=>Promise<boolean>;read:BrowserReadRequest;send:BrowserComposeRequest;reconcile?:BrowserComposeReconcileRequest;changed:()=>void;}
+export interface MessageCompositionOptions {store:DraftStore;currentBinding:()=>ComposeBinding|null;verifyAuthority:()=>Promise<boolean>;read:BrowserReadRequest;prepare:BrowserComposePrepareRequest;send:BrowserComposeRequest;reconcile?:BrowserComposeReconcileRequest;changed:()=>void;}
 /** Text-only view owner. Current reads are preparation, never server authorization. */
 export class MessageComposition {
  readonly controller:SubmitController;
@@ -14,7 +14,7 @@ export class MessageComposition {
    const message=body as MessageCreateRequest;
    for(const id of message.recipient_agent_ids){const result=await options.read('getAgent',{path:{agent_id:id}});if(!this.same(g,c)||!result.ok||result.data.id!==id||result.data.workspace_id!==c.workspaceId||result.data.status!=='active')return false;}
    return this.same(g,c);
-  },reconcile:options.reconcile,send:async(op,input,opts)=>{const g=this.#generation,c=this.capture(),result=await options.send(op,input,opts);if(c&&this.same(g,c)&&result.ok&&op==='createMessage'){const data=result.data as {thread_id?:unknown};if(typeof data.thread_id==='string'&&data.thread_id.length)this.#thread=data.thread_id;}return result;}});
+  },prepare:options.prepare,reconcile:options.reconcile,send:async(op,input,opts)=>{const g=this.#generation,c=this.capture(),result=await options.send(op,input,opts);if(c&&this.same(g,c)&&result.ok&&op==='createMessage'){const data=result.data as {thread_id?:unknown};if(typeof data.thread_id==='string'&&data.thread_id.length)this.#thread=data.thread_id;}return result;}});
  }
  private capture(){const c=this.options.currentBinding();return c?{...c}:null;}
  private same(g:number,c:ComposeBinding){const n=this.options.currentBinding();return g===this.#generation&&!!n&&n.workspaceId===c.workspaceId&&n.principalId===c.principalId&&n.generation===c.generation;}

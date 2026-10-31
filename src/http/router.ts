@@ -1,3 +1,5 @@
+import {creationBindingDigest} from '../workspace/creation-admissions';
+import {sha256} from '../config/bootstrap';
 import {AuthError,currentConfiguration,type AuthWorkspace} from '../auth/context';
 import {verifyNativeCredential} from '../auth/native';
 import {verifyHumanSession} from '../auth/sessions';
@@ -26,6 +28,8 @@ export async function dispatchCommand<B,T>(request:Request,workspace:AuthWorkspa
   if(request.method!==route.method||url.pathname!==route.path)throw new HttpError('NOT_FOUND',404);
   const bearer=request.headers.get('authorization'),cookie=request.headers.get('cookie');
   if(bearer&&cookie?.split(';').some(x=>x.trim().startsWith('cfhub_session=')))throw new HttpError('INVALID_REQUEST',400);
+  const admissionId=request.headers.get('x-creation-admission');
+  if(request.headers.has('x-creation-admission')&&(!admissionId||!/^event_[a-f0-9]{48}$/.test(admissionId)||request.headers.has('authorization')||request.headers.has('x-runtime-token')||!['MessageCreateRequest','TaskCreateRequest'].includes(route.schema)||!request.headers.has('origin')))throw new HttpError('INVALID_REQUEST',400);
   const key=request.headers.get('idempotency-key');if(!key)throw new HttpError('INVALID_REQUEST',400);
   const installed=withTransaction(workspace.storage,tx=>currentConfiguration(tx,workspace));
   const body=await parseBoundedJson(request,route.schema,route.schemaValidationValue) as B,query=route.query(url.searchParams);
@@ -48,8 +52,14 @@ export async function dispatchCommand<B,T>(request:Request,workspace:AuthWorkspa
   }
   const fingerprint=await fingerprintRequest(route.method,route.path,query,body);
   const prepared=typeof route.command==='function'?await route.command(body,{identity,fence:installed.fence,idempotencyKey:key,fingerprint}):{command:route.command};
+  let creationAdmission;
+  if(admissionId){
+   const principalId=withTransaction(workspace.storage,tx=>{currentConfiguration(tx,workspace,installed.fence);return resolveActor(tx,identity,workspace.clock.nowMs()).principalId;}),keyHash=await sha256(key);
+   const bindingDigest=await creationBindingDigest({id:admissionId,workspaceId:workspace.workspaceId,principalId,operation:prepared.command.operation,target:prepared.command.target,keyHash,fingerprint});
+   creationAdmission={id:admissionId,principalId,keyHash,bindingDigest};
+  }
   executing=true;
-  const result=executeCommandDetailed({workspace,requestId,idempotencyKey:key,fingerprint,admissionEpoch:installed.epoch,admissionGeneration:installed.fence.maintenanceGeneration},identity,prepared.command,body);
+  const result=executeCommandDetailed({workspace,requestId,idempotencyKey:key,fingerprint,admissionEpoch:installed.epoch,admissionGeneration:installed.fence.maintenanceGeneration,...(creationAdmission?{creationAdmission}:{})},identity,prepared.command,body);
   // No await follows commit. Projection is not passed to descriptors, persistence or logs.
   const outcome=result.firstExecution&&prepared.initialResponse?{...result.outcome,data:prepared.initialResponse(result.outcome.data)}:result.outcome;
   return toHttpResponse(outcome,requestId,headers);

@@ -26,7 +26,7 @@ export async function nativeRunnerMain(args){
  if(config.version===2){
   let host;
   try{
-   if(config.profile!=='native-r2-required-prepared-v1')throw Error('UNSUPPORTED_PROFILE');
+   if(!['native-r2-required-prepared-v1','native-r2-required-schema17-v1'].includes(config.profile))throw Error('UNSUPPORTED_PROFILE');
    const {loadFixedCompleteHost}=await import('./lib/native-host-v2-custody.mjs');host=await loadFixedCompleteHost(config);
   }catch{return {exitCode:3,stdout:'',stderr:'Complete native execution blocked by fixed profile, installed authority or custody admission; no request sent.\n'};}
   try{

@@ -5,8 +5,8 @@ const name='_cf_METADATA';
 // not SQL-normalized: an engine schema change requires compatibility review.
 const declaration='CREATE TABLE _cf_METADATA (\n        key INTEGER PRIMARY KEY,\n        value BLOB\n      )';
 /** Inspect schema identity only. Never read, export, import or mutate engine-owned rows. */
-export function inspectAlarmMetadata(tx:WorkspaceTransaction,schemaVersion:15|16):boolean {
- if(schemaVersion!==16)return false;
+export function inspectAlarmMetadata(tx:WorkspaceTransaction,schemaVersion:15|16|17):boolean {
+ if(schemaVersion<16)return false;
  const rows=tx.all<{type:string;name:string;tbl_name:string;sql:string|null}>(
   'SELECT type,name,tbl_name,sql FROM sqlite_schema WHERE name=? COLLATE NOCASE OR tbl_name=? COLLATE NOCASE LIMIT 2',[name,name]);
  if(rows.length===0)return false;

@@ -111,3 +111,17 @@ test('valid signature over canonical payload with wrong digest still rejects',()
  envelope.signature_base64=sign(null,Buffer.from('AGENTHUB_NATIVE_COMPLETE_ORIGINAL_V2\n'+canonicalCaseSubject(unsigned)),pair.privateKey).toString('base64');
  assert.throws(()=>verify(m,Buffer.from(canonicalCaseSubject(envelope))));
 });
+test('schema17 signed maxima are independently serialized and frozen16 remains exact',async()=>{
+
+ for(const profile of ['native-r2-complete-schema17-v1','native-r2-required-schema17-v1'])for(const family of ['independent-observation','secret-inventory-scan','process-observation-summary','control-acknowledgment','external-observation','final-output-scan','control-roster','slot-coverage-roster']){
+  const slot=family==='process-observation-summary'?{kind:'process',id:'prepare/reviewer-binding'}:family==='control-acknowledgment'?{kind:'control',id:'control/authorize'}:family==='external-observation'?{kind:'external',id:'server-foreign-workspace-denial'}:undefined;
+  const old=meta(family,slot);old.profile=profile.replace('-schema17-v1','-prepared-v1');if(['final-output-scan','control-roster','slot-coverage-roster'].includes(family)){for(const k of ['slot','invocation_id','preparation_sha256'])delete old[k];old.scope='run';}
+  const base=completeOriginalCap(old),delta=0,cap=base+delta;
+  assert.equal(completeOriginalCap({...old,profile}),cap);
+  const original=Buffer.alloc(base,120),current=Buffer.alloc(cap,120),oldMeta={...old,byte_size:base,sha256:hash(original)},newMeta={...old,profile,byte_size:cap,sha256:hash(current)};
+  const oldWire=encode(oldMeta,original),newWire=encode(newMeta,current);
+  assert.equal(newWire.length-oldWire.length,0);assert.equal(verify(newMeta,newWire).bytes.length,cap);
+  const over=Buffer.alloc(cap+1,120);assert.throws(()=>encode({...newMeta,byte_size:cap+1,sha256:hash(over)},over));
+  assert.throws(()=>verify(oldMeta,newWire));assert.throws(()=>verify(newMeta,oldWire));
+ }
+});

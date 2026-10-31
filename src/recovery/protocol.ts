@@ -1,5 +1,5 @@
 import type {TrustedAnchorCapability} from './trusted-anchor';
-import {frozenSchema15Capture} from './frozen-schema15';
+import {frozenSchema15Capture,retainedSchema16Recovery} from './frozen-schema15';
 import type {WorkspaceTransaction} from '../storage/transaction';
 import type {Clock,Entropy} from '../workspace/context';
 import type {RecoveryCommand,RecoveryManifest,RecoveryReceipt,RecoveryJobProgress,CurrentLedger,ProbeReceipt,ResumeReceipt,RetirementReceipt,CutoverRecord,ChunkMetadata} from './generated/recovery-validators.js';
@@ -63,10 +63,14 @@ export type RecoveryManifestV2=Extract<RecoveryManifest,{format_version:2}>;
 export type RecoveryArtifactEntry=RecoveryManifestV2['artifacts'][number];
 
 /** Exact recovery capability tuple; operation dispatch separately gates capture and current16 restore/control. */
-export function recoverySchema(tx:WorkspaceTransaction,ctx:Pick<RecoveryContext,'operation'|'captureId'>):7|15|16{
+export function recoverySchema(tx:WorkspaceTransaction,ctx:Pick<RecoveryContext,'operation'|'captureId'>):7|15|16|17{
  const n=tx.one<{version:number}>('SELECT MAX(version) AS version FROM schema_migrations')?.version;
- if(n!==7){if(n!==15&&n!==CURRENT_SCHEMA_VERSION)throw Error('RECOVERY_FORMAT_UNAVAILABLE');if(n===15){if(!['capture','read-chunk','status'].includes(ctx.operation))throw Error('RECOVERY_FORMAT_UNAVAILABLE');const job=frozenSchema15Capture(tx);if(!job||job.capture_id!==ctx.captureId)throw Error('RECOVERY_FORMAT_UNAVAILABLE');}}
+ if(n!==7){
+  if(n!==15&&n!==16&&n!==CURRENT_SCHEMA_VERSION)throw Error('RECOVERY_FORMAT_UNAVAILABLE');
+  if(n===15){if(!['capture','read-chunk','status'].includes(ctx.operation))throw Error('RECOVERY_FORMAT_UNAVAILABLE');const job=frozenSchema15Capture(tx);if(!job||job.capture_id!==ctx.captureId)throw Error('RECOVERY_FORMAT_UNAVAILABLE');}
+  if(n===16&&!retainedSchema16Recovery(tx))throw Error('RECOVERY_FORMAT_UNAVAILABLE');
+ }
  try{assertSchemaVersion(tx,n);}catch{throw Error('RECOVERY_FORMAT_UNAVAILABLE');}return n;
 }
-export type CurrentRecoveryManifest=Extract<RecoveryManifest,{checkpoint:{schema_version:15|16}}>;
+export type CurrentRecoveryManifest=Extract<RecoveryManifest,{checkpoint:{schema_version:15|16|17}}>;
 export type CurrentRecoveryArtifactEntry=CurrentRecoveryManifest['artifacts'][number];

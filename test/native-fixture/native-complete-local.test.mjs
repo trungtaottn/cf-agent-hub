@@ -1,4 +1,6 @@
 import test from 'node:test';
+import identity from '../../workers/native-fixture/selected-state-schema17-profile.json' with {type:'json'};
+import commitments from '../../workers/native-fixture/required-schema17-commitments.json' with {type:'json'};
 import assert from 'node:assert/strict';
 import {build} from 'esbuild';
 import {mkdtemp,rm} from 'node:fs/promises';
@@ -11,6 +13,7 @@ test('actual local complete fixture uses normal login and fixed P/F bindings (so
   const outfile=join(directory,'fixture.mjs');
   await build({entryPoints:[join(process.cwd(),'test/helpers/native-complete/local-fixture.ts')],outfile,bundle:true,platform:'node',format:'esm',packages:'external',logLevel:'silent'});
   const api=await import(pathToFileURL(outfile).href);fixture=await api.createLocalCompleteFixture();
+  assert.equal(fixture.profile,'native-r2-required-schema17-v1');assert.equal(fixture.selected_state_profile,identity.profile);assert.equal(fixture.selected_state_catalog_sha256,identity.catalog_sha256);assert.equal(fixture.fixture_sha256,commitments.fixture_sha256);assert.equal(fixture.family_ledger_sha256,commitments.family_ledger_sha256);
   assert.equal(fixture.expected.role,'primary');assert.notEqual(fixture.expected.workspaces.primary.id,fixture.expected.workspaces.foreign.id);
   assert.match(fixture.human.session_cookie,/^[A-Za-z0-9_-]{43}$/);assert.match(fixture.human.csrf_token,/^[A-Za-z0-9_-]{43}$/);
   assert.equal(typeof Object.getOwnPropertyDescriptor(fixture.controller,'installRequiredRun').value,'function');

@@ -17,3 +17,11 @@ test('service configuration rejects caller accessors without running them',()=>{
  Object.defineProperty(f.input,'serviceKeyBytes',{enumerable:true,get(){calls++;throw Error('hook');}});
  assert.throws(()=>verifyCompleteServiceConfiguration(f.input));assert.equal(calls,0);
 });
+
+test('current17 synthetic signed operator/service material verifies and bootstraps exact current profile',()=>{
+ const f=serviceConfigurationFixture({profile:'native-r2-required-schema17-v1'}),binding=verifyCompleteServiceConfiguration(f.input),run=deriveCompleteServiceRun(binding,'run_'+'7'.repeat(32),f.input.now);
+ assert.equal(run.policy.profile,'native-r2-required-schema17-v1');assert.equal(run.policy.assurance,'installed');assert.deepEqual(run.expected,f.expected);
+ assert.equal(run.policy.run_context.authorityRecordSha256,f.config.authority_record_sha256);
+ const old=serviceConfigurationFixture();
+ for(const key of ['authorityBytes','descriptorBytes','privateInputsBytes','configBytes'])assert.throws(()=>verifyCompleteServiceConfiguration({...f.input,[key]:old.input[key]}));
+});

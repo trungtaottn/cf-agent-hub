@@ -16,7 +16,7 @@ it('observes pinned engine alarm metadata identity and rejects application acces
   expect(rows[0]?.sql).toBe('CREATE TABLE _cf_METADATA (\n        key INTEGER PRIMARY KEY,\n        value BLOB\n      )');
   expect(rows[0]).toMatchObject({type:'table',name:'_cf_METADATA',tbl_name:'_cf_METADATA'});
   for(const sql of ['SELECT * FROM _cf_METADATA','CREATE TABLE _cf_spoof (key INTEGER PRIMARY KEY,value BLOB)','DROP TABLE _cf_METADATA'])expect(()=>state.storage.sql.exec(sql)).toThrow();
-  expect(withTransaction(state.storage,tx=>inspectRegistry(tx,16)).tables).toBe(TABLE_REGISTRY.length+1);
+  expect(withTransaction(state.storage,tx=>inspectRegistry(tx,17)).tables).toBe(TABLE_REGISTRY.length+1);
   try{console.log('ENGINE_METADATA_COLUMNS',JSON.stringify(state.storage.sql.exec('PRAGMA table_info("_cf_METADATA")').toArray()));}catch(error){console.log('ENGINE_METADATA_COLUMNS_DENIED',String(error));}
  });
 });

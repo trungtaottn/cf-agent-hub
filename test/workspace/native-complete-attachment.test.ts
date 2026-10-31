@@ -61,7 +61,7 @@ it('runs genuine S/R enrollment then task through normal source fetch with priva
    expect(capture.requestBody).toEqual(new TextEncoder().encode(JSON.stringify(steps[i].body)));
    expect(()=>readAttachmentCapture(attachment,r.invocation_id)).toThrow();
   }
-  expect(new Set(ids).size).toBe(3);expect(attachment.snapshot().reserved.metadataBytes).toBe(3072);expect(attachment.snapshot()).toMatchObject({completed:3,dispatches:3,failed:false,scope:'source-fixture-attachment',installedAuthority:false});
+  expect(new Set(ids).size).toBe(3);expect(attachment.snapshot().reserved.bridgeBytes).toBe(2368938);expect(attachment.snapshot().reserved.metadataBytes).toBe(3072);expect(attachment.snapshot()).toMatchObject({completed:3,dispatches:3,failed:false,scope:'source-fixture-attachment',installedAuthority:false});
   expect(JSON.stringify(attachment.snapshot())).not.toContain(tokens.S);expect(await attachment.closeAttachment()).toMatchObject({status:'closed'});
  });
 });

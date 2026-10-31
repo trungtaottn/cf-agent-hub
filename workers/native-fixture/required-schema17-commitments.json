@@ -1,0 +1,7 @@
+{
+  "profile": "native-r2-required-schema17-v1",
+  "fixture_sha256": "75a4e8d4847592f78eea5c353489be8a81af06976da1d8f99ce04ecd3ee6be58",
+  "family_ledger_sha256": "f3a5aac6399c1de977a4131c90c9633e772dcde3a83b28a63c1f44351f4858c1",
+  "scenario_sha256": "32685984844046879069ce219a8db32bb4ae01e7338a3059bd06a7d521d49074",
+  "full_scenario_sha256": "acc2c4b9f13664ed281f27945ae6688252cf7c82725c80be66b2078fbb45175b"
+}

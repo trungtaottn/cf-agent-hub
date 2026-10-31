@@ -14,6 +14,7 @@ test('actual_indexeddb_two_connections_commit_one_dispatch_and_reopen_exact_inte
   const {DraftStore,IndexedComposeDatabase}=window.composeTest,scope={workspaceId:'ws',principalId:'storage_race'};
   const db1=new IndexedComposeDatabase(),db2=new IndexedComposeDatabase(),a=new DraftStore(db1),b=new DraftStore(db2),x=await a.bind(scope),y=await b.bind(scope);
   await a.save(x,'draft','createTask',{title:'Original',description:''});const [i,j]=await Promise.all([a.admit(x,'draft','key_a'),b.admit(y,'draft','key_b')]);
+  await a.freezeAdmission(x,'draft',i,{admission_id:'event_'+'a'.repeat(48),expires_at:'2030-01-01T00:00:00Z'});
   const claims=await Promise.all([a.claimDispatch(x,'draft',i.key),b.claimDispatch(y,'draft',j.key)]);await a.save(x,'draft','createTask',{title:'Edited',description:''});await db1.close();await db2.close();
   const db3=new IndexedComposeDatabase(),c=new DraftStore(db3),z=await c.bind(scope),entry=await c.load(z,'draft');await c.clearScope(z);await db3.close();return {same:i.key===j.key,claims,entry};
  });
@@ -35,13 +36,13 @@ test('actual_indexeddb_abort_rolls_back_admission_before_completion',async({page
 });
 
 test('actual_page_reload_retains_uncertain_identity_without_dispatch',async({page})=>{
- const before=await page.evaluate(async()=>{const {DraftStore,IndexedComposeDatabase}=window.composeTest,db=new IndexedComposeDatabase(),store=new DraftStore(db),b=await store.bind({workspaceId:'ws',principalId:'reload_owner'});await store.save(b,'draft','createTask',{title:'Reload exact',description:''});const intent=await store.admit(b,'draft','reload_key');await store.claimDispatch(b,'draft',intent.key);await db.close();return intent;});
+ const before=await page.evaluate(async()=>{const {DraftStore,IndexedComposeDatabase}=window.composeTest,db=new IndexedComposeDatabase(),store=new DraftStore(db),b=await store.bind({workspaceId:'ws',principalId:'reload_owner'});await store.save(b,'draft','createTask',{title:'Reload exact',description:''});const intent=await store.admit(b,'draft','reload_key');await store.freezeAdmission(b,'draft',intent,{admission_id:'event_'+'a'.repeat(48),expires_at:'2030-01-01T00:00:00Z'});await store.claimDispatch(b,'draft',intent.key);await db.close();return intent;});
  await page.reload();await page.waitForFunction(()=>!!window.composeTest);
  const after=await page.evaluate(async()=>{const {DraftStore,IndexedComposeDatabase}=window.composeTest,db=new IndexedComposeDatabase(),store=new DraftStore(db),b=await store.bind({workspaceId:'ws',principalId:'reload_owner'}),entry=await store.load(b,'draft');await store.clearScope(b);await db.close();return entry;});
  expect(after?.intent?.key).toBe(before.key);expect(after?.intent?.bodyJson).toBe(before.bodyJson);expect(after?.intent?.status).toBe('uncertain');
 });
 test('actual_two_tabs_share_one_transactional_dispatch_claim',async({page,context})=>{
- await page.evaluate(async()=>{const {DraftStore,IndexedComposeDatabase}=window.composeTest,db=new IndexedComposeDatabase(),store=new DraftStore(db),b=await store.bind({workspaceId:'ws',principalId:'tabs_owner'});await store.save(b,'draft','createTask',{title:'Two tabs',description:''});await store.admit(b,'draft','tabs_key');await db.close();});
+ await page.evaluate(async()=>{const {DraftStore,IndexedComposeDatabase}=window.composeTest,db=new IndexedComposeDatabase(),store=new DraftStore(db),b=await store.bind({workspaceId:'ws',principalId:'tabs_owner'});await store.save(b,'draft','createTask',{title:'Two tabs',description:''});const intent=await store.admit(b,'draft','tabs_key');await store.freezeAdmission(b,'draft',intent,{admission_id:'event_'+'a'.repeat(48),expires_at:'2030-01-01T00:00:00Z'});await db.close();});
  const second=await context.newPage();await second.goto(appOrigin+'/__compose_storage__');await second.waitForFunction(()=>!!window.composeTest);
  const claim=async()=>{const {DraftStore,IndexedComposeDatabase}=window.composeTest,db=new IndexedComposeDatabase(),store=new DraftStore(db),b=await store.bind({workspaceId:'ws',principalId:'tabs_owner'});const result=await store.claimDispatch(b,'draft','tabs_key');await db.close();return result;};
  const results=await Promise.all([page.evaluate(claim),second.evaluate(claim)]);expect(results.filter(Boolean)).toHaveLength(1);

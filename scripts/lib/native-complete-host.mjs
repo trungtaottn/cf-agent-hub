@@ -58,7 +58,7 @@ const ownerNames=['assertCurrent','derivePolicy','createClient','createBootstrap
  * The exact-byte-verified bundle owns both the resolver and its WeakMap brand. */
 export async function executeFixedCompleteHost(input){
  try{
-  const config=validateCompleteConfig(input);if(config.profile==='native-r2-complete-prepared-v1')requireCompleteCapabilities();
+  const config=validateCompleteConfig(input);if(['native-r2-complete-prepared-v1','native-r2-complete-schema17-v1'].includes(config.profile))requireCompleteCapabilities();
   const context=resolveCompleteHostContext({config,sourceInventory:COMPLETE_HOST_SOURCE_INVENTORY});
   const current=()=>assertCompleteInstallationCurrent(context.binding);
   return await executeSourceCompleteHostCore({config,context},{
@@ -82,7 +82,7 @@ export async function executeFixedCompleteHost(input){
 export async function executeSourceCompleteHostCore(input,ownerInput){
  const a=fields(input,['config','context']),owners=fields(ownerInput,ownerNames);
  for(const name of ownerNames)check(typeof owners[name]==='function'&&!types.isProxy(owners[name]));
- const config=validateCompleteConfig(a.config);if(config.profile==='native-r2-complete-prepared-v1')requireCompleteCapabilities();
+ const config=validateCompleteConfig(a.config);if(['native-r2-complete-prepared-v1','native-r2-complete-schema17-v1'].includes(config.profile))requireCompleteCapabilities();
  const selected=selectCompleteProfile(config.profile),scenario=selected.scenario;
  const context=fields(a.context,['binding','materials','evidenceContext','hostSha256']);
  const m=fields(context.materials,['statement','config','subjects','inputs','clientAuth','credentials','human','humanSha256','anchorBase64','descriptorBase64','authority']);

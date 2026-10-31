@@ -59,7 +59,7 @@ export function validateCompleteConfig(input){
   path(c.fixture_directory);path(c.output_directory);
   const dirs=[submitter.state_directory,reviewer.state_directory,foreign.state_directory,c.fixture_directory,c.output_directory];
   for(let i=0;i<dirs.length;i++)for(let j=i+1;j<dirs.length;j++)if(dirs[i]===dirs[j]||dirs[i].startsWith(dirs[j]+'/')||dirs[j].startsWith(dirs[i]+'/'))fail();
-  if(p.profile==='native-r2-complete-prepared-v1')c.budgets=validateCompleteBudget(c.budgets);
+  if(['native-r2-complete-prepared-v1','native-r2-complete-schema17-v1'].includes(p.profile))c.budgets=validateCompleteBudget(c.budgets);
   else{
    keys(c.budgets,'commands mutations artifact_bytes output_bytes duration_ms');
    for(const [k,value] of Object.entries(p.reservation))if(c.budgets[k]!==value)fail();

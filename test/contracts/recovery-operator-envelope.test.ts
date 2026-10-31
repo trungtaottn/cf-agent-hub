@@ -3,7 +3,7 @@ import {describe,it,expect} from 'vitest';
 import {readOperatorRequest} from '../../src/recovery/operator';
 import {TABLE_REGISTRY} from '../../src/recovery/table-registry';
 import {OPERATOR_RAW_LIMIT} from '../../src/recovery/operator-envelope';
-function command(op='restore',current=true){const c=JSON.parse(readFileSync('examples/recovery/r1-commands.json','utf8')).commands.find((x:{operation:string})=>x.operation===op);if(current&&c.payload.manifest){const m=c.payload.manifest;m.format_version=2;m.checkpoint.contract_revision='0.2';m.checkpoint.schema_version=16;m.database.table_counts=Object.fromEntries(TABLE_REGISTRY.map(t=>[t.name,0]));}return c;}
+function command(op='restore',current=true){const c=JSON.parse(readFileSync('examples/recovery/r1-commands.json','utf8')).commands.find((x:{operation:string})=>x.operation===op);if(current&&c.payload.manifest){const m=c.payload.manifest;m.format_version=2;m.checkpoint.contract_revision='0.2';m.checkpoint.schema_version=17;m.database.table_counts=Object.fromEntries(TABLE_REGISTRY.map(t=>[t.name,0]));}return c;}
 function request(value:unknown,padding=0){return new Request('https://operator.example.invalid/operator/recovery',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(value)+' '.repeat(padding)});}
 describe('operator transport raw and semantic size boundaries',()=>{
  it('preserves legacy413 when oversized input cannot identify a valid JSON envelope',async()=>{

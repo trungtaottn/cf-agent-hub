@@ -66,3 +66,12 @@ for(const [name,edit]of Object.entries({missing:f=>delete f.phase.denial,proof:f
 
 test('E1 retains primary store while committing actual foreign route, never third workspace',()=>{const f=fixture('probe/server-foreign-workspace');assert.equal(f.preparation.store_binding.workspace_id,f.expected.workspaces.primary.id);assert.equal(f.phase.workspace_id,f.expected.workspaces.foreign.id);assert.equal(composeCompleteProcessSummary(f).payload.http_status,401);for(const field of ['phase','store']){const v=fixture('probe/server-foreign-workspace');if(field==='phase'){v.phase.workspace_id='third';v.phase.transport.requests[0].path='/v2/workspaces/third';}else v.preparation.store_binding.workspace_id=v.expected.workspaces.foreign.id;assert.throws(()=>composeCompleteProcessSummary(v));}});
 for(const [name,edit]of Object.entries({swapped:f=>[f.expected.workspaces.primary,f.expected.workspaces.foreign]=[f.expected.workspaces.foreign,f.expected.workspaces.primary],credential:f=>f.expected.actors.S.credential_id='other',principal:f=>f.expected.actors.S.agent_id='other',epoch:f=>f.expected.epoch++,ordinary:f=>f.phase.workspace_id='foreign_workspace'}))test('summary rejects fixed route Expected mismatch '+name,()=>{const f=fixture(name==='ordinary'?'prepare/reviewer-binding':'probe/server-foreign-workspace');edit(f);assert.throws(()=>composeCompleteProcessSummary(f));});
+test('schema17 summary remains bound to exact policy and issued scan profile',()=>{
+ const f=fixture(),selected=selectCompleteProfile('native-r2-required-schema17-v1');
+ f.policy.profile=selected.profile.profile;f.policy.family_ledger_sha256=selected.commitments.family_ledger_sha256;
+ f.terminal.profile=f.policy.profile;f.terminal.policy_sha256=sha(f.policy);
+ f.scan.payload.profile=f.policy.profile;f.scan.reference.sha256=sha(f.scan.payload);f.scan.reference.byte_size=Buffer.byteLength(canonical(f.scan.payload));
+ assert.equal(composeCompleteProcessSummary(f).payload.profile,f.policy.profile);
+ const mixed=structuredClone(f);mixed.scan.payload.profile='native-r2-required-prepared-v1';mixed.scan.reference.sha256=sha(mixed.scan.payload);mixed.scan.reference.byte_size=Buffer.byteLength(canonical(mixed.scan.payload));assert.throws(()=>composeCompleteProcessSummary(mixed));
+ const wrong=structuredClone(f);wrong.policy.family_ledger_sha256=selectCompleteProfile('native-r2-required-prepared-v1').commitments.family_ledger_sha256;wrong.terminal.policy_sha256=sha(wrong.policy);assert.throws(()=>composeCompleteProcessSummary(wrong));
+});

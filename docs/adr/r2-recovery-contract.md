@@ -118,3 +118,41 @@ Recovery expiry audit events use the truthful system:recovery producer, not the 
 A genuine alarm probe followed by recapture revealed the engine-owned `_cf_METADATA` table. Current schema16 inspection accepts only its exact observed type, name, owner and SQL declaration on the pinned workerd runtime; case variants, extra owner objects and schema drift fail closed. This is not a broad internal-name exemption. All 36 product table definitions and `sqlite_sequence` checks remain mandatory. Historical schema15/V1 policy is unchanged.
 
 The table is never a product registry entry and its contents are never read, copied, imported or deleted by recovery. The platform alarm API retains ownership. The [pinned metadata implementation](https://github.com/cloudflare/workerd/blob/v1.20261019.1/src/workerd/util/sqlite-metadata.c%2B%2B) and [SQL access regulator](https://github.com/cloudflare/workerd/blob/v1.20261019.1/src/workerd/api/sql.c%2B%2B) explain its creation and application-access restriction. This exact engine shape is not a promised public API: an incompatible runtime must fail with `RECOVERY_ENGINE_SCHEMA_INCOMPATIBLE` and receive explicit compatibility review, not silently skip unknown tables. Real-alarm repeated-recovery regression evidence is required in the checkpoint.
+
+
+## Schema17 original-creation admission amendment
+
+Schema17 adds one private pending-authority table and one nullable private event column.
+The reviewed schema15/16 registry is frozen separately from the schema17 registry; format2,
+revision0.2 readers select columns and table coverage using the authenticated source schema.
+Existing row/chunk/manifest/job/combined-byte ceilings are unchanged and apply to the new
+table as part of the same totals, never an extra unbounded side channel.
+
+Restore accepts16 and17 into an isolated17 target. Hash and source-cell verification use
+the original source tuple; only the explicit16-to17 insertion mapping supplies NULL for
+`events.creation_binding`. Verification requires that added column to remain NULL on16
+imports. Source migration sequence1 through its declared schema version is validated via
+exact manifest count, bounded versions, and globally strictly increasing primary keys;
+source migration rows remain evidence while target migrations remain17. There is no
+reinterpretation, re-signing or mutation of retained16 bytes or receipts.
+
+All source17 `creation_admissions` are invalidated during the existing closed-gate authority
+transform, including records prepared before capture and consumed later in the lost future.
+The final completion and restored-target resume gates independently reject any remaining
+reservation. Source capture/resume and ordinary restart do not consume live reservations.
+An event binding is historical evidence only and remains subject to current authorization
+and event retention. No new recovery credential, signing key, external effect or operator
+authority is introduced. Source manifest schema and target readiness schema are distinct;
+existing restore receipt provenance binds the original source manifest without relabeling it.
+
+
+Physical16 lifecycle continuity is separate from importing a16 backup into a fresh17 target.
+The constructor retains only coherent captured/capturing or existing restoring/restored16
+jobs (and retired16 capture authority), with exact physical registry, workspace, epoch,
+barrier, generation, manifest and chunk-prefix checks. Current anchored controllers own16
+and17;16 must never fall through to legacy7 controllers. A retained16 restore uses16 target
+columns/counts without rewriting its closed job, source hashes or receipts. Retirement
+remains frozen16. Authorized resume performs the canonical17 DDL and schema ledger insert
+inside the same SQLite transaction as gate transition and control completion; SQL/bookkeeping
+failure leaves16 closed and retryable. No scheduler/network await occurs inside that SQL
+transaction. The new17 registry is inspected before a successful resumed admission.

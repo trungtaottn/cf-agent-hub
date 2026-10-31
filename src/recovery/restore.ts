@@ -57,7 +57,7 @@ function insertChunkRows(tx:WorkspaceTransaction,chunk:RecoveryChunk,job:Recover
  job.details.lastKeys[chunk.table]=primaryKey(table,chunk.rows.at(-1)!);
 }
 export async function writeRestoreChunk(w:RecoveryWorkspace,ctx:RecoveryContext,metadata:{index:number;sha256:string;byte_size:number},bytes:Uint8Array):Promise<RecoveryJobProgress>{
- if(withTransaction(w.storage,tx=>tx.one<{version:number}>('SELECT MAX(version) AS version FROM schema_migrations')?.version)===16)return writeCurrentRestoreChunk(w,ctx,metadata,bytes);
+ if(withTransaction(w.storage,tx=>tx.one<{version:number}>('SELECT MAX(version) AS version FROM schema_migrations')?.version??0)>=16)return writeCurrentRestoreChunk(w,ctx,metadata,bytes);
  if(ctx.operation!=='write-chunk'||!ctx.captureId)throw Error('INVALID_RECOVERY_CONTEXT');withTransaction(w.storage,tx=>assertRecoveryContext(tx,w,ctx));const id=await jobIdFor(w.workspaceId,ctx.captureId,'restore');
  let job=withTransaction(w.storage,tx=>assertJob(tx,w,ctx,id));const entry=job.details.manifest!.database.chunks[metadata.index];
  if(!entry||entry.sha256!==metadata.sha256||entry.byte_size!==metadata.byte_size||bytes.length!==metadata.byte_size||await digestBytes(bytes)!==metadata.sha256)throw Error('RECOVERY_CHUNK_MISMATCH');

@@ -3,7 +3,7 @@
  * Host-only exit/artifact/journal remain unobserved: final host joins are required. */
 import {createHash} from 'node:crypto';
 import app from '../../workers/native-fixture/required-application-plan.json' with {type:'json'};
-import catalog from '../../workers/native-fixture/complete-selectors.json' with {type:'json'};
+import {selectNativeSelectedState} from './native-selected-state-profile.mjs';
 import caps from './native-complete-original-caps.json' with {type:'json'};
 import {canonicalCaseSubject as canonical} from './r2-case-policy.mjs';
 import {selectCompleteProfile} from './native-profile-selection.mjs';
@@ -13,15 +13,15 @@ import {validateCompletePreparation} from './native-complete-preparation.mjs';
 import {validateCompleteRequest} from './native-complete-request.mjs';
 import {requiredCommitTuple,validateRequiredDenialProjection,validateRequiredFixtureExpected} from './native-complete-service-sources.mjs';
 import {completeApplicationRequestDigest} from './native-complete-key-plan.mjs';
-freeze(app);freeze(catalog);freeze(caps);
-const tag='native-r2-required-prepared-v1',selected=selectCompleteProfile(tag),steps=selected.scenario.steps.filter(s=>s.kind!=='control'&&!s.caseId&&!['prepare/fail-create','prepare/revoke-own-positive'].includes(s.id));
+freeze(app);freeze(caps);
+
 const hash=v=>createHash('sha256').update(v).digest('hex'),sha=v=>hash(canonical(v)),equal=(a,b)=>canonical(a)===canonical(b);
 const check=v=>{if(!v)throw Error('NATIVE_COMPLETE_PROCESS_SUMMARY_REJECTED');},keys=(v,k)=>fields(v,k.split(' '));
 const digest=v=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v),id=v=>typeof v==='string'&&/^[A-Za-z0-9_-]{1,128}$/.test(v),integer=v=>Number.isSafeInteger(v)&&v>=0&&!Object.is(v,-0);
-function state(v){keys(v,'record_count canonical_bytes sha256 selectors');check(integer(v.record_count)&&v.record_count<=61&&integer(v.canonical_bytes)&&v.canonical_bytes<=7888422&&digest(v.sha256)&&Array.isArray(v.selectors)&&v.selectors.length<=34&&new Set(v.selectors).size===v.selectors.length&&v.selectors.every(s=>Object.hasOwn(catalog.catalog,s))&&v.record_count>=v.selectors.length);}
+function state(v,catalog){keys(v,'record_count canonical_bytes sha256 selectors');check(integer(v.record_count)&&v.record_count<=61&&integer(v.canonical_bytes)&&v.canonical_bytes<=7888422&&digest(v.sha256)&&Array.isArray(v.selectors)&&v.selectors.length<=34&&new Set(v.selectors).size===v.selectors.length&&v.selectors.every(s=>Object.hasOwn(catalog.catalog,s))&&v.record_count>=v.selectors.length);}
 function privateRef(name,family,value,cap){const text=canonical(value),size=Buffer.byteLength(text);check(size<=cap);return {record_id:'private_'+name+'_'+hash(text),family,sha256:hash(text),byte_size:size};}
 export function composeCompleteProcessSummary(input){try{
- const a=keys(input,'policy validationOptions preparation terminal phase scan expected'),options=snapshot(a.validationOptions,4096),policy=validateCompletePolicy(a.policy,options);check(policy.profile===tag&&steps.length===14);const expected=validateRequiredFixtureExpected(a.expected);
+ const a=keys(input,'policy validationOptions preparation terminal phase scan expected'),options=snapshot(a.validationOptions,4096),policy=validateCompletePolicy(a.policy,options);const tag=policy.profile;check(['native-r2-required-prepared-v1','native-r2-required-schema17-v1'].includes(tag));const selected=selectCompleteProfile(tag),catalog=selectNativeSelectedState(tag).catalog,steps=selected.scenario.steps.filter(s=>s.kind!=='control'&&!s.caseId&&!['prepare/fail-create','prepare/revoke-own-positive'].includes(s.id));check(steps.length===14);const expected=validateRequiredFixtureExpected(a.expected);
  const raw=snapshot(a.preparation,16384),step=steps.find(s=>s.id===raw.step_id);check(step);const slot={kind:'process',id:step.id},p=validateCompletePreparation(raw,slot,tag),prep=sha(p),terminal=validateCompleteRequest(a.terminal,policy,options),t=terminal.payload;
  check(terminal.operation==='complete-process'&&equal(t.slot,slot)&&t.invocation_id===p.invocation_id&&t.preparation_sha256===prep);
  const phase=snapshot(a.phase,11033);check(Buffer.byteLength(canonical(phase))<=11033);keys(phase,'type version scope installedAuthority native_conformance subject workspace_id before_at after_at state grant runtimes transport reconciliation commit'+(step.id==='probe/server-foreign-workspace'?' denial':''));if(step.id==='probe/server-foreign-workspace')validateRequiredDenialProjection(phase,step.id);
@@ -31,7 +31,7 @@ export function composeCompleteProcessSummary(input){try{
  for(const k of ['request_body_sha256','idempotency_key_sha256'])check(s[k]===null||digest(s[k]));
  const foreignRoute=step.id==='probe/server-foreign-workspace';if(foreignRoute){const b=p.store_binding,actor=expected.actors.S;check(b.workspace_id===expected.workspaces.primary.id&&b.principal_id===actor.agent_id&&b.agent_id===actor.agent_id&&b.credential_id===actor.credential_id&&b.authority_epoch===expected.epoch&&b.runtime_id===null&&b.proof_sha256===null);}
  check(phase.workspace_id===(foreignRoute?expected.workspaces.foreign.id:p.store_binding.workspace_id)&&integer(phase.before_at)&&integer(phase.after_at)&&phase.before_at<=phase.after_at);
- keys(phase.state,'before after');state(phase.state.before);state(phase.state.after);keys(phase.grant,'before after');keys(phase.runtimes,'before after');
+ keys(phase.state,'before after');state(phase.state.before,catalog);state(phase.state.after,catalog);keys(phase.grant,'before after');keys(phase.runtimes,'before after');
  for(const when of ['before','after']){
   const g=phase.grant[when];if(g!==null){keys(g,'workspace_id credential_id agent_id credential_version config_epoch enabled revoked_at record_sha256');check(id(g.workspace_id)&&id(g.credential_id)&&id(g.agent_id)&&integer(g.credential_version)&&g.credential_version>=1&&integer(g.config_epoch)&&g.config_epoch>=1&&typeof g.enabled==='boolean'&&(g.revoked_at===null||integer(g.revoked_at))&&digest(g.record_sha256));}
   check(Array.isArray(phase.runtimes[when])&&phase.runtimes[when].length<=3);for(const r of phase.runtimes[when]){keys(r,'id credential_id agent_id authority_epoch runtime_version proof_sha256 presence_expires_at revoked_at status');check(id(r.id)&&id(r.credential_id)&&id(r.agent_id)&&integer(r.authority_epoch)&&r.authority_epoch>=1&&integer(r.runtime_version)&&r.runtime_version>=1&&digest(r.proof_sha256)&&integer(r.presence_expires_at)&&(r.revoked_at===null||integer(r.revoked_at))&&['online','expired'].includes(r.status));}

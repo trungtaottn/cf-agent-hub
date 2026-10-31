@@ -1,3 +1,4 @@
+import currentCommitments from '../../workers/native-fixture/required-schema17-commitments.json';
 import {it,expect} from 'vitest';
 import {env} from 'cloudflare:workers';
 import {runInDurableObject,evictDurableObject} from 'cloudflare:test';
@@ -62,7 +63,7 @@ it('runs one real P/F journey through the sole frontdoor, with source-test termi
  const f=await installed('required-joint-source'),{expected}=f,controller=(env as unknown as {CONTROLLER:DurableObjectNamespace}).CONTROLLER.getByName('required-fixture-controller') as any;
  const run='joint_source_run',owner='e'.repeat(64),prep='d'.repeat(64),final='f'.repeat(64),deadline=Date.now()+120000;
  let managementCalls=0;const call=async(method:string,value:unknown)=>{managementCalls++;let text:string;try{text=await controller[method](canonicalJson(value));}catch{throw Error('PRIVATE_CALL_FAILED '+method+' '+String((value as any).registration?.step_id??(value as any).registration?.phase_id??(value as any).control_id??(value as any).step_id??''));}expect(typeof text).toBe('string');const parsed=JSON.parse(text);expect(canonicalJson(parsed)).toBe(text);return {text,value:parsed};};
- const installation={run_id:run,service_id:'source_test_service',instance_id:'source_test_instance',descriptor_sha256:'a'.repeat(64),policy_sha256:'b'.repeat(64),native_config_sha256:'c'.repeat(64),fixture_config_sha256:expected.config_sha256,scenario_sha256:'1'.repeat(64),fixture_sha256:'2'.repeat(64),ledger_sha256:'3'.repeat(64),deadline,expected};await call('installRequiredRun',installation);
+ const installation={run_id:run,service_id:'source_test_service',instance_id:'source_test_instance',descriptor_sha256:'a'.repeat(64),policy_sha256:'b'.repeat(64),native_config_sha256:'c'.repeat(64),fixture_config_sha256:expected.config_sha256,scenario_sha256:'1'.repeat(64),fixture_sha256:currentCommitments.fixture_sha256,ledger_sha256:currentCommitments.family_ledger_sha256,deadline,expected};await call('installRequiredRun',installation);
  let prior:any=null,requests=0,processes=0,auxiliaries=0,scannerReads=0,held:Promise<Response>|null=null;const causal:Record<string,string>={};
  const tasks:Record<string,string>={},runs:Record<string,string>={},runtime:Record<string,any>={},dtos:Record<string,Map<string,any>>={T:new Map(),R:new Map(),U:new Map(),AR:new Map()};let artifact:string|null=null,message:string|null=null,thread:string|null=null;
  const acknowledge=async(result:{text:string;value:any})=>{const sha=await sha256(result.text);prior={source_sha256:sha,record_id:'source_issued_'+processes+'_'+auxiliaries+'_'+requiredControllerPlan.findIndex(s=>s.id===result.value.subject?.step_id),family:'process-observation-summary',sha256:final,byte_size:1};if(result.value.subject?.step_id)causal[result.value.subject.step_id]=sha;return sha;};
@@ -126,7 +127,7 @@ it('does not dispatch a later foreign bind after concurrent poison (controlled s
   let release!:()=>void,entered!:()=>void,foreign=0;const gate=new Promise<void>(r=>release=r),started=new Promise<void>(r=>entered=r);
   const fake={getByName:(name:string)=>({bindSourceCapture:async()=>{if(name===expected.workspaces.primary.object_name){entered();await gate;}else foreign++;return canonicalJson({projection:{}});},closeSourceRun:async()=>canonicalJson({status:'closed'})})};
   const a=new RequiredFixtureController(state,{...env,CONTROLLER:{idFromName:()=>stub.id},WORKSPACE:fake} as any),run='controlled_source_run';
-  await a.installRequiredRun(canonicalJson({run_id:run,service_id:'s',instance_id:'i',descriptor_sha256:'a'.repeat(64),policy_sha256:'b'.repeat(64),native_config_sha256:'c'.repeat(64),fixture_config_sha256:expected.config_sha256,scenario_sha256:'1'.repeat(64),fixture_sha256:'2'.repeat(64),ledger_sha256:'3'.repeat(64),deadline:Date.now()+10000,expected}));
+  await a.installRequiredRun(canonicalJson({run_id:run,service_id:'s',instance_id:'i',descriptor_sha256:'a'.repeat(64),policy_sha256:'b'.repeat(64),native_config_sha256:'c'.repeat(64),fixture_config_sha256:expected.config_sha256,scenario_sha256:'1'.repeat(64),fixture_sha256:currentCommitments.fixture_sha256,ledger_sha256:currentCommitments.family_ledger_sha256,deadline:Date.now()+10000,expected}));
   const empty={task_id:null,run_id:null,runtime_id:null,artifact_id:null,thread_id:null,message_id:null,reviewer_agent_id:expected.actors.R.agent_id};
   await a.observeRequiredControl(canonicalJson({run_id:run,control_id:'control/authorize',role:'primary',preparation_sha256:'d'.repeat(64),idempotency_key:null,request_body_sha256:null,bindings:empty,prior_issued:null}));
   const pending=a.provisionRequiredRun(canonicalJson({run_id:run,preparation_sha256:'d'.repeat(64),prior_issued:null}));void pending.catch(()=>{});await started;
@@ -139,4 +140,18 @@ it('does not export full admission captures through the workspace RPC surface',a
  await (p as any).bindRequiredFixture({run_id:'raw_rpc_negative',run_deadline:deadline,expires_at:deadline,expected});
  let exposed=false;try{const value=await (p as any).takePrivateAdmissionCapture();exposed=!!value;}catch{}
  expect(exposed).toBe(false);await (p as any).closeAttachment();
+});
+
+it.each(['historical','mixed','arbitrary'])('current17 producer rejects %s commitment pair before claim or dispatch',async kind=>{
+ const {p,expected}=await installed('controller-profile-'+kind);
+ const ns=(env as unknown as {CONTROLLER:DurableObjectNamespace}).CONTROLLER,stub=ns.getByName('profile-negative-'+kind);
+ const before=await runInDurableObject(p,(_i,state)=>({tasks:[...state.storage.sql.exec('SELECT * FROM tasks')],events:[...state.storage.sql.exec('SELECT * FROM events')]}));
+ await runInDurableObject(stub,async(_instance,state)=>{
+  let binds=0;const a=new RequiredFixtureController(state,{...env,CONTROLLER:{idFromName:()=>stub.id},WORKSPACE:{getByName:()=>{binds++;throw Error('UNEXPECTED_BIND');}}} as any);
+  const oldFixture='482f19deda8e36b04178e327ebe02b35abea646bc66816bcf02a6a54592d739a',oldLedger='1555521a754e60a5483066dbf822085fe1a926f1689f156422ea03d159840cbe';
+  const fixture_sha256=kind==='historical'?oldFixture:kind==='mixed'?currentCommitments.fixture_sha256:'f'.repeat(64),ledger_sha256=kind==='arbitrary'?'e'.repeat(64):oldLedger;
+  await expect(a.installRequiredRun(canonicalJson({run_id:'run_wrong_profile',service_id:'s',instance_id:'i',descriptor_sha256:'a'.repeat(64),policy_sha256:'b'.repeat(64),native_config_sha256:'c'.repeat(64),fixture_config_sha256:expected.config_sha256,scenario_sha256:currentCommitments.scenario_sha256,fixture_sha256,ledger_sha256,deadline:Date.now()+10000,expected}))).rejects.toThrow();
+  expect(await state.storage.get('required-run-claim')).toBeUndefined();expect(binds).toBe(0);
+ });
+ const after=await runInDurableObject(p,(_i,state)=>({tasks:[...state.storage.sql.exec('SELECT * FROM tasks')],events:[...state.storage.sql.exec('SELECT * FROM events')]}));expect(after).toEqual(before);
 });

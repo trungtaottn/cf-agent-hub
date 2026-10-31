@@ -105,12 +105,14 @@ export class HubClient {
   if(!allowed.includes(operation))return failure('OPERATION_UNAVAILABLE','Operation unavailable in the browser composition surface');
   let prepared:ReturnType<typeof prepareNativeOperation>,headers:Headers,signal:AbortSignal|undefined;
   try{
-   if(!record(options)||Object.keys(options).some(key=>key!=='idempotencyKey'&&key!=='signal'))throw new ClientFault('INVALID_REQUEST');
+   if(!record(options)||Object.keys(options).some(key=>key!=='idempotencyKey'&&key!=='signal'&&key!=='admissionId'))throw new ClientFault('INVALID_REQUEST');
    const key=options.idempotencyKey;signal=options.signal;
+   if(options.admissionId!==undefined&&(typeof options.admissionId!=='string'||!/^event_[a-f0-9]{48}$/.test(options.admissionId)))throw new ClientFault('INVALID_REQUEST');
    if(!nonempty(key)||key.trim()!==key||/[\r\n]/.test(key)||signal!==undefined&&!(signal instanceof AbortSignal))throw new ClientFault('INVALID_REQUEST');
    prepared=prepareNativeOperation('https://browser.invalid',this.#workspaceId,operation,input);
    if(!this.#csrfToken)return failure('CSRF_REQUIRED','Session CSRF token required');
    headers=new Headers({accept:'application/json','content-type':'application/json','idempotency-key':key,'x-csrf-token':this.#csrfToken});
+   if(options.admissionId)headers.set('x-creation-admission',options.admissionId);
   }catch{return failure('INVALID_REQUEST','Invalid request');}
   const contract=clientOperations[operation],deadline=new Deadline(30_000,signal);
   try{
@@ -119,11 +121,10 @@ export class HubClient {
    return await this.#transport.json<HttpOperationData[K]>(response,{status:contract.status,validateEnvelope:contract.validateResponse,maxBytes:1048576,deadline});
   }catch(error){return faultResult(error);}finally{deadline.dispose();}
  }
- /** Read-only retained-admission check. Original creation preparation stays canonical;
-  * generated reconcile operations remain unavailable to native credentials. */
- async reconcileCreation<K extends BrowserComposeOperation>(operation:K,input:RequestFor<K>,options:BrowserComposeOptions):Promise<ApiResult<BrowserComposeReconciliation<K>>>{
+ /** Prepare identity without domain creation. Current cookie and CSRF are independently required. */
+ async prepareCreation<K extends BrowserComposeOperation>(operation:K,input:RequestFor<K>,options:Pick<BrowserComposeOptions,'idempotencyKey'|'signal'>):Promise<ApiResult<HttpOperationData['prepareTaskCreation']>>{
   if(operation!=='createMessage'&&operation!=='createTask')return failure('OPERATION_UNAVAILABLE','Operation unavailable in browser admission recovery');
-  const counterpart=operation==='createMessage'?'reconcileMessageCreation':'reconcileTaskCreation',contract=clientOperations[counterpart];
+  const counterpart=operation==='createMessage'?'prepareMessageCreation':'prepareTaskCreation',contract=clientOperations[counterpart];
   let prepared:ReturnType<typeof prepareNativeOperation>,headers:Headers,signal:AbortSignal|undefined;
   try{
    if(!record(options)||Object.keys(options).some(key=>key!=='idempotencyKey'&&key!=='signal'))throw new ClientFault('INVALID_REQUEST');
@@ -133,6 +134,31 @@ export class HubClient {
    if(!(contract.validateRequest as (value:unknown)=>boolean)(input))throw new ClientFault('INVALID_REQUEST');
    if(!this.#csrfToken)return failure('CSRF_REQUIRED','Session CSRF token required');
    headers=new Headers({accept:'application/json','content-type':'application/json','idempotency-key':key,'x-csrf-token':this.#csrfToken});
+  }catch{return failure('INVALID_REQUEST','Invalid request');}
+  const deadline=new Deadline(30_000,signal);
+  try{
+   const path=contract.path.replace('{workspace_id}',this.#workspaceId);
+   const response=await this.#transport.open(path,{method:contract.method,headers,body:prepared.canonicalBody,credentials:'same-origin',mode:'same-origin',redirect:'error',cache:'no-store',signal:deadline.signal},deadline);
+   if(response.status===401||response.status===403)this.#csrfToken=null;
+   return await this.#transport.json<HttpOperationData['prepareTaskCreation']>(response,{status:contract.status,validateEnvelope:contract.validateResponse,maxBytes:1048576,deadline});
+  }catch(error){return faultResult(error);}finally{deadline.dispose();}
+ }
+
+ /** Read-only original-admission check; never retries creation. */
+ async reconcileCreation<K extends BrowserComposeOperation>(operation:K,input:RequestFor<K>,options:BrowserComposeOptions):Promise<ApiResult<BrowserComposeReconciliation<K>>>{
+  if(operation!=='createMessage'&&operation!=='createTask')return failure('OPERATION_UNAVAILABLE','Operation unavailable in browser admission recovery');
+  const counterpart=operation==='createMessage'?'reconcileMessageCreation':'reconcileTaskCreation',contract=clientOperations[counterpart];
+  let prepared:ReturnType<typeof prepareNativeOperation>,headers:Headers,signal:AbortSignal|undefined;
+  try{
+   if(!record(options)||Object.keys(options).some(key=>key!=='idempotencyKey'&&key!=='signal'&&key!=='admissionId'))throw new ClientFault('INVALID_REQUEST');
+   const key=options.idempotencyKey;signal=options.signal;
+   if(options.admissionId!==undefined&&(typeof options.admissionId!=='string'||!/^event_[a-f0-9]{48}$/.test(options.admissionId)))throw new ClientFault('INVALID_REQUEST');
+   if(!nonempty(key)||key.trim()!==key||/[\r\n]/.test(key)||signal!==undefined&&!(signal instanceof AbortSignal))throw new ClientFault('INVALID_REQUEST');
+   prepared=prepareNativeOperation('https://browser.invalid',this.#workspaceId,operation,input);
+   if(!(contract.validateRequest as (value:unknown)=>boolean)(input))throw new ClientFault('INVALID_REQUEST');
+   if(!this.#csrfToken)return failure('CSRF_REQUIRED','Session CSRF token required');
+   headers=new Headers({accept:'application/json','content-type':'application/json','idempotency-key':key,'x-csrf-token':this.#csrfToken});
+   if(options.admissionId)headers.set('x-creation-admission',options.admissionId);
   }catch{return failure('INVALID_REQUEST','Invalid request');}
   const deadline=new Deadline(30_000,signal);
   try{

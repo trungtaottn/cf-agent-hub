@@ -136,9 +136,12 @@ export type BrowserTaskCommandRequest=<K extends BrowserTaskCommandOperation>(op
 
 /** Browser composition uses only the session cookie/CSRF lane. */
 export type BrowserComposeOperation='createMessage'|'createTask';
-export type BrowserComposeOptions={idempotencyKey:string;signal?:AbortSignal};
+export type BrowserComposeOptions={idempotencyKey:string;admissionId?:string;signal?:AbortSignal};
 export type BrowserComposeRequest=<K extends BrowserComposeOperation>(operation:K,input:RequestFor<K>,options:BrowserComposeOptions)=>Promise<ApiResult<DTO.HttpOperationData[K]>>;
 
 /** Read-only retained creation admission; never a command retry or absence proof. */
 export type BrowserComposeReconciliation<K extends BrowserComposeOperation> = K extends 'createMessage' ? DTO.MessageCreationReconciliation : DTO.TaskCreationReconciliation;
 export type BrowserComposeReconcileRequest=<K extends BrowserComposeOperation>(operation:K,input:RequestFor<K>,options:BrowserComposeOptions)=>Promise<ApiResult<BrowserComposeReconciliation<K>>>;
+
+export type BrowserComposePreparation=DTO.CreationPreparation;
+export type BrowserComposePrepareRequest=<K extends BrowserComposeOperation>(operation:K,input:RequestFor<K>,options:Pick<BrowserComposeOptions,'idempotencyKey'|'signal'>)=>Promise<ApiResult<BrowserComposePreparation>>;

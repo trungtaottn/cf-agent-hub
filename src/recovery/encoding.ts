@@ -36,10 +36,10 @@ function scalarCompare(a:SqlCell,b:SqlCell):number {
 }
 export function primaryKey(table:RegistryTable,row:readonly SqlCell[]):SqlCell[]{return table.primaryKey.map(k=>row[table.columns.findIndex(c=>c.name===k)]);}
 export function compareKeys(a:readonly SqlCell[],b:readonly SqlCell[]):number {if(a.length!==b.length)throw Error('INVALID_PRIMARY_KEY');for(let i=0;i<a.length;i++){const c=scalarCompare(a[i],b[i]);if(c)return c;}return 0;}
-export interface CurrentRecoveryChunk {format_version:2;schema_version:15|16;capture_id:string;index:number;table:CurrentTableName;columns:string[];rows:SqlCell[][];}
+export interface CurrentRecoveryChunk {format_version:2;schema_version:15|16|17;capture_id:string;index:number;table:CurrentTableName;columns:string[];rows:SqlCell[][];}
 function validateChunk(value:unknown,current=false):asserts value is RecoveryChunk|CurrentRecoveryChunk {
- if(!closed(value,current?['format_version','schema_version','capture_id','index','table','columns','rows']:['format_version','capture_id','index','table','columns','rows'])||value.format_version!==(current?2:1)||current&&value.schema_version!==15&&value.schema_version!==16||!isSlug(value.capture_id)||!Number.isInteger(value.index)||Number(value.index)<0||Number(value.index)>=CHUNK_COUNT||typeof value.table!=='string'||!Array.isArray(value.columns)||!Array.isArray(value.rows)||value.rows.length<1||value.rows.length>CHUNK_ROWS)throw Error('INVALID_RECOVERY_CHUNK');
- const table=(current?currentTableDefinition:tableDefinition)(value.table);
+ if(!closed(value,current?['format_version','schema_version','capture_id','index','table','columns','rows']:['format_version','capture_id','index','table','columns','rows'])||value.format_version!==(current?2:1)||current&&value.schema_version!==15&&value.schema_version!==16&&value.schema_version!==17||!isSlug(value.capture_id)||!Number.isInteger(value.index)||Number(value.index)<0||Number(value.index)>=CHUNK_COUNT||typeof value.table!=='string'||!Array.isArray(value.columns)||!Array.isArray(value.rows)||value.rows.length<1||value.rows.length>CHUNK_ROWS)throw Error('INVALID_RECOVERY_CHUNK');
+ const table=current?currentTableDefinition(value.table,value.schema_version as 15|16|17):tableDefinition(value.table);
  if(JSON.stringify(value.columns)!==JSON.stringify(table.columns.map(c=>c.name)))throw Error('RECOVERY_COLUMN_MISMATCH');
  let last:SqlCell[]|null=null;
  for(const unknownRow of value.rows){
@@ -71,7 +71,7 @@ export async function boundedBytes(body:ReadableStream<Uint8Array>|null,maximum:
 
 /** Explicit current tuple; historical callers retain format1 without reinterpretation. */
 export function encodeCurrentChunk(chunk:CurrentRecoveryChunk):Uint8Array<ArrayBuffer>{validateChunk(chunk,true);const bytes=canonicalBytes(chunk);if(bytes.length>CHUNK_LIMIT)throw Error('RECOVERY_CHUNK_LIMIT');return bytes;}
-export function decodeCurrentChunk(bytes:Uint8Array,expected?:{capture_id:string;index:number;table:string;row_count:number;byte_size:number;schema_version?:15|16}):CurrentRecoveryChunk{
+export function decodeCurrentChunk(bytes:Uint8Array,expected?:{capture_id:string;index:number;table:string;row_count:number;byte_size:number;schema_version?:15|16|17}):CurrentRecoveryChunk{
  const parsed=parseCanonical(bytes,CHUNK_LIMIT);validateChunk(parsed,true);
  if(expected?.schema_version!==undefined&&(!('schema_version'in parsed)||parsed.schema_version!==expected.schema_version))throw Error('RECOVERY_CHUNK_IDENTITY');
  if(expected&&(parsed.capture_id!==expected.capture_id||parsed.index!==expected.index||parsed.table!==expected.table||parsed.rows.length!==expected.row_count||bytes.length!==expected.byte_size))throw Error('RECOVERY_CHUNK_IDENTITY');return parsed as CurrentRecoveryChunk;

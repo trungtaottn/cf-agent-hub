@@ -13,7 +13,7 @@ import {listAgents} from '../../../src/agents/reads';
 import {getTask} from '../../../src/tasks/repository';
 import {getRun} from '../../../src/tasks/lease';
 import {takeSourceObserverBinding} from './registry';
-import {createBoundedObserverStorage} from './bounded-storage';
+import {createCurrentBoundedObserverStorage as createBoundedObserverStorage} from './bounded-storage';
 interface Original {transaction:number;selector:string;byteSize:number;sha256:string;bytes:Uint8Array;}
 interface Projection {byteSize:number;sha256:string;bytes:Uint8Array;}
 interface Capture {originals:Original[];projection:Projection;}

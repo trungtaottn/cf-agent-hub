@@ -88,8 +88,16 @@ try {
  await fixture.selfCheck(async(input,init)=>{const request=new Request(input,init);const response=await probe.fetch(request.url,{method:request.method,headers:Object.fromEntries(request.headers),body:request.body?await request.arrayBuffer():undefined,redirect:'manual'});if(response.headers.get('x-fixture-egress-denied')==='1')throw Error('FIXTURE_EGRESS_DENIED');return response;});
  // These controls exist only in the isolated HTTPS fixture, never in production Worker routes.
  control=async action=>{
+  if(action==='drop-preparation-responses'){compositionProbe.armPreparation();return;}
   if(action==='drop-composition-responses'){compositionProbe.arm();return;}
   if(action==='resume-composition-responses'){compositionProbe.resume();return;}
+  if(action==='remove-composition-outcomes'||action==='remove-composition-events'){
+   const state=await worker.getDurableObjectStorage('WORKSPACE',{name:currentName});
+   // Retention/evidence-removal simulation, not a claim that the production collector ran.
+   if(action==='remove-composition-outcomes')await state.exec("DELETE FROM idempotency_outcomes WHERE workspace_id='ws_example' AND operation='domain.messages:send'");
+   else await state.exec("DELETE FROM events WHERE workspace_id='ws_example' AND type='message.accepted'");
+   return;
+  }
   if(action==='composition-snapshot'){
    const state=await worker.getDurableObjectStorage('WORKSPACE',{name:currentName});
    const messages=await state.exec("SELECT id,workspace_id,thread_id,body FROM messages WHERE workspace_id='ws_example' ORDER BY id");

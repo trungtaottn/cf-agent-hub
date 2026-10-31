@@ -14,3 +14,11 @@ it.each(['Message','Task'])('closed %s reconciliation is browser-only and uses o
  expect(validate).toBeTypeOf('function');expect(validate({status:'unknown'})).toBe(true);
  for(const invalid of [{status:'unknown',reason:'absent'},{status:'confirmed'},{status:'rejected'},{status:'confirmed',[kind.toLowerCase()]:{}}])expect(validate(invalid)).toBe(false);
 });
+it.each(['Message','Task'])('closed %s preparation and exact admission evidence are browser-only',kind=>{
+ const route=(spec.paths as Record<string,any>)['/v2/workspaces/{workspace_id}/'+kind.toLowerCase()+'s:prepare']?.post;
+ expect(route).toBeDefined();expect(route.operationId).toBe('prepare'+kind+'Creation');expect(route.security).toEqual([{HumanSession:[]}]);expect(route['x-r1-available']).toBe(false);
+ expect((clientOperations as Record<string,any>)[route.operationId].native).toBe(false);
+ const validate=(validators as unknown as Record<string,(x:unknown)=>boolean>)['validate'+kind+'CreationReconciliation'];
+ expect(validate({status:'admitted',admission:{event_id:'event_'+'a'.repeat(48),entity_id:'entity_1'}})).toBe(true);
+ expect(validate({status:'admitted',admission:{event_id:'event_'+'a'.repeat(48),entity_id:'entity_1',task:{state:'backlog'}}})).toBe(false);
+});

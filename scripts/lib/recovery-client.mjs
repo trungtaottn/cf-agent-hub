@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import {canonicalBytes,decodeChunk,decodeCurrentChunk,digestBytes,CONTROL_LIMIT,CHUNK_LIMIT,isSlug,closed} from '../../src/recovery/encoding.ts';
 import {verifyManifest,validateManifestShape,verifyRecord,verifyCurrentLedger,verifyRetirement,verifyCutover} from '../../src/recovery/manifest.ts';
 import {TABLE_REGISTRY} from '../../src/recovery/table-registry-v1.ts';
-import {TABLE_REGISTRY as CURRENT_TABLE_REGISTRY} from '../../src/recovery/table-registry.ts';
+import {registryForSchema} from '../../src/recovery/table-registry.ts';
 import {assertRecoveryEnvelope,isCurrent16Manifest,RESUME_ENVELOPE_LIMIT} from '../../src/recovery/operator-envelope.ts';
 import {validateRecoveryCommand,validateRecoveryJobProgress,validateRecoveryReceipt,validateProbeReceipt,validateResumeReceipt,validateRetirementReceipt} from '../../src/recovery/generated/recovery-validators.js';
 import {readProtectedJson,readProtectedBytes,readEncryptedArtifact,writeEncryptedArtifact,replaceEncryptedState,fileSha256} from './recovery-io.mjs';
@@ -62,7 +62,7 @@ function localChunk(config,manifest,index){
 export async function verifyCapture(config,lease=null){
  lease?.check();const manifest=await readManifest(config);lease?.check();
  if(['capture','verify','retire'].includes(config.command)&&(manifest.environment_id!==config.environmentId||manifest.checkpoint.authority_epoch!==config.expectedEpoch||manifest.release.catalog_mapping.object_name!==config.objectName))fail('RECOVERY_MANIFEST_MISMATCH');
- const digest=crypto.createHash('sha256'),counts=Object.fromEntries((manifest.format_version===2?CURRENT_TABLE_REGISTRY:TABLE_REGISTRY).map(table=>[table.name,0]));let bytes=0;
+ const digest=crypto.createHash('sha256'),counts=Object.fromEntries((manifest.format_version===2?registryForSchema(manifest.checkpoint.schema_version):TABLE_REGISTRY).map(table=>[table.name,0]));let bytes=0;
  for(const reference of manifest.database.chunks){
   const chunk=localChunk(config,manifest,reference.index),decoded=decodeCliChunk(chunk,manifest);digest.update(chunk);bytes+=chunk.length;counts[decoded.table]+=decoded.rows.length;
  }

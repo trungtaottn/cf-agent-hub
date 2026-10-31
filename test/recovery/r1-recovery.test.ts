@@ -20,7 +20,7 @@ describe('R1 recovery registry and durable admission',()=>{
   await runInDurableObject(stub,(_instance,state)=>{
    const names=state.storage.sql.exec<{name:string}>("SELECT name FROM sqlite_schema WHERE type='table' ORDER BY name").toArray().map(x=>x.name);
    expect(names).toEqual([...TABLE_REGISTRY.map(x=>x.name),'sqlite_sequence'].sort());
-   expect(withTransaction(state.storage,inspectRegistry)).toEqual({schemaVersion:CURRENT_SCHEMA_VERSION,eventSequence:1,tables:37});
+   expect(withTransaction(state.storage,inspectRegistry)).toEqual({schemaVersion:CURRENT_SCHEMA_VERSION,eventSequence:1,tables:38});
   });
  });
  it('fails closed when a durable maintenance fence is present',async()=>{
