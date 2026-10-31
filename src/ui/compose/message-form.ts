@@ -1,9 +1,9 @@
 import type {Agent,MessageCreateRequest} from '../../http/dto';
-import type {BrowserReadRequest,BrowserComposeRequest} from '../../../packages/client/src/types';
+import type {BrowserReadRequest,BrowserComposeRequest,BrowserComposeReconcileRequest} from '../../../packages/client/src/types';
 import {prepareNativeOperation,canonicalBody} from '../../../packages/client/src/native-request';
 import {DraftStore} from './draft-store';
 import {SubmitController,type ComposeBinding} from './submit-intent';
-export interface MessageCompositionOptions {store:DraftStore;currentBinding:()=>ComposeBinding|null;verifyAuthority:()=>Promise<boolean>;read:BrowserReadRequest;send:BrowserComposeRequest;changed:()=>void;}
+export interface MessageCompositionOptions {store:DraftStore;currentBinding:()=>ComposeBinding|null;verifyAuthority:()=>Promise<boolean>;read:BrowserReadRequest;send:BrowserComposeRequest;reconcile?:BrowserComposeReconcileRequest;changed:()=>void;}
 /** Text-only view owner. Current reads are preparation, never server authorization. */
 export class MessageComposition {
  readonly controller:SubmitController;
@@ -14,7 +14,7 @@ export class MessageComposition {
    const message=body as MessageCreateRequest;
    for(const id of message.recipient_agent_ids){const result=await options.read('getAgent',{path:{agent_id:id}});if(!this.same(g,c)||!result.ok||result.data.id!==id||result.data.workspace_id!==c.workspaceId||result.data.status!=='active')return false;}
    return this.same(g,c);
-  },send:async(op,input,opts)=>{const g=this.#generation,c=this.capture(),result=await options.send(op,input,opts);if(c&&this.same(g,c)&&result.ok&&op==='createMessage'){const data=result.data as {thread_id?:unknown};if(typeof data.thread_id==='string'&&data.thread_id.length)this.#thread=data.thread_id;}return result;}});
+  },reconcile:options.reconcile,send:async(op,input,opts)=>{const g=this.#generation,c=this.capture(),result=await options.send(op,input,opts);if(c&&this.same(g,c)&&result.ok&&op==='createMessage'){const data=result.data as {thread_id?:unknown};if(typeof data.thread_id==='string'&&data.thread_id.length)this.#thread=data.thread_id;}return result;}});
  }
  private capture(){const c=this.options.currentBinding();return c?{...c}:null;}
  private same(g:number,c:ComposeBinding){const n=this.options.currentBinding();return g===this.#generation&&!!n&&n.workspaceId===c.workspaceId&&n.principalId===c.principalId&&n.generation===c.generation;}
@@ -26,6 +26,13 @@ export class MessageComposition {
  async loadRecipients(more=false){const request=++this.#rosterRequest,g=this.#generation,c=this.capture();if(!c)return;const cursor=more?this.#cursor:null;if(more&&!cursor)return;const result=await this.options.read('listAgents',{query:{limit:20,...(cursor?{cursor}:{})}});if(!this.same(g,c)||request!==this.#rosterRequest)return;if(!result.ok){this.#error='Recipient list unavailable; refresh current access';this.options.changed();return;}const rows=result.data.filter(a=>a.workspace_id===c.workspaceId&&a.status==='active');this.#agents=[...new Map([...(more?this.#agents:[]),...rows].map(a=>[a.id,a])).values()];this.#cursor=result.page?.next_cursor??null;this.options.changed();}
  edit(body:string,recipients:readonly string[]):Promise<void>{const g=this.#generation,c=this.capture();if(!c)return Promise.resolve();const edit=++this.#editVersion;this.#body=body;this.#recipients=[...recipients];this.#error=this.validate();const payload=this.payload();const storageAllowed=new TextEncoder().encode(body).length<=32768&&new TextEncoder().encode(JSON.stringify(payload)).length<=65536;this.options.changed();const job=this.#edits.then(async()=>{if(!this.same(g,c)||!storageAllowed)return;await this.controller.save('createMessage',payload);if(this.same(g,c)){if(this.state.status!=='storage-error'&&this.state.entry?.draft?.bodyJson===canonicalBody(payload))this.#persistedEdit=edit;this.options.changed();}});this.#edits=job.catch(()=>{});return job;}
  submit():Promise<void>{if(this.#flight)return this.#flight;const g=this.#generation,c=this.capture();const job=(async()=>{await this.#edits;if(!c||!this.same(g,c))return;this.#error=this.#persistedEdit!==this.#editVersion?'Current edit is not durably saved; edit or refresh before submitting':this.validate();if(this.#error){this.options.changed();return;}const p=this.controller.submit();this.options.changed();await p;if(this.same(g,c))this.options.changed();})();this.#flight=job.finally(()=>{this.#flight=null;});return this.#flight;}
+ async reconcile(){
+  const g=this.#generation,c=this.capture();await this.#edits;if(!c||!this.same(g,c))return;
+  const pending=this.controller.reconcile();this.options.changed();const entity=await pending;
+  if(!this.same(g,c))return;
+  if(entity&&'thread_id'in entity&&this.state.status==='confirmed'&&this.state.entry?.intent?.entityId===entity.id)this.#thread=entity.thread_id;
+  this.options.changed();
+ }
  async review(){const g=this.#generation,c=this.capture();await this.controller.reviewPrepared();if(c&&this.same(g,c))this.options.changed();}
  async acknowledge(){const g=this.#generation,c=this.capture(),edit=this.#editVersion;await this.#edits;if(!c||!this.same(g,c))return;await this.controller.acknowledge();if(!c||!this.same(g,c))return;if(edit===this.#editVersion)this.restore();this.#thread=null;this.options.changed();}
  async discard(){const g=this.#generation,c=this.capture(),edit=this.#editVersion;await this.#edits;if(!c||!this.same(g,c))return;await this.controller.discard();if(!c||!this.same(g,c))return;if(edit===this.#editVersion)this.restore();this.options.changed();}

@@ -67,9 +67,11 @@ export type ProfileDataResponse = {"data":ProfileData;"request_id":string};
 export type ProfilePreviewResponse = {"data":ProfilePreview;"request_id":string};
 export type ProfileExportResponse = {"data":ProfileExport;"request_id":string};
 export type PreferencesDataResponse = {"data":PreferencesData;"request_id":string};
+export type MessageCreationReconciliation = {"status":"unknown"} | {"status":"confirmed";"message":Message};
 export type TaskState = "backlog" | "ready" | "doing" | "waiting" | "review" | "done" | "cancelled";
 export type TaskResult = {"summary":string;"artifact_ids":Array<string>;"run_id":string;"submitted_by":Actor;"submitted_at":string};
 export type Task = {"id":string;"workspace_id":string;"title":string;"description":string;"state":TaskState;"task_version":number;"proposal_version":number;"project_id":string | null;"work_role_id":string | null;"assigned_agent_id":string | null;"active_run_id":string | null;"latest_run_id":string | null;"approval_id":string | null;"result":TaskResult | null;"retry_count":number;"retry_limit":number;"flags":Array<"retry_exhausted" | "outcome_unknown" | "approval_expired">;"created_at":string;"updated_at":string};
+export type TaskCreationReconciliation = {"status":"unknown"} | {"status":"confirmed";"task":Task};
 export type Run = {"id":string;"workspace_id":string;"task_id":string;"agent_id":string;"runtime_instance_id":string;"status":"active" | "paused" | "submitted" | "failed" | "expired" | "cancelled";"run_version":number;"fence":number;"lease_expires_at":string;"started_at":string;"ended_at":string | null};
 export type Artifact = {"id":string;"workspace_id":string;"task_id":string | null;"run_id":string | null;"owner":Actor;"artifact_version":number;"filename":string;"media_type":string;"byte_size":number;"sha256":string;"status":"staged" | "uploaded" | "committed" | "expired";"created_at":string;"committed_at":string | null;"expires_at":string | null};
 export type Agent = {"id":string;"workspace_id":string;"agent_version":number;"display_name":string;"description":string;"work_role_ids":Array<string>;"framework":string | null;"model":string | null;"status":"active" | "archived";"created_at":string;"updated_at":string};
@@ -113,6 +115,8 @@ export type MessageResponse = {"data":Message;"request_id":string};
 export type MessageListResponse = {"data":Array<Message>;"page":Page;"request_id":string};
 export type AckResultResponse = {"data":AckResult;"request_id":string};
 export type EventListResponse = {"data":Array<Event>;"page":Page;"request_id":string};
+export type MessageCreationReconciliationResponse = {"data":MessageCreationReconciliation;"request_id":string};
+export type TaskCreationReconciliationResponse = {"data":TaskCreationReconciliation;"request_id":string};
 export interface HttpOperationRequests {
 "getWorkspace":Record<string, never>;
 "listTasks":{"query"?:{"cursor"?:string;"limit"?:number;"state"?:TaskState;"project_id"?:string}};
@@ -168,6 +172,8 @@ export interface HttpOperationRequests {
 "previewImport":{"body":ImportEnvelope};
 "applyImport":{"path":{"import_id":string};"body":ImportApplyRequest};
 "getImport":{"path":{"import_id":string}};
+"reconcileMessageCreation":{"body":MessageCreateRequest};
+"reconcileTaskCreation":{"body":TaskCreateRequest};
 }
 export interface HttpOperationData {
 "getWorkspace":Workspace;
@@ -224,6 +230,8 @@ export interface HttpOperationData {
 "previewImport":ImportPreview;
 "applyImport":ImportReport;
 "getImport":Import;
+"reconcileMessageCreation":MessageCreationReconciliation;
+"reconcileTaskCreation":TaskCreationReconciliation;
 }
 export interface HttpDTOMap {
 "Workspace":Workspace;
@@ -294,6 +302,8 @@ export interface HttpDTOMap {
 "ProfilePreviewResponse":ProfilePreviewResponse;
 "ProfileExportResponse":ProfileExportResponse;
 "PreferencesDataResponse":PreferencesDataResponse;
+"MessageCreationReconciliation":MessageCreationReconciliation;
+"TaskCreationReconciliation":TaskCreationReconciliation;
 "Task":Task;
 "TaskState":TaskState;
 "TaskResult":TaskResult;
@@ -340,5 +350,7 @@ export interface HttpDTOMap {
 "MessageListResponse":MessageListResponse;
 "AckResultResponse":AckResultResponse;
 "EventListResponse":EventListResponse;
+"MessageCreationReconciliationResponse":MessageCreationReconciliationResponse;
+"TaskCreationReconciliationResponse":TaskCreationReconciliationResponse;
 }
 export const authReturnPaths = ["/","/overview","/inbox","/activity","/settings","/tasks"] as const;

@@ -64,6 +64,8 @@ Paths below are relative to `/v2/workspaces/{workspace_id}`. `/` denotes that ba
 | `POST /runtimes` | `runtimes:manage` | Native agent only |
 | `POST /runtimes/{runtime_instance_id}:heartbeat` | `runtimes:manage` | Native agent only |
 | `POST /messages` | `messages:send` | Human or native agent |
+| `POST /messages:reconcile` | `messages:send` plus original resource/replay guards | Human cookie session only |
+| `POST /tasks:reconcile` | `tasks:create` plus original resource/replay guards | Human cookie session only |
 | `GET /inbox` | `messages:read` | Native agent only |
 | `GET /threads/{thread_id}` | `messages:read` | Human or native agent |
 | `POST /messages:ack` | `messages:ack` | Native agent only |
@@ -314,3 +316,13 @@ Both directions enforce the canonical stage maximum of 10 MiB, safe-integer size
 The facade's pure request preparer is shared with the journal and still derives validation/target/proof requirements from the one operation map. `canonicalBody` represents semantic sorted JSON, not a promise that every generic caller's wire member order changes; the durable coordinator reconstructs its exact stored canonical body for each explicit dispatch. No server request/schema or fingerprint contract changes.
 
 A durability guard awaits local recording before dispatch, then runs inside the actual credential lease. Protected proof lookup uses that same lease and a once-only synchronous callback; another runtime path/body cannot borrow the proof. After public hooks and final provider currentness, an internal registered clock capability may perform the last pure elapsed check before fetch. Arbitrary caller metadata cannot install that capability. Rejected asynchronous hook returns are observed without unhandled raw-error logging. A late enrollment finalizer is aborted rather than activated; initial proof never becomes an ordinary result.
+
+## Retained creation-admission lookup
+
+R3 source provides `POST /v2/workspaces/{workspace_id}/messages:reconcile` and `POST /v2/workspaces/{workspace_id}/tasks:reconcile`. These are read-only recovery operations despite using POST for bounded private request bodies. Require the current human cookie session, exact Origin, CSRF, original `Idempotency-Key` and unchanged `MessageCreateRequest` or `TaskCreateRequest`; native Authorization/runtime headers, query parameters and extra body fields are denied. No new scope or replay authority is granted.
+
+HTTP200 wraps either `{status:"unknown"}` or `{status:"confirmed",message:Message}` / `{status:"confirmed",task:Task}` in the ordinary data/request_id envelope. Lookup derives the verified principal/workspace, fingerprints the original POST collection path/body and uses the same current creation/resource/replay guards. Only an exact retained, schema-valid original 201 receipt confirms historical admission. The task DTO is its original creation snapshot, not current board state; message admission is not delivery or ACK.
+
+Missing or different-fingerprint outcomes return the same UNKNOWN result without existence reasons, timestamps or original correlation identifiers. A retained matching row can still confirm after its minimum 24-hour retention eligibility; lookup neither renews retention nor runs cleanup. After actual garbage collection, UNKNOWN remains unresolved indefinitely. Neither UNKNOWN nor an authorization, validation, reference or availability error establishes original rejection, nonexecution, cancellation or permission for a fresh key.
+
+The lookup never invokes command execution, generates entity IDs, writes domain/event/outbox/outcome state or repairs scheduling. Current authority is rechecked in the final synchronous transaction after asynchronous parsing/authentication/CSRF/hash work. Browser drafts and explicit recovery behavior are described in [the composition contract](contracts/r3-composition.md). Exact source/browser evidence belongs in the issue53 checkpoint; these routes alone do not complete issue53 or deployed acceptance.

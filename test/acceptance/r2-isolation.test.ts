@@ -6,7 +6,7 @@ import {clientOperations} from '../../src/http/generated/client-operations';
 import {validateError} from '../../src/http/generated/auth-validators.js';
 const completed=new Set<string>();
 beforeEach(async()=>{await control('reset');});
-it('every source-supported operation has an explicit actor and capability case',()=>{expect(()=>assertIsolationCoverage(isolationOperations)).not.toThrow();});
+it('every frozen R2 operation has an explicit actor and capability case alongside reviewed R3 recovery reads',()=>{expect(()=>assertIsolationCoverage(isolationOperations)).not.toThrow();});
 it('coverage rejects an omitted operation and an empty actor lane',()=>{expect(()=>assertIsolationCoverage(isolationOperations.filter(x=>x.operation!=='searchWorkspace'))).toThrow('missing searchWorkspace');expect(()=>assertIsolationCoverage(isolationOperations.map(x=>x.operation==='getWorkspace'?{...x,lanes:[]}:x))).toThrow('lane coverage');});
 it('coverage rejects omitted executed phase and conditional gate receipts',()=>{for(const key of ['getTask/human/foreign-workspace','commitArtifact/native/missing-binding']){const receipts=new Set(requiredIsolationEvidence());receipts.delete(key);expect(()=>assertIsolationEvidence(receipts)).toThrow(key);}});
 for(const cell of isolationCells())it(cell.operation+' / '+cell.lane+' / authorized and foreign workspace',async()=>{

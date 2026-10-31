@@ -1,0 +1,29 @@
+import {it,expect,vi} from 'vitest';
+import {HubClient} from '../../packages/client/src/client';
+import {createNativeClient} from '../../packages/client/src/native-client';
+const input={body:{title:'Original',description:'é',project_id:null}};
+const task={id:'task_one',workspace_id:'ws',title:'Original',description:'é',state:'backlog',task_version:1,proposal_version:0,project_id:null,work_role_id:null,assigned_agent_id:null,active_run_id:null,latest_run_id:null,approval_id:null,result:null,retry_count:0,retry_limit:2,flags:[],created_at:'2026-10-27T00:00:00Z',updated_at:'2026-10-27T00:00:00Z'};
+function fixture(data:unknown={status:'unknown'},status=200){const fetch=vi.fn(async()=>Response.json({data,request_id:'lookup_request'},{status})),client=new HubClient('ws',{fetch});client.setCsrfToken('synthetic-csrf');return {client,fetch};}
+it('has a distinct read-only retained-admission adapter',()=>{expect(fixture().client.reconcileCreation).toBeTypeOf('function');});
+it('sends frozen create body/key only to the fixed browser reconcile path and parses UNKNOWN',async()=>{
+ const {client,fetch}=fixture();expect(await client.reconcileCreation('createTask',input,{idempotencyKey:'original-key'})).toMatchObject({ok:true,data:{status:'unknown'}});
+ expect(fetch).toHaveBeenCalledTimes(1);const [url,init]=fetch.mock.calls[0] as unknown as [string,RequestInit];expect(url).toBe('/v2/workspaces/ws/tasks:reconcile');expect(init).toMatchObject({method:'POST',credentials:'same-origin',redirect:'error',cache:'no-store'});expect(JSON.parse(init.body as string)).toEqual(input.body);const headers=new Headers(init.headers);expect(headers.get('idempotency-key')).toBe('original-key');expect(headers.get('x-csrf-token')).toBe('synthetic-csrf');expect(headers.has('authorization')).toBe(false);
+});
+it('accepts only canonical confirmed outcomes and never retries malformed/unknown results',async()=>{
+ const f=fixture({status:'confirmed',task});expect(await f.client.reconcileCreation('createTask',input,{idempotencyKey:'key'})).toMatchObject({ok:true,data:{status:'confirmed',task}});
+ for(const data of [{status:'confirmed'},{status:'unknown',task},{status:'confirmed',task:{...task,workspace_id:42}},{status:'rejected'}]){const bad=fixture(data);expect(await bad.client.reconcileCreation('createTask',input,{idempotencyKey:'key'})).toMatchObject({ok:false,error:{code:'INVALID_RESPONSE'}});expect(bad.fetch).toHaveBeenCalledTimes(1);}
+});
+it.each(['readyTask','reconcileTaskCreation','approveApproval','__proto__'])('does not accept caller operation %s',async op=>{const f=fixture();expect(await f.client.reconcileCreation(op as never,input as never,{idempotencyKey:'key'})).toMatchObject({ok:false,error:{code:'OPERATION_UNAVAILABLE'}});expect(f.fetch).not.toHaveBeenCalled();});
+it('fails closed before transport on invalid authority options, shape, size or absent CSRF',async()=>{
+ const f=fixture();for(const options of [{idempotencyKey:''},{idempotencyKey:'key',headers:{}},{idempotencyKey:'key',runtimeProof:'no'},{idempotencyKey:'key',origin:'https://foreign.invalid'}])expect(await f.client.reconcileCreation('createTask',input,options as never)).toMatchObject({ok:false,error:{code:'INVALID_REQUEST'}});
+ for(const body of [{...input.body,state:'doing'},{title:'',description:''},{title:'x',description:'あ'.repeat(40000)}])expect(await f.client.reconcileCreation('createTask',{body} as never,{idempotencyKey:'key'})).toMatchObject({ok:false,error:{code:'INVALID_REQUEST'}});
+ f.client.setCsrfToken(null);expect(await f.client.reconcileCreation('createTask',input,{idempotencyKey:'key'})).toMatchObject({ok:false,error:{code:'CSRF_REQUIRED'}});expect(f.fetch).not.toHaveBeenCalled();
+});
+it('does not expose reconciliation to native credentials or ordinary compose',async()=>{
+ const fetch=vi.fn(),acquire=vi.fn();const native=createNativeClient({origin:'https://hub.example.invalid',workspaceId:'ws',fetch,credentialProvider:{acquire} as never});
+ expect(await native.call('reconcileTaskCreation' as never,input as never,{idempotencyKey:'key'})).toMatchObject({ok:false,error:{code:'OPERATION_UNAVAILABLE'}});expect(acquire).not.toHaveBeenCalled();expect(fetch).not.toHaveBeenCalled();
+ const f=fixture();expect(await f.client.compose('reconcileTaskCreation' as never,input as never,{idempotencyKey:'key'})).toMatchObject({ok:false,error:{code:'OPERATION_UNAVAILABLE'}});expect(f.fetch).not.toHaveBeenCalled();
+});
+
+it('message reconciliation keeps original body and uses its generated message counterpart',async()=>{const message={id:'message_one',workspace_id:'ws',thread_id:'thread_one',sender:{kind:'human',principal_id:'human_one',agent_id:null},recipient_agent_ids:['agent_one'],body:'Hello',refs:[],artifact_ids:[],created_at:'2026-10-27T00:00:00Z',acknowledged_at:null};const f=fixture({status:'confirmed',message});expect(await f.client.reconcileCreation('createMessage',{body:{body:'Hello',recipient_agent_ids:['agent_one'],refs:[],artifact_ids:[]}},{idempotencyKey:'message-key'})).toMatchObject({ok:true,data:{status:'confirmed',message}});expect((f.fetch.mock.calls[0] as unknown as [string])[0]).toBe('/v2/workspaces/ws/messages:reconcile');});
+it.each([401,403])('reconcile HTTP %s clears in-memory CSRF without retry',async status=>{const f=fixture({},status);await f.client.reconcileCreation('createTask',input,{idempotencyKey:'key'});expect(await f.client.reconcileCreation('createTask',input,{idempotencyKey:'key'})).toMatchObject({ok:false,error:{code:'CSRF_REQUIRED'}});expect(f.fetch).toHaveBeenCalledTimes(1);});

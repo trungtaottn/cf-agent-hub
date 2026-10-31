@@ -1,3 +1,4 @@
+import {creationReconciliationPath} from './http/creation-reconciliation-routes';
 import {importPath} from './http/import-routes';
 import {searchPath} from './http/search-routes';
 import {artifactPath} from './http/artifact-routes';
@@ -28,10 +29,10 @@ export default {
   const match=/^\/v2\/workspaces\/([a-zA-Z0-9_-]{1,128})\/auth\/(start|callback|session|logout)$/.exec(url.pathname);
   const settings=settingsPath.exec(url.pathname),message=messagePath.exec(url.pathname),operations=operationsPath.exec(url.pathname),readiness=readinessPath.exec(url.pathname),base=workspacePath.exec(url.pathname);
   const identity=identityPath.exec(url.pathname),task=taskPath.exec(url.pathname),catalog=catalogPath.exec(url.pathname);
-  const imports=importPath.exec(url.pathname);
+  const imports=importPath.exec(url.pathname),reconciliation=creationReconciliationPath.exec(url.pathname);
   const search=searchPath.exec(url.pathname);
   const artifact=productArtifactBucket(env)?artifactPath.exec(url.pathname):null;
-  const selected=match??settings??message??operations??readiness??base??identity??task??catalog??artifact??search??imports;
+  const selected=match??settings??message??operations??readiness??base??identity??task??catalog??artifact??search??imports??reconciliation;
   if(selected) {
    try {
     const raw=(env as unknown as Record<string,unknown>).DEPLOYMENT_CONFIG;
