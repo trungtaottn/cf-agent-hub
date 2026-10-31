@@ -1,4 +1,4 @@
-import {canonicalBytes,CONTROL_LIMIT} from './encoding';
+import {canonicalBytes,CONTROL_LIMIT} from './encoding.ts';
 import type {RecoveryCommand} from './generated/recovery-validators.js';
 
 /** Exact canonical framing + independently bounded nested signed records. */

@@ -3,7 +3,7 @@ import {runRecovery} from '../../scripts/lib/recovery-client.mjs';
 import {readEncryptedArtifact} from '../../scripts/lib/recovery-io.mjs';
 import {protocolFixture,sha,receipt} from './fixtures.mjs';
 const stateAt=f=>{const frame=JSON.parse(fs.readFileSync(f.raw.state_path,'utf8'));return JSON.parse(readEncryptedArtifact(f.raw.state_path,f.encryption,frame.context,1048576));};
-test('acknowledged terminal control is completed from its exact encrypted response after restart',async()=>{
+test('acknowledged terminal control is completed from its exact encrypted response after exception unwinds and releases leases',async()=>{
  const f=await protocolFixture(),rename=fs.renameSync;try{
   fs.mkdirSync(f.raw.artifact_directory,{mode:0o700});
   const evidence=path.join(f.directory,'receiver.json');fs.writeFileSync(evidence,'{"observed":"permanent failure"}',{mode:0o600});

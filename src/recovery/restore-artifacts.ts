@@ -1,3 +1,4 @@
+import {captureByobReader} from './capture-stream';
 import type {ArtifactCopyEffect} from './restore-artifact-effect';
 import {requireArtifactBucket} from './artifacts';
 import {ARTIFACT_BYTES,closed,hex,isSlug} from './encoding';
@@ -12,14 +13,18 @@ function validateEntry(w:RecoveryWorkspace,e:CurrentRecoveryArtifactEntry):void 
 }
 /** Retain one source chunk; writes to the hash and destination have serial backpressure. */
 async function verifyStream(body:ReadableStream<Uint8Array>,entry:CurrentRecoveryArtifactEntry,guard:FreshGuard,sink?:WritableStreamDefaultWriter<Uint8Array>,signal?:AbortSignal):Promise<void>{
- const reader=body.getReader(),digest=new (crypto as Crypto&{DigestStream:typeof DigestStream}).DigestStream('SHA-256'),writer=digest.getWriter();
+ let reader:ReturnType<typeof captureByobReader>;
+ try{reader=captureByobReader(body);}
+ catch(error){await Promise.allSettled([body.cancel(),...(sink?[sink.abort()]:[])]);sink?.releaseLock();throw error;}
+ const digest=new (crypto as Crypto&{DigestStream:typeof DigestStream}).DigestStream('SHA-256'),writer=digest.getWriter();
  const hash=digest.digest.then(value=>({value}),()=>({error:true as const}));let count=0;
  const cancel=()=>{void reader.cancel().catch(()=>{});};signal?.addEventListener('abort',cancel,{once:true});
  const check=async()=>{await guard();if(signal?.aborted)throw Error('RECOVERY_ARTIFACT_COPY_INTERRUPTED');};
  try{
-  for(;;){await check();const part=await reader.read();await check();if(part.done)break;
+  for(;;){await check();const part=await reader.read(65536);await check();if(part.done&&!part.value?.byteLength)break;
    if(!(part.value instanceof Uint8Array)||!part.value.byteLength)throw Error('RECOVERY_ARTIFACT_BYTES_MISMATCH');count+=part.value.byteLength;if(count>entry.byte_size||count>ARTIFACT_BYTES)throw Error('RECOVERY_ARTIFACT_BYTES_MISMATCH');
    for(let offset=0;offset<part.value.byteLength;offset+=65536){const bytes=part.value.subarray(offset,offset+65536);await check();await writer.write(bytes);await check();if(sink){await sink.write(bytes);await check();}}
+   if(part.done)break;
   }
   if(count!==entry.byte_size)throw Error('RECOVERY_ARTIFACT_BYTES_MISMATCH');await check();await writer.close();await check();const result=await hash;await check();if('error'in result||hex(result.value)!==entry.sha256)throw Error('RECOVERY_ARTIFACT_BYTES_MISMATCH');
   if(sink){await sink.close();await check();}

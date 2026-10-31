@@ -120,3 +120,10 @@ Issue42 adds a local read-only task board/detail and exact `/tasks` authenticati
 Issue 44 adds a local executable CLI surface over the existing native facade, with protected retained artifact I/O and heartbeat serialization. [CLI usage](cli.md), [ADR0010](adr/0010-r2-native-cli-effects.md) and the [execution plan](../plans/261028-0315-native-cli/plan.md) describe source scope and limits. No F24 Verified/Released promotion follows from synthetic source or subprocess tests; real isolated HTTPS conformance and integrated acceptance remain separate.
 
 Issue45 adds local version-bound Ready/Cancel/Requeue/Accept command source, current grant guidance, sticky uncertainty and explicit conflict review. [Execution evidence](r2-task-plans/issue-045-execution.md) preserves the browser and post-R4 live acceptance limits. This source checkpoint does not promote F16/F34 to Verified or Released.
+
+
+## Issue46 local operator recovery source
+
+The [issue46 execution record](r2-task-plans/issue-046-execution.md) adds a private durable anchor provider, authenticated current16 operator-client compatibility, serialized bounded local evidence and current16 capture freshness with bounded finalization. Read-only product bindings and separately scoped bootstrap/writer capabilities do not provision a live namespace or grant authority. V1 and retained15 boundaries remain explicit.
+
+Node SQLite adapter tests, synthetic controller faults, genuine local Worker/SQLite/service-binding integration, pure CLI validation and protected filesystem rehearsal have distinct evidence owners. Actual valid10MiB local gateway capture/restore verified full target bytes and measured provider calls; this is not production subrequest/CPU/memory eligibility. The final handoff records exact frozen-source regression and near-limit SQL observations. Protected filesystem/browser limitations, denied dependency audit, blocked issue40 and post-R4 live acceptance remain unresolved. No merge, deployment or Released status follows from this source checkpoint.

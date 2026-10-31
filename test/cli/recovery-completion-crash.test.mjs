@@ -100,6 +100,23 @@ function childExited(child,code){
  assert.equal(child.stderr,'');
 }
 
+function retainedSnapshot(f){
+ const names=[f.config.state_path,path.join(f.directory,'.cfhub-recovery.lock'),...fs.readdirSync(f.config.artifact_directory).map(name=>path.join(f.config.artifact_directory,name))].sort();
+ return names.map(name=>{const stat=fs.lstatSync(name);assert.equal(stat.isFile(),true);assert.equal(stat.mode&0o777,0o600);return {name,dev:stat.dev,ino:stat.ino,nlink:stat.nlink,size:stat.size,sha256:hash(fs.readFileSync(name))};});
+}
+function restartRemainsLocked(f){
+ const before=retainedSnapshot(f),calls=f.calls();
+ assert.equal(before.filter(item=>path.basename(item.name)==='.cfhub-recovery.lock').length,2);
+ const child=f.invoke('none',secondTime,'blocked.json');
+ assert.equal(child.error,undefined);assert.equal(child.signal,null);assert.equal(child.status,95);
+ assert.equal(child.stdout,'');assert.equal(child.stderr,'RECOVERY_LOCAL_LOCKED');
+ assert.equal(fs.existsSync(path.join(f.directory,'blocked.json')),false);
+ assert.deepEqual(f.calls(),calls,'blocked restart must not dispatch or invent an operation identity');
+ assert.deepEqual(retainedSnapshot(f),before,'blocked restart preserves exact state/artifact bytes and lease inode identities');
+ // Post-crash continuation requires separately authorized manual reconciliation.
+ // This fixture deliberately neither removes leases nor claims that coverage.
+}
+
 async function seedLocalCapture(f){
  // A minimal signed codec fixture for local verification only; it is never restored or
  // represented as a deployed database. All registry counts, rows, chunks and hashes agree.
@@ -119,7 +136,7 @@ async function seedLocalCapture(f){
  return manifest;
 }
 
-test('terminal control resumes after acknowledged-call state publication without another dispatch', {timeout:30000},()=>{
+test('terminal control crash preserves acknowledged evidence and restart remains locked', {timeout:30000},()=>{
  const f=fixture('resolve-delivery');
  try{
   childExited(f.invoke('after_call',firstTime,'interrupted.json'),93);
@@ -128,19 +145,15 @@ test('terminal control resumes after acknowledged-call state publication without
   const responsePath=path.join(f.config.artifact_directory,saved.last_response.response_file),responseCiphertext=fs.readFileSync(responsePath);
   const responseContext=f.context('response',{origin:f.config.origin,environment_id:f.config.environment_id,operation_id:saved.last_response.response_operation_id,attempt:saved.last_response.response_attempt});
   const originalResponse=readEncryptedArtifact(responsePath,f.key,responseContext),original=JSON.parse(originalResponse);
-  childExited(f.invoke('none',secondTime,'completed.json'),0);
-  const result=f.readResult('completed.json');
-  assert.equal(f.calls().length,1,'an acknowledged terminal control must never dispatch a new operation ID after restart');
-  assert.deepEqual(result.receipt,original.data);assert.equal(result.request_id,original.request_id);assert.equal(result.response_sha256,hash(originalResponse));
-  assert.equal(result.response_operation_id,saved.last_response.response_operation_id);assert.deepEqual(fs.readFileSync(responsePath),responseCiphertext);
-  const complete=f.readState();assert.equal(complete.complete,true);assert.deepEqual(complete.evidence,result);
-  assert.equal(f.receiptFiles().length,1);
-  const receipt=readEncryptedArtifact(path.join(f.config.artifact_directory,f.receiptFiles()[0]),f.key,f.receiptContext(complete.sequence));
-  assert.deepEqual(receipt,Buffer.from(canonicalBytes(result)));
+  assert.deepEqual(original.data,f.response);assert.equal(original.request_id,'request_completion_1');
+  restartRemainsLocked(f);
+  assert.deepEqual(f.readState(),saved);assert.equal(f.calls().length,1);assert.deepEqual(f.receiptFiles(),[]);
+  assert.deepEqual(fs.readFileSync(responsePath),responseCiphertext);
+  assert.deepEqual(readEncryptedArtifact(responsePath,f.key,responseContext),originalResponse);
  }finally{f.close();}
 });
 
-test('local verify resumes after receipt publication with identical receipt bytes and timestamp', {timeout:30000},async()=>{
+test('local verify crash preserves receipt bytes and timestamp while restart remains locked', {timeout:30000},async()=>{
  const f=fixture('verify');
  try{
   const manifest=await seedLocalCapture(f);
@@ -150,12 +163,11 @@ test('local verify resumes after receipt publication with identical receipt byte
   assert.equal(fs.lstatSync(receiptPath).nlink,1,'this boundary follows unlink and isolates completion from publication-orphan repair');
   const originalBytes=readEncryptedArtifact(receiptPath,f.key,f.receiptContext(saved.sequence)),original=JSON.parse(originalBytes);
   assert.equal(original.completed_at,new Date(firstTime).toISOString());
-  childExited(f.invoke('none',secondTime,'completed.json'),0);
-  const result=f.readResult('completed.json');
-  assert.deepEqual(result,original);assert.equal(result.outcome,'verified_local');assert.equal(result.manifest_sha256,hash(canonicalBytes(manifest)));
-  assert.equal(f.calls().length,0,'local verification never contacts the operator on either invocation');
+  assert.equal(original.outcome,'verified_local');assert.equal(original.manifest_sha256,hash(canonicalBytes(manifest)));
+  restartRemainsLocked(f);
+  assert.equal(f.calls().length,0,'local verification and blocked restart never contact the operator');
   assert.deepEqual(f.receiptFiles(),[name]);assert.deepEqual(fs.readFileSync(receiptPath),ciphertext);
   assert.deepEqual(readEncryptedArtifact(receiptPath,f.key,f.receiptContext(saved.sequence)),originalBytes);
-  const complete=f.readState();assert.equal(complete.complete,true);assert.deepEqual(complete.evidence,original);
+  assert.deepEqual(f.readState(),saved);assert.equal(f.readState().complete,false);
  }finally{f.close();}
 });

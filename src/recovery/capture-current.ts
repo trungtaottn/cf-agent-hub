@@ -1,3 +1,5 @@
+import {initializeFinalization,readFinalization,advanceFinalization} from './capture-finalization';
+import {readCaptureAnchor,saveCaptureAnchor,freshCaptureAnchor} from './capture-anchor';
 import {withTransaction,type WorkspaceTransaction,type SqlValue} from '../storage/transaction';
 import {canonicalJson} from '../config/bootstrap';
 import {TABLE_REGISTRY,inspectRegistry} from './table-registry';
@@ -5,7 +7,7 @@ import {assertAdmissionOpen,assertArtifactEffectsDrained,maintenanceRow,transiti
 import {canonicalBytes,digestBytes,encodeCurrentChunk,primaryKey,sqlCell,closed,type CurrentRecoveryChunk,type SqlCell} from './encoding';
 import {assertRecoveryContext,priorOperation,storeOperation,type RecoveryContext,type RecoveryWorkspace,type RecoveryJobProgress,type CurrentRecoveryManifest,recoverySchema} from './protocol';
 import {validateRecoveryJobProgress,validateRecoveryManifest} from './generated/recovery-validators.js';
-import {signRecord,validateManifestShape} from './manifest';
+import {signRecord,signRecordAsync,validateManifestShape} from './manifest';
 import {jobIdFor,loadCurrentCaptureJob,saveJob,assertCurrentCaptureJob,reserveStep,assertPending,progress,projection,objectKey,currentChunkRecords,terminalReceipt,readStoredChunk,databaseDigest,type CurrentCaptureJob,type RecoveryBudget} from './jobs';
 import {requireArtifactBucket,captureArtifactInventory,copyArtifactToRecovery,verifyCapturedArtifact} from './artifacts';
 
@@ -57,47 +59,62 @@ function diagnostic(w:RecoveryWorkspace,ctx:RecoveryContext,id:string,error:unkn
 }
 export async function advanceCurrentCapture(w:RecoveryWorkspace,ctx:RecoveryContext,budget:RecoveryBudget):Promise<RecoveryJobProgress>{
  validateBudget(budget);const artifactBinding=requireArtifactBucket(w),recoveryBinding=w.bucket;const stepGuard=(job:CurrentCaptureJob)=>{if(requireArtifactBucket(w)!==artifactBinding||w.bucket!==recoveryBinding)throw Error('RECOVERY_ARTIFACT_BINDING_UNAVAILABLE');return guard(w,ctx,job);};const initialFence=withTransaction(w.storage,tx=>assertRecoveryContext(tx,w,ctx));const id=await jobIdFor(w.workspaceId,ctx.captureId!,'capture');
+ const anchored=withTransaction(w.storage,tx=>{assertRecoveryContext(tx,w,ctx,initialFence);const required=recoverySchema(tx,ctx)===16;const existing=loadCurrentCaptureJob(tx,id),anchor=required?readCaptureAnchor(tx,w,ctx,id):null;if(required&&existing&&!anchor)throw Error('RECOVERY_CAPTURE_ANCHOR_REQUIRED');return {required,anchor};});
+ const admittedAnchor=anchored.required?await freshCaptureAnchor(w,ctx,anchored.anchor??undefined,()=>{withTransaction(w.storage,tx=>{assertRecoveryContext(tx,w,ctx,initialFence);if(canonicalJson(readCaptureAnchor(tx,w,ctx,id))!==canonicalJson(anchored.anchor))throw Error('RECOVERY_CAPTURE_ANCHOR_CONFLICT');});}):null;
+ const assertAnchor=()=>{if(admittedAnchor)withTransaction(w.storage,tx=>{if(canonicalJson(readCaptureAnchor(tx,w,ctx,id))!==canonicalJson(admittedAnchor))throw Error('RECOVERY_CAPTURE_ANCHOR_CONFLICT');assertRecoveryContext(tx,w,ctx);});};
+ const fresh=admittedAnchor?async()=>{await freshCaptureAnchor(w,ctx,admittedAnchor,assertAnchor);assertAnchor();}:undefined;
  const admitted=(()=>{try{return withTransaction(w.storage,tx=>{
-  if(requireArtifactBucket(w)!==artifactBinding||w.bucket!==recoveryBinding)throw Error('RECOVERY_ARTIFACT_BINDING_UNAVAILABLE');assertRecoveryContext(tx,w,ctx,initialFence);let job=loadCurrentCaptureJob(tx,id);if(!job){job=begin(tx,w,ctx,id,budget);const result=progress(job);storeOperation(tx,ctx,result,w.clock.nowMs());return {result,job:null};}
-  job=assertCurrentCaptureJob(tx,w,ctx,id);if(canonicalJson(job.details.budget)!==canonicalJson(budget))throw Error('RECOVERY_OPERATION_CONFLICT');const prior=priorOperation(tx,ctx);if(prior){if(!validateRecoveryJobProgress(prior))throw Error('RECOVERY_OPERATION_CONFLICT');return {result:prior,job:null};}
+  if(requireArtifactBucket(w)!==artifactBinding||w.bucket!==recoveryBinding)throw Error('RECOVERY_ARTIFACT_BINDING_UNAVAILABLE');assertRecoveryContext(tx,w,ctx,initialFence);let job=loadCurrentCaptureJob(tx,id);if(!job){job=begin(tx,w,ctx,id,budget);if(admittedAnchor)saveCaptureAnchor(tx,w,ctx,id,admittedAnchor);const result=progress(job);storeOperation(tx,ctx,result,w.clock.nowMs());return {result,job:null};}
+  if(admittedAnchor&&canonicalJson(readCaptureAnchor(tx,w,ctx,id))!==canonicalJson(admittedAnchor))throw Error('RECOVERY_CAPTURE_ANCHOR_CONFLICT');job=assertCurrentCaptureJob(tx,w,ctx,id);if(canonicalJson(job.details.budget)!==canonicalJson(budget))throw Error('RECOVERY_OPERATION_CONFLICT');const prior=priorOperation(tx,ctx);if(prior){if(!validateRecoveryJobProgress(prior))throw Error('RECOVERY_OPERATION_CONFLICT');return {result:prior,job:null};}
   if(job.state!=='running'){const result=progress(job);storeOperation(tx,ctx,result,w.clock.nowMs());return {result,job:null};}
   if(job.details.phase==='capture_drain')return {result:checkpoint(tx,w,ctx,job),job:null};
   const phase=job.details.phase;reserveStep(job,ctx,phase==='hash_chunks'?'hash':phase==='capture_artifacts'?'artifact':phase==='capture_finalize'?'finalize':'page',w.clock.nowMs(),phase==='capture_artifacts'?job.details.artifactIndex:null);
   if(phase==='capture_artifacts')job.details.pendingArtifact=job.details.draft!.artifacts[job.details.artifactIndex];saveJob(tx,job);return {result:null,job};
- });}catch(error){diagnostic(w,ctx,id,error);throw error;}})();if(admitted.result)return admitted.result;let job=admitted.job!;
+ });}catch(error){diagnostic(w,ctx,id,error);throw error;}})();if(admitted.result){if(fresh)await fresh();return admitted.result;}let job=admitted.job!;
  try{
   if(job.details.phase==='hash_chunks'){
-   const digest=await databaseDigest(w,ctx,job);stepGuard(job);
-   return withTransaction(w.storage,tx=>{const current=assertCurrentCaptureJob(tx,w,ctx,id);assertPending(current,ctx);current.details.draft!.database.sha256=digest;validateManifestShape(current.details.draft);current.details.phase=current.details.draft!.artifacts.length?'capture_artifacts':'capture_finalize';return completeStep(tx,w,ctx,current);});
+   const digest=await databaseDigest(w,ctx,job,fresh);if(fresh)await fresh();stepGuard(job);
+   const draftSha=fresh&&!job.details.draft!.artifacts.length?await digestBytes(canonicalBytes({...job.details.draft!,database:{...job.details.draft!.database,sha256:digest}})):null;if(fresh)await fresh();stepGuard(job);
+   return withTransaction(w.storage,tx=>{const current=assertCurrentCaptureJob(tx,w,ctx,id);assertPending(current,ctx);current.details.draft!.database.sha256=digest;validateManifestShape(current.details.draft);current.details.phase=current.details.draft!.artifacts.length?'capture_artifacts':'capture_finalize';if(draftSha)initializeFinalization(tx,w,ctx,current,draftSha);return completeStep(tx,w,ctx,current);});
   }
   if(job.details.phase==='capture_artifacts'){
-   const entry=job.details.pendingArtifact!;await copyArtifactToRecovery(w,ctx,job,entry);stepGuard(job);
-   return withTransaction(w.storage,tx=>{const current=assertCurrentCaptureJob(tx,w,ctx,id);const prior=priorOperation(tx,ctx);if(prior){if(!validateRecoveryJobProgress(prior))throw Error('RECOVERY_OPERATION_CONFLICT');return prior;}assertPending(current,ctx);current.details.artifactIndex++;current.details.artifactBytes+=entry.byte_size;current.details.counts.bytes+=entry.byte_size;if(current.details.artifactIndex===current.details.draft!.artifacts.length)current.details.phase='capture_finalize';return completeStep(tx,w,ctx,current);});
+   const entry=job.details.pendingArtifact!;await copyArtifactToRecovery(w,ctx,job,entry,fresh);if(fresh)await fresh();stepGuard(job);
+   const draftSha=fresh&&job.details.artifactIndex+1===job.details.draft!.artifacts.length?await digestBytes(canonicalBytes(job.details.draft)):null;if(fresh)await fresh();stepGuard(job);
+   return withTransaction(w.storage,tx=>{const current=assertCurrentCaptureJob(tx,w,ctx,id);const prior=priorOperation(tx,ctx);if(prior){if(!validateRecoveryJobProgress(prior))throw Error('RECOVERY_OPERATION_CONFLICT');return prior;}assertPending(current,ctx);current.details.artifactIndex++;current.details.artifactBytes+=entry.byte_size;current.details.counts.bytes+=entry.byte_size;if(current.details.artifactIndex===current.details.draft!.artifacts.length){current.details.phase='capture_finalize';if(draftSha)initializeFinalization(tx,w,ctx,current,draftSha);}return completeStep(tx,w,ctx,current);});
   }
-  if(job.details.phase==='capture_finalize')return await finish(w,ctx,job,()=>stepGuard(job));
+  if(job.details.phase==='capture_finalize')return await finish(w,ctx,job,()=>stepGuard(job),fresh);
   const selected=withTransaction(w.storage,tx=>{job=assertCurrentCaptureJob(tx,w,ctx,id);assertPending(job,ctx);inspectRegistry(tx,recoverySchema(tx,ctx) as 15|16);assertArtifactEffectsDrained(tx);return {job,chunk:page(tx,job)};});job=selected.job;
   if(!selected.chunk)return withTransaction(w.storage,tx=>{const current=assertCurrentCaptureJob(tx,w,ctx,id);assertPending(current,ctx);current.details.tableIndex=job.details.tableIndex;current.details.cursor=job.details.cursor;current.details.phase=job.details.phase;return completeStep(tx,w,ctx,current);});
   const chunk=selected.chunk;let bytes:Uint8Array<ArrayBuffer>;for(;;){try{bytes=encodeCurrentChunk(chunk);break;}catch(error){if(error instanceof Error&&error.message==='RECOVERY_CHUNK_LIMIT'&&chunk.rows.length>1)chunk.rows=chunk.rows.slice(0,Math.floor(chunk.rows.length/2));else throw error;}}
   const artifactBytes=job.details.draft!.artifacts.reduce((n,e)=>n+e.byte_size,0);
   if(chunk.index>=256||job.details.sqlBytes+bytes.length+artifactBytes>budget.max_total_bytes||job.details.counts.rows+chunk.rows.length>budget.max_rows)throw Error('RECOVERY_BUDGET_LIMIT');
-  const digest=await digestBytes(bytes);stepGuard(job);const key=objectKey(job,chunk.index,digest);
-  await w.bucket.put(key,bytes.buffer,{onlyIf:new Headers({'If-None-Match':'*'}),httpMetadata:{contentType:'application/json'}});stepGuard(job);
-  const record={job_id:id,chunk_index:chunk.index,table_name:chunk.table,sha256:digest,byte_size:bytes.length,row_count:chunk.rows.length,object_key:key};await readStoredChunk(w,ctx,job,record);stepGuard(job);
+  if(fresh)await fresh();stepGuard(job);const digest=await digestBytes(bytes);if(fresh)await fresh();stepGuard(job);const key=objectKey(job,chunk.index,digest);
+  await w.bucket.put(key,bytes.buffer,{onlyIf:new Headers({'If-None-Match':'*'}),httpMetadata:{contentType:'application/json'}});if(fresh)await fresh();stepGuard(job);
+  const record={job_id:id,chunk_index:chunk.index,table_name:chunk.table,sha256:digest,byte_size:bytes.length,row_count:chunk.rows.length,object_key:key};await readStoredChunk(w,ctx,job,record,fresh);if(fresh)await fresh();stepGuard(job);
   return withTransaction(w.storage,tx=>{const current=assertCurrentCaptureJob(tx,w,ctx,id);const prior=priorOperation(tx,ctx);if(prior){if(!validateRecoveryJobProgress(prior))throw Error('RECOVERY_OPERATION_CONFLICT');return prior;}assertPending(current,ctx);tx.exec('INSERT INTO recovery_chunks (job_id,chunk_index,table_name,sha256,byte_size,row_count,object_key) VALUES (?,?,?,?,?,?,?)',[id,chunk.index,chunk.table,digest,bytes.length,chunk.rows.length,key]);
    const d=current.details;d.tableIndex=job.details.tableIndex;d.cursor=primaryKey(TABLE_REGISTRY[d.tableIndex],chunk.rows.at(-1)!);d.counts.rows+=chunk.rows.length;d.counts.chunks++;d.counts.bytes+=bytes.length;d.sqlBytes+=bytes.length;d.draft!.database.byte_size=d.sqlBytes;d.draft!.database.chunks.push({index:chunk.index,table:chunk.table,sha256:digest,byte_size:bytes.length,row_count:chunk.rows.length});if(canonicalBytes(d.draft).length>65536)throw Error('RECOVERY_MANIFEST_LIMIT');return completeStep(tx,w,ctx,current);});
  }catch(error){
+  // An anchor failure cannot be converted into a successful prior-operation replay.
+  if(fresh)await fresh();
   const replay=withTransaction(w.storage,tx=>{try{assertCurrentCaptureJob(tx,w,ctx,id);const prior=priorOperation(tx,ctx);return prior&&validateRecoveryJobProgress(prior)?prior:null;}catch{return null;}});if(replay)return replay;
   diagnostic(w,ctx,id,error);
   throw error;
  }
 }
-async function finish(w:RecoveryWorkspace,ctx:RecoveryContext,job:CurrentCaptureJob,stepGuard:()=>unknown):Promise<RecoveryJobProgress>{
- const d=job.details,draft=structuredClone(d.draft!);if(d.artifactIndex!==draft.artifacts.length||d.pendingArtifact!==null)throw Error('RECOVERY_ARTIFACT_INCOMPLETE');
- for(const entry of draft.artifacts){await verifyCapturedArtifact(w,ctx,job,entry);stepGuard();}
- const digest=await databaseDigest(w,ctx,job);stepGuard();if(digest!==draft.database.sha256)throw Error('RECOVERY_DATABASE_DIGEST_MISMATCH');
+async function finish(w:RecoveryWorkspace,ctx:RecoveryContext,job:CurrentCaptureJob,stepGuard:()=>unknown,fresh?:()=>Promise<void>):Promise<RecoveryJobProgress>{
+ const d=job.details,draft=structuredClone(d.draft!);let coverage:ReturnType<typeof readFinalization>|null=null;if(d.artifactIndex!==draft.artifacts.length||d.pendingArtifact!==null)throw Error('RECOVERY_ARTIFACT_INCOMPLETE');
+ if(fresh){
+  await fresh();stepGuard();const draftSha=await digestBytes(canonicalBytes(draft));await fresh();stepGuard();
+  const record=withTransaction(w.storage,tx=>readFinalization(tx,w,ctx,job,draftSha));coverage=record;
+  if(record.index<record.total){
+   await verifyCapturedArtifact(w,ctx,job,draft.artifacts[record.index],fresh);await fresh();stepGuard();
+   return withTransaction(w.storage,tx=>{const current=assertCurrentCaptureJob(tx,w,ctx,job.id);assertPending(current,ctx);advanceFinalization(tx,w,ctx,current,record);return completeStep(tx,w,ctx,current);});
+  }
+ }else for(const entry of draft.artifacts){await verifyCapturedArtifact(w,ctx,job,entry);stepGuard();}
+ const digest=await databaseDigest(w,ctx,job,fresh);if(fresh)await fresh();stepGuard();if(digest!==draft.database.sha256)throw Error('RECOVERY_DATABASE_DIGEST_MISMATCH');
  draft.ended_at=d.pending!.endedAt;validateManifestShape(draft);const proposed=structuredClone(job);proposed.details.draft=null;proposed.details.manifest=draft;proposed.details.pending=null;proposed.details.phase='complete';proposed.details.step++;proposed.details.diagnostic=null;proposed.state='complete';
  withTransaction(w.storage,tx=>{assertCurrentCaptureJob(tx,w,ctx,job.id);assertPending(job,ctx);inspectRegistry(tx,recoverySchema(tx,ctx) as 15|16);assertArtifactEffectsDrained(tx);proposed.details.receipt=terminalReceipt(tx,w,job,true,'OK');progress(proposed);if(canonicalBytes(proposed.details).length>262144)throw Error('RECOVERY_JOB_DETAILS_LIMIT');});
- const signed=await signRecord(draft,w.integrity,stepGuard);stepGuard();const manifestDigest=await digestBytes(canonicalBytes(signed));stepGuard();
- return withTransaction(w.storage,tx=>{const current=assertCurrentCaptureJob(tx,w,ctx,job.id);const prior=priorOperation(tx,ctx);if(prior){if(!validateRecoveryJobProgress(prior))throw Error('RECOVERY_OPERATION_CONFLICT');return prior;}assertPending(current,ctx);inspectRegistry(tx,recoverySchema(tx,ctx) as 15|16);assertArtifactEffectsDrained(tx);
+ const signed=fresh?await signRecordAsync(draft,w.integrity,async()=>{await fresh();stepGuard();}):await signRecord(draft,w.integrity,stepGuard);if(fresh)await fresh();stepGuard();const manifestDigest=await digestBytes(canonicalBytes(signed));if(fresh)await fresh();stepGuard();
+ return withTransaction(w.storage,tx=>{const current=assertCurrentCaptureJob(tx,w,ctx,job.id);if(coverage){const actual=readFinalization(tx,w,ctx,current,coverage.draftSha256);if(actual.index!==actual.total||canonicalJson(actual)!==canonicalJson(coverage))throw Error('RECOVERY_FINALIZATION_CONFLICT');}const prior=priorOperation(tx,ctx);if(prior){if(!validateRecoveryJobProgress(prior))throw Error('RECOVERY_OPERATION_CONFLICT');return prior;}assertPending(current,ctx);inspectRegistry(tx,recoverySchema(tx,ctx) as 15|16);assertArtifactEffectsDrained(tx);
   current.details.draft=null;current.details.manifest=signed;current.manifest_digest=manifestDigest;current.details.receipt=terminalReceipt(tx,w,current,true,'OK');current.state='complete';current.details.phase='complete';transitionMaintenance(tx,{state:'captured',epoch:ctx.expectedEpoch,barrierId:current.details.barrierId,captureId:current.capture_id,nowMs:w.clock.nowMs(),advance:false});return completeStep(tx,w,ctx,current);});
 }

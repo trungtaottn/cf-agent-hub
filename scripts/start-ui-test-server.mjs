@@ -61,7 +61,7 @@ try {
  input.bundle.auth.tag=createHmac('sha256',randomBytes(32)).update(canonicalJson(unsigned)).digest('hex');
  const baselineConfig=structuredClone(input.config);
  const prepared=await prepareBootstrap(input.config,input.bundle,'ws_example');
- const harnessOptions=()=>({workers:[{configPath:'./wrangler.jsonc',env:'test',vars:{DEPLOYMENT_CONFIG:JSON.stringify(input.config)},secrets:{[input.config.authentication.client_secret_ref]:providerClientSecret,CSRF_SECRET:csrfSecret,CURSOR_ENCRYPTION_KEY:cursorSecret}},{config:{name:'cf-agent-hub-egress-fixture',main:probePath,compatibility_date:'2026-10-19'}},{config:{name:'cf-agent-hub-control-fixture',main:installPath,compatibility_date:'2026-10-19',durable_objects:{bindings:[{name:'WORKSPACE',class_name:'WorkspaceDO',script_name:'cf-agent-hub-test'}]}}}]});
+ const harnessOptions=()=>({workers:[{configPath:'./wrangler.jsonc',env:'test',vars:{DEPLOYMENT_CONFIG:JSON.stringify(input.config)},secrets:{[input.config.authentication.client_secret_ref]:providerClientSecret,CSRF_SECRET:csrfSecret,CURSOR_ENCRYPTION_KEY:cursorSecret}},{configPath:'./workers/recovery-anchor/wrangler.jsonc',env:'test'},{config:{name:'cf-agent-hub-egress-fixture',main:probePath,compatibility_date:'2026-10-19'}},{config:{name:'cf-agent-hub-control-fixture',main:installPath,compatibility_date:'2026-10-19',durable_objects:{bindings:[{name:'WORKSPACE',class_name:'WorkspaceDO',script_name:'cf-agent-hub-test'}]}}}]});
  harness=createTestHarness(harnessOptions());
  await harness.listen();
  worker=harness.getWorker();

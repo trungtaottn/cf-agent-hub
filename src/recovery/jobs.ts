@@ -1,3 +1,4 @@
+import {captureByobReader} from './capture-stream';
 import {validateRecoveryManifest,validateRecoveryReceipt,UNRESOLVED_EFFECT_IDS_LIMIT} from './generated/recovery-validators.js';
 import {canonicalJson} from '../config/bootstrap';
 import {withTransaction,type WorkspaceTransaction,type SqlValue} from '../storage/transaction';
@@ -69,27 +70,27 @@ export function unresolvedSummary(tx:WorkspaceTransaction,job:AnyRecoveryJob):Pi
 export function terminalReceipt(tx:WorkspaceTransaction,w:RecoveryWorkspace,job:AnyRecoveryJob,passed:boolean,code:string):RecoveryReceipt {
  return {id:'receipt_'+job.id.slice(4),capture_id:job.capture_id,workspace_id:job.workspace_id,status:passed?'complete':'failed',checks:[{name:job.operation,passed,code}],...unresolvedSummary(tx,job),started_at:new Date(job.created_at).toISOString(),ended_at:job.details.pending?.endedAt??new Date(w.clock.nowMs()).toISOString()};
 }
-export async function readStoredChunk(w:RecoveryWorkspace,ctx:RecoveryContext,job:AnyRecoveryJob,chunk:Omit<ChunkRecord,'table_name'>&{table_name:string}):Promise<Uint8Array<ArrayBuffer>> {
+export async function readStoredChunk(w:RecoveryWorkspace,ctx:RecoveryContext,job:AnyRecoveryJob,chunk:Omit<ChunkRecord,'table_name'>&{table_name:string},fresh?:()=>Promise<void>):Promise<Uint8Array<ArrayBuffer>> {
  const fence=withTransaction(w.storage,tx=>assertRecoveryContext(tx,w,ctx)),bucket=w.bucket,artifactBucket=w.artifactBucket;
- const guard=job.details.version===2?currentCaptureGuard(w,ctx,job as CurrentCaptureJob):()=>withTransaction(w.storage,tx=>{assertRecoveryContext(tx,w,ctx,fence);return assertAnyJob(tx,w,ctx,job);});guard();
+ const guard=job.details.version===2?currentCaptureGuard(w,ctx,job as CurrentCaptureJob):()=>withTransaction(w.storage,tx=>{assertRecoveryContext(tx,w,ctx,fence);return assertAnyJob(tx,w,ctx,job);});if(fresh)await fresh();guard();
  if(chunk.object_key!==objectKey(job,chunk.chunk_index,chunk.sha256)||chunk.byte_size<1||chunk.byte_size>CHUNK_LIMIT)throw Error('RECOVERY_CHUNK_MISMATCH');
- const object=await bucket.get(chunk.object_key);try{guard();}catch(error){void object?.body.cancel().catch(()=>{});throw error;}if(!object||object.size!==chunk.byte_size){void object?.body.cancel().catch(()=>{});throw Error('RECOVERY_CHUNK_MISMATCH');}
- const bytes=job.details.version===2?await boundedChunk(object.body,chunk.byte_size,guard):new Uint8Array(await object.arrayBuffer());guard();if(bytes.length!==chunk.byte_size||await digestBytes(bytes)!==chunk.sha256)throw Error('RECOVERY_CHUNK_MISMATCH');guard();
+ const object=await bucket.get(chunk.object_key);try{if(fresh)await fresh();guard();}catch(error){void object?.body.cancel().catch(()=>{});throw error;}if(!object||object.size!==chunk.byte_size){void object?.body.cancel().catch(()=>{});throw Error('RECOVERY_CHUNK_MISMATCH');}
+ const bytes=job.details.version===2?await boundedChunk(object.body,chunk.byte_size,guard,fresh):new Uint8Array(await object.arrayBuffer());if(fresh)await fresh();guard();if(bytes.length!==chunk.byte_size||await digestBytes(bytes)!==chunk.sha256)throw Error('RECOVERY_CHUNK_MISMATCH');if(fresh)await fresh();guard();
  const expected={capture_id:job.capture_id,index:chunk.chunk_index,table:chunk.table_name,row_count:chunk.row_count,byte_size:chunk.byte_size};if(job.details.version===2)decodeCurrentChunk(bytes,{...expected,schema_version:job.details.checkpoint!.schema_version});else decodeChunk(bytes,expected);return bytes;
 }
-async function boundedChunk(body:ReadableStream<Uint8Array>,expected:number,guard:()=>unknown):Promise<Uint8Array<ArrayBuffer>>{
- const reader=body.getReader(),bytes=new Uint8Array(expected);let offset=0;
- try{for(;;){guard();const item=await reader.read();guard();if(item.done)break;if(!(item.value instanceof Uint8Array)||item.value.byteLength===0||offset+item.value.byteLength>expected)throw Error('RECOVERY_CHUNK_MISMATCH');bytes.set(item.value,offset);offset+=item.value.byteLength;}if(offset!==expected)throw Error('RECOVERY_CHUNK_MISMATCH');return bytes;}
+async function boundedChunk(body:ReadableStream<Uint8Array>,expected:number,guard:()=>unknown,fresh?:()=>Promise<void>):Promise<Uint8Array<ArrayBuffer>>{
+ const reader=fresh?captureByobReader(body):body.getReader(),bytes=new Uint8Array(expected);let offset=0;
+ try{for(;;){if(fresh)await fresh();guard();const item=await reader.read(fresh?Math.max(1,expected-offset):undefined!);if(fresh)await fresh();guard();if(item.value?.byteLength){if(!(item.value instanceof Uint8Array)||offset+item.value.byteLength>expected)throw Error('RECOVERY_CHUNK_MISMATCH');bytes.set(item.value,offset);offset+=item.value.byteLength;}else if(!item.done)throw Error('RECOVERY_CHUNK_MISMATCH');if(item.done)break;}if(offset!==expected)throw Error('RECOVERY_CHUNK_MISMATCH');return bytes;}
  catch(error){await reader.cancel().catch(()=>{});throw error;}finally{reader.releaseLock();}
 }
 /** Raw canonical chunks are fed incrementally; the entire database is never buffered. */
-export async function databaseDigest(w:RecoveryWorkspace,ctx:RecoveryContext,job:AnyRecoveryJob):Promise<string>{
+export async function databaseDigest(w:RecoveryWorkspace,ctx:RecoveryContext,job:AnyRecoveryJob,fresh?:()=>Promise<void>):Promise<string>{
  const guard=job.details.version===2?currentCaptureGuard(w,ctx,job as CurrentCaptureJob):()=>withTransaction(w.storage,tx=>assertAnyJob(tx,w,ctx,job));
- guard();const chunks=withTransaction(w.storage,tx=>chunkRecords(tx,job.id));if(chunks.length>256)throw Error('RECOVERY_CHUNK_LIMIT');
+ if(fresh)await fresh();guard();const chunks=withTransaction(w.storage,tx=>chunkRecords(tx,job.id));if(chunks.length>256)throw Error('RECOVERY_CHUNK_LIMIT');
  const Stream=(crypto as Crypto & {DigestStream:typeof DigestStream}).DigestStream;
  if(typeof Stream!=='function')throw Error('RECOVERY_DIGEST_STREAM_UNAVAILABLE');
  const stream=new Stream('SHA-256'),writer=stream.getWriter(),hashed=stream.digest.then(value=>({value}),error=>({error}));
- try{for(const [index,chunk] of chunks.entries()){if(chunk.chunk_index!==index)throw Error('RECOVERY_CHUNK_MISMATCH');guard();const bytes=await readStoredChunk(w,ctx,job,chunk);guard();await writer.write(bytes);guard();}guard();await writer.close();guard();const hash=await hashed;guard();if('error'in hash)throw hash.error;const result=hex(hash.value);guard();return result;}
+ try{for(const [index,chunk] of chunks.entries()){if(chunk.chunk_index!==index)throw Error('RECOVERY_CHUNK_MISMATCH');if(fresh)await fresh();guard();const bytes=await readStoredChunk(w,ctx,job,chunk,fresh);if(fresh)await fresh();guard();await writer.write(bytes);if(fresh)await fresh();guard();}if(fresh)await fresh();guard();await writer.close();if(fresh)await fresh();guard();const hash=await hashed;if(fresh)await fresh();guard();if('error'in hash)throw hash.error;const result=hex(hash.value);if(fresh)await fresh();guard();return result;}
  catch(error){await writer.abort().catch(()=>{});throw error;}
 }
 

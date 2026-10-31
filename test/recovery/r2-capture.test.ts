@@ -6,7 +6,8 @@ import {importFixture,importBatch,importRow} from '../imports/helpers';
 import {expireArtifactIntents,cleanupArtifactGenerations} from '../../src/artifacts/reconcile';
 import {recordProbe} from '../../src/recovery/probes';
 import {artifactFixture,artifactContext,artifactBucket,stage,bytes,claimSetup,wrapBucket} from '../helpers/artifacts';
-import {fixtureIntegrity,recoveryContext} from '../helpers/recovery-fixture';
+import {fixtureIntegrity} from '../helpers/recovery-fixture';
+import {withSyntheticCaptureAnchor,syntheticCaptureContext as recoveryContext} from '../helpers/synthetic-capture-anchor';
 import {advanceCapture,readRecoveryChunk,readRecoveryStatus} from '../../src/recovery/capture';
 import {uploadArtifactContent,commitArtifact} from '../../src/artifacts/content';
 import {withTransaction} from '../../src/storage/transaction';
@@ -17,7 +18,7 @@ import {assertRecoveryContext,type RecoveryWorkspace,type RecoveryJobProgress,ty
 import {systemClock,systemEntropy} from '../../src/workspace/context';
 
 const budget={max_rows:1000000,max_artifacts:1000,max_total_bytes:268435456};
-function workspace(storage:DurableObjectStorage,name:string):RecoveryWorkspace & {artifactBucket:R2Bucket}{return {storage,bucket:env.RECOVERY_BUCKET,artifactBucket:artifactBucket(),workspaceId:'ws_example',objectName:name,environmentId:'capture_fixture',clock:systemClock,entropy:systemEntropy,integrity:fixtureIntegrity,release:{revision:'synthetic_current',worker_version:'synthetic_current',binding_ids:['recovery_fixture','artifact_fixture'],catalog_mapping:{workspace_id:'ws_example',object_name:name}},repairSchedule:async()=>({armed:false,nextDueAt:null,generation:0,dirty:false})};}
+function workspace(storage:DurableObjectStorage,name:string):RecoveryWorkspace & {artifactBucket:R2Bucket}{return withSyntheticCaptureAnchor({storage,bucket:env.RECOVERY_BUCKET,artifactBucket:artifactBucket(),workspaceId:'ws_example',objectName:name,environmentId:'capture_fixture',clock:systemClock,entropy:systemEntropy,integrity:fixtureIntegrity,release:{revision:'synthetic_current',worker_version:'synthetic_current',binding_ids:['recovery_fixture','artifact_fixture'],catalog_mapping:{workspace_id:'ws_example',object_name:name}},repairSchedule:async()=>({armed:false,nextDueAt:null,generation:0,dirty:false})});}
 async function complete(f:{stub:Awaited<ReturnType<typeof artifactFixture>>['stub'];name:string},captureId:string,evict=false){let last:RecoveryJobProgress|undefined;const start=performance.now();for(let step=0;step<300;step++){last=await runInDurableObject(f.stub,async(_instance,state)=>{const w=workspace(state.storage,f.name);return advanceCapture(w,await recoveryContext(w,'capture',{budget},captureId,{operationId:'capture_step_'+step}),budget);});if(last.state!=='running')break;if(evict)await evictDurableObject(f.stub);}expect(last?.state).toBe('complete');expect(last?.manifest).not.toBeNull();return {progress:last!,manifest:last!.manifest! as CurrentRecoveryManifest,elapsedMs:performance.now()-start};}
 async function committed(f:Awaited<ReturnType<typeof artifactFixture>>,id='artifact_capture',text='hello'){return runInDurableObject(f.stub,async(_instance,state)=>{claimSetup(state.storage);const ctx=artifactContext(state.storage,f.name,'upload_'+id);await stage(ctx,id,{byte_size:new TextEncoder().encode(text).length,sha256:await digestBytes(new TextEncoder().encode(text))});const uploaded=await uploadArtifactContent(ctx,id,bytes(text),ctx.idempotencyKey);return commitArtifact({...ctx,idempotencyKey:'commit_'+id},id,{expected_artifact_version:uploaded.artifact_version});});}
 
@@ -67,7 +68,7 @@ it('a SQL digest await cannot switch the trusted recovery bucket',async()=>{cons
 it('a capture context cannot be reused as legacy probe authority',async()=>{const f=await artifactFixture('capture_context_probe');await runInDurableObject(f.stub,async(_instance,state)=>{const w=workspace(state.storage,f.name);await expect(recordProbe(w,await recoveryContext(w,'capture',{budget},'capture_probe'))).rejects.toThrow('INVALID_RECOVERY_CONTEXT');expect(state.storage.sql.exec('SELECT id FROM probe_receipts').toArray()).toEqual([]);});});
 
 it.each(['reject','conditional-null'] as const)('copy settles %s without waiting forever on a source reader',async outcome=>{const f=await artifactFixture('capture_copy_cancel_'+outcome.replace('-','_'));await committed(f);await runInDurableObject(f.stub,async(_instance,state)=>{const w=workspace(state.storage,f.name);await toPhase(w,'capture_cancel','capture_artifacts');let release!:()=>void;const held=new Promise<void>(r=>release=r);let cancelled=0;
- const real=artifactBucket();w.artifactBucket=wrapBucket(real,{get:async(...args:Parameters<R2Bucket['get']>)=>{const object=await real.get(...args);if(!object)return object;return {...object,size:5,body:new ReadableStream<Uint8Array>({pull:async c=>{await held;try{c.enqueue(new TextEncoder().encode('hello'));c.close();}catch{}},cancel(){cancelled++;}})} as R2ObjectBody;}});
+ const real=artifactBucket();w.artifactBucket=wrapBucket(real,{get:async(...args:Parameters<R2Bucket['get']>)=>{const object=await real.get(...args);if(!object)return object;return {...object,size:5,body:new ReadableStream<Uint8Array>({type:'bytes',pull:async c=>{await held;try{c.enqueue(new TextEncoder().encode('hello'));c.close();}catch{}},cancel(){cancelled++;}})} as R2ObjectBody;}});
  w.bucket=wrapBucket(env.RECOVERY_BUCKET,{put:(async()=>{if(outcome==='reject')throw Error('private transport detail');return null;}) as unknown as R2Bucket['put']});const ctx=await recoveryContext(w,'capture',{budget},'capture_cancel',{operationId:'cancel'});const result=advanceCapture(w,ctx,budget).then(()=>({done:true,ok:true}),()=>({done:true,ok:false}));let early:unknown;try{early=await Promise.race([result,new Promise<null>(r=>setTimeout(()=>r(null),80))]);}finally{release();await result;}expect(early).toEqual({done:true,ok:false});expect(cancelled).toBe(1);expect(JSON.parse(state.storage.sql.exec<{details_json:string}>('SELECT details_json FROM recovery_jobs').one().details_json).artifactIndex).toBe(0);
  });},60000);
 
@@ -113,3 +114,38 @@ import {executeCommand} from '../../src/workspace/commands';
 import {messageCommand} from '../../src/messages/commands';
 it('missing inverse message attachment rejects coherent checkpoint, not archived evidence',async()=>{const f=await artifactFixture('capture_inverse_message',['messages:read','messages:send']);await committed(f);await runInDurableObject(f.stub,async(_instance,state)=>{const body=messageInput({recipient_agent_ids:['agent_other'],artifact_ids:['artifact_capture']});await executeCommand(await commandContext(state.storage,f.name,body,'message'),claimIdentity(state.storage),messageCommand(owned(state.storage,f.name)),body);state.storage.sql.exec("DELETE FROM artifact_associations WHERE resource_kind='message'");const w=workspace(state.storage,f.name);await advanceCapture(w,await recoveryContext(w,'capture',{budget},'capture_message',{operationId:'close'}),budget);await expect(advanceCapture(w,await recoveryContext(w,'capture',{budget},'capture_message',{operationId:'checkpoint'}),budget)).rejects.toThrow('RECOVERY_ARTIFACT_RELATIONSHIP_MISMATCH');});});
 it('retained result attachment cannot contradict the artifact canonical task binding',async()=>{const f=await reviewFixture('capture_result_task_mismatch');await runInDurableObject(f.stub,async(_instance,state)=>{const now=await setupReview(state.storage,f.name);await committedEvidence(state.storage,f.name,now);const send=await client(state.storage,f.name,now);expect((await send('submit-result',submission(['artifact_a']))).status).toBe(200);state.storage.sql.exec("UPDATE artifacts SET task_id='task_b',run_id=NULL WHERE id='artifact_a'");state.storage.sql.exec("DELETE FROM artifact_associations WHERE resource_kind IN ('task','run')");state.storage.sql.exec("INSERT INTO artifact_associations VALUES('ws_example','artifact_a','task','task_b')");const w=workspace(state.storage,f.name);await advanceCapture(w,await recoveryContext(w,'capture',{budget},'capture_task_mismatch',{operationId:'close'}),budget);await expect(advanceCapture(w,await recoveryContext(w,'capture',{budget},'capture_task_mismatch',{operationId:'checkpoint'}),budget)).rejects.toThrow('RECOVERY_ARTIFACT_RELATIONSHIP_MISMATCH');});});
+
+it('current16 finalization revalidates one artifact per durable continuation before signing',async()=>{
+ const f=await artifactFixture('capture_finalize_bounded');await committed(f);
+ await runInDurableObject(f.stub,async(_instance,state)=>{
+  const w=workspace(state.storage,f.name);await toPhase(w,'capture_finalize_bounded','capture_finalize');
+  const ctx=await recoveryContext(w,'capture',{budget},'capture_finalize_bounded',{operationId:'finalize_artifact'});
+  const first=await advanceCapture(w,ctx,budget);expect(first.state).toBe('running');expect(first.phase).toBe('capture_finalize');expect(first.manifest).toBeNull();
+  expect(await advanceCapture(w,ctx,budget)).toEqual(first);
+  const record=state.storage.sql.exec<{outcome_json:string}>("SELECT outcome_json FROM idempotency_outcomes WHERE operation='operator.recovery.capture-finalization'").one();expect(JSON.parse(record.outcome_json).index).toBe(1);
+ });
+ await evictDurableObject(f.stub);
+ await runInDurableObject(f.stub,async(_instance,state)=>{const w=workspace(state.storage,f.name);const final=await advanceCapture(w,await recoveryContext(w,'capture',{budget},'capture_finalize_bounded',{operationId:'finalize_publish'}),budget);expect(final.state).toBe('complete');});
+},60000);
+
+it('unsupported current16 BYOB source aborts an already dispatched copy sink instead of hanging',async()=>{
+ const f=await artifactFixture('capture_byob_unavailable');await committed(f);
+ await runInDurableObject(f.stub,async(_instance,state)=>{
+  const w=workspace(state.storage,f.name);await toPhase(w,'capture_byob_unavailable','capture_artifacts');
+  const source=artifactBucket(),target=env.RECOVERY_BUCKET;let cancelled=0,puts=0;
+  w.artifactBucket=wrapBucket(source,{get:async(...args:Parameters<R2Bucket['get']>)=>{const object=await source.get(...args);return object?{...object,body:new ReadableStream<Uint8Array>({pull(){},cancel(){cancelled++;}})} as R2ObjectBody:object;}});
+  w.bucket=wrapBucket(target,{put:async(...args:Parameters<R2Bucket['put']>)=>{puts++;return target.put(...args);}});
+  const ctx=await recoveryContext(w,'capture',{budget},'capture_byob_unavailable',{operationId:'unsupported_reader'});
+  await expect(advanceCapture(w,ctx,budget)).rejects.toThrow();expect(puts).toBe(1);expect(cancelled).toBeGreaterThanOrEqual(1);
+  const d=JSON.parse(state.storage.sql.exec<{details_json:string}>('SELECT details_json FROM recovery_jobs').one().details_json);expect(d.artifactIndex).toBe(0);expect(d.manifest).toBeNull();
+ });
+},10000);
+
+it('native R2 cancellation diagnostic control handles all local promises without recovery code',async()=>{
+ const stream=new FixedLengthStream(5),writer=stream.writable.getWriter();
+ const put=env.RECOVERY_BUCKET.put('synthetic-native-cancellation-control',stream.readable,{sha256:'a'.repeat(64)}).then(value=>({ok:true,value}),error=>({ok:false,error}));
+ // Let the local R2 request start; this is diagnostic attribution, not a recovery timeout relaxation.
+ await new Promise(resolve=>setTimeout(resolve,30));
+ await writer.abort().catch(()=>{});writer.releaseLock();
+ const result=await put;expect(result.ok).toBe(false);
+},10000);

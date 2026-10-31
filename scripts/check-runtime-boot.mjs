@@ -5,8 +5,8 @@ import {validateLiveness} from '../src/http/generated/auth-validators.js';
 let harness;
 try{
  if(process.versions.node!=='24.22.1')throw Error('PINNED_NODE_REQUIRED');
- harness=createTestHarness({workers:[{configPath:'./wrangler.jsonc',env:'test'}]});
- await harness.listen();const worker=harness.getWorker();
+ harness=createTestHarness({workers:[{configPath:'./wrangler.jsonc',env:'test'},{configPath:'./workers/recovery-anchor/wrangler.jsonc',env:'test'}]});
+ await harness.listen();const worker=harness.getWorker('cf-agent-hub-test');
  const live=await worker.fetch('https://runtime-boot.example.invalid/health/live');
  if(live.status!==200||!validateLiveness(await live.json()))throw Error('LIVENESS_CONTRACT_FAILED');
  const bindings=await worker.getEnv(),name='boot_'+randomBytes(12).toString('hex');

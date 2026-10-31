@@ -129,3 +129,8 @@ Ready requires an exact nullable project/work-role tuple and at least one active
 ## Local issue 28 catalog implementation
 
 Catalog profile lifecycle cannot rewrite deployment grants or execution-policy rules. Remap fails when a current eligibility/replay-safety rule names the source; an operator must separately review any policy change. Archive leaves rules and historical references unchanged while active-selection checks deny the archived ID. Preview never grants authority for later apply. Read [catalog semantics](customization.md#local-catalog-operation-semantics) and [local execution evidence](r2-task-plans/issue-028-execution.md). Ordinary profile imports retain omitted IDs and reject archive/reactivation bypass; duplicate labels are advisory only.
+
+
+## Private recovery anchor declarations
+
+Product `RECOVERY_ANCHOR` service bindings select only the default reader of the environment-matched private recovery-anchor Worker. `RECOVERY_ANCHOR_BINDING_ID` must also appear in the trusted release manifest's `binding_ids`; a string alone does not confer capability or prove infrastructure continuity. The [provider policy](../workers/recovery-anchor/README.md) is a closed environment/workspace/object allowlist with separate bootstrap/rotation scopes. Empty defaults deny access. Only separately authorized deployment tooling may receive named writer/bootstrap entrypoints; neither the ordinary operator gateway nor product Worker receives them or the provider namespace. Static `verify:anchor-bindings` checks source mappings, not deployed identity or freshness. No new product migration or snapshot table stores authoritative provider state.

@@ -50,16 +50,21 @@ function seal(bytes,key,context){
  const ciphertext=Buffer.concat([cipher.update(bytes),cipher.final()]);
  return Buffer.from(JSON.stringify({format_version:1,algorithm:'AES-256-GCM',key_id:key.keyId,context,nonce:nonce.toString('base64'),ciphertext:ciphertext.toString('base64'),tag:cipher.getAuthTag().toString('base64')})+'\n');
 }
-function encryptedBytes(value,maximum){
+export function boundedDirectoryEntries(directory){
+ const names=[],handle=fs.opendirSync(directory);
+ try{for(;;){const entry=handle.readSync();if(!entry)break;if(names.length>=32768)fail('RECOVERY_RETENTION_LIMIT');names.push(entry.name);}return names;}finally{handle.closeSync();}
+}
+function encryptedBytes(value,maximum,repair=true){
  const absolute=real(value),fd=fs.openSync(absolute,O_RDONLY|O_NOFOLLOW);
  try{
   const stat=fs.fstatSync(fd),named=fs.lstatSync(absolute);
   if(stat.ino!==named.ino||stat.dev!==named.dev||named.isSymbolicLink())fail();
   if(stat.nlink===1)return {encoded:readFd(fd,maximum),orphan:null};
+  if(!repair)fail('RECOVERY_ARTIFACT_REJECTED');
   protectedFile(stat,2);
   const parent=privateDirectory(path.dirname(absolute));
   if((stat.mode&0o777)!==0o600)fail();
-  const candidates=fs.readdirSync(parent).filter(name=>/^\.cfhub-recovery-[a-f0-9]{32}$/.test(name)&&path.join(parent,name)!==absolute).map(name=>path.join(parent,name)).filter(candidate=>{
+  const candidates=boundedDirectoryEntries(parent).filter(name=>/^\.cfhub-recovery-[a-f0-9]{32}$/.test(name)&&path.join(parent,name)!==absolute).map(name=>path.join(parent,name)).filter(candidate=>{
    const entry=fs.lstatSync(candidate);return entry.isFile()&&!entry.isSymbolicLink()&&entry.ino===stat.ino&&entry.dev===stat.dev&&entry.uid===stat.uid&&entry.nlink===2&&(entry.mode&0o777)===0o600;
   });
   if(candidates.length!==1)fail();
@@ -75,8 +80,8 @@ function repairOwnedPublication(orphan){
  const directory=fs.openSync(orphan.parent,O_RDONLY|O_DIRECTORY);try{fs.fsyncSync(directory);}finally{fs.closeSync(directory);}
  protectedFile(fs.lstatSync(orphan.absolute));
 }
-export function readEncryptedArtifact(value,key,context,maximum=1048576){
- const record=encryptedBytes(value,maximum*2+16384),encoded=record.encoded;
+export function readEncryptedArtifact(value,key,context,maximum=1048576,repair=true){
+ const record=encryptedBytes(value,maximum*2+16384,repair),encoded=record.encoded;
  try{
   const frame=JSON.parse(decoder.decode(encoded)),keys=['format_version','algorithm','key_id','context','nonce','ciphertext','tag'];
   if(!frame||typeof frame!=='object'||Array.isArray(frame)||Object.keys(frame).length!==keys.length||keys.some(k=>!Object.hasOwn(frame,k))||frame.format_version!==1||frame.algorithm!=='AES-256-GCM'||frame.key_id!==key.keyId)throw Error();
@@ -110,6 +115,7 @@ export function writeEncryptedArtifact(value,bytes,key,context){
 }
 export function replaceEncryptedState(value,state,key,context,expectedHash){
  if(expectedHash!==null)readEncryptedArtifact(value,key,context,1048576);
- return atomicWrite(value,seal(Buffer.from(canonicalBytes(state)),key,context),expectedHash);
+ const bytes=Buffer.from(canonicalBytes(state));if(bytes.length>1048576)fail('RECOVERY_RETENTION_LIMIT');
+ return atomicWrite(value,seal(bytes,key,context),expectedHash);
 }
 export const fileSha256=value=>hash(readProtectedBytes(value,2097152));
