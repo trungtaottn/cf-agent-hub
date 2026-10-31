@@ -6737,7 +6737,8 @@
               "credential",
               "configuration",
               "profile",
-              "preferences"
+              "preferences",
+              "import"
             ]
           },
           "resource_id": {
@@ -6832,7 +6833,7 @@
           "resource_version",
           "thread_id"
         ],
-        "description": "Sanitized audit projection, never secrets or full message bodies. sequence is monotonic within workspace. Required request_id correlates original processing attempt (delivery-origin gets a new internal processing ID linked to delivery). Message projection joins current accessible persisted message/thread; all other thread_id null. Settings IDs/versions follow ADR0007; preference owner filtering applies before IDs/counts/summaries.",
+        "description": "Sanitized audit projection, never secrets or full message bodies. sequence is monotonic within workspace. Required request_id correlates original processing attempt (delivery-origin gets a new internal processing ID linked to delivery). Message projection joins current accessible persisted message/thread; all other thread_id null. Settings IDs/versions follow ADR0007; preference owner filtering applies before IDs/counts/summaries. Import events bind the owning human and immutable import ID, with resource_version 1 for persisted preview and 2 for the applied report. Current owner/scopes and every retained disclosed reference govern visibility; no raw source rows or rejected values are included.",
         "allOf": [
           {
             "if": {
@@ -7143,6 +7144,94 @@
               "properties": {
                 "resource_type": {
                   "const": "preferences"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "resource_type": {
+                  "const": "import"
+                }
+              },
+              "required": [
+                "resource_type"
+              ]
+            },
+            "then": {
+              "properties": {
+                "actor": {
+                  "properties": {
+                    "kind": {
+                      "const": "human"
+                    },
+                    "agent_id": {
+                      "type": "null"
+                    }
+                  }
+                },
+                "thread_id": {
+                  "type": "null"
+                },
+                "task_version": {
+                  "type": "null"
+                },
+                "run_id": {
+                  "type": "null"
+                },
+                "fence": {
+                  "type": "null"
+                }
+              },
+              "oneOf": [
+                {
+                  "properties": {
+                    "type": {
+                      "const": "import.previewed"
+                    },
+                    "summary": {
+                      "const": "Import preview created."
+                    },
+                    "resource_version": {
+                      "const": 1
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "type": {
+                      "const": "import.applied"
+                    },
+                    "summary": {
+                      "const": "Import applied."
+                    },
+                    "resource_version": {
+                      "const": 2
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "enum": [
+                    "import.previewed",
+                    "import.applied"
+                  ]
+                }
+              },
+              "required": [
+                "type"
+              ]
+            },
+            "then": {
+              "properties": {
+                "resource_type": {
+                  "const": "import"
                 }
               }
             }

@@ -1,0 +1,18 @@
+import {readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+import Ajv2020 from 'ajv/dist/2020.js';
+import addFormats from 'ajv-formats';
+import {describe,it,expect} from 'vitest';
+import {validateEvent} from '../../src/http/generated/auth-validators.js';
+const api=JSON.parse(readFileSync(new URL('../../spec/openapi.json',import.meta.url),'utf8'));
+const ajv=new Ajv2020({strict:false,allErrors:true});addFormats(ajv);
+const canonical=ajv.compile({components:api.components,$ref:'#/components/schemas/Event'});
+const event=(type='import.previewed')=>({id:'event_import',workspace_id:'ws_example',sequence:1,type,actor:{kind:'human',principal_id:'human_operator',agent_id:null},resource_type:'import',resource_id:'import_example',task_version:null,run_id:null,fence:null,occurred_at:'2026-10-27T00:00:00Z',summary:type==='import.previewed'?'Import preview created.':'Import applied.',request_id:'request_import',resource_version:type==='import.previewed'?1:2,thread_id:null});
+describe('closed import event extension',()=>{
+ it.each(['import.previewed','import.applied'])('accepts exact human %s event only',type=>expect(validateEvent(event(type))).toBe(true));
+ it.each([{resource_type:'configuration'},{resource_type:'profile'},{resource_type:'task'},{resource_version:null},{resource_version:2},{thread_id:'thread'},{task_version:1},{run_id:'run'},{fence:1},{actor:{kind:'agent',principal_id:'agent',agent_id:'agent'}},{actor:{kind:'system',principal_id:'system',agent_id:null}},{summary:'source secret'},{type:'import.unknown'},{extra:'unknown'}])('rejects invalid import producer projection %j',patch=>expect(validateEvent({...event(),...patch})).toBe(false));
+ it('retains exact system configuration constraints',()=>{const configuration={...event(),type:'configuration.installed',resource_type:'configuration',resource_id:'ws_example',actor:{kind:'system',principal_id:'system_operator',agent_id:null},summary:'Workspace configuration installed.'};expect(validateEvent(configuration)).toBe(true);expect(validateEvent({...configuration,actor:event().actor})).toBe(false);expect(validateEvent({...configuration,type:'import.previewed'})).toBe(false);expect(validateEvent({...configuration,resource_type:'import'})).toBe(false);});
+});
+
+it('canonical and generated validators agree on both import producers and every reverse resource boundary',()=>{for(const type of ['import.previewed','import.applied']){const value=event(type);for(const candidate of [value,...api.components.schemas.Event.properties.resource_type.enum.filter((x:string)=>x!=='import').map((resource_type:string)=>({...value,resource_type})),...['task.created','configuration.installed','profile.updated','preferences.updated','import.unknown'].map(type=>({...value,type})),...['agent','system','unknown'].map(kind=>({...value,actor:{...value.actor,kind}})),...[0,1,2,3,null].filter(n=>n!==value.resource_version).map(resource_version=>({...value,resource_version})),...['task_version','thread_id','run_id','fence'].map(key=>({...value,[key]:key==='task_version'||key==='fence'?1:'other'})),{...value,summary:value.summary+' secret'},{...value,unknown:true}]){expect(canonical(candidate)).toBe(validateEvent(candidate));expect(validateEvent(candidate)).toBe(candidate===value);}}});
+it('retains every previous Event allOf restriction verbatim before the two additive import clauses',()=>{expect(api.components.schemas.Event.allOf).toHaveLength(13);expect(createHash('sha256').update(JSON.stringify(api.components.schemas.Event.allOf.slice(0,-2))).digest('hex')).toBe('ff80cfda9c6b10ae2b532d76a425a77c9d532076ca1e414b42ebecb77ef8a230');});
