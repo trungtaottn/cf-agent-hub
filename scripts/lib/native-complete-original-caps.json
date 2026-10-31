@@ -1,0 +1,35 @@
+{
+  "control_records": {
+    "control/authorize": 1011,
+    "control/provision": 2497,
+    "control/observe-success-coverage": 735,
+    "control/observe-server-foreign-fixture": 1625,
+    "control/observe-other-runtime": 1323,
+    "control/prepare-swap-slot": 424,
+    "control/prepare-swap-generation": 430,
+    "control/prepare-swap-principal": 429,
+    "control/observe-settled-intent": 1025,
+    "control/arm-lost-response": 1305,
+    "control/disarm-and-observe-lost": 1904,
+    "control/revoke-submitter": 2205
+  },
+  "summary_records": {
+    "prepare/reviewer-binding": 1705,
+    "prepare/submitter-enrollment": 1709,
+    "prepare/reviewer-enrollment": 1708,
+    "prepare/retain-artifact": 1451,
+    "prepare/fail-ready": 1699,
+    "prepare/fail-claim": 1699,
+    "prepare/cancel-create": 1702,
+    "prepare/requeue-create": 1703,
+    "probe/server-foreign-workspace": 1711,
+    "prepare/server-foreign-own-positive": 1716,
+    "probe/wrong-workspace": 1703,
+    "prepare/runtime-own-before": 1707,
+    "probe/wrong-runtime": 1965,
+    "prepare/runtime-own-after": 1706,
+    "probe/swapped-slot": 1964,
+    "probe/swapped-generation": 1970,
+    "probe/swapped-principal": 1969
+  }
+}

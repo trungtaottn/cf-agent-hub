@@ -1,0 +1,482 @@
+# Native R2 conformance runner
+
+Status: (2026-10-30) **reviewed fixed-entry source implementation; full integration and live conformance pending and incomplete**. A passing source test, protected JSON file, HTTPS URL or synthetic receipt does not verify F24. Formal acceptance remains deferred until after R4. Owner authorization for issue40 is not a completed independent security scan; neither that review nor the complete issue47 acceptance evidence is certified by this document.
+
+## Commands
+
+- `npm run test:native:r2:source` checks source contracts with synthetic data and bounded local subprocess negatives. It makes no live acceptance claim.
+- `npm run build:native-host` builds the two reader bundles plus the self-contained `dist/native-host/host-v2.mjs` and its source-inventory manifest. It does not install them or provision trust/credentials.
+- `npm run check:native-host` rebuilds twice and checks deterministic bytes, the bounded fixed exports and actual bundle import. It does not call the executor, install files or prove runtime conformance.
+- `npm run test:native:r2 -- --config <absolute-protected-config-path>` consumes protected input itself, never as Vitest's `--config`. Invalid/unsafe input exits 2 before requests. **Legacy version 1** retains its source-readiness diagnostic and exit 3. **Version 2 `native-r2-required-prepared-v1`** routes through the fixed guarded loader, config-only host factory and output publisher. Unavailable profile/installed authority/custody exits 3; incomplete execution or output publication exits 5. Exit 0 requires the structurally validated report and closed publication of 493 files (491 originals, report and native fragment), not native acceptance. The full 68 profile remains unavailable; it is not silently reduced at runtime.
+
+## Current source checkpoint — 2026-10-30
+
+The fixed factory/entry, reproducible bundle, required-profile preparation/readers, signed service protocol, report 2 assembly and fixed output publisher now exist in source. The required profile explicitly selects 62 steps plus two external requirements; three slot/generation/principal tuple obligations remain **unverified and deferred to R4**, not passing observations. The full 68 profile still fails closed.
+
+The factory's 22 focused tests include synthetic bootstrap/store/native originals, genuine ephemeral control-signature verification and the first process preparation ACK, then stop **before spawn**. Separate local workerd entry and ingress-ownership suites pass 6 and 5 tests. The required-profile local service schedule now also passes 5 tests without skips: all 64 slots, 53 synthetic process carriers, 51 application HTTP requests in process phases plus 6 auxiliary requests, 42 typed reads, inventory generation 15, final scan and closed cleanup. That fixture exercises the real local Worker/DO, product authorization/SQL, E1/E2, human revocation and a one-second unpublished HOLD. CLI execution, process custody, protected stores, Journal and artifact-retention observations remain synthetic; this is not a full protected factory run or installed native acceptance. See [the service attachment and validation boundary](native-complete-service.md) and [the issue48 execution plan](r2-task-plans/issue-048.md).
+
+Actual protected runtime ownership and an operator-installed authority remain absent from this evidence. The fixed custody reader requires the canonical protected `/etc/agenthub-native/complete-authority.json`, bound through its exact byte SHA in config and the root-signed installation's full config commitment; configured hashes or descriptor freshness alone cannot grant authority. Current guards reread the admitted authority, and the factory forwards its verified receipt without extending expiry. Building or importing the code does not create that installation.
+
+The source API separates structural configuration, independently authorized host integration, immutable executable custody, owned-process execution, bounded scenario steps and typed observation assembly. Supplying an adapter object is not proof of its authenticity. A deployment operator must review and provision that integration independently before enabling any execution path; config cannot name arbitrary modules or shell commands.
+
+## Protected configuration
+
+Legacy version 1 has closed keys: `candidate_sha`, `candidate_tree_sha`, `composition_sha256`, `node` and `build` path/SHA pairs, an exact HTTPS `origin`, distinct primary/foreign `workspaces`, native `actors`, explicit `fixture_stores`, `fixture_directory`, `output_directory`, `authority_record_sha256` and finite `budgets`. Paths and origins are private execution input. Do not put actual config, stores, tokens, runtime proofs or original transcripts in a repository, PR or public evidence bundle.
+
+Version 2 adds an explicit selected profile and fixture/family-ledger commitments through its separate closed schema; it is not a version 1 cast or fallback. Both paths retain the protected-input rules below.
+
+Actors have `id`, equal native `principal_id`/`agent_id` and an existing protected `state_directory`. Independent actors have different principal/agent/store identities. Alternate credentials for one agent need separate explicitly authorized controls; inventing another principal is not equivalent. Credentials must already be provisioned through the approved protected-store procedure. The runner does not import tokens from configuration or argv.
+
+State, fixture and output directories must preexist, be private and canonically disjoint, have safe ancestry and no Git ancestry. The existing CLI storage checks remain unchanged. A protected-file mode alone does not establish state-store eligibility. If environment ancestry blocks an otherwise positive rehearsal, retain that blocker; do not move the fixture into an alternate root to bypass the guard.
+
+## Authority and budgets
+
+An independent host integration must bind the exact candidate/tree/composition, Node/build bytes, application/provider deployments and namespaces, both workspaces, actual credential/store slots/generations, current grants/runtime proofs and allowed fixture effects. TLS, a workspace GET, a configured `isolated` flag or an arbitrary hash cannot establish that authority. Authorization must be fresh at each effect, with explicit expiry. Config rejects classification flags rather than trusting them.
+
+Reserve complete scenario upper bounds before dispatch, including observer/control/provisioning/fault actions. Unknown control costs block execution. Counters are cumulative across the run; one monotonic deadline bounds all steps. Retained uncertain reservations are never automatically refunded. stdout and stderr share a bounded output allowance. Never silently omit a live case to fit a budget.
+
+## Process and evidence custody
+
+Use an absolute independently pinned Node executable plus exact bundle, never PATH/shebang or an inherited loader/proxy/token environment. Persist a prepared record before spawn and PID/start/boot identity immediately afterward. A crash in that gap is **unknown**, not evidence that no request was sent. No automatic retry or kill-by-stale-PID is allowed. Timeout signalling affects only the owned child; even an observed child close does not prove descendant or remote cleanup.
+
+Original streams, argv/config commitments and process identity are protected custody records, not public release artifacts. Hashing an arbitrary private value is not sanitization. Public projections must contain only schema-allowlisted non-secret fields. Missing observer/state/request records remain missing; unrelated local SQL snapshots or stdout cannot substitute.
+
+The managed local Node runtime is owned by a UID outside the new harness's current-owner/root policy. No independent host ownership attestation has been obtained. Positive process-custody tests therefore remain blocked; no Node copying/chown, exception hardcoding or existing storage guard weakening is authorized by this document.
+
+## Reachable replay semantics
+
+The built CLI executes once and exits. Its Linux replay clock has a process-random epoch. A restarted uncertain intent cannot prove continuity; both uncertain restart dispatch and settled intent dispatch fail closed with exit5/no-send. These are the issue47 cases `native/lost-response-retained`, `native/restart-no-send`, `native/settled-no-send` and `native/revoked-after-disable`. A source-only same-process coordinator replay is not deployed executable evidence.
+
+Readback and intent inspection do not settle the retained journal, release uncertain holds or authorize a new key. Revocation belongs to a separately authorized control fixture, not the native command map. Preserve uncertainty and diagnostic custody; no automatic destructive cleanup follows a failure.
+
+## Current source boundary and remaining implementation
+
+The host composition API is a bounded execution framework, not a complete deployed evidence producer. Its public return is a `producer-fragment` with external inspection pending. Protected observation references are bound to controller-owned invocation/process/source/config/actor/workspace facts; they are not authenticated live evidence or all 380 preparation records. Opt-in recording can assemble a scoped native37 structural fragment only when all required actual originals are supplied. A trusted deployment integration must still provide those originals with independently inspected custody.
+
+The scenario separately identifies local wrong-target/runtime/proof-store no-send checks and the separately authorized **server** foreign-workspace and runtime-proof denial producers. Their closed source composers and fixed service routes now exist; full authentic end-to-end producer execution remains unverified. These are different claims. Even if all currently executable source steps complete, those external requirements and live authority keep issue48 incomplete. Do not close issue48 from this source checkpoint.
+
+The fixture declarations are closed to `swap-slot`, `swap-generation`, `swap-principal` and `server-foreign-workspace`, each tied to the submitter role and its separately admitted current native principal/store. The legacy/full 68 scenario requires all four before any effect; the explicit required 62 profile uses its separately committed roster and does not count the deferred three tuple obligations as passed. They are pre-provisioned authorized isolated fixtures, not permission to mutate the main store.
+
+The server foreign-workspace source scenario uses a separate imported-but-unenrolled store: foreign GET 401, then same-credential own GET 200. Independently observed null binding/no runtime proof, unchanged credential slot/generation/principal/current own read grant, and foreign resource existence/non-admission are required. The negative no-effect/no-leak observation precedes the positive control. This source definition does not provision the store or authorize either request. Authentic deployed execution and independently inspected observer custody remain pending.
+
+Controller observations bind the exact nullable `httpStatus` to the source scenario, so a foreign 403 cannot masquerade as the required 401. Null means no observed final HTTP response for local/no-response steps, not numeric status zero. This controller metadata is distinct from closed issue47 typed observations, whose retained/no-send rows omit HTTP status entirely.
+
+## Scoped native evidence projection
+
+The source-only `assembleNativeEvidence` module accepts bounded, already-materialized protected original records. It reserves cumulative byte lengths before decoding or hashing; the host reader still owns pre-read filesystem limits. It does not authenticate these records, open files, contact a deployment, or create the missing observer/harness records.
+
+A successful structural result covers exactly37 native cases, with a distinct scoped preparation fragment. Each subject must actually be prepared before its own case validation harness starts. A successful validation harness exit0 is not a relabeled CLI exit: negative product invocations retain their actual3/5. The Git tree40hex and the issue47 canonical source inventory SHA25664hex remain different commitments. Retained/no-send typed observations omit HTTP status; no numeric zero or invented response is exported.
+
+R2 evidence format 3 can represent actual per-case preparation times for dynamically generated later subjects; see [the release evidence contract](r2-release-evidence.md). The scoped fragment still reports `rootMergeStatus: pending-authenticated-global-preparation-timeline` because no authenticated global 380-case aggregate is created here. No 343 filler cases or backdated aggregate preparation receipt is emitted. Independent subjects, resource/transport/journal/scan measurements and authorized revocation observations must still come from the trusted host; the recorder derives only its own actual invocation, lifecycle and validation-completion records. Missing originals return an incomplete fragment without partial evidence exports. Synthetic contract fixtures are not live observations.
+
+The scoped projector checks per-operation native conformance and the explicitly required retained-intent/revocation causal joins. It does not independently establish the entire successful task/run/artifact scenario DAG from37 rows; that requires actual controller-owned prior-step preparation/resource joins. A structurally valid native fragment is therefore not a claim that the whole scenario was executed, nor a replacement for the separate graph/recovery/platform evidence families.
+
+## Opt-in owned recording
+
+The controller accepts an optional, closed third-argument evidence context (`environment_id`, `config_epoch`, `observer_id`, `source_inventory`). Its run ID is generated by the controller. This mode requires explicit trusted-host `describeEvidence`, `prepareEvidence`, `observeEvidence`, `observeAuxiliaryEvidence` and `observeDisableEvidence` methods before admission. The legacy version 1 command installs none of them. The required version 2 command uses the fixed factory only after guarded installation/custody admission; the command itself grants no authority.
+
+`prepareEvidence` supplies only an independently observed subject and its source record ID. The controller derives and retains the exact source-built argv snapshot it executes, invocation digest and actual preparation/wrapper times. Typed retrieval methods return closed `{record: {id, sha256, bytes}, usage}`; the recorder joins it to the existing generic observation and the actual protected child-process originals. It does not accept caller-selected success, timestamps or wrapper exit codes. Operation-inapplicable keys/proofs and incomplete current runtime bindings fail before preparation is emitted.
+
+Before reading process-original payloads, a single handle-bound reservation charges all three exact record lengths and slots against the run-wide budget. The reader pins an admitted private directory, derives only the expected filenames, checks private single-link regular files and exact committed sizes, then verifies descriptor/name identity and digest stability. Failed or uncertain reads do not refund the reservation. Source metadata/negative tests do not establish real positive filesystem custody under the current managed runtime restriction.
+
+Recorder output is explicitly **memory-only**: no durable recovery, no successful restart reconstruction and no crash-survival claim. Failed, reordered, missing or backward-clock observations cannot produce a successful wrapper. A completed per-case wrapper means its scoped typed-recording checks completed; it does not mean every later controller/scenario check completed. Full typed-case validation is still required. The recorder now captures exactly `prepare/fail-create`, `prepare/revoke-own-positive` and `control/revoke-submitter` as auxiliary originals, not invented native cases. Owned completed bindings feed scoped assembly; the protected accessor remains `partial-originals-pending` until assembly succeeds, then exposes a `structural-fragment` with external inspection pending. No complete live result is implied.
+
+Assembly now also offers an opaque two-phase interface: validate immutable exact core inputs, record the actual completed validation command, then finalize against that process-local token. No synthetic provisional completion receipt is needed. Final timing, schema and exact-size gates can still reject after a successful core validation. The legacy one-shot interface and full validator findings/order are preserved. This does not supply the still-missing authenticated global380 originals or prove the full successful scenario DAG.
+
+### Evidence-specific accounting and custody
+
+Opt-in evidence mode preflights exactly 40 typed retrieval costs and one assembly cost alongside the base plan, under the same cumulative caps. Missing costs block before effects; explicit zero cost is a trusted host declaration, never an inferred default. Assembly reserves one command and charges its actual serialized output plus completion original. Returned original bytes must fit the assigned output reservation.
+
+Recorder-owned capture facts are supplied before the generic observer/control producer commits its original digest. Later retrieval must match that digest. Generic commitments and usage are copied into immutable closed snapshots immediately, before subsequent authorization or retrieval awaits. Finishing keeps its active lifecycle slot reserved during descriptor capture, and revocation disable is one attempt even after failure. These controls prevent local commitment drift or retry ambiguity; they do not establish the host's authenticity.
+
+## Source-owned resource binding registry
+
+The controller's mandatory `native-r2-bindings.mjs` registry uses the fixed source scenario order and predecessor edges, independently of optional typed recording. It rejects substituted known task/run/runtime/artifact/content path references before dispatch. For bound operations, completed owned transcripts then pass canonical generated response validation and fixed identity, state and version comparisons before becoming usable predecessor bindings. Main, fail, cancel and requeue task fixtures remain distinct; submit preserves the original run and committed artifact, and acceptance uses a distinct reviewer principal and agent. Artifact download stdout is metadata, not a new binary receipt.
+
+Controls advance the registry only after existing generic and optional typed observation checks. Process bytes and custody are detached before awaited host callbacks, bounded by the admitted process output allowance and checked against complete transcript digests. Tokens are process-local, single-use and non-reentrant; a failure makes the journey unusable rather than admitting a replacement. A private detached summary supports diagnosis, not release evidence or authorization. Synthetic registry tests establish consistency logic, not authentic execution.
+
+This is deliberately **not complete request authority**. The controller now admits an owned raw input snapshot, validates source-known body resource relationships and supplies its digest to the CLI same-buffer gate described below. A path or prepared digest alone still cannot prove that a failed invocation reached that gate, authenticate host intent, or establish full external consumption provenance. Output mismatch detection cannot undo a prior effect. Lists are bounded pages, not complete workspace enumeration. Local wrong-runtime/foreign/swap probes retain their deliberate mismatches and cannot update successful resource bindings or substitute for server-denial cases.
+
+The concrete fixed host factory, command-entry orchestration and server wrong-runtime-proof producer are implemented source components, not proof of a complete installed run. Full protected factory/service execution and authenticated global 380 composition remain unverified. Their interfaces and operator questions are recorded in the [issue48 plan](r2-task-plans/issue-048.md). The protected runtime guard, root2/root3 evidence dispatch, native 37 roster and post-R4 acceptance boundary are unchanged.
+
+Typed recording finishes before the mandatory resource binding is promoted. If that later binding check fails, protected diagnostic records may retain the already completed scoped per-case wrapper. The controller still returns incomplete, does not include the failed step in its completed count, and never runs final scenario assembly. Wrapper presence alone must not be treated as controller/scenario completion or reused to manufacture complete evidence.
+
+### Message output lineage
+
+The fixed scenario now validates create-message, reviewer inbox, ACK and thread
+responses with canonical generated schemas. The created message must bind the
+workspace, submitter, sole reviewer recipient and known main task. The default
+unacknowledged inbox must contain that exact message before its first ACK; ACK
+may acknowledge only that observed message. Thread dispatch uses the captured
+thread ID, and its response preserves the original message except the
+reviewer-specific non-null acknowledgment time. Duplicate IDs, substituted
+content/identities, unexpected recipients and unrelated thread rows fail closed.
+
+An inbox or thread page that omits the required target is incomplete scenario
+evidence even when `has_more` is true; this does not declare the API page invalid.
+The runner does not invent extra pagination requests beyond its budget. Other
+valid inbox items remain allowed. Other same-thread messages need not name the
+reviewer as recipient because thread participation allows reading history.
+
+The protected summary reports `source-consistent-output-lineage` only after this
+chain completes. It still reports request-body custody pending. An observed ACK
+is recipient acknowledgment, not delivery/execution/acceptance proof, and output
+checks cannot prevent or undo an already wrong request body.
+
+### Controller-owned exact-byte input admission
+
+The CLI accepts optional `--input-sha256` on body commands and checks it against
+the same bounded file bytes that it parses, before protected-store/network
+effects. Equivalent JSON with different raw bytes does not match. Legacy
+commands without the pin retain their existing behavior.
+
+`executeNativeScenario` now constructs the source-owned input admission ledger
+before scenario effects: all 27 input steps reserve 65,536 bytes each, totaling
+1,769,472 bytes under a separate 8 MiB input ceiling. This does not consume or
+increase output/evidence budgets. Each source step gets one attempt; failure
+poisons the ledger without refund. The reader pins a private admitted parent
+and regular single-link 0600 file, bounds allocation before reading, checks
+name/descriptor/parent identity and metadata before and after, hashes captured
+raw bytes and uses fatal UTF-8/JSON parsing. No caller digest or body replaces
+that read. Bodies are transient; protected summaries retain step/digest/size
+metadata, not raw bodies or public paths.
+
+Strict registry pre-admission uses generated request schemas and checks known
+task/runtime versions, run/fence, retained artifact size/hash, committed artifact
+references, reviewer recipient/main-task/fresh-thread message relationships,
+and exact observed message ACK IDs. The intentional foreign-runtime no-send
+probe remains schema-only for its independently observed foreign version.
+Operator-selected text/routing values are not authenticated by this check;
+the CLI remains final authority for generated byte rules and request preparation.
+This is schema/resource pre-admission, not complete request validation or semantic
+response-echo proof.
+
+The current controller always uses strict admission and the pinned builder.
+Recorder and nonrecorder paths share the same frozen argv; recorded argv is
+compared before spawn. The 79-byte digest argument adds 82 serialized JSON bytes;
+final argv retains 128-argument, 8,192 UTF-8-byte per-argument and 65,536-byte
+serialized bounds. Historical builders, registry/recorder preparation APIs and
+root-2/root-3 originals remain explicitly unpinned and unchanged. No new evidence
+field or retroactive consumption claim is added.
+
+A file replaced between controller admission and CLI reading must contain the
+same admitted bytes or fail the CLI input gate before store/network effects.
+Prepared argv or a failed exit alone does not establish that the gate was reached.
+Raw-file SHA, canonical HTTP-body SHA and external observer commitments remain
+distinct. Full host authorization, actual consumed-body provenance and live
+native37/global380 acceptance remain pending.
+
+Local verification distinguishes pure relationship/builder/recorder tests and
+source-text controller wiring checks from actual execution. In the current
+managed environment, all authorized fixture roots have Git ancestry; 19 new
+reader disk tests explicitly skip rather than weaken that guard. Their FD,
+parent/name swap and positive raw-byte coverage remain unverified locally and
+must run on an eligible ordinary test host. Existing protected runtime custody
+coverage remains separately skipped. Green source tests do not complete #48.
+
+
+### Executable local backend integration (separate from native conformance)
+
+The exclusive `--local-sandbox` mode now composes a source-owned real local
+Worker/SQLite/emulated-R2 fixture, two synthetic native identities, independent
+selected SQL observations and configuration-disable control. It exercises
+actual server handlers directly, not a built CLI child or network TLS. Its
+closed local report and exit status never satisfy this native evidence contract.
+See [local sandbox scope, commands and limits](local-native-sandbox.md). Default
+protected execution still requires an actual authorized installation; the required version 2 fixed source route is described above.
+
+## Source-owned request preparation
+
+The private binding registry now plans each of the 27 source-known JSON request
+bodies from its exact next step and previously validated outputs. Fixed synthetic
+text and current versions, IDs, fences, artifact digests and message relations
+replace delegated host body construction. Plans are detached immutable canonical
+JSON with exact byte length and SHA256; planning alone is not an admitted or
+consumed-input record.
+
+The controller reserves a separate 27 × 65,536-byte publication budget, obtains
+fresh current authority after host preparation, and exclusively creates the
+input beneath the qualified fixture root. It never overwrites or deletes an
+existing/uncertain input. The existing protected raw reader then checks exact
+planned bytes before strict relationship validation and the CLI same-buffer pin.
+Publication failure stops before process dispatch and retains protected files.
+A same-UID hostile writer is not contained by this mechanism; the pin still
+matters and no authenticated consumption claim is inferred from publication.
+
+The protected entry now has a fixed required-profile source adapter. The earlier
+[producer integration design](native-host-producer-design.md) is design history,
+not the current implementation inventory; the checkpoint above and current
+[service attachment](native-complete-service.md) distinguish implemented source
+from the still-unverified authorized installation and full execution.
+
+## Protected-entry source/config readiness diagnostic
+
+For **legacy version 1 only**, a valid protected `--config` input emits bounded
+diagnostic JSON on stdout and retains exit 3 plus the blocked stderr summary.
+The required version 2 execution/publication route above does not use this diagnostic. Invalid or unsafe input still
+has empty stdout and exits 2. The JSON type is `native-r2-source-readiness`, not a
+release evidence receipt or preflight authorization. It is deterministic, at most
+16 KiB, and does not echo supplied paths, principals, origins or credential data.
+
+The diagnostic joins the actual fixed scenario's actor roles and explicitly
+required fixture stores with the supplied configuration. It identifies absent
+roles/stores and source-known insufficient command, mutation, artifact and output
+budgets. This legacy diagnostic's necessary lower bounds are 68 command reservations, 34 mutation
+reservations, 2 artifact bytes across two separately reserved steps, and 56 output
+bytes across non-control steps. These are only necessary minima, not useful
+execution budgets or full admission: observer, control and evidence costs remain
+unknown until the actual adapter is available.
+
+All 68 source steps and the two separate external-observer obligations are
+classified. Even with every fixture declaration present, each of the three
+slot/generation/principal-only controls remains explicitly unsupported under the
+current contract. Local producer success is not native capability. An exact
+source-scenario digest guard rejects unreviewed future classification changes;
+it does not amend the scenario, its case roster or acceptance semantics.
+
+Only the existing protected config-file read has happened at this entry point.
+Executable/store custody, installed authority, network observation, subprocess
+execution, full budget admission and native acceptance remain unperformed.
+There is no partial execution, extra secret lookup, installer or configurable
+module loader. Source classification failure remains blocked with no raw errors.
+The legacy diagnostic improves actionable failure information; it neither invokes
+the required version 2 factory nor authorizes real fixture effects.
+
+### Captured-output verification boundary
+
+The recorder-enabled controller reserves an additional 159,744 output bytes
+(39 originals at 4,096 bytes each) in the same cumulative run budget before
+scenario effects. It reuses the existing protected prepared/spawned/final read
+once, before host observation, and joins detached stdout/stderr bytes to the
+actual final original's subjects, invocation, exit, lengths and digests.
+A source-owned parser covers all 33 native operations; the older lineage parser
+retains its original operation applicability. Invalid syntax retains a bounded
+failed-check original and prevents subsequent observer composition.
+
+The verification original is private, copy-returned and memory-only. It reports
+secret-inventory, foreign-identifier, artifact-byte, transport and prepared
+invocation checks as **not evaluated**. Valid JSON, a masked enrollment response,
+or a recognized exit-5 diagnostic cannot establish leak absence, no-send,
+artifact integrity, journal settlement or native acceptance. Existing three-file
+prepared-invocation joins remain necessary. No new evidence role or acceptance
+version is introduced; installed authority and the three unsupported tuple-only
+controls remain unresolved.
+
+### Known local inventory scans
+
+The local sandbox now scans four actual captured response bodies after the
+existing original-to-record pairing succeeds: two foreign-resource denials,
+revocation own-positive, and fresh same-credential denial. Inventory contains
+four configured synthetic bearer values, three existing fixture secrets and two
+runtime tokens derived from actual enrollment responses. Foreign identifiers are
+the actual B-task ID and workspace ID, not a guessed creator agent.
+
+Only seven needed originals are privately retained through a module-owned
+pairing-result identity (262,144 bytes maximum); scan targets total at most
+163,840 bytes. Nine secrets and two foreign IDs produce at most 202,668 bytes of
+literal/escaped patterns. Each configured string is bounded to 16–4,096 UTF-8
+bytes and must round-trip without surrogate replacement. These are payload
+bounds, not process-memory guarantees. Enrollment originals supply inventory;
+enrollment and SQL originals are intentionally not leak targets.
+
+Matching covers UTF-8 literals and the content emitted by `JSON.stringify` for
+each known value. It does not cover arbitrary Unicode/solidus escapes, base64,
+percent encoding, splitting, unknown secrets or all issuer-created credentials.
+A detected match fails the local flow. A private copy-return receipt, capped at
+4,096 bytes, binds capture identities, pairing manifest and consumed byte hashes;
+it contains category counts and fixed match booleans, never secret values or
+individual secret hashes. The ordinary v4 report is unchanged. Safe receipts are
+available privately on success or failure; raw captured originals are not logged.
+This is local source evidence, not a native CLI stdout scan or installed observer
+authority, and does not resolve the three tuple-only obligations.
+
+### V2 host source integration in progress
+
+> Historical building-block checkpoint, retained on 2026-10-30. The following
+> sections through controller session ownership record earlier implementation
+> stages and their limitations, not the current fixed-entry capability inventory.
+> Claims below that factory/entry/producers are missing are superseded by the
+> dated current checkpoint above. Historical failures, partial receipts and
+> unchanged custody/acceptance restrictions remain relevant.
+
+The fixed host work now includes a guarded Journal inspection producer and a
+pure signed-installation-statement verifier. Neither is an installed host adapter.
+The Journal producer opens the existing Journal with `create:false` and denied
+mutation authority, compares the exact retained request/principal/key/state, and
+closes in `finally`. Its bounded source original does not claim replay continuity,
+HTTP outcome or OS read-only access. Journal construction validates up to 1,000
+rows / 64 MiB of reserved payload; SQLite open may recover a rollback journal.
+It is not a constant-cost point read or permission to bypass protected paths.
+
+`build-native-host.mjs` bundles the source-owned TS observer separately from the
+CLI. Its bytes need a separate host commitment in an eventual installation.
+The pure installation verifier checks fixed Ed25519 signatures, canonical closed
+v2 metadata, expiry/epoch and exact source/config/target subjects. It returns
+`installedAuthority:false`: caller-supplied signed bytes do not establish trusted
+file custody, actual service capability, current grants or isolation. No trust
+root, auth material, server or default adapter is installed by these modules.
+
+V1 fixture/config/evidence semantics and native case rosters are unchanged.
+Complete fixed factory, authenticated run-bound service composition and guarded
+entry resolution remain in progress. Three tuple-only obligations remain blocked.
+
+The v2 source also defines a fixed operator-installation custody reader and an
+explicit response resource-ID convention. Pure metadata tests do not establish
+actual root-owned file custody. No installation files are read by source tests;
+the fixed loader pins the unchanged scenario and remains blocked by the three
+tuple controls and five explicitly unfinished composition capabilities before
+authentication, module import or network effects.
+
+Resource IDs are kind-qualified ASCII identifiers. Task result identity is
+`result-run:<run_id>`, reflecting the actual unique workspace/run relationship,
+not an invented public result ID. Response parsing alone is not independent
+state observation: the pending state producer must select complete fixture
+membership independently, including visibility and pagination constraints,
+rather than querying only the IDs returned by the CLI. This bounded fixture
+profile does not restrict otherwise valid product data or prove artifact bytes.
+
+The pure v2 original-transfer codec signs and verifies a closed, canonical
+Ed25519 envelope against an independently supplied delegated key and exact
+request/manifest correlations. SQL canonical bytes (16 KiB), raw HTTP request or
+response bytes (64 KiB), journal source projections (4 KiB), and explicitly typed source-reader
+projections (64 KiB) remain distinct kinds. The current frozen roster yields an
+88,859-byte maximum serialized
+envelope, including base64 and signature. Oversized otherwise-valid product
+content is incomplete capture evidence, not an invalid product response.
+
+The codec returns a detached signed statement with `installedAuthority:false`.
+It does not establish producer origin, grant expiry, one-time sequencing, total
+run admission or a working host service. Those remain explicit factory/service
+requirements; no protocol-v1 fallback or acceptance-roster change is introduced.
+
+A fixed 23-selector SQL catalog now validates physical row types, per-cell UTF-8
+sizes, overflow rows and canonical originals. Each original is capped at 16 KiB;
+pre-read bridge reservations are larger and independently calculated (for
+example, the event selector's escaped JSON upper bound is 974,807 bytes including
+its overflow row). These bounds do not claim all maxima fit the total evidence
+budget. Invalid SQL projections carry an explicit validity bit and are rejected,
+never silently treated as legitimate nullable values or dropped.
+
+The catalog has been exercised against all 16 migrations in an in-memory SQLite
+fixture. It does not execute arbitrary caller SQL or authenticate a storage
+handle. Exact schema sequence, required rows, maintenance fence, operation
+visibility and one coherent before/after snapshot are subsequent observer
+obligations; an empty metadata/grant result is not successful admission.
+
+### Private local source observer
+
+The Worker-only private observer now authenticates the actual synthetic bearer
+with the product verifier, then runs the product readers inside real synchronous
+SQLite transactions. Its source-owned registry binds one prepared invocation to
+one workspace, configuration, maintenance generation and credential; presenting
+a registry entry is not authentication. Seven read operations are supported:
+workspace, configuration, profile, agent list, agent detail, task detail and run
+detail. Admission is limited to the fixed static-grant, absent-profile,
+null-result fixture profile: task detail is backlog version 1 and run detail is
+active version 1, not arbitrary production workspace states. Other operations
+fail closed rather than returning empty success.
+
+Every observation includes three genuine transaction scopes, each preceded by
+eight independently selected bounded SQL inventories. The fixed query ledger
+admits only the reviewed source SQL and parameters. It retains 24 canonical
+originals, each at most 16 KiB. Source reader projections are not HTTP originals.
+Private capture handles permit one detached copy-out; normal results contain no
+bearer or raw credential rows. Metadata is separately measured against 16 KiB,
+with a 64 KiB projection ceiling and 475,136-byte reservation per observation
+(3,325,952 bytes for seven). These are retained payload reservations, not heap
+limits or proof that a complete release run fits its cumulative evidence cap.
+
+The isolated Worker tests exercise all seven actual authenticated reads, wrong
+bearer rejection, changed configuration/fence bindings, one-use captures and
+pending-close/concurrent-call failures. The fixture-only source registry and
+observer explicitly return `installedAuthority:false` and
+`native_conformance:false`. This is not a deployed observer or a completed native
+run. The remaining fixed factory still must bind installed trust, the private
+observer, process/transport originals, run sequencing and cumulative admission;
+the three unsupported tuple-only controls remain unresolved without a scope
+change. No product authentication, SQL endpoint or runtime custody guard changed.
+
+
+### Run-bound local observer service
+
+Run `npm run test:native:r2:observer-local` for the fixed synthetic local vertical
+slice. It starts an ephemeral workerd fixture with a dedicated test-only
+configuration, prepares two tasks and one active run through the actual native
+HTTP handlers, and binds a private observer registry. Production Worker exports,
+public routes, authentication and runtime custody guards are unchanged.
+
+The run-bound source-only service authenticates every canonical request, admits
+one prepared observation once, and transfers one original at a time. The client
+checks the exact run, invocation, record, request sequence, digest and Ed25519
+signature. A projection is explicitly `source-reader-projection`, never raw HTTP.
+Local signing/identity keys are ephemeral synthetic fixtures, not installed trust.
+
+The complete seven-reader local path executes 184 service calls and 184 private
+RPC calls, retrieves 168 SQL originals plus seven projections, and enforces the
+603-query source ledger. Setup separately uses five actual native HTTP requests
+and one fixed SQL generation read. The private RPC bridge returns bounded
+canonical primitive strings because the local harness owns object RPC results as
+proxies; generic untrusted-object guards are not relaxed. Originals use canonical
+base64 only within their record reply, with decoded size and digest checked again
+before signing. No aggregate raw capture crosses the bridge.
+
+Full-profile reservations are 753,664 service request bytes, 4,658,237 service
+response bytes, 762,880 private RPC input bytes and 4,578,088 private RPC output
+bytes. These are distinct measured logical payload budgets, not undocumented RPC
+framing, total process memory, or a complete native run's evidence admission.
+Existing HTTP original maximum remains 88,852 bytes; the longer projection kind
+raises the codec-wide maximum to 88,859. Existing kind bounds remain unchanged.
+
+Closed schemas, exact manifests, target binding, signature correlation, canonical
+bytes including BOM rejection, concurrent-call poisoning and cleanup ownership
+have source regressions. The per-request deadline is ten seconds or earlier
+policy expiry. If actual work ignores cancellation, the service reports
+`cleanup-unknown` rather than waiting indefinitely or claiming it stopped; owned
+promises remain tracked. Explicit close/dispose allows one second to observe
+cleanup, reports unknown if work or unowned/failed body cleanup remains, and never
+retries an uncertain original read. The local harness always attempts its own
+disposal independently of service cleanup failure.
+
+This slice does not run the native CLI, install a trusted service, prove an
+independent implementation of product visibility, or complete issue 48. Other
+state/causal profiles, real native front-door originals and fixed factory/controller
+integration remain source work. The unchanged full scenario still rejects missing
+capabilities and the three unsupported tuple-only controls. Formal acceptance
+remains after R4; green local or CI results are not that acceptance.
+
+### Explicit controller session ownership
+
+Trusted source adapters may opt into the version 2 controller session contract
+with an own enumerable `hostVersion: 2` data property. Unmarked legacy adapters
+retain their existing path; malformed, inherited or accessor version markers
+reject rather than silently downgrade. The controller owns the immutable run ID
+and config/scenario/build/authority commitments. These commitments describe a run;
+they do not authenticate an installation.
+
+The pure session plan must cover every unchanged scenario step **and** every
+external requirement, with exact ordered requirement lists. Any unavailable row,
+missing row or unknown requirement blocks before authorization, session opening
+or process execution. Execution, evidence, output verification and session
+reservations share one atomic cumulative admission. Session planners must account
+for their bind, authentication refresh, registration, original retrieval and
+cleanup traffic explicitly; a reservation is not a sandbox for arbitrary trusted
+adapter code. Existing protected executable/directory and authority checks still
+run after planning and before the session opens.
+
+The owned session tracks the actual open and close promises. Open is attempted
+once; cleanup is attempted once on every post-open exit, including rejected or
+late opening. A fixed one-second cleanup grace is separate from the run deadline.
+Abort or timeout alone does not prove cancellation. Pending work, failed cleanup
+or a mismatched cleanup receipt yields `cleanup-unknown`, prevents an overall
+observed result, and preserves the execution outcome and private partial records.
+The adapter must latch closing and own resources acquired by a late open; it may
+not release responsibility by returning an early closed acknowledgment.
+
+This is controller preflight/lifetime source integration, **not a complete fixed
+native factory**. Tests exercise source-fake ownership and actual blocked
+controller paths without bypassing native custody. The local seven-reader service
+retains its distinct source-policy context; no native build/runtime commitments
+are invented to reuse this interface. Dynamic per-invocation registration, the
+remaining state/front-door producers, full factory bundle and installed entry
+integration remain required. All three unsupported tuple controls remain blocked;
+no smaller scenario or local service run substitutes for native acceptance.

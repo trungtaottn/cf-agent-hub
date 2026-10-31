@@ -1,4 +1,4 @@
-import {describe,it,expect} from 'vitest';
+import {describe,it,expect,beforeAll} from 'vitest';
 import {CASE_POLICY,canonicalCaseSubject,validatePreparations,validateCaseFamily} from '../../scripts/lib/r2-case-policy.mjs';
 describe('R2 closed typed case policy',()=>{
  it('freezes fresh exact family roster, not lost historical counts',()=>{expect(CASE_POLICY.filter((c:any)=>c.family==='isolation')).toHaveLength(322);expect(new Set(CASE_POLICY.map((c:any)=>c.id)).size).toBe(380);});
@@ -7,14 +7,24 @@ describe('R2 closed typed case policy',()=>{
  it('an empty isolated command fragment cannot stand in for all322 phases',()=>{expect(validateCaseFamily({type:'r2-isolation',records:[]},{}).length).toBeGreaterThan(0);});
 });
 
-import Ajv from 'ajv';
+import Ajv,{type ValidateFunction} from 'ajv';
 import {createHash} from 'node:crypto';
 import {caseSchemas,CASE_LIMITS,CASE_OPERATIONS} from '../../scripts/lib/r2-case-policy.mjs';
 import {makeCaseEvidence,caseHash} from './r2-case-fixtures';
 import {requiredIsolationEvidence} from '../helpers/r2-isolation-matrix';
 import {clientOperations} from '../../src/http/generated/client-operations';
 const ajv=new Ajv({strict:true,allErrors:false,inlineRefs:false});ajv.addSchema(caseSchemas);
-const shape=(name:string)=>ajv.getSchema(caseSchemas.$id+'#/$defs/'+name)!;
+const shapeNames=['r2-case-preparations','r2-isolation','r2-gates','r2-native','r2-browser'] as const;
+const compiledShapes=new Map<string,ValidateFunction>();
+// Compilation is fixture setup, not the first validation assertion. This does
+// not warm validation paths or establish a production compilation benchmark.
+beforeAll(()=>{
+ const started=performance.now();
+ for(const name of shapeNames){const validate=ajv.getSchema(caseSchemas.$id+'#/$defs/'+name);if(typeof validate!=='function')throw Error('Missing fixture schema: '+name);compiledShapes.set(name,validate);}
+ console.info(JSON.stringify({scope:'R2 fixture schema compilation only',schemas:compiledShapes.size,elapsed_ms:performance.now()-started,setup_budget_ms:10000}));
+},10000);
+const shape=(name:string)=>{const validate=compiledShapes.get(name);if(!validate)throw Error('Unknown or uncompiled fixture schema: '+name);return validate;};
+it('compiles exactly the five fixture validators in bounded setup',()=>{expect([...compiledShapes.keys()]).toEqual(shapeNames);for(const name of shapeNames)expect(typeof shape(name)).toBe('function');expect(()=>shape('unreviewed-schema')).toThrow('Unknown or uncompiled');});
 const familyNames=['isolation','gates','native','browser'];
 function validateAll(f:any){return [validatePreparations(f.preparations,f.context),...familyNames.map(k=>validateCaseFamily(f.receipts[k],f.context))].flat();}
 function record(f:any,id:string){return Object.values(f.receipts).flatMap((r:any)=>r.records).find((r:any)=>r.id===id) as any;}

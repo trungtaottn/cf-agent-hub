@@ -56,9 +56,21 @@ test('lost response retains original key/body across navigation and explicit rep
 });
 
 test('revocation between render and command clears sensitive command state',async({page})=>{
- await board(page);await openAction(page,'Backlog item 01','Cancel');await page.getByRole('dialog').getByLabel('Reason',{exact:true}).fill('Private draft reason');
- await fixtureControl(page,'r2-revoke-human');await page.getByRole('button',{name:'Confirm command',exact:true}).click();
- await expect(page.getByTestId('session-status')).toContainText('Access denied');await expect(page.locator('body')).not.toContainText('Private draft reason');
+ let phase='board';
+ const step=async(name:string,action:()=>Promise<void>)=>{phase=name;console.log('R2_REVOCATION_PHASE',name);await test.step(name,action);};
+ try{
+  await step('board and Cancel dialog visible',async()=>{await board(page);await openAction(page,'Backlog item 01','Cancel');});
+  const confirm=page.getByRole('button',{name:'Confirm command',exact:true});
+  // Visibility and editable Reason do not imply asynchronous access/task preparation finished.
+  await step('current command prepared before revocation',async()=>{await page.getByRole('dialog').getByLabel('Reason',{exact:true}).fill('Private draft reason');await expect(confirm).toBeEnabled();});
+  const id=await taskId(page,'Backlog item 01');
+  await step('real session revoked',async()=>{await fixtureControl(page,'r2-revoke-human');});
+  await step('prepared command receives actual authentication denial',async()=>{
+   const [response]=await Promise.all([page.waitForResponse(response=>response.request().method()==='POST'&&response.url().endsWith('/tasks/'+id+':cancel')),confirm.click()]);
+   expect(response.status()).toBe(401);
+  });
+  await step('access and sensitive command state cleared',async()=>{await expect(page.getByTestId('session-status')).toContainText('Access denied');await expect(page.locator('body')).not.toContainText('Private draft reason');await expect(page.locator('#task-command-reason')).toHaveValue('');});
+ }finally{console.log('R2_REVOCATION_LAST_PHASE',phase);}
 });
 
 test('current tasks-only grant cannot submit any board command or direct command',async({page,context})=>{

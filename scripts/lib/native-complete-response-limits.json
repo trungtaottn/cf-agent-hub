@@ -1,0 +1,2222 @@
+[
+  {
+    "operation": "preflight",
+    "slot": "run",
+    "pass": null,
+    "response_bytes": 1327
+  },
+  {
+    "operation": "bind-run",
+    "slot": "run",
+    "pass": null,
+    "response_bytes": 1135
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "control/authorize",
+    "pass": null,
+    "response_bytes": 1110
+  },
+  {
+    "operation": "execute-control",
+    "slot": "control/authorize",
+    "pass": null,
+    "response_bytes": 2914
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "control/provision",
+    "pass": null,
+    "response_bytes": 1110
+  },
+  {
+    "operation": "execute-control",
+    "slot": "control/provision",
+    "pass": null,
+    "response_bytes": 4898
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "success/getWorkspace",
+    "pass": null,
+    "response_bytes": 1113
+  },
+  {
+    "operation": "complete-process",
+    "slot": "success/getWorkspace",
+    "pass": null,
+    "response_bytes": 1362
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "success/getConfiguration",
+    "pass": null,
+    "response_bytes": 1117
+  },
+  {
+    "operation": "complete-process",
+    "slot": "success/getConfiguration",
+    "pass": null,
+    "response_bytes": 1366
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "success/getProfile",
+    "pass": null,
+    "response_bytes": 1111
+  },
+  {
+    "operation": "complete-process",
+    "slot": "success/getProfile",
+    "pass": null,
+    "response_bytes": 1360
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "prepare/reviewer-binding",
+    "pass": null,
+    "response_bytes": 1117
+  },
+  {
+    "operation": "complete-process",
+    "slot": "prepare/reviewer-binding",
+    "pass": null,
+    "response_bytes": 1366
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "success/listAgents",
+    "pass": null,
+    "response_bytes": 1111
+  },
+  {
+    "operation": "complete-process",
+    "slot": "success/listAgents",
+    "pass": null,
+    "response_bytes": 1360
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "success/getAgent",
+    "pass": null,
+    "response_bytes": 1109
+  },
+  {
+    "operation": "complete-process",
+    "slot": "success/getAgent",
+    "pass": null,
+    "response_bytes": 1358
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "prepare/submitter-enrollment",
+    "pass": null,
+    "response_bytes": 1121
+  },
+  {
+    "operation": "complete-process",
+    "slot": "prepare/submitter-enrollment",
+    "pass": null,
+    "response_bytes": 1370
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "prepare/reviewer-enrollment",
+    "pass": null,
+    "response_bytes": 1120
+  },
+  {
+    "operation": "complete-process",
+    "slot": "prepare/reviewer-enrollment",
+    "pass": null,
+    "response_bytes": 1369
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "success/createTask",
+    "pass": null,
+    "response_bytes": 1111
+  },
+  {
+    "operation": "complete-process",
+    "slot": "success/createTask",
+    "pass": null,
+    "response_bytes": 1360
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "success/getTask",
+    "pass": null,
+    "response_bytes": 1108
+  },
+  {
+    "operation": "complete-process",
+    "slot": "success/getTask",
+    "pass": null,
+    "response_bytes": 1357
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "success/patchTask",
+    "pass": null,
+    "response_bytes": 1110
+  },
+  {
+    "operation": "complete-process",
+    "slot": "success/patchTask",
+    "pass": null,
+    "response_bytes": 1359
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "success/readyTask",
+    "pass": null,
+    "response_bytes": 1110
+  },
+  {
+    "operation": "complete-process",
+    "slot": "success/readyTask",
+    "pass": null,
+    "response_bytes": 1359
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "success/createRuntime",
+    "pass": null,
+    "response_bytes": 1114
+  },
+  {
+    "operation": "complete-process",
+    "slot": "success/createRuntime",
+    "pass": null,
+    "response_bytes": 1363
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "success/claimTask",
+    "pass": null,
+    "response_bytes": 1110
+  },
+  {
+    "operation": "complete-process",
+    "slot": "success/claimTask",
+    "pass": null,
+    "response_bytes": 1359
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "success/getRun",
+    "pass": null,
+    "response_bytes": 1107
+  },
+  {
+    "operation": "complete-process",
+    "slot": "success/getRun",
+    "pass": null,
+    "response_bytes": 1356
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "success/heartbeatRun",
+    "pass": null,
+    "response_bytes": 1113
+  },
+  {
+    "operation": "complete-process",
+    "slot": "success/heartbeatRun",
+    "pass": null,
+    "response_bytes": 1362
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "success/heartbeatRuntime",
+    "pass": null,
+    "response_bytes": 1117
+  },
+  {
+    "operation": "complete-process",
+    "slot": "success/heartbeatRuntime",
+    "pass": null,
+    "response_bytes": 1366
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "prepare/retain-artifact",
+    "pass": null,
+    "response_bytes": 1116
+  },
+  {
+    "operation": "complete-process",
+    "slot": "prepare/retain-artifact",
+    "pass": null,
+    "response_bytes": 1365
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "success/stageArtifact",
+    "pass": null,
+    "response_bytes": 1114
+  },
+  {
+    "operation": "complete-process",
+    "slot": "success/stageArtifact",
+    "pass": null,
+    "response_bytes": 1363
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "success/uploadArtifactContent",
+    "pass": null,
+    "response_bytes": 1122
+  },
+  {
+    "operation": "complete-process",
+    "slot": "success/uploadArtifactContent",
+    "pass": null,
+    "response_bytes": 1371
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "success/commitArtifact",
+    "pass": null,
+    "response_bytes": 1115
+  },
+  {
+    "operation": "complete-process",
+    "slot": "success/commitArtifact",
+    "pass": null,
+    "response_bytes": 1364
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "success/getArtifact",
+    "pass": null,
+    "response_bytes": 1112
+  },
+  {
+    "operation": "complete-process",
+    "slot": "success/getArtifact",
+    "pass": null,
+    "response_bytes": 1361
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "success/downloadArtifactContent",
+    "pass": null,
+    "response_bytes": 1124
+  },
+  {
+    "operation": "complete-process",
+    "slot": "success/downloadArtifactContent",
+    "pass": null,
+    "response_bytes": 1373
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "success/listArtifacts",
+    "pass": null,
+    "response_bytes": 1114
+  },
+  {
+    "operation": "complete-process",
+    "slot": "success/listArtifacts",
+    "pass": null,
+    "response_bytes": 1363
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "success/submitTaskResult",
+    "pass": null,
+    "response_bytes": 1117
+  },
+  {
+    "operation": "complete-process",
+    "slot": "success/submitTaskResult",
+    "pass": null,
+    "response_bytes": 1366
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "success/listTaskResults",
+    "pass": null,
+    "response_bytes": 1116
+  },
+  {
+    "operation": "complete-process",
+    "slot": "success/listTaskResults",
+    "pass": null,
+    "response_bytes": 1365
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "success/acceptTaskResult",
+    "pass": null,
+    "response_bytes": 1117
+  },
+  {
+    "operation": "complete-process",
+    "slot": "success/acceptTaskResult",
+    "pass": null,
+    "response_bytes": 1366
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "prepare/fail-create",
+    "pass": null,
+    "response_bytes": 1112
+  },
+  {
+    "operation": "complete-process",
+    "slot": "prepare/fail-create",
+    "pass": null,
+    "response_bytes": 1361
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "prepare/fail-ready",
+    "pass": null,
+    "response_bytes": 1111
+  },
+  {
+    "operation": "complete-process",
+    "slot": "prepare/fail-ready",
+    "pass": null,
+    "response_bytes": 1360
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "prepare/fail-claim",
+    "pass": null,
+    "response_bytes": 1111
+  },
+  {
+    "operation": "complete-process",
+    "slot": "prepare/fail-claim",
+    "pass": null,
+    "response_bytes": 1360
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "success/failTask",
+    "pass": null,
+    "response_bytes": 1109
+  },
+  {
+    "operation": "complete-process",
+    "slot": "success/failTask",
+    "pass": null,
+    "response_bytes": 1358
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "prepare/cancel-create",
+    "pass": null,
+    "response_bytes": 1114
+  },
+  {
+    "operation": "complete-process",
+    "slot": "prepare/cancel-create",
+    "pass": null,
+    "response_bytes": 1363
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "success/cancelTask",
+    "pass": null,
+    "response_bytes": 1111
+  },
+  {
+    "operation": "complete-process",
+    "slot": "success/cancelTask",
+    "pass": null,
+    "response_bytes": 1360
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "prepare/requeue-create",
+    "pass": null,
+    "response_bytes": 1115
+  },
+  {
+    "operation": "complete-process",
+    "slot": "prepare/requeue-create",
+    "pass": null,
+    "response_bytes": 1364
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "success/requeueTask",
+    "pass": null,
+    "response_bytes": 1112
+  },
+  {
+    "operation": "complete-process",
+    "slot": "success/requeueTask",
+    "pass": null,
+    "response_bytes": 1361
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "success/createMessage",
+    "pass": null,
+    "response_bytes": 1114
+  },
+  {
+    "operation": "complete-process",
+    "slot": "success/createMessage",
+    "pass": null,
+    "response_bytes": 1363
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "success/getInbox",
+    "pass": null,
+    "response_bytes": 1109
+  },
+  {
+    "operation": "complete-process",
+    "slot": "success/getInbox",
+    "pass": null,
+    "response_bytes": 1358
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "success/ackMessages",
+    "pass": null,
+    "response_bytes": 1112
+  },
+  {
+    "operation": "complete-process",
+    "slot": "success/ackMessages",
+    "pass": null,
+    "response_bytes": 1361
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "success/getThread",
+    "pass": null,
+    "response_bytes": 1110
+  },
+  {
+    "operation": "complete-process",
+    "slot": "success/getThread",
+    "pass": null,
+    "response_bytes": 1359
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "success/listTasks",
+    "pass": null,
+    "response_bytes": 1110
+  },
+  {
+    "operation": "complete-process",
+    "slot": "success/listTasks",
+    "pass": null,
+    "response_bytes": 1359
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "success/listEvents",
+    "pass": null,
+    "response_bytes": 1111
+  },
+  {
+    "operation": "complete-process",
+    "slot": "success/listEvents",
+    "pass": null,
+    "response_bytes": 1360
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "success/searchWorkspace",
+    "pass": null,
+    "response_bytes": 1116
+  },
+  {
+    "operation": "complete-process",
+    "slot": "success/searchWorkspace",
+    "pass": null,
+    "response_bytes": 1365
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "control/observe-success-coverage",
+    "pass": null,
+    "response_bytes": 1125
+  },
+  {
+    "operation": "execute-control",
+    "slot": "control/observe-success-coverage",
+    "pass": null,
+    "response_bytes": 2560
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "control/observe-server-foreign-fixture",
+    "pass": null,
+    "response_bytes": 1131
+  },
+  {
+    "operation": "execute-control",
+    "slot": "control/observe-server-foreign-fixture",
+    "pass": null,
+    "response_bytes": 3755
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "probe/server-foreign-workspace",
+    "pass": null,
+    "response_bytes": 1123
+  },
+  {
+    "operation": "complete-process",
+    "slot": "probe/server-foreign-workspace",
+    "pass": null,
+    "response_bytes": 1372
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "prepare/server-foreign-own-positive",
+    "pass": null,
+    "response_bytes": 1128
+  },
+  {
+    "operation": "complete-process",
+    "slot": "prepare/server-foreign-own-positive",
+    "pass": null,
+    "response_bytes": 1377
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "probe/wrong-workspace",
+    "pass": null,
+    "response_bytes": 1114
+  },
+  {
+    "operation": "complete-process",
+    "slot": "probe/wrong-workspace",
+    "pass": null,
+    "response_bytes": 1363
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "prepare/runtime-own-before",
+    "pass": null,
+    "response_bytes": 1119
+  },
+  {
+    "operation": "complete-process",
+    "slot": "prepare/runtime-own-before",
+    "pass": null,
+    "response_bytes": 1368
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "control/observe-other-runtime",
+    "pass": null,
+    "response_bytes": 1122
+  },
+  {
+    "operation": "execute-control",
+    "slot": "control/observe-other-runtime",
+    "pass": null,
+    "response_bytes": 3342
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "probe/wrong-runtime",
+    "pass": null,
+    "response_bytes": 1112
+  },
+  {
+    "operation": "complete-process",
+    "slot": "probe/wrong-runtime",
+    "pass": null,
+    "response_bytes": 1361
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "prepare/runtime-own-after",
+    "pass": null,
+    "response_bytes": 1118
+  },
+  {
+    "operation": "complete-process",
+    "slot": "prepare/runtime-own-after",
+    "pass": null,
+    "response_bytes": 1367
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "control/prepare-swap-slot",
+    "pass": null,
+    "response_bytes": 1118
+  },
+  {
+    "operation": "execute-control",
+    "slot": "control/prepare-swap-slot",
+    "pass": null,
+    "response_bytes": 2141
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "probe/swapped-slot",
+    "pass": null,
+    "response_bytes": 1111
+  },
+  {
+    "operation": "complete-process",
+    "slot": "probe/swapped-slot",
+    "pass": null,
+    "response_bytes": 1360
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "control/prepare-swap-generation",
+    "pass": null,
+    "response_bytes": 1124
+  },
+  {
+    "operation": "execute-control",
+    "slot": "control/prepare-swap-generation",
+    "pass": null,
+    "response_bytes": 2155
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "probe/swapped-generation",
+    "pass": null,
+    "response_bytes": 1117
+  },
+  {
+    "operation": "complete-process",
+    "slot": "probe/swapped-generation",
+    "pass": null,
+    "response_bytes": 1366
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "control/prepare-swap-principal",
+    "pass": null,
+    "response_bytes": 1123
+  },
+  {
+    "operation": "execute-control",
+    "slot": "control/prepare-swap-principal",
+    "pass": null,
+    "response_bytes": 2150
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "probe/swapped-principal",
+    "pass": null,
+    "response_bytes": 1116
+  },
+  {
+    "operation": "complete-process",
+    "slot": "probe/swapped-principal",
+    "pass": null,
+    "response_bytes": 1365
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "control/observe-settled-intent",
+    "pass": null,
+    "response_bytes": 1123
+  },
+  {
+    "operation": "execute-control",
+    "slot": "control/observe-settled-intent",
+    "pass": null,
+    "response_bytes": 2947
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "case/settled-no-send",
+    "pass": null,
+    "response_bytes": 1113
+  },
+  {
+    "operation": "complete-process",
+    "slot": "case/settled-no-send",
+    "pass": null,
+    "response_bytes": 1362
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "control/arm-lost-response",
+    "pass": null,
+    "response_bytes": 1118
+  },
+  {
+    "operation": "execute-control",
+    "slot": "control/arm-lost-response",
+    "pass": null,
+    "response_bytes": 3314
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "case/lost-response-retained",
+    "pass": null,
+    "response_bytes": 1120
+  },
+  {
+    "operation": "complete-process",
+    "slot": "case/lost-response-retained",
+    "pass": null,
+    "response_bytes": 1369
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "control/disarm-and-observe-lost",
+    "pass": null,
+    "response_bytes": 1124
+  },
+  {
+    "operation": "execute-control",
+    "slot": "control/disarm-and-observe-lost",
+    "pass": null,
+    "response_bytes": 4120
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "case/restart-no-send",
+    "pass": null,
+    "response_bytes": 1113
+  },
+  {
+    "operation": "complete-process",
+    "slot": "case/restart-no-send",
+    "pass": null,
+    "response_bytes": 1362
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "prepare/revoke-own-positive",
+    "pass": null,
+    "response_bytes": 1120
+  },
+  {
+    "operation": "complete-process",
+    "slot": "prepare/revoke-own-positive",
+    "pass": null,
+    "response_bytes": 1369
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "control/revoke-submitter",
+    "pass": null,
+    "response_bytes": 1117
+  },
+  {
+    "operation": "execute-control",
+    "slot": "control/revoke-submitter",
+    "pass": null,
+    "response_bytes": 4513
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "case/revoked-after-disable",
+    "pass": null,
+    "response_bytes": 1119
+  },
+  {
+    "operation": "complete-process",
+    "slot": "case/revoked-after-disable",
+    "pass": null,
+    "response_bytes": 1368
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "server-foreign-workspace-denial",
+    "pass": null,
+    "response_bytes": 1125
+  },
+  {
+    "operation": "execute-external",
+    "slot": "server-foreign-workspace-denial",
+    "pass": null,
+    "response_bytes": 1425
+  },
+  {
+    "operation": "prepare-slot",
+    "slot": "server-wrong-runtime-proof-denial",
+    "pass": null,
+    "response_bytes": 1127
+  },
+  {
+    "operation": "execute-external",
+    "slot": "server-wrong-runtime-proof-denial",
+    "pass": null,
+    "response_bytes": 1427
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "control/authorize",
+    "pass": null,
+    "response_bytes": 2096
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "control/provision",
+    "pass": null,
+    "response_bytes": 2096
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "success/getWorkspace",
+    "pass": null,
+    "response_bytes": 2368
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "success/getConfiguration",
+    "pass": null,
+    "response_bytes": 2372
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "success/getProfile",
+    "pass": null,
+    "response_bytes": 2366
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "prepare/reviewer-binding",
+    "pass": null,
+    "response_bytes": 6356
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "success/listAgents",
+    "pass": null,
+    "response_bytes": 2366
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "success/getAgent",
+    "pass": null,
+    "response_bytes": 2364
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "prepare/submitter-enrollment",
+    "pass": null,
+    "response_bytes": 6368
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "prepare/reviewer-enrollment",
+    "pass": null,
+    "response_bytes": 6366
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "success/createTask",
+    "pass": null,
+    "response_bytes": 2366
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "success/getTask",
+    "pass": null,
+    "response_bytes": 2363
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "success/patchTask",
+    "pass": null,
+    "response_bytes": 2365
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "success/readyTask",
+    "pass": null,
+    "response_bytes": 2365
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "success/createRuntime",
+    "pass": null,
+    "response_bytes": 2369
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "success/claimTask",
+    "pass": null,
+    "response_bytes": 2365
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "success/getRun",
+    "pass": null,
+    "response_bytes": 2362
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "success/heartbeatRun",
+    "pass": null,
+    "response_bytes": 2368
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "success/heartbeatRuntime",
+    "pass": null,
+    "response_bytes": 2372
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "prepare/retain-artifact",
+    "pass": null,
+    "response_bytes": 6014
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "success/stageArtifact",
+    "pass": null,
+    "response_bytes": 2369
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "success/uploadArtifactContent",
+    "pass": null,
+    "response_bytes": 2377
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "success/commitArtifact",
+    "pass": null,
+    "response_bytes": 2370
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "success/getArtifact",
+    "pass": null,
+    "response_bytes": 2367
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "success/downloadArtifactContent",
+    "pass": null,
+    "response_bytes": 2379
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "success/listArtifacts",
+    "pass": null,
+    "response_bytes": 2369
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "success/submitTaskResult",
+    "pass": null,
+    "response_bytes": 2372
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "success/listTaskResults",
+    "pass": null,
+    "response_bytes": 2371
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "success/acceptTaskResult",
+    "pass": null,
+    "response_bytes": 2372
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "prepare/fail-create",
+    "pass": null,
+    "response_bytes": 2367
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "prepare/fail-ready",
+    "pass": null,
+    "response_bytes": 6336
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "prepare/fail-claim",
+    "pass": null,
+    "response_bytes": 6336
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "success/failTask",
+    "pass": null,
+    "response_bytes": 2364
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "prepare/cancel-create",
+    "pass": null,
+    "response_bytes": 6346
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "success/cancelTask",
+    "pass": null,
+    "response_bytes": 2366
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "prepare/requeue-create",
+    "pass": null,
+    "response_bytes": 6348
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "success/requeueTask",
+    "pass": null,
+    "response_bytes": 2367
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "success/createMessage",
+    "pass": null,
+    "response_bytes": 2369
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "success/getInbox",
+    "pass": null,
+    "response_bytes": 2364
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "success/ackMessages",
+    "pass": null,
+    "response_bytes": 2367
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "success/getThread",
+    "pass": null,
+    "response_bytes": 2365
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "success/listTasks",
+    "pass": null,
+    "response_bytes": 2365
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "success/listEvents",
+    "pass": null,
+    "response_bytes": 2366
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "success/searchWorkspace",
+    "pass": null,
+    "response_bytes": 2371
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "control/observe-success-coverage",
+    "pass": null,
+    "response_bytes": 2110
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "control/observe-server-foreign-fixture",
+    "pass": null,
+    "response_bytes": 2117
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "probe/server-foreign-workspace",
+    "pass": null,
+    "response_bytes": 6376
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "prepare/server-foreign-own-positive",
+    "pass": null,
+    "response_bytes": 6390
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "probe/wrong-workspace",
+    "pass": null,
+    "response_bytes": 6346
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "prepare/runtime-own-before",
+    "pass": null,
+    "response_bytes": 6360
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "control/observe-other-runtime",
+    "pass": null,
+    "response_bytes": 2108
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "probe/wrong-runtime",
+    "pass": null,
+    "response_bytes": 6690
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "prepare/runtime-own-after",
+    "pass": null,
+    "response_bytes": 6358
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "control/prepare-swap-slot",
+    "pass": null,
+    "response_bytes": 2103
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "probe/swapped-slot",
+    "pass": null,
+    "response_bytes": 6688
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "control/prepare-swap-generation",
+    "pass": null,
+    "response_bytes": 2109
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "probe/swapped-generation",
+    "pass": null,
+    "response_bytes": 6708
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "control/prepare-swap-principal",
+    "pass": null,
+    "response_bytes": 2108
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "probe/swapped-principal",
+    "pass": null,
+    "response_bytes": 6706
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "control/observe-settled-intent",
+    "pass": null,
+    "response_bytes": 2109
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "case/settled-no-send",
+    "pass": null,
+    "response_bytes": 2368
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "control/arm-lost-response",
+    "pass": null,
+    "response_bytes": 2104
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "case/lost-response-retained",
+    "pass": null,
+    "response_bytes": 2375
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "control/disarm-and-observe-lost",
+    "pass": null,
+    "response_bytes": 2110
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "case/restart-no-send",
+    "pass": null,
+    "response_bytes": 2368
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "prepare/revoke-own-positive",
+    "pass": null,
+    "response_bytes": 2375
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "control/revoke-submitter",
+    "pass": null,
+    "response_bytes": 2103
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "case/revoked-after-disable",
+    "pass": null,
+    "response_bytes": 2374
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "server-foreign-workspace-denial",
+    "pass": null,
+    "response_bytes": 2376
+  },
+  {
+    "operation": "observe-slot",
+    "slot": "server-wrong-runtime-proof-denial",
+    "pass": null,
+    "response_bytes": 2378
+  },
+  {
+    "operation": "read-original",
+    "slot": "success/getWorkspace",
+    "pass": null,
+    "response_bytes": 14976
+  },
+  {
+    "operation": "read-original",
+    "slot": "success/getConfiguration",
+    "pass": null,
+    "response_bytes": 14980
+  },
+  {
+    "operation": "read-original",
+    "slot": "success/getProfile",
+    "pass": null,
+    "response_bytes": 14974
+  },
+  {
+    "operation": "read-original",
+    "slot": "success/listAgents",
+    "pass": null,
+    "response_bytes": 14974
+  },
+  {
+    "operation": "read-original",
+    "slot": "success/getAgent",
+    "pass": null,
+    "response_bytes": 14972
+  },
+  {
+    "operation": "read-original",
+    "slot": "success/createTask",
+    "pass": null,
+    "response_bytes": 14974
+  },
+  {
+    "operation": "read-original",
+    "slot": "success/getTask",
+    "pass": null,
+    "response_bytes": 14971
+  },
+  {
+    "operation": "read-original",
+    "slot": "success/patchTask",
+    "pass": null,
+    "response_bytes": 14973
+  },
+  {
+    "operation": "read-original",
+    "slot": "success/readyTask",
+    "pass": null,
+    "response_bytes": 14973
+  },
+  {
+    "operation": "read-original",
+    "slot": "success/createRuntime",
+    "pass": null,
+    "response_bytes": 14977
+  },
+  {
+    "operation": "read-original",
+    "slot": "success/claimTask",
+    "pass": null,
+    "response_bytes": 14973
+  },
+  {
+    "operation": "read-original",
+    "slot": "success/getRun",
+    "pass": null,
+    "response_bytes": 14970
+  },
+  {
+    "operation": "read-original",
+    "slot": "success/heartbeatRun",
+    "pass": null,
+    "response_bytes": 14976
+  },
+  {
+    "operation": "read-original",
+    "slot": "success/heartbeatRuntime",
+    "pass": null,
+    "response_bytes": 14980
+  },
+  {
+    "operation": "read-original",
+    "slot": "success/stageArtifact",
+    "pass": null,
+    "response_bytes": 14977
+  },
+  {
+    "operation": "read-original",
+    "slot": "success/uploadArtifactContent",
+    "pass": null,
+    "response_bytes": 14985
+  },
+  {
+    "operation": "read-original",
+    "slot": "success/commitArtifact",
+    "pass": null,
+    "response_bytes": 14978
+  },
+  {
+    "operation": "read-original",
+    "slot": "success/getArtifact",
+    "pass": null,
+    "response_bytes": 14975
+  },
+  {
+    "operation": "read-original",
+    "slot": "success/downloadArtifactContent",
+    "pass": null,
+    "response_bytes": 14987
+  },
+  {
+    "operation": "read-original",
+    "slot": "success/listArtifacts",
+    "pass": null,
+    "response_bytes": 14977
+  },
+  {
+    "operation": "read-original",
+    "slot": "success/submitTaskResult",
+    "pass": null,
+    "response_bytes": 14980
+  },
+  {
+    "operation": "read-original",
+    "slot": "success/listTaskResults",
+    "pass": null,
+    "response_bytes": 14979
+  },
+  {
+    "operation": "read-original",
+    "slot": "success/acceptTaskResult",
+    "pass": null,
+    "response_bytes": 14980
+  },
+  {
+    "operation": "read-original",
+    "slot": "prepare/fail-create",
+    "pass": null,
+    "response_bytes": 14975
+  },
+  {
+    "operation": "read-original",
+    "slot": "success/failTask",
+    "pass": null,
+    "response_bytes": 14972
+  },
+  {
+    "operation": "read-original",
+    "slot": "success/cancelTask",
+    "pass": null,
+    "response_bytes": 14974
+  },
+  {
+    "operation": "read-original",
+    "slot": "success/requeueTask",
+    "pass": null,
+    "response_bytes": 14975
+  },
+  {
+    "operation": "read-original",
+    "slot": "success/createMessage",
+    "pass": null,
+    "response_bytes": 14977
+  },
+  {
+    "operation": "read-original",
+    "slot": "success/getInbox",
+    "pass": null,
+    "response_bytes": 14972
+  },
+  {
+    "operation": "read-original",
+    "slot": "success/ackMessages",
+    "pass": null,
+    "response_bytes": 14975
+  },
+  {
+    "operation": "read-original",
+    "slot": "success/getThread",
+    "pass": null,
+    "response_bytes": 14973
+  },
+  {
+    "operation": "read-original",
+    "slot": "success/listTasks",
+    "pass": null,
+    "response_bytes": 14973
+  },
+  {
+    "operation": "read-original",
+    "slot": "success/listEvents",
+    "pass": null,
+    "response_bytes": 14974
+  },
+  {
+    "operation": "read-original",
+    "slot": "success/searchWorkspace",
+    "pass": null,
+    "response_bytes": 14979
+  },
+  {
+    "operation": "read-original",
+    "slot": "case/settled-no-send",
+    "pass": null,
+    "response_bytes": 14976
+  },
+  {
+    "operation": "read-original",
+    "slot": "case/lost-response-retained",
+    "pass": null,
+    "response_bytes": 14983
+  },
+  {
+    "operation": "read-original",
+    "slot": "case/restart-no-send",
+    "pass": null,
+    "response_bytes": 14976
+  },
+  {
+    "operation": "read-original",
+    "slot": "prepare/revoke-own-positive",
+    "pass": null,
+    "response_bytes": 14983
+  },
+  {
+    "operation": "read-original",
+    "slot": "control/revoke-submitter",
+    "pass": null,
+    "response_bytes": 14853
+  },
+  {
+    "operation": "read-original",
+    "slot": "case/revoked-after-disable",
+    "pass": null,
+    "response_bytes": 14982
+  },
+  {
+    "operation": "read-original",
+    "slot": "server-foreign-workspace-denial",
+    "pass": null,
+    "response_bytes": 23428
+  },
+  {
+    "operation": "read-original",
+    "slot": "server-wrong-runtime-proof-denial",
+    "pass": null,
+    "response_bytes": 23430
+  },
+  {
+    "operation": "close-run",
+    "slot": "run",
+    "pass": null,
+    "response_bytes": 1196
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/getWorkspace",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/getWorkspace",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/getConfiguration",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/getConfiguration",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/getProfile",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/getProfile",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "prepare/reviewer-binding",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "prepare/reviewer-binding",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/listAgents",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/listAgents",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/getAgent",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/getAgent",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "prepare/submitter-enrollment",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "prepare/submitter-enrollment",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "prepare/reviewer-enrollment",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "prepare/reviewer-enrollment",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/createTask",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/createTask",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/getTask",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/getTask",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/patchTask",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/patchTask",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/readyTask",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/readyTask",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/createRuntime",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/createRuntime",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/claimTask",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/claimTask",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/getRun",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/getRun",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/heartbeatRun",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/heartbeatRun",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/heartbeatRuntime",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/heartbeatRuntime",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "prepare/retain-artifact",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "prepare/retain-artifact",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/stageArtifact",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/stageArtifact",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/uploadArtifactContent",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/uploadArtifactContent",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/commitArtifact",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/commitArtifact",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/getArtifact",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/getArtifact",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/downloadArtifactContent",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/downloadArtifactContent",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/listArtifacts",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/listArtifacts",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/submitTaskResult",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/submitTaskResult",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/listTaskResults",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/listTaskResults",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/acceptTaskResult",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/acceptTaskResult",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "prepare/fail-create",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "prepare/fail-create",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "prepare/fail-ready",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "prepare/fail-ready",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "prepare/fail-claim",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "prepare/fail-claim",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/failTask",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/failTask",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "prepare/cancel-create",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "prepare/cancel-create",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/cancelTask",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/cancelTask",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "prepare/requeue-create",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "prepare/requeue-create",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/requeueTask",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/requeueTask",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/createMessage",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/createMessage",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/getInbox",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/getInbox",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/ackMessages",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/ackMessages",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/getThread",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/getThread",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/listTasks",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/listTasks",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/listEvents",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/listEvents",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/searchWorkspace",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "success/searchWorkspace",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "probe/server-foreign-workspace",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "probe/server-foreign-workspace",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "prepare/server-foreign-own-positive",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "prepare/server-foreign-own-positive",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "probe/wrong-workspace",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "probe/wrong-workspace",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "prepare/runtime-own-before",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "prepare/runtime-own-before",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "probe/wrong-runtime",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "probe/wrong-runtime",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "prepare/runtime-own-after",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "prepare/runtime-own-after",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "probe/swapped-slot",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "probe/swapped-slot",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "probe/swapped-generation",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "probe/swapped-generation",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "probe/swapped-principal",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "probe/swapped-principal",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "case/settled-no-send",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "case/settled-no-send",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "case/lost-response-retained",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "case/lost-response-retained",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "case/restart-no-send",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "case/restart-no-send",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "prepare/revoke-own-positive",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "prepare/revoke-own-positive",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "case/revoked-after-disable",
+    "pass": "immediate",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "scan-process-output",
+    "slot": "case/revoked-after-disable",
+    "pass": "final",
+    "response_bytes": 3785
+  },
+  {
+    "operation": "seal-scan-inventory",
+    "slot": "run",
+    "pass": null,
+    "response_bytes": 1526
+  },
+  {
+    "operation": "finalize-run-scan",
+    "slot": "run",
+    "pass": null,
+    "response_bytes": 80140
+  },
+  {
+    "operation": "read-run-original",
+    "slot": "run",
+    "pass": null,
+    "response_bytes": 2999
+  }
+]

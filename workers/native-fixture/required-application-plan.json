@@ -1,0 +1,1558 @@
+[
+  {
+    "step_id": "success/getWorkspace",
+    "actor": "submitter",
+    "fixture": "primary",
+    "process_operation": "getWorkspace",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "getWorkspace",
+        "method": "GET",
+        "path": "/v2/workspaces/{workspace_id}",
+        "runtime_proof": false,
+        "idempotency": false,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 0,
+          "responseBodyBytes": 733,
+          "requestMetadataBytes": 477,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "success/getConfiguration",
+    "actor": "submitter",
+    "fixture": "primary",
+    "process_operation": "getConfiguration",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "getConfiguration",
+        "method": "GET",
+        "path": "/v2/workspaces/{workspace_id}/configuration",
+        "runtime_proof": false,
+        "idempotency": false,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 0,
+          "responseBodyBytes": 341,
+          "requestMetadataBytes": 491,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "success/getProfile",
+    "actor": "submitter",
+    "fixture": "primary",
+    "process_operation": "getProfile",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "getProfile",
+        "method": "GET",
+        "path": "/v2/workspaces/{workspace_id}/profile",
+        "runtime_proof": false,
+        "idempotency": false,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 0,
+          "responseBodyBytes": 486,
+          "requestMetadataBytes": 485,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "prepare/reviewer-binding",
+    "actor": "reviewer",
+    "fixture": "primary",
+    "process_operation": "getWorkspace",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "getWorkspace",
+        "method": "GET",
+        "path": "/v2/workspaces/{workspace_id}",
+        "runtime_proof": false,
+        "idempotency": false,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 0,
+          "responseBodyBytes": 733,
+          "requestMetadataBytes": 477,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "success/listAgents",
+    "actor": "submitter",
+    "fixture": "primary",
+    "process_operation": "listAgents",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "listAgents",
+        "method": "GET",
+        "path": "/v2/workspaces/{workspace_id}/agents",
+        "runtime_proof": false,
+        "idempotency": false,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 0,
+          "responseBodyBytes": 3119,
+          "requestMetadataBytes": 493,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "success/getAgent",
+    "actor": "submitter",
+    "fixture": "primary",
+    "process_operation": "getAgent",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "getAgent",
+        "method": "GET",
+        "path": "/v2/workspaces/{workspace_id}/agents/{agent_id}",
+        "runtime_proof": false,
+        "idempotency": false,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 0,
+          "responseBodyBytes": 589,
+          "requestMetadataBytes": 549,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "prepare/submitter-enrollment",
+    "actor": "submitter",
+    "fixture": "primary",
+    "process_operation": "createRuntime",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "createRuntime",
+        "method": "POST",
+        "path": "/v2/workspaces/{workspace_id}/runtimes",
+        "runtime_proof": false,
+        "idempotency": true,
+        "response_status": 201,
+        "capture_limits": {
+          "requestBodyBytes": 37,
+          "responseBodyBytes": 729,
+          "requestMetadataBytes": 534,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 201,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "prepare/reviewer-enrollment",
+    "actor": "reviewer",
+    "fixture": "primary",
+    "process_operation": "createRuntime",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "createRuntime",
+        "method": "POST",
+        "path": "/v2/workspaces/{workspace_id}/runtimes",
+        "runtime_proof": false,
+        "idempotency": true,
+        "response_status": 201,
+        "capture_limits": {
+          "requestBodyBytes": 36,
+          "responseBodyBytes": 729,
+          "requestMetadataBytes": 534,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 201,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "success/createTask",
+    "actor": "submitter",
+    "fixture": "main",
+    "process_operation": "createTask",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "createTask",
+        "method": "POST",
+        "path": "/v2/workspaces/{workspace_id}/tasks",
+        "runtime_proof": false,
+        "idempotency": true,
+        "response_status": 201,
+        "capture_limits": {
+          "requestBodyBytes": 87,
+          "responseBodyBytes": 1617,
+          "requestMetadataBytes": 531,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 201,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "success/getTask",
+    "actor": "submitter",
+    "fixture": "main",
+    "process_operation": "getTask",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "getTask",
+        "method": "GET",
+        "path": "/v2/workspaces/{workspace_id}/tasks/{task_id}",
+        "runtime_proof": false,
+        "idempotency": false,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 0,
+          "responseBodyBytes": 1617,
+          "requestMetadataBytes": 580,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "success/patchTask",
+    "actor": "submitter",
+    "fixture": "main",
+    "process_operation": "patchTask",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "patchTask",
+        "method": "PATCH",
+        "path": "/v2/workspaces/{workspace_id}/tasks/{task_id}",
+        "runtime_proof": false,
+        "idempotency": true,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 71,
+          "responseBodyBytes": 1617,
+          "requestMetadataBytes": 629,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "success/readyTask",
+    "actor": "submitter",
+    "fixture": "main",
+    "process_operation": "readyTask",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "readyTask",
+        "method": "POST",
+        "path": "/v2/workspaces/{workspace_id}/tasks/{task_id}:ready",
+        "runtime_proof": false,
+        "idempotency": true,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 37,
+          "responseBodyBytes": 2345,
+          "requestMetadataBytes": 634,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "success/createRuntime",
+    "actor": "submitter",
+    "fixture": "main",
+    "process_operation": "createRuntime",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "createRuntime",
+        "method": "POST",
+        "path": "/v2/workspaces/{workspace_id}/runtimes",
+        "runtime_proof": false,
+        "idempotency": true,
+        "response_status": 201,
+        "capture_limits": {
+          "requestBodyBytes": 37,
+          "responseBodyBytes": 729,
+          "requestMetadataBytes": 534,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 201,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "success/claimTask",
+    "actor": "submitter",
+    "fixture": "main",
+    "process_operation": "claimTask",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "claimTask",
+        "method": "POST",
+        "path": "/v2/workspaces/{workspace_id}/tasks/{task_id}:claim",
+        "runtime_proof": true,
+        "idempotency": true,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 158,
+          "responseBodyBytes": 2345,
+          "requestMetadataBytes": 675,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "success/getRun",
+    "actor": "submitter",
+    "fixture": "main",
+    "process_operation": "getRun",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "getRun",
+        "method": "GET",
+        "path": "/v2/workspaces/{workspace_id}/runs/{run_id}",
+        "runtime_proof": false,
+        "idempotency": false,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 0,
+          "responseBodyBytes": 849,
+          "requestMetadataBytes": 579,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "success/heartbeatRun",
+    "actor": "submitter",
+    "fixture": "main",
+    "process_operation": "heartbeatRun",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "heartbeatRun",
+        "method": "POST",
+        "path": "/v2/workspaces/{workspace_id}/runs/{run_id}:heartbeat",
+        "runtime_proof": true,
+        "idempotency": true,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 66,
+          "responseBodyBytes": 849,
+          "requestMetadataBytes": 678,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "success/heartbeatRuntime",
+    "actor": "submitter",
+    "fixture": "main",
+    "process_operation": "heartbeatRuntime",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "heartbeatRuntime",
+        "method": "POST",
+        "path": "/v2/workspaces/{workspace_id}/runtimes/{runtime_instance_id}:heartbeat",
+        "runtime_proof": true,
+        "idempotency": true,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 45,
+          "responseBodyBytes": 639,
+          "requestMetadataBytes": 682,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "prepare/retain-artifact",
+    "actor": "submitter",
+    "fixture": "main",
+    "process_operation": null,
+    "expected_exit": 0,
+    "ordinals": [],
+    "expected_status": null,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "success/stageArtifact",
+    "actor": "submitter",
+    "fixture": "main",
+    "process_operation": "stageArtifact",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "stageArtifact",
+        "method": "POST",
+        "path": "/v2/workspaces/{workspace_id}/artifacts",
+        "runtime_proof": true,
+        "idempotency": true,
+        "response_status": 201,
+        "capture_limits": {
+          "requestBodyBytes": 368,
+          "responseBodyBytes": 1086,
+          "requestMetadataBytes": 576,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 201,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "success/uploadArtifactContent",
+    "actor": "submitter",
+    "fixture": "main",
+    "process_operation": "uploadArtifactContent",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "getArtifact",
+        "method": "GET",
+        "path": "/v2/workspaces/{workspace_id}/artifacts/{artifact_id}",
+        "runtime_proof": false,
+        "idempotency": false,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 0,
+          "responseBodyBytes": 1086,
+          "requestMetadataBytes": 584,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      },
+      {
+        "ordinal": 1,
+        "operation": "uploadArtifactContent",
+        "method": "PUT",
+        "path": "/v2/workspaces/{workspace_id}/artifacts/{artifact_id}/content",
+        "runtime_proof": true,
+        "idempotency": true,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 0,
+          "responseBodyBytes": 1086,
+          "requestMetadataBytes": 688,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 29
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "success/commitArtifact",
+    "actor": "submitter",
+    "fixture": "main",
+    "process_operation": "commitArtifact",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "getArtifact",
+        "method": "GET",
+        "path": "/v2/workspaces/{workspace_id}/artifacts/{artifact_id}",
+        "runtime_proof": false,
+        "idempotency": false,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 0,
+          "responseBodyBytes": 1086,
+          "requestMetadataBytes": 584,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      },
+      {
+        "ordinal": 1,
+        "operation": "commitArtifact",
+        "method": "POST",
+        "path": "/v2/workspaces/{workspace_id}/artifacts/{artifact_id}:commit",
+        "runtime_proof": true,
+        "idempotency": true,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 46,
+          "responseBodyBytes": 1086,
+          "requestMetadataBytes": 680,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "success/getArtifact",
+    "actor": "submitter",
+    "fixture": "main",
+    "process_operation": "getArtifact",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "getArtifact",
+        "method": "GET",
+        "path": "/v2/workspaces/{workspace_id}/artifacts/{artifact_id}",
+        "runtime_proof": false,
+        "idempotency": false,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 0,
+          "responseBodyBytes": 1086,
+          "requestMetadataBytes": 584,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "success/downloadArtifactContent",
+    "actor": "submitter",
+    "fixture": "main",
+    "process_operation": "downloadArtifactContent",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "getArtifact",
+        "method": "GET",
+        "path": "/v2/workspaces/{workspace_id}/artifacts/{artifact_id}",
+        "runtime_proof": false,
+        "idempotency": false,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 0,
+          "responseBodyBytes": 1086,
+          "requestMetadataBytes": 584,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      },
+      {
+        "ordinal": 1,
+        "operation": "downloadArtifactContent",
+        "method": "GET",
+        "path": "/v2/workspaces/{workspace_id}/artifacts/{artifact_id}/content",
+        "runtime_proof": false,
+        "idempotency": false,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 0,
+          "responseBodyBytes": 0,
+          "requestMetadataBytes": 579,
+          "responseMetadataBytes": 421,
+          "binaryBytesSeparateArtifactCounter": 29
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "success/listArtifacts",
+    "actor": "submitter",
+    "fixture": "main",
+    "process_operation": "listArtifacts",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "listArtifacts",
+        "method": "GET",
+        "path": "/v2/workspaces/{workspace_id}/artifacts",
+        "runtime_proof": false,
+        "idempotency": false,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 0,
+          "responseBodyBytes": 3179,
+          "requestMetadataBytes": 496,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "success/submitTaskResult",
+    "actor": "submitter",
+    "fixture": "main",
+    "process_operation": "submitTaskResult",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "submitTaskResult",
+        "method": "POST",
+        "path": "/v2/workspaces/{workspace_id}/tasks/{task_id}:submit-result",
+        "runtime_proof": true,
+        "idempotency": true,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 340,
+          "responseBodyBytes": 2345,
+          "requestMetadataBytes": 683,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "success/listTaskResults",
+    "actor": "submitter",
+    "fixture": "main",
+    "process_operation": "listTaskResults",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "listTaskResults",
+        "method": "GET",
+        "path": "/v2/workspaces/{workspace_id}/tasks/{task_id}/results",
+        "runtime_proof": false,
+        "idempotency": false,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 0,
+          "responseBodyBytes": 2749,
+          "requestMetadataBytes": 597,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "success/acceptTaskResult",
+    "actor": "reviewer",
+    "fixture": "main",
+    "process_operation": "acceptTaskResult",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "acceptTaskResult",
+        "method": "POST",
+        "path": "/v2/workspaces/{workspace_id}/tasks/{task_id}:accept-result",
+        "runtime_proof": false,
+        "idempotency": true,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 81,
+          "responseBodyBytes": 2345,
+          "requestMetadataBytes": 642,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "prepare/fail-create",
+    "actor": "submitter",
+    "fixture": "fail",
+    "process_operation": "createTask",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "createTask",
+        "method": "POST",
+        "path": "/v2/workspaces/{workspace_id}/tasks",
+        "runtime_proof": false,
+        "idempotency": true,
+        "response_status": 201,
+        "capture_limits": {
+          "requestBodyBytes": 87,
+          "responseBodyBytes": 1617,
+          "requestMetadataBytes": 531,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 201,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "prepare/fail-ready",
+    "actor": "submitter",
+    "fixture": "fail",
+    "process_operation": "readyTask",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "readyTask",
+        "method": "POST",
+        "path": "/v2/workspaces/{workspace_id}/tasks/{task_id}:ready",
+        "runtime_proof": false,
+        "idempotency": true,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 37,
+          "responseBodyBytes": 2345,
+          "requestMetadataBytes": 634,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "prepare/fail-claim",
+    "actor": "submitter",
+    "fixture": "fail",
+    "process_operation": "claimTask",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "claimTask",
+        "method": "POST",
+        "path": "/v2/workspaces/{workspace_id}/tasks/{task_id}:claim",
+        "runtime_proof": true,
+        "idempotency": true,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 158,
+          "responseBodyBytes": 2345,
+          "requestMetadataBytes": 675,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "success/failTask",
+    "actor": "submitter",
+    "fixture": "fail",
+    "process_operation": "failTask",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "failTask",
+        "method": "POST",
+        "path": "/v2/workspaces/{workspace_id}/tasks/{task_id}:fail",
+        "runtime_proof": true,
+        "idempotency": true,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 247,
+          "responseBodyBytes": 2345,
+          "requestMetadataBytes": 674,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "prepare/cancel-create",
+    "actor": "submitter",
+    "fixture": "cancel",
+    "process_operation": "createTask",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "createTask",
+        "method": "POST",
+        "path": "/v2/workspaces/{workspace_id}/tasks",
+        "runtime_proof": false,
+        "idempotency": true,
+        "response_status": 201,
+        "capture_limits": {
+          "requestBodyBytes": 89,
+          "responseBodyBytes": 1617,
+          "requestMetadataBytes": 531,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 201,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "success/cancelTask",
+    "actor": "submitter",
+    "fixture": "cancel",
+    "process_operation": "cancelTask",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "cancelTask",
+        "method": "POST",
+        "path": "/v2/workspaces/{workspace_id}/tasks/{task_id}:cancel",
+        "runtime_proof": false,
+        "idempotency": true,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 75,
+          "responseBodyBytes": 2345,
+          "requestMetadataBytes": 635,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "prepare/requeue-create",
+    "actor": "submitter",
+    "fixture": "requeue",
+    "process_operation": "createTask",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "createTask",
+        "method": "POST",
+        "path": "/v2/workspaces/{workspace_id}/tasks",
+        "runtime_proof": false,
+        "idempotency": true,
+        "response_status": 201,
+        "capture_limits": {
+          "requestBodyBytes": 90,
+          "responseBodyBytes": 1617,
+          "requestMetadataBytes": 531,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 201,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "success/requeueTask",
+    "actor": "submitter",
+    "fixture": "requeue",
+    "process_operation": "requeueTask",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "requeueTask",
+        "method": "POST",
+        "path": "/v2/workspaces/{workspace_id}/tasks/{task_id}:requeue",
+        "runtime_proof": false,
+        "idempotency": true,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 76,
+          "responseBodyBytes": 2345,
+          "requestMetadataBytes": 636,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "success/createMessage",
+    "actor": "submitter",
+    "fixture": "message",
+    "process_operation": "createMessage",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "createMessage",
+        "method": "POST",
+        "path": "/v2/workspaces/{workspace_id}/messages",
+        "runtime_proof": false,
+        "idempotency": true,
+        "response_status": 201,
+        "capture_limits": {
+          "requestBodyBytes": 287,
+          "responseBodyBytes": 1009,
+          "requestMetadataBytes": 534,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 201,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "success/getInbox",
+    "actor": "reviewer",
+    "fixture": "message",
+    "process_operation": "getInbox",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "getInbox",
+        "method": "GET",
+        "path": "/v2/workspaces/{workspace_id}/inbox",
+        "runtime_proof": false,
+        "idempotency": false,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 0,
+          "responseBodyBytes": 3102,
+          "requestMetadataBytes": 492,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "success/ackMessages",
+    "actor": "reviewer",
+    "fixture": "message",
+    "process_operation": "ackMessages",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "ackMessages",
+        "method": "POST",
+        "path": "/v2/workspaces/{workspace_id}/messages:ack",
+        "runtime_proof": false,
+        "idempotency": true,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 116,
+          "responseBodyBytes": 304,
+          "requestMetadataBytes": 538,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "success/getThread",
+    "actor": "reviewer",
+    "fixture": "message",
+    "process_operation": "getThread",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "getThread",
+        "method": "GET",
+        "path": "/v2/workspaces/{workspace_id}/threads/{thread_id}",
+        "runtime_proof": false,
+        "idempotency": false,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 0,
+          "responseBodyBytes": 3102,
+          "requestMetadataBytes": 591,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "success/listTasks",
+    "actor": "submitter",
+    "fixture": "main",
+    "process_operation": "listTasks",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "listTasks",
+        "method": "GET",
+        "path": "/v2/workspaces/{workspace_id}/tasks",
+        "runtime_proof": false,
+        "idempotency": false,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 0,
+          "responseBodyBytes": 8105,
+          "requestMetadataBytes": 492,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "success/listEvents",
+    "actor": "submitter",
+    "fixture": "main",
+    "process_operation": "listEvents",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "listEvents",
+        "method": "GET",
+        "path": "/v2/workspaces/{workspace_id}/events",
+        "runtime_proof": false,
+        "idempotency": false,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 0,
+          "responseBodyBytes": 26605,
+          "requestMetadataBytes": 493,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "success/searchWorkspace",
+    "actor": "submitter",
+    "fixture": "main",
+    "process_operation": "searchWorkspace",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "searchWorkspace",
+        "method": "GET",
+        "path": "/v2/workspaces/{workspace_id}/search",
+        "runtime_proof": false,
+        "idempotency": false,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 0,
+          "responseBodyBytes": 3249,
+          "requestMetadataBytes": 511,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "probe/server-foreign-workspace",
+    "actor": "submitter",
+    "fixture": "server-foreign-workspace",
+    "process_operation": "getWorkspace",
+    "expected_exit": 3,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "getWorkspace",
+        "method": "GET",
+        "path": "/v2/workspaces/{workspace_id}",
+        "runtime_proof": false,
+        "idempotency": false,
+        "response_status": 401,
+        "capture_limits": {
+          "requestBodyBytes": 0,
+          "responseBodyBytes": 234,
+          "requestMetadataBytes": 477,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 401,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "prepare/server-foreign-own-positive",
+    "actor": "submitter",
+    "fixture": "server-foreign-workspace",
+    "process_operation": "getWorkspace",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "getWorkspace",
+        "method": "GET",
+        "path": "/v2/workspaces/{workspace_id}",
+        "runtime_proof": false,
+        "idempotency": false,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 0,
+          "responseBodyBytes": 733,
+          "requestMetadataBytes": 477,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "probe/wrong-workspace",
+    "actor": "submitter",
+    "fixture": "foreign-workspace",
+    "process_operation": "getWorkspace",
+    "expected_exit": 5,
+    "ordinals": [],
+    "expected_status": null,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "prepare/runtime-own-before",
+    "actor": "submitter",
+    "fixture": "runtime-probe",
+    "process_operation": "heartbeatRuntime",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "heartbeatRuntime",
+        "method": "POST",
+        "path": "/v2/workspaces/{workspace_id}/runtimes/{runtime_instance_id}:heartbeat",
+        "runtime_proof": true,
+        "idempotency": true,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 45,
+          "responseBodyBytes": 639,
+          "requestMetadataBytes": 682,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "probe/wrong-runtime",
+    "actor": "submitter",
+    "fixture": "runtime-probe",
+    "process_operation": "heartbeatRuntime",
+    "expected_exit": 5,
+    "ordinals": [],
+    "expected_status": null,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "prepare/runtime-own-after",
+    "actor": "submitter",
+    "fixture": "runtime-probe",
+    "process_operation": "heartbeatRuntime",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "heartbeatRuntime",
+        "method": "POST",
+        "path": "/v2/workspaces/{workspace_id}/runtimes/{runtime_instance_id}:heartbeat",
+        "runtime_proof": true,
+        "idempotency": true,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 45,
+          "responseBodyBytes": 639,
+          "requestMetadataBytes": 682,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "case/settled-no-send",
+    "actor": "submitter",
+    "fixture": "main",
+    "process_operation": null,
+    "expected_exit": 5,
+    "ordinals": [],
+    "expected_status": null,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "case/lost-response-retained",
+    "actor": "submitter",
+    "fixture": "lost-response",
+    "process_operation": "createTask",
+    "expected_exit": 5,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "createTask",
+        "method": "POST",
+        "path": "/v2/workspaces/{workspace_id}/tasks",
+        "runtime_proof": false,
+        "idempotency": true,
+        "response_status": null,
+        "capture_limits": {
+          "requestBodyBytes": 96,
+          "responseBodyBytes": 1617,
+          "requestMetadataBytes": 531,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": null,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "case/restart-no-send",
+    "actor": "submitter",
+    "fixture": "lost-response",
+    "process_operation": null,
+    "expected_exit": 5,
+    "ordinals": [],
+    "expected_status": null,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "prepare/revoke-own-positive",
+    "actor": "submitter",
+    "fixture": "revocation",
+    "process_operation": "getWorkspace",
+    "expected_exit": 0,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "getWorkspace",
+        "method": "GET",
+        "path": "/v2/workspaces/{workspace_id}",
+        "runtime_proof": false,
+        "idempotency": false,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 0,
+          "responseBodyBytes": 733,
+          "requestMetadataBytes": 477,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "case/revoked-after-disable",
+    "actor": "submitter",
+    "fixture": "revocation",
+    "process_operation": "getWorkspace",
+    "expected_exit": 3,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "getWorkspace",
+        "method": "GET",
+        "path": "/v2/workspaces/{workspace_id}",
+        "runtime_proof": false,
+        "idempotency": false,
+        "response_status": 401,
+        "capture_limits": {
+          "requestBodyBytes": 0,
+          "responseBodyBytes": 234,
+          "requestMetadataBytes": 477,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 401,
+    "owner_kind": "process"
+  },
+  {
+    "step_id": "E2/enroll-A",
+    "actor": "foreign",
+    "fixture": "external-proof",
+    "process_operation": "createRuntime",
+    "expected_exit": null,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "createRuntime",
+        "method": "POST",
+        "path": "/v2/workspaces/{workspace_id}/runtimes",
+        "runtime_proof": false,
+        "idempotency": true,
+        "response_status": 201,
+        "capture_limits": {
+          "requestBodyBytes": 35,
+          "responseBodyBytes": 729,
+          "requestMetadataBytes": 534,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 201,
+    "owner_kind": "auxiliary"
+  },
+  {
+    "step_id": "E2/enroll-B",
+    "actor": "foreign",
+    "fixture": "external-proof",
+    "process_operation": "createRuntime",
+    "expected_exit": null,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "createRuntime",
+        "method": "POST",
+        "path": "/v2/workspaces/{workspace_id}/runtimes",
+        "runtime_proof": false,
+        "idempotency": true,
+        "response_status": 201,
+        "capture_limits": {
+          "requestBodyBytes": 35,
+          "responseBodyBytes": 729,
+          "requestMetadataBytes": 534,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 201,
+    "owner_kind": "auxiliary"
+  },
+  {
+    "step_id": "E2/positive-A",
+    "actor": "foreign",
+    "fixture": "external-proof",
+    "process_operation": "heartbeatRuntime",
+    "expected_exit": null,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "heartbeatRuntime",
+        "method": "POST",
+        "path": "/v2/workspaces/{workspace_id}/runtimes/{runtime_instance_id}:heartbeat",
+        "runtime_proof": true,
+        "idempotency": true,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 30,
+          "responseBodyBytes": 639,
+          "requestMetadataBytes": 682,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "auxiliary"
+  },
+  {
+    "step_id": "E2/negative-B",
+    "actor": "foreign",
+    "fixture": "external-proof",
+    "process_operation": "heartbeatRuntime",
+    "expected_exit": null,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "heartbeatRuntime",
+        "method": "POST",
+        "path": "/v2/workspaces/{workspace_id}/runtimes/{runtime_instance_id}:heartbeat",
+        "runtime_proof": true,
+        "idempotency": true,
+        "response_status": 401,
+        "capture_limits": {
+          "requestBodyBytes": 30,
+          "responseBodyBytes": 234,
+          "requestMetadataBytes": 682,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 401,
+    "owner_kind": "auxiliary"
+  },
+  {
+    "step_id": "E2/positive-B",
+    "actor": "foreign",
+    "fixture": "external-proof",
+    "process_operation": "heartbeatRuntime",
+    "expected_exit": null,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "heartbeatRuntime",
+        "method": "POST",
+        "path": "/v2/workspaces/{workspace_id}/runtimes/{runtime_instance_id}:heartbeat",
+        "runtime_proof": true,
+        "idempotency": true,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 30,
+          "responseBodyBytes": 639,
+          "requestMetadataBytes": 682,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "auxiliary"
+  },
+  {
+    "step_id": "control/revoke-submitter",
+    "actor": "human",
+    "fixture": "revocation",
+    "process_operation": "revokeCredential",
+    "expected_exit": null,
+    "ordinals": [
+      {
+        "ordinal": 0,
+        "operation": "revokeCredential",
+        "method": "POST",
+        "path": "/v2/workspaces/{workspace_id}/credentials/{credential_id}:revoke",
+        "runtime_proof": false,
+        "idempotency": true,
+        "response_status": 200,
+        "capture_limits": {
+          "requestBodyBytes": 48,
+          "responseBodyBytes": 870,
+          "requestMetadataBytes": 783,
+          "responseMetadataBytes": 347,
+          "binaryBytesSeparateArtifactCounter": 0
+        }
+      }
+    ],
+    "expected_status": 200,
+    "owner_kind": "auxiliary"
+  }
+]

@@ -22,7 +22,7 @@ const hasSecret=text=>/\bBearer\s+[A-Za-z0-9_-]{20,}|cfhub_(?:session|login)=[A-
 const hasPrivateOrigin=text=>[...text.matchAll(/https?:\/\/[^\s"<>]+/g)].some(([url])=>{try{const host=new URL(url).hostname;return !host.endsWith('.invalid')&&!['nodejs.org','github.com','registry.npmjs.org','developers.cloudflare.com','playwright.dev'].includes(host);}catch{return true;}});
 /** Structural/byte verification only. The controller must inspect the actual runs and independent review. */
 export function verifyRelease(input,files){
- if(input?.format_version===2&&input?.round==='R2')return verifyR2Release(input,{files});
+ if([2,3].includes(input?.format_version)&&input?.round==='R2')return verifyR2Release(input,{files});
  const findings=[];const fail=(code,path,message)=>findings.push({code,path,message});
  let serialized;try{serialized=JSON.stringify(input);}catch{fail('INVALID_EVIDENCE','/','Evidence must be finite JSON.');return {passed:false,findings};}
  if(typeof serialized!=='string'||Buffer.byteLength(serialized)>4*1024*1024){fail('EVIDENCE_LIMIT','/','Evidence exceeds its bounded representation.');return {passed:false,findings};}

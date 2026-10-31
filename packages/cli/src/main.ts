@@ -23,7 +23,7 @@ function validateStateRoot(root:string,creating:boolean):void {
 }
 /** Explicit CLI control flow. Network attempts and durable writes are tracked so
  * later failures cannot be misreported as pre-network input rejection. */
-export async function runCli(argv:readonly string[],dependencies:CliDependencies):Promise<CliOutput> {
+async function runCliCore(argv:readonly string[],dependencies:CliDependencies,cleanup:{status:CliCleanupStatus}):Promise<CliOutput> {
  let provider:ProtectedCredentialProvider|undefined,mutations:DurableMutations|undefined,store:UploadStore|undefined,journal:Journal|undefined;
  let effect=false,retainedDiagnostic='';
  const finish=(output:CliOutput):CliOutput=>({...output,stderr:retainedDiagnostic+output.stderr});
@@ -38,7 +38,7 @@ export async function runCli(argv:readonly string[],dependencies:CliDependencies
   const keyOptions={...(options.idempotencyKey?{idempotencyKey:options.idempotencyKey}:{}),interactive};
   let input:Record<string,unknown>={...parsed.input};
   if(parsed.kind==='native'){
-   if(options.inputFile)input={...input,body:readInputFile(options.inputFile)};
+   if(options.inputFile)input={...input,body:readInputFile(options.inputFile,options.inputSha256)};
    prepareNativeOperation(context.origin!,context.workspaceId!,parsed.operation!,input);
    if(clientOperations[parsed.operation!].idempotency&&!options.idempotencyKey&&!interactive)rejected();
    if(options.idempotencyKey!==undefined&&(options.idempotencyKey.length>256||! /^[\x21-\x7e]+$/.test(options.idempotencyKey)))rejected();
@@ -99,7 +99,22 @@ export async function runCli(argv:readonly string[],dependencies:CliDependencies
   if(result.ok&&hold){if(operation==='stageArtifact')await uploads().recordStageReceipt(hold.id,result.data as Artifact,durable,provider);if(operation==='commitArtifact')await uploads().settleCommit(hold.id,result.data as Artifact,durable,provider);}
   return present(result,operation==='createRuntime');
  }catch{return finish(localOutput(effect?'uncertain':'rejected'));}
- finally{for(const resource of [mutations,journal,store,provider])try{resource?.close();}catch{/* Do not replace a settled native outcome with a retry instruction. */}}
+ finally{for(const resource of [mutations,journal,store,provider])try{resource?.close();}catch{cleanup.status='cleanup-unknown';/* Public settled outcome stays unchanged. */}}
+}
+
+export type CliCleanupStatus='closed'|'cleanup-unknown';
+/** Internal observation of the SAME invocation, not a retry or resource override.
+ * Observes finally-closes of acquired resources only. A constructor that throws
+ * before returning can hide partial cleanup; closed does not prove that cleanup.
+ */
+export async function runCliWithCleanup(argv:readonly string[],dependencies:CliDependencies):Promise<{output:CliOutput;cleanup:CliCleanupStatus}> {
+ const cleanup:{status:CliCleanupStatus}={status:'closed'};
+ const output=await runCliCore(argv,dependencies,cleanup);
+ return {output,cleanup:cleanup.status};
+}
+/** Preserve historical public output and settled verdict even when cleanup fails. */
+export async function runCli(argv:readonly string[],dependencies:CliDependencies):Promise<CliOutput> {
+ return (await runCliWithCleanup(argv,dependencies)).output;
 }
 
 /** Static exact global help; it does not resolve environment or inspect state. */
@@ -114,7 +129,7 @@ Native commands:
  messages send | ack; inbox list; threads show ID
  artifacts list | stage | show ID | upload ID | download ID | commit ID
  events list; search --query TEXT
-Bodies: --input FILE. Mutations: --idempotency-key KEY (required unless both TTYs and not --json).
+Bodies: --input FILE; optional --input-sha256 LOWERCASE_SHA256 pins the exact file bytes before effects (body commands only). Mutations: --idempotency-key KEY (required unless both TTYs and not --json).
 List queries, where supported: --cursor CURSOR --limit INTEGER; tasks --state --project-id; inbox --acknowledged true|false; artifacts --task-id; events --after-sequence (excludes cursor); search --query --kind.
 Stage: --content-id ID --input FILE. Upload: exactly --content-id ID or --file FILE. Download: --output NEW_FILE.
 Local controls:

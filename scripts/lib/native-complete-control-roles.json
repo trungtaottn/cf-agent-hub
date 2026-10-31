@@ -1,0 +1,11 @@
+{
+  "control/authorize": {"service":{"installation":"installation-statement","service_binding":"service-authority-binding"},"host":["protected_installation","current_custody"]},
+  "control/provision": {"service":{"primary_fixture":"fixture-admission","foreign_fixture":"fixture-admission","human_binding":"human-baseline-binding"},"host":["submitter_store","reviewer_store","foreign_store","artifact_source","bootstrap_receipts"]},
+  "control/observe-success-coverage": {"service":{"observed_roster":"service-observation-roster"},"host":["native_success_roster","auxiliary_process_roster"]},
+  "control/observe-server-foreign-fixture": {"service":{"primary_grant":"current-authority-grant-proof","foreign_state":"selected-state","foreign_exclusion":"workspace-exclusion"},"host":["foreign_store"]},
+  "control/observe-other-runtime": {"service":{"reviewer_runtime":"runtime-binding","submitter_runtime":"runtime-binding","current_grant":"current-authority-grant-proof"},"host":["current_store_binding"]},
+  "control/observe-settled-intent": {"service":{"create_terminal_attestation":"process-custody"},"host":["settled_journal","original_create"]},
+  "control/arm-lost-response": {"service":{"sealed_target":"sealed-fault-target","arm_ack":"fault-acknowledgment","before_state":"selected-state"},"host":["sealed_host_input"]},
+  "control/disarm-and-observe-lost": {"service":{"server_commit":"server-commit","client_terminal_attestation":"process-custody","disarm_ack":"fault-acknowledgment","drain":"fault-drain"},"host":["client_terminal","retained_journal"]},
+  "control/revoke-submitter": {"service":{"admitted_positive":"independent-observation","current_human_authority":"human-authorization","request":"transport-request","acknowledgment":"transport-response","before_grant":"selected-state","after_grant":"selected-state"},"host":["positive_process","positive_observation","disable_observation"]}
+}

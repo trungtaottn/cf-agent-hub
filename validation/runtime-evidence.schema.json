@@ -8,6 +8,9 @@
     },
     {
       "$ref": "#/$defs/r2_root"
+    },
+    {
+      "$ref": "https://example.invalid/r2-runtime-evidence.schema.json#/$defs/root_v3"
     }
   ],
   "$defs": {

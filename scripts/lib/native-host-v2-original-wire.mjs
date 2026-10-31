@@ -1,0 +1,29 @@
+/** Pure signed-original codec. Installed provenance and sequencing are separate. */
+import {createHash,createPublicKey,sign,verify,KeyObject} from 'node:crypto';
+import {types} from 'node:util';
+import {getNativeScenario} from './native-r2-scenario.mjs';
+const reject=()=>{throw Error('NATIVE_ORIGINAL_WIRE_REJECTED');};
+const check=value=>{if(!value)reject();};
+const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
+const canonical=value=>value===null||typeof value!=='object'?JSON.stringify(value):Array.isArray(value)?'['+value.map(canonical).join(',')+']':'{'+Object.keys(value).sort().map(key=>JSON.stringify(key)+':'+canonical(value[key])).join(',')+'}';
+const domain='AGENTHUB_NATIVE_HOST_ORIGINAL_V2\n';
+const caps=Object.freeze({'sql-canonical':16384,'http-request-raw':65536,'http-response-raw':65536,'journal-source-projection':4096,'source-reader-projection':65536});
+const ids=['service_id','run_id','instance_id','invocation_id','request_id','producer_id','record_id'];
+const expectedKeys=[...ids,'descriptor_sha256','step_id','sequence','kind','byte_size','sha256'];
+const envelopeKeys=['type','version',...expectedKeys,'payload_base64','signature_base64'];
+const steps=new Set(getNativeScenario().steps.map(step=>step.id));
+function closed(value,keys){check(value&&!types.isProxy(value)&&Object.getPrototypeOf(value)===Object.prototype);const ds=Object.getOwnPropertyDescriptors(value);check(Reflect.ownKeys(ds).length===keys.length);return Object.fromEntries(keys.map(key=>{check(ds[key]?.enumerable&&Object.hasOwn(ds[key],'value'));return[key,ds[key].value];}));}
+function metadata(value){const v=closed(value,expectedKeys);for(const key of ids)check(typeof v[key]==='string'&&v[key].length>=1&&v[key].length<=128&&!/[^A-Za-z0-9_-]/.test(v[key]));for(const key of ['descriptor_sha256','sha256'])check(typeof v[key]==='string'&&v[key].length===64&&!/[^a-f0-9]/.test(v[key]));check(typeof v.step_id==='string'&&steps.has(v.step_id));check(Number.isSafeInteger(v.sequence)&&v.sequence>0);check(typeof v.kind==='string'&&Object.hasOwn(caps,v.kind));check(Number.isSafeInteger(v.byte_size)&&v.byte_size>=0&&v.byte_size<=caps[v.kind]);return v;}
+const typed=Object.getPrototypeOf(Uint8Array.prototype),getLength=Object.getOwnPropertyDescriptor(typed,'byteLength').get,getBuffer=Object.getOwnPropertyDescriptor(typed,'buffer').get;
+function bytes(value,max){check(value&&!types.isProxy(value)&&[Buffer.prototype,Uint8Array.prototype].includes(Object.getPrototypeOf(value)));const n=getLength.call(value);check(n<=max&&Object.getPrototypeOf(getBuffer.call(value))===ArrayBuffer.prototype);check(Reflect.ownKeys(value).every(key=>typeof key==='string'&&/^(0|[1-9][0-9]*)$/.test(key)));return Buffer.from(value);}
+function base64(value,size){check(typeof value==='string'&&value.length===4*Math.ceil(size/3)&&! /[^A-Za-z0-9+/=]/.test(value));const decoded=Buffer.from(value,'base64');check(decoded.length===size&&decoded.toString('base64')===value);return decoded;}
+const longestStep=[...steps].sort((a,b)=>b.length-a.length)[0];
+const maximal={type:'native-host-original',version:2,...Object.fromEntries(ids.map(key=>[key,'z'.repeat(128)])),descriptor_sha256:'f'.repeat(64),step_id:longestStep,sequence:Number.MAX_SAFE_INTEGER,kind:'source-reader-projection',byte_size:65536,sha256:'f'.repeat(64),payload_base64:'/'.repeat(87382)+'==',signature_base64:'/'.repeat(86)+'=='};
+/** Independent field maxima, not a claim that a live original reaches this shape. */
+export const NATIVE_ORIGINAL_WIRE_MAX=Buffer.byteLength(canonical(maximal));
+check(NATIVE_ORIGINAL_WIRE_MAX<131072);
+function signed(envelope){return Buffer.from(domain+canonical(envelope));}
+const keyType=Object.getOwnPropertyDescriptor(KeyObject.prototype,'type')?.get;
+function privateKey(value){check(value&&!types.isProxy(value)&&value instanceof KeyObject&&typeof keyType==='function');const ds=Object.getOwnPropertyDescriptors(value);check(!['type','asymmetricKeyType','export'].some(k=>Object.hasOwn(ds,k)));check(keyType.call(value)==='private');const publicKey=createPublicKey(value);check(publicKey.asymmetricKeyType==='ed25519');return value;}
+export function encodeNativeOriginal(input){try{const v=closed(input,['expected','bytes','privateKey']),expected=metadata(v.expected),raw=bytes(v.bytes,caps[expected.kind]);check(raw.length===expected.byte_size&&hash(raw)===expected.sha256);const signingKey=privateKey(v.privateKey);const envelope={type:'native-host-original',version:2,...expected,payload_base64:raw.toString('base64')};const signature=sign(null,signed(envelope),signingKey);check(signature.length===64);const wire=Buffer.from(canonical({...envelope,signature_base64:signature.toString('base64')}));check(wire.length<=NATIVE_ORIGINAL_WIRE_MAX);return wire;}catch{reject();}}
+export function verifyNativeOriginal(input){try{const v=closed(input,['expected','wire','publicKeyDer']),expected=metadata(v.expected),wire=bytes(v.wire,NATIVE_ORIGINAL_WIRE_MAX);check(wire.length>0);const text=new TextDecoder('utf8',{fatal:true,ignoreBOM:true}).decode(wire),envelope=closed(JSON.parse(text),envelopeKeys);check(canonical(envelope)===text&&envelope.type==='native-host-original'&&envelope.version===2);const {type,version,payload_base64,signature_base64,...observed}=envelope;metadata(observed);for(const key of expectedKeys)check(observed[key]===expected[key]);const der=bytes(v.publicKeyDer,44);check(der.length===44);const key=createPublicKey({key:der,type:'spki',format:'der'});check(key.asymmetricKeyType==='ed25519'&&key.export({type:'spki',format:'der'}).equals(der));const signature=base64(signature_base64,64);check(verify(null,signed({type,version,...observed,payload_base64}),key,signature));const raw=base64(payload_base64,expected.byte_size);check(hash(raw)===expected.sha256);return Object.freeze({scope:'signed-original-statement',installedAuthority:false,metadata:Object.freeze({...expected}),bytes:raw});}catch{reject();}}

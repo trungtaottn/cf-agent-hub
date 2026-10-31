@@ -1,0 +1,9 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import * as session from '../../scripts/lib/native-fixture-session.mjs';
+test('fixture session factory exists',()=>assert.equal(typeof session.createFixtureSession,'function'));
+import {policy} from './fixture-test-values.mjs';
+test('session serializes actual pending work and consumes uncertain attempt',async()=>{const s=session.createFixtureSession(policy());let release;const held=new Promise(r=>release=r);const first=s.execute(undefined,async(signal,admit)=>{admit({sequence:1,operation:'preflight',request_id:'r1'});await held;return 1;});assert.throws(()=>s.execute(undefined,async()=>{}));release();await assert.rejects(first);assert.equal(s.snapshot().status,'failed');assert.equal(s.snapshot().pending,0);await s.close();});
+test('quota and order reject missing preflight before backend work',async()=>{const s=session.createFixtureSession(policy());let touched=false;await assert.rejects(s.execute(undefined,async(_,admit)=>{admit({sequence:1,operation:'observe-selected-state',request_id:'r1'});touched=true;}));assert.equal(touched,false);await s.close();});
+test('aborted actual operation cannot be reported settled until its promise finishes',async()=>{const s=session.createFixtureSession(policy()),abort=new AbortController();let release;const p=s.execute(abort.signal,async(_,admit)=>{admit({sequence:1,operation:'preflight',request_id:'r1'});await new Promise(r=>release=r);});await new Promise(r=>setImmediate(r));abort.abort();await assert.rejects(p);assert.equal(s.snapshot().pending,1);release();await s.close();assert.equal(s.snapshot().pending,0);});
+test('failed body cancellation cannot be reported as closed cleanup',async()=>{const s=session.createFixtureSession(policy());s.track(Promise.reject(Error('cancel failed')));await new Promise(r=>setImmediate(r));await assert.rejects(s.close(),/CLEANUP_UNKNOWN/);assert.notEqual(s.snapshot().status,'closed');});

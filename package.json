@@ -34,7 +34,15 @@
     "verify:anchor-bindings": "node scripts/verify-anchor-bindings.mjs",
     "test:anchor-store": "vitest run --config workers/recovery-anchor/vitest.store.config.ts",
     "test:current-provider-operator": "vitest run --config vitest.current-provider-operator.config.ts",
-    "test:anchor-provider": "vitest run --config vitest.anchor-provider.config.ts"
+    "test:anchor-provider": "vitest run --config vitest.anchor-provider.config.ts",
+    "test:native:r2": "node scripts/test-native-r2.mjs",
+    "test:native:r2:source": "node --test test/native-r2/*.test.mjs",
+    "test:native:r2:observer-local": "node scripts/test-native-r2-observer-local.mjs",
+    "build:native-host": "node scripts/build-native-host.mjs",
+    "check:native-host": "node scripts/check-native-host.mjs",
+    "test:native:r2:service-source": "node --test --test-concurrency=1 test/native-fixture/complete-owned-key.test.mjs test/native-fixture/complete-service-worker-import.test.mjs test/native-fixture/complete-service-worker-entry.test.mjs test/native-fixture/complete-service-ingress.test.mjs test/native-fixture/native-complete-service.test.mjs test/native-fixture/native-complete-service-schedule.test.mjs",
+    "test:native:r2:required-controller": "vitest run --config vitest.required-controller.config.ts",
+    "test:native:r2:service-sources": "vitest run --config vitest.service-sources.config.ts"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "1.4.7",

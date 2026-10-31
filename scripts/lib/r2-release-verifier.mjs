@@ -1,9 +1,9 @@
 import {createHash} from 'node:crypto';
 import {createR2Reader,R2_LIMITS,safeR2Path} from './r2-evidence-loader.mjs';
-import {validR2Root,validR2Command,receiptPolicies} from './r2-schema-registry.mjs';
+import {validVersionedR2Root,validR2Command,receiptPolicies,receiptPoliciesV3} from './r2-schema-registry.mjs';
 import {R2_FEATURES,R2_ROLES,R2_CONFIG_PATHS,R2_COMPOSITION,R2_KINDS,R2_LIVE_KINDS,componentNames} from './r2-release-policy.mjs';
 import {ALL_FEATURES} from './release-policy.mjs';
-import {validatePreparations,validateCaseFamily,canonicalCaseSubject} from './r2-case-policy.mjs';
+import {validatePreparations,validateCaseFamily,validatePreparationsV2,validateCaseFamilyV2,canonicalCaseSubject} from './r2-case-policy.mjs';
 import {validateRecovery,validateResultGraph,references as recoveryReferences} from './r2-recovery-evidence.mjs';
 import {validatePlatform,references as platformReferences} from './r2-platform-evidence.mjs';
 export const canonicalR2=value=>value===null||typeof value!=='object'?JSON.stringify(value):Array.isArray(value)?'['+value.map(canonicalR2).join(',')+']':'{'+Object.keys(value).sort().map(key=>JSON.stringify(key)+':'+canonicalR2(value[key])).join(',')+'}';
@@ -14,14 +14,17 @@ const by=key=>(a,b)=>a[key]<b[key]?-1:a[key]>b[key]?1:0;
 const sensitive=text=>/\bBearer\s+[A-Za-z0-9_-]{20,}|cfhub_(?:session|login)=[A-Za-z0-9_-]{20,}|eyJ[A-Za-z0-9_-]{12,}\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+|-----BEGIN (?:RSA |EC )?PRIVATE KEY-----/i.test(text);
 const privateOrigin=text=>[...text.matchAll(/https?:\/\/[^\s"<>]+/g)].some(([value])=>{try{const host=new URL(value).hostname;return !host.endsWith('.invalid')&&!['nodejs.org','github.com','registry.npmjs.org','developers.cloudflare.com','playwright.dev'].includes(host);}catch{return true;}});
 const ROOT_RECEIPTS=Object.freeze({review:'r2-review',audit:'r2-audit',deployment:'r2-deployment',preparations:'r2-case-preparations',isolation:'r2-isolation',gates:'r2-gates',native:'r2-native',browser:'r2-browser',recovery:'r2-recovery',result_graph:'r2-result-graph',platform:'r2-platform'});
-const evidenceReservation=(ref,type)=>({ref,category:'evidence',type,bound:receiptPolicies[type]?.bound??0});
+
 /** Byte/structural verification only. Protected original records require independent inspection. */
 export function verifyR2Release(input,options){
  const findings=[];const fail=(code,path='/')=>findings.push({code,path,message:'R2 evidence does not satisfy the closed verification policy.'});
  const done=()=>({passed:findings.length===0,scope:'structural-only',acceptance:'pending-external-inspection',findings});
  let serialized;try{serialized=JSON.stringify(input);}catch{fail('R2_SCHEMA_INVALID');return done();}
  if(typeof serialized!=='string'||Buffer.byteLength(serialized)>R2_LIMITS.root){fail('R2_BUDGET');return done();}
- if(!validR2Root(input)){fail('R2_SCHEMA_INVALID');return done();}
+ if(!validVersionedR2Root(input)){fail('R2_SCHEMA_INVALID');return done();}
+ const policies=input.format_version===3?receiptPoliciesV3:receiptPolicies;
+ const rootReceipts=input.format_version===3?{...ROOT_RECEIPTS,preparations:'r2-case-preparations-v2'}:ROOT_RECEIPTS;
+ const evidenceReservation=(ref,type)=>({ref,category:'evidence',type,bound:policies[type]?.bound??0});
  if(sensitive(serialized)||privateOrigin(serialized))fail('R2_SENSITIVE_EVIDENCE');
  try{
   const reader=createR2Reader({...options,releaseId:input.release_id});
@@ -34,7 +37,7 @@ export function verifyR2Release(input,options){
   const batch=input.files.map(ref=>({ref,category:'source',type:'source'}));
   for(const component of input.components)for(const file of component.files)batch.push({ref:file.artifact,category:component.role==='operator-cli-source'?'source':'component',type:component.role==='operator-cli-source'?'source':component.role});
   for(const command of input.commands)batch.push({ref:command.artifact,category:'evidence',type:'command',bound:R2_LIMITS.command});
-  for(const [key,type]of Object.entries(ROOT_RECEIPTS))batch.push(evidenceReservation(input[key],type));
+  for(const [key,type]of Object.entries(rootReceipts))batch.push(evidenceReservation(input[key],type));
   // Whole known root batch admitted before any payload read. Nested typed batches
   // are admitted after bounded parent parsing, before reading their children.
   reader.reserveAll(batch);
@@ -74,14 +77,14 @@ export function verifyR2Release(input,options){
    if(!sameSet(command.case_ids,command.subjects.cases.map(x=>x.case_id)))fail('R2_COMMAND_CASES');
    commands.set(command.id,{...command,prepared_subjects:command.subjects});kinds.add(command.kind);
    for(const result of command.results){
-    if(!receiptPolicies[result.type]||ownership.has(result.artifact.path))fail('R2_RESULT_OWNERSHIP');
+    if(!policies[result.type]||ownership.has(result.artifact.path))fail('R2_RESULT_OWNERSHIP');
     ownership.set(result.artifact.path,{command_id:command.id,...result});
    }
   }
   for(const kind of R2_KINDS)if(!kinds.has(kind))fail('R2_MISSING_COMMAND_KIND');
   const receipts=new Map(),records=new Set();
   const readReceipt=(ref,type)=>{
-   const policy=receiptPolicies[type];if(!policy){fail('R2_RECEIPT_TYPE');return null;}
+   const policy=policies[type];if(!policy){fail('R2_RECEIPT_TYPE');return null;}
    const value=reader.json(ref,'evidence',type,policy.bound);
    if(!policy.validate(value)){fail('R2_RECEIPT_SCHEMA');return null;}
    const receiptText=JSON.stringify(value);
@@ -93,7 +96,7 @@ export function verifyR2Release(input,options){
    if(records.has(value.record_sha256))fail('R2_DUPLICATE_RECORD');records.add(value.record_sha256);
    receipts.set(ref.path,value);return value;
   };
-  const values={};for(const [key,type]of Object.entries(ROOT_RECEIPTS))values[key]=readReceipt(input[key],type);
+  const values={};for(const [key,type]of Object.entries(rootReceipts))values[key]=readReceipt(input[key],type);
   const nested=[...recoveryReferences(values.recovery),...platformReferences(values.platform)];
   reader.reserveAll(nested.map(({ref,type,maxBytes})=>({...evidenceReservation(ref,type),bound:maxBytes})));
   for(const {ref,type}of nested)readReceipt(ref,type);
@@ -109,8 +112,8 @@ export function verifyR2Release(input,options){
   if(values.platform)findings.push(...validatePlatform(values.platform,context));
   if(values.preparations){
    const caseContext={commands,preparations:values.preparations,subjectDigests:new Map(values.preparations.subjects.map(x=>[x.case_id,hashR2(canonicalCaseSubject(x.subject))])),workspaceId:input.environment.workspace_id,configEpoch:input.config_epoch,nativeExecutableSha256:components.find(x=>x.role==='native-cli')?.files[0]?.artifact.sha256,uiAssetsSha256:hashR2(canonicalR2(components.find(x=>x.role==='ui-assets')?.files??[])),resultGraphSha256:input.result_graph.sha256};
-   findings.push(...validatePreparations(values.preparations,caseContext));
-   for(const family of ['isolation','gates','native','browser'])if(values[family])findings.push(...validateCaseFamily(values[family],caseContext));
+   findings.push(...(input.format_version===3?validatePreparationsV2:validatePreparations)(values.preparations,caseContext));
+   for(const family of ['isolation','gates','native','browser'])if(values[family])findings.push(...(input.format_version===3?validateCaseFamilyV2:validateCaseFamily)(values[family],caseContext));
   }
  }catch(error){fail(typeof error?.message==='string'&&/^R2_[A-Z_]+$/.test(error.message)?error.message:'R2_EVIDENCE_UNAVAILABLE');}
  for(const finding of findings)if(typeof finding.path!=='string')finding.path='/typed-evidence';

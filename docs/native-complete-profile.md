@@ -1,0 +1,397 @@
+# Fixed complete native fixture profile
+
+Status: fixed required-profile source composition implemented; installed end-to-end execution and native acceptance pending.
+
+This is an additive source contract for issue 48, not an installed service, a
+successful native run, or release acceptance. Existing configuration version 1,
+static service version 2, R1 evidence, and native case requirements are unchanged.
+
+## One profile, separate units
+
+`native-r2-complete-prepared-v1` is a closed profile inside version 2. Its source
+manifest contains all 68 scenario steps, both external obligations, 56 process
+windows and 27 input publications. It does not offer a smaller reader-only profile.
+
+The compiled ledger reserves **489 logical commands**, **46 mutation attempts**,
+**174 artifact bytes** and **22,890,667 cumulative logical output bytes**. Commands
+are not OS processes: they include scenario, evidence, service and bootstrap
+admissions. An uncertain attempt is not refunded. Service calls (370), application
+HTTP requests (57), private SELECT admissions (2,555), canonical private bytes
+(7,888,422), process output bytes (188,416), and two-pass scanner raw bytes (376,832)
+are different dimensions. None is a peak-memory or universal product-limit claim.
+
+The fixed artifact is the 29 UTF-8 bytes `Native conformance artifact.` followed by
+one newline. The six logical artifact windows reserve 174 bytes. Product support
+for larger or empty artifacts is unchanged; this particular fixture is nonempty.
+
+Release packing remains separately bounded by 512 originals, 65,536 bytes per
+original and the cumulative 16 MiB cap. The selected ledger plans 509 originals,
+a separate structural fragment and reference-only wrapper, totaling 11,019,596
+bytes. Logical work includes repeated transfers and therefore exceeds release
+size. These are reviewed reservations, not produced evidence or measured native
+performance. No complete report is emitted by these new contract modules.
+
+## Configuration and commitments
+
+`validateCompleteConfig` is a separate structural validator. It accepts only
+version 2 with the exact profile and compiled canonical `fixture_sha256` and
+`family_ledger_sha256`. The eventual report field `ledger_sha256` is a different
+schema field, not an accepted configuration alias. The fixture manifest pins
+source recipe identities, constrained substitutions, fixed labels and configuration
+choices, the exact SQL catalog and process output offers. Actual fixture state,
+installed trust, current grants and protected custody still require independent
+admission; matching a digest does not establish them.
+
+The configuration contains exactly ordered submitter/reviewer actors and one
+separate `server-foreign-workspace` store using the same submitter identity. No
+native X actor/store or tuple-only replacement stores are silently provisioned.
+Paths must be normalized and nonoverlapping. The complete validator uses bounded,
+descriptor-only copies and rejects proxies, accessors and unknown fields before
+using them. It does not replace or relax `validateNativeConfig` version 1.
+
+Duration 1–300,000 ms is only a structural range. Actual installed remaining
+lifetime, ordinary 60-second run lease, 90-second runtime presence and cleanup
+requirements remain independent. No hidden heartbeat, renewed authority or
+successful 300-second run is implied.
+
+## Private selected-state component
+
+`workers/native-fixture/selected-state.ts` runs only the 34 source-owned literal
+SELECT definitions against supplied owned Durable Object storage. It atomically
+reserves an entire phase before SQL, uses guarded bounded projections and overflow
+lookahead, enforces each selector's narrower fixture canonical cap, and poisons on
+failure without refund. Actual keyed outcome identities come from a bounded SQL
+index, not a response-derived filter. Retaining a local artifact does not invent
+server observations.
+
+This is a private source component, **not an installed Worker endpoint**. It makes
+no authentication, grant, fixture-membership or semantic admission claim. The
+future coordinator must bind actual prepared identities and causality, and divide
+the global reservation between P/F readers. Creating two readers with each full
+allowance does not enforce a shared global budget. Local workerd tests exercise
+real SQLite, while callback lifecycle adversarial tests use an explicitly labeled
+source fake; neither establishes an installed independent observer.
+
+## Current gates — 2026-10-30
+
+The fixed required-profile service, phase controls, recorder/report-2 dispatch,
+protected entry composition and bounded output publisher are now implemented.
+See the [current task boundary](r2-task-plans/issue-048.md#current-source-boundary-and-next-operator-interface)
+and [service attachment](native-complete-service.md). Earlier implementation-stage
+descriptions of future coordination are historical notes, not additional
+missing adapter APIs. Source tests and the actual local service schedule do not
+prove the complete protected factory run: actual CLI/store/Journal/artifact/HTTPS
+execution and final original/report publication still require eligible installed
+authority and end-to-end verification.
+
+The full 68-step profile remains unavailable while its three tuple-only controls
+have no authentic producer: slot-only, generation-only and principal-only
+replacement. The source capability guard rejects them before effects; caller
+`supported: true` assertions cannot override it. The owner's 2026-10-30 decision
+allows only these three obligations to remain deferred and unverified until R4
+for the R2 merge gate. The separately closed required profile omits their six
+control/probe slots; the full profile and original obligations are preserved.
+This is neither a passing result nor a security-guard change.
+
+Actual eligible runtime/store custody, independent installed trust and scoped
+operator-provided materials remain installation inputs. Formal acceptance after
+R4 does not replace source review, CI or authentic native evidence. Historical
+statements that the fixed composition still required implementation, or that no
+owner waiver existed, describe the initial profile slice and are superseded only
+by this dated status reconciliation.
+
+## Source fixture admission and full-profile framing
+
+The private `fixture-admission.ts` component now captures one actual P or F
+baseline in a single storage transaction, validates the fixed deployment recipe,
+current static rows and existing human session correlations, and returns a
+source-only timing/fence summary. Hashing after the transaction does not make the
+snapshot current again. Expiry is rechecked after hashing; actual authentication
+and current fences still require normal product checks before any effect. The
+stored CSRF digest is state correlation, not human-request authentication.
+
+A reviewed catalog correction makes HG select the whole workspace's human grants
+with one accepted row and a second-row overflow lookahead. The original
+expected-principal filter could hide an additional principal. The literal query,
+parameter list and fixture commitment changed; selector count, row/byte limits and
+all phase reservations did not. Actual P-one/F-none negatives now cover another
+principal. This is a source correctness correction, not an acceptance waiver or
+protocol-version change. Earlier candidate commitments remain historical; new
+complete configurations must bind this candidate's compiled commitment.
+
+The source policy codec fixes the full 70-obligation roster, exact run context and
+original admission lifetime. The preparation codec selects the existing 39 typed
+subjects, 17 null-subject process windows, 27 input windows, six artifact variants
+and fixed journal states by source step. Post-enrollment main-store preparations
+require runtime/proof presence; the separate foreign store stays unbound. Presence
+is not proof that an ID or credential is current. `foreign_runs` remains null in
+this particular complete native fixture; other evidence schemas are unchanged.
+
+The request codec rejects unknown fields, role substitutions and oversized streams.
+It checks the selected wire cap and combined declared stream sizes before decoding
+base64, then verifies actual decoded length and digest. Only the provision control
+accepts the exact private S/R/X credential and existing human cookie/CSRF handoff;
+those parsed values must never enter public logs or evidence. Other controls
+cannot carry that lane. Hash references still require genuine service-owned
+resolution, not merely syntactically valid SHA strings.
+
+The fixed lifecycle schedule has 370 logical dispatch admissions. Immediate scans
+follow each completed process before typed observation; final scans follow inventory
+sealing. E1/E2 are inserted at their original causal boundaries. Concurrent,
+duplicate or future calls poison the owner without retry/refund. Actual callbacks
+remain owned after a caller deadline. Failure cleanup uses the same single close
+allowance, counts pending cleanup, and accepts only an explicit validated closed
+receipt; fulfilled unknown or malformed cleanup cannot become closed. This source
+owner is not a network parser: actual incoming HTTP bytes and bodies need their
+separate transport ownership and cumulative reservation.
+
+Framing alone does not supply the installed attachment, authentic control/observer
+joins, complete service dispatch, fixed host factory or report-2 assembly. Those
+remain pending integration, alongside the unchanged three unavailable tuple
+capabilities and genuine operator installation inputs. A successful source-fake
+370-callback lifecycle test is not a successful 370-call native execution.
+
+## Owner decision — 2026-10-30
+
+The owner approved deferring the three tuple-only cases from the **R2 merge gate**
+to R4 acceptance. The cases remain **unverified**, not passed, and security guards
+are unchanged. This supersedes earlier pending-waiver wording above; the original
+full roster and its historical evidence are retained.
+
+The decision does not waive unfinished R2 source, other verification, independent
+review or CI, and does not establish native or global release acceptance. Any
+reduced required R2 execution plan must be explicitly reviewed and documented
+before implementation; this documentation change does not enable such a run.
+Ordered merging remains conditional on completing those remaining obligations.
+
+## Required R2 execution profile
+
+The separately compiled `native-r2-required-prepared-v1` discriminator implements
+the dated decision above. It removes exactly the three tuple controls and their
+three associated local probes. The full `native-r2-complete-prepared-v1` profile
+and its 68-step acceptance scenario remain unchanged for R4.
+
+The required profile has 62 steps, 53 processes, 27 input files, all 37 native
+cases and both external obligations. Its only retained dependency change puts
+`control/observe-settled-intent` after `prepare/runtime-own-after`; the second
+external observation still follows that positive runtime control. There is no
+caller-supplied skip list. The six deferred slots cannot be offered to its fixed
+lifecycle. Three explicit report descriptors remain **unverified**, with the
+2026-10-30 decision date and R4 acceptance target; they are not original records.
+
+Config, policy, request, preparation and lifecycle select the exact compiled tag.
+The run context commits the selected DAG, while the selected ledger separately
+pins the full acceptance scenario. The physical fixture recipe and its hash are
+unchanged; that shared hash alone cannot select or authorize a profile. Unknown
+tags, cross-profile ledger or DAG substitution and arbitrary exclusions reject.
+
+Exact required action reservations are 459 logical commands, 43 mutation attempts,
+346 service calls and 2,201 private SELECT admissions. The retained original roster
+has 491 records. Byte reservations intentionally retain the conservative full
+profile ceilings, plus a report-only 2,048-byte allowance for the complete added
+deferral member and punctuation. Thus logical output is bounded by 22,892,715
+bytes and the release package by 11,021,644 bytes, still subject to the unchanged
+16 MiB joint cap and 65,536-byte per-original cap. These are reservation ceilings,
+not measured output, peak memory, or evidence that every independent maximum can
+occur together. The selected request-row sum is 1,203,074 bytes; the larger prior
+request allocation is conservatively retained, with per-envelope caps unchanged.
+
+This closes structural profile dispatch, not installed execution. An empty list
+of impossible required tuple capabilities does not mean remaining producer code
+or installation is ready. The complete private attachment, authenticated service,
+fixed host factory, real original resolution and report assembly still need their
+implemented and independently verified composition. Runtime custody, installed
+trust and authentic operator authority remain separate fail-closed requirements.
+
+## Actual product outcome keys
+
+Private selected-state bindings use the product's stored `domain.`-prefixed scope,
+for example `domain.runtimes:manage` with target `runtimes:create`, or
+`domain.tasks:create` with target `tasks:create`. The earlier synthetic
+`domain.createTask` test value did not prove real outcome lookup. Genuine normal
+runtime and task HTTP creation regressions now join the actual outcome, event and
+history keys. The correction changes neither SQL queries nor query/byte limits;
+prior synthetic evidence remains historical, not retroactively authentic.
+
+## Complete remote original transport
+
+The complete-profile signed-original codec has its own Ed25519 domain and closed
+slot/run envelopes. It preserves the earlier static v2 codec unchanged. Fixed
+source tables admit only typed remote observations, supported control
+acknowledgments, per-process scan/summary statements and the three run-scoped
+scan/roster families. Host-local configuration, custody, prepared subjects,
+verification, harness and assembly records cannot be remotely re-signed here;
+private raw SQL and credential-bearing transport are not exportable aliases.
+
+Per-role byte ceilings come from the frozen fixture arithmetic, including the
+measured per-step control and summary limits. Whole-wire admission includes
+canonical JSON punctuation, base64 and signatures before payload decoding. The
+signature binds the exact selected profile, policy, descriptor, run, slot or run
+scope, preparation where applicable, request and record identities. Both profiles
+retain the explicit unsupported-tuple denial; the required profile does not
+silently accept omitted slots.
+
+Verification establishes a **signed byte statement only**. It returns neither
+installed authority nor native conformance. Payload schema/current-state/causal
+validation, real producer availability, trusted key installation and cumulative
+release admission remain mandatory composition responsibilities. In particular,
+a correctly signed arbitrary payload does not satisfy a case, and unresolved
+control-reference role mappings cannot be replaced with sizing specimens.
+
+## Private product attachment
+
+The private source attachment now executes submitter enrollment, reviewer
+enrollment and task creation through the unchanged `WorkspaceDO.fetch` route.
+Actual local Workers tests exercise genuine credential authentication, issued
+runtime proofs and independently selected bounded SQL before/after captures.
+Registration and capture identities are immutable. Three private capture subjects
+reserve at most 3,072 bytes of separate internal working metadata (1,024 each),
+not additional release originals or borrowed transport/body allowances.
+
+Stream and cancellation ownership, closed inputs, expiry, failure poisoning and
+actual task/runtime DTO agreement with SQL are checked. This internal producer is
+not a selectable subset profile, deployed endpoint, installed authority or full
+R2 producer completion. Fault HOLD and the remaining required producer families
+are not implemented by these three slots. Deferred tuple cases remain unverified,
+not passed.
+
+## Protected configuration and response framing
+
+The complete configuration reader uses the same protected-directory and
+protected-JSON checks as the existing reader, followed by selected config2
+validation. It does not fall back to config1 or find a less-protected directory.
+The default local temporary directory has Git ancestry, so the eligible-disk
+positive and isolated file-metadata negatives are explicitly skipped there;
+pure validation and the actual Git-ancestry rejection are exercised separately.
+
+Response framing selects one of the frozen 370 operation/slot/pass ceilings
+before decoding. Required-profile requests still select only their 346 allowed
+calls. The full response allocation totals 1,585,635 bytes; its finalizer ceiling
+is 80,140 bytes, including both signed rosters. These are wire allowances, not a
+new release allowance or proof that every producer is implemented. Release
+admission still has its independent joint 16 MiB cap.
+
+The parser correlates the selected request, run, policy, preparation and process
+final reference. Retained reads require an earlier issuance sequence and distinct
+request identity; the actual issuance registry must still resolve that record.
+A manifest names its selected policy producer, and an inline summary must name
+the same producer. Revocation commits the separate disable acknowledgment, not a
+substituted control acknowledgment. Canonical base64 padding and closed metadata
+are checked without decoding payloads in the framing layer.
+
+Every parsed result says **structural response only**, with signature verification,
+installed authority and native conformance all false. The consumer must separately
+verify each original under the pinned key and validate its payload, causal state
+and actual producer availability. Required preflight may correctly be blocked
+with an empty tuple list: this means the deferred tuple obligations are absent,
+not that other missing authority or producers are ready. Full-profile preflight
+retains its exact six unavailable tuple control/probe IDs. Cleanup counts describe
+actual partial work, and pending work cannot be labeled closed.
+
+## Fixed installed inputs and guarded local bootstrap
+
+A separate complete-tagged v2 installation verifier now checks the exact selected
+profile, fixture/ledger and scenario commitments, the existing signed context,
+and the thirteen closed service operation capabilities. It preserves the old
+untagged verifier unchanged and does not downgrade either form. The root-signed
+complete descriptor also pins private-input and client-auth file digests and the
+delegated client public key. Signature validity alone is not installed authority.
+
+The fixed resolver uses the existing root-owned, stable-FD, no-symlink and runtime
+custody rules. It reads the fixed complete installation/input paths and only safe
+identifier references under `/etc/agenthub-native/auth/`. This auth-directory
+layout is an explicit new complete-profile source contract, not a claim that the
+old resolver already implemented it. Five distinct references select exactly
+three credential files, one human pair and one client signing key; no arbitrary
+path, module, token generation or login is supported.
+
+Canonical private file ceilings are 2,280 bytes for inputs, 220 for client auth,
+123 for the human pair and 43 for each credential. Together with the unchanged
+anchor and descriptor ceilings, one resolution admits at most 23,232 payload
+bytes. Secret files retain narrow private modes. Source tests verify exact bounds,
+canonical keys/tokens, aliases and old/new dispatch without reading or installing
+actual operator files. Branded private materials remain pending service preflight;
+current checks preserve the original deadline and poison changed bindings rather
+than granting a rolling lease or permitting restore-and-retry.
+
+The reusable bootstrap executes the fixed ten local actions: initialize/import
+and independently check each of three protected stores, then read the actual
+29-byte artifact. It uses existing CLI/storage guards and ordinary actual provider
+leases, not raw database edits or asserted slot hashes. The six CLI calls are
+in-process local actions, not six new native scenario processes. All outcomes and
+cleanup are owned; imports use only their private canonical credential value and
+cannot send network requests.
+
+An internal same-invocation cleanup observer preserves ordinary CLI outputs while
+reporting failures from acquired-resource closes. Constructors can conceal partial
+cleanup before returning a handle, so bootstrap conservatively reports any
+nonzero CLI return or failed binding constructor as cleanup unknown, retaining
+actual exit receipts rather than fabricating success. Local source tests exercise
+real guarded disk operations with synthetic credentials, including these failure
+paths. They do not establish installed host authority, service admission, native
+conformance or completion of the remaining service/factory/report integration.
+
+## Required phase attachment and fixed HTTPS client
+
+The private required-phase attachment now executes the fixed P/F application
+plans through ordinary product authentication and captures actual selected SQL
+before and after each owned window. Source tests cover 51 primary and six foreign
+application requests in separate DO-owned journeys, including genuine runtime
+proofs, revoked authorization, artifact requests and an unpublished committed
+response. These are not one joint global controller run or native-process evidence.
+The sole frontdoor, global ownership and authenticated service composition remain
+separate integration work.
+
+A committed unpublished response may remain observed-held after an authentic
+client terminal only until its scheduled disarm/drain. Unknown completion fails
+closed; no pending count or clock ordering is invented. Private capture metadata
+includes subject, ingress, timestamps and its wrapper: its explicit ceiling is
+1,536 bytes per capture, admitted before SQL and checked again before retention.
+The fixed 59 primary plus seven foreign captures reserve 101,376 bytes jointly
+(90,624 primary; 10,752 foreign). This is private working metadata, not additional
+wire, logical-action or release-evidence allowance.
+
+The fixed HTTPS client uses the branded installed binding and a pinned client key;
+its separate synthetic transport test core cannot establish installed authority.
+It checks exact profile/config commitments, current custody, canonical request
+proofs and closed canonical response framing. Redirects, TLS bypasses and arbitrary
+transport configuration are unavailable. Its two selected proof headers reserve
+216 bytes per call; the independent physical HTTP-header ceiling is 8,192 bytes,
+not a substitute for body or release budgets. A poisoned request admits only its
+reserved next-sequence close after owned transport cleanup, never a normal retry.
+Response framing remains structural and signature-unverified until the service
+original verifier and causal payload checks consume it. Neither client tests nor
+attachment tests satisfy native conformance, installation or the three deferred
+and unverified R4 tuple cases.
+
+## Selected execution and control ownership
+
+The complete config now has explicit admission, session, binding, controller,
+recorder and evidence facades. They retain the original config2 digest and selected
+DAG, without casting it to config1 or adding unbudgeted context metadata. Existing
+v1 APIs remain separate. Full-profile unavailable capabilities reject before
+adapter callbacks; required execution still needs the actual hostVersion2 owner.
+Private evidence tokens cannot cross the old/new finalizer boundaries. An assembled
+native37 fragment remains structural, not full issue 48 acceptance.
+
+A fixed public-key request authenticator checks canonical bounded wire and the
+client key from the installation statement without receiving its private key.
+Its result is authenticated-statement-only: the complete factory must additionally
+verify root installation, actual current custody, config-derived identity joins
+and schedule ownership before effects. A valid signature alone does not admit a run.
+
+The supported control role map now separates service observations from host-local
+facts. Service ACKs cannot assert unreceived protected journal/bootstrap originals.
+The final host report must join those actual originals to the service's preserved
+facts and authenticated terminal correlations. In particular, settled-intent ACK
+checks the prior successful create but references only its authenticated terminal;
+the actual protected journal still proves settled state. Disarm retains actual
+server commit/publication/drain facts; retained journal and actual client receipt
+remain host-owned. Server readback cannot settle an intent.
+
+The fixed nine service payload shapes fit their unchanged per-control ceilings.
+Internal role kinds do not add exported evidence families or release records.
+Content composition is not role custody: the actual service resolver must own each
+record, and report verification must enforce every fixed host counterpart. Three
+unavailable tuple controls remain deferred/unverified; no security guard, case
+roster, service-call count or cumulative release limit is changed by this correction.

@@ -93,6 +93,6 @@ export function routeExpectation(operation,lane){
 import {R2_FEATURES,R2_KINDS} from './r2-release-policy.mjs';
 export function releasePolicy(version,round){
  if(version===1&&round==='R1')return {features:R1_FEATURES,kinds:REQUIRED_KINDS};
- if(version===2&&round==='R2')return {features:R2_FEATURES,kinds:R2_KINDS};
+ if((version===2||version===3)&&round==='R2')return {features:R2_FEATURES,kinds:R2_KINDS};
  throw Error('UNSUPPORTED_RELEASE_POLICY');
 }

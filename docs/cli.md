@@ -26,7 +26,7 @@ The state directory contains separate `secrets`, `journal` and `uploads` subdire
 
 ## Command layout
 
-All body-bearing commands require `--input FILE`: a regular, non-symlink, at most 65,536-byte UTF-8 JSON file. The canonical generated closed schema remains the final authority. An interactive mutation may generate its key only when both stdin and stderr are terminals and `--json` is absent. Otherwise an explicit nonempty `--idempotency-key KEY` is mandatory. Key generation follows durable keyless-intent creation, never precedes it.
+All body-bearing commands require `--input FILE`: a regular, non-symlink, at most 65,536-byte UTF-8 JSON file. Optional `--input-sha256 DIGEST` pins the exact raw file bytes with a lowercase 64-hex SHA-256. It is accepted only alongside `--input` on body-bearing native commands. The existing bounded file reader checks the same bytes it then parses, before protected-store or network effects; mismatches return sanitized input rejection (exit 2), without retry. Whitespace changes alter the digest even if JSON meaning is unchanged. Omitting the pin preserves existing behavior. A pin is not host authorization, proof of successful execution, or a canonical HTTP-body digest. Treat private-input digests as protected metadata, not public logs. The canonical generated closed schema remains the final authority. An interactive mutation may generate its key only when both stdin and stderr are terminals and `--json` is absent. Otherwise an explicit nonempty `--idempotency-key KEY` is mandatory. Key generation follows durable keyless-intent creation, never precedes it.
 
 | Area | Commands | Notes |
 | --- | --- | --- |
@@ -108,3 +108,13 @@ Retention is capped at1GiB encoded bytes and32768 entries, including retained re
 External source retirement files are read without repair and require single-link publication; recover an interrupted source publication under its own source leases first. Authenticated exact same-inode publication aliases within the leased resources retain the existing protected repair rule; accounting a two-link pair does not authenticate it. Symlinks, arbitrary hardlinks, conflicting bytes, foreign ownership and unsafe permissions remain denied. Remote error request IDs are omitted rather than reflecting arbitrary upstream text or credentials.
 
 Local pure validation tests and a private-provider Workers runner are distinct from the historical protected-filesystem rehearsal. When the runtime places protected checkout markers above all writable test directories, report that rehearsal blocked; do not move fixtures or remove the marker to produce a green result.
+
+## Native R2 source runner
+
+See [native conformance](native-conformance.md) for the dedicated protected-config command, source-only tests, process custody and unresolved live authority. Source checks do not verify F24 or authorize acceptance, deployment, merge or release.
+
+
+The dedicated test runner also offers `npm run test:native:r2 -- --local-sandbox`
+for [synthetic local backend checks](local-native-sandbox.md). This is not a
+`cf-agent-hub` product command or native conformance pass. It accepts no target,
+credentials or protected-config option and does not change CLI transport trust.

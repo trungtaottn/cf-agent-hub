@@ -1,0 +1,258 @@
+[
+  {
+    "kind": "control",
+    "id": "control/authorize"
+  },
+  {
+    "kind": "control",
+    "id": "control/provision"
+  },
+  {
+    "kind": "process",
+    "id": "success/getWorkspace"
+  },
+  {
+    "kind": "process",
+    "id": "success/getConfiguration"
+  },
+  {
+    "kind": "process",
+    "id": "success/getProfile"
+  },
+  {
+    "kind": "process",
+    "id": "prepare/reviewer-binding"
+  },
+  {
+    "kind": "process",
+    "id": "success/listAgents"
+  },
+  {
+    "kind": "process",
+    "id": "success/getAgent"
+  },
+  {
+    "kind": "process",
+    "id": "prepare/submitter-enrollment"
+  },
+  {
+    "kind": "process",
+    "id": "prepare/reviewer-enrollment"
+  },
+  {
+    "kind": "process",
+    "id": "success/createTask"
+  },
+  {
+    "kind": "process",
+    "id": "success/getTask"
+  },
+  {
+    "kind": "process",
+    "id": "success/patchTask"
+  },
+  {
+    "kind": "process",
+    "id": "success/readyTask"
+  },
+  {
+    "kind": "process",
+    "id": "success/createRuntime"
+  },
+  {
+    "kind": "process",
+    "id": "success/claimTask"
+  },
+  {
+    "kind": "process",
+    "id": "success/getRun"
+  },
+  {
+    "kind": "process",
+    "id": "success/heartbeatRun"
+  },
+  {
+    "kind": "process",
+    "id": "success/heartbeatRuntime"
+  },
+  {
+    "kind": "process",
+    "id": "prepare/retain-artifact"
+  },
+  {
+    "kind": "process",
+    "id": "success/stageArtifact"
+  },
+  {
+    "kind": "process",
+    "id": "success/uploadArtifactContent"
+  },
+  {
+    "kind": "process",
+    "id": "success/commitArtifact"
+  },
+  {
+    "kind": "process",
+    "id": "success/getArtifact"
+  },
+  {
+    "kind": "process",
+    "id": "success/downloadArtifactContent"
+  },
+  {
+    "kind": "process",
+    "id": "success/listArtifacts"
+  },
+  {
+    "kind": "process",
+    "id": "success/submitTaskResult"
+  },
+  {
+    "kind": "process",
+    "id": "success/listTaskResults"
+  },
+  {
+    "kind": "process",
+    "id": "success/acceptTaskResult"
+  },
+  {
+    "kind": "process",
+    "id": "prepare/fail-create"
+  },
+  {
+    "kind": "process",
+    "id": "prepare/fail-ready"
+  },
+  {
+    "kind": "process",
+    "id": "prepare/fail-claim"
+  },
+  {
+    "kind": "process",
+    "id": "success/failTask"
+  },
+  {
+    "kind": "process",
+    "id": "prepare/cancel-create"
+  },
+  {
+    "kind": "process",
+    "id": "success/cancelTask"
+  },
+  {
+    "kind": "process",
+    "id": "prepare/requeue-create"
+  },
+  {
+    "kind": "process",
+    "id": "success/requeueTask"
+  },
+  {
+    "kind": "process",
+    "id": "success/createMessage"
+  },
+  {
+    "kind": "process",
+    "id": "success/getInbox"
+  },
+  {
+    "kind": "process",
+    "id": "success/ackMessages"
+  },
+  {
+    "kind": "process",
+    "id": "success/getThread"
+  },
+  {
+    "kind": "process",
+    "id": "success/listTasks"
+  },
+  {
+    "kind": "process",
+    "id": "success/listEvents"
+  },
+  {
+    "kind": "process",
+    "id": "success/searchWorkspace"
+  },
+  {
+    "kind": "control",
+    "id": "control/observe-success-coverage"
+  },
+  {
+    "kind": "control",
+    "id": "control/observe-server-foreign-fixture"
+  },
+  {
+    "kind": "process",
+    "id": "probe/server-foreign-workspace"
+  },
+  {
+    "kind": "process",
+    "id": "prepare/server-foreign-own-positive"
+  },
+  {
+    "kind": "external",
+    "id": "server-foreign-workspace-denial"
+  },
+  {
+    "kind": "process",
+    "id": "probe/wrong-workspace"
+  },
+  {
+    "kind": "process",
+    "id": "prepare/runtime-own-before"
+  },
+  {
+    "kind": "control",
+    "id": "control/observe-other-runtime"
+  },
+  {
+    "kind": "process",
+    "id": "probe/wrong-runtime"
+  },
+  {
+    "kind": "process",
+    "id": "prepare/runtime-own-after"
+  },
+  {
+    "kind": "external",
+    "id": "server-wrong-runtime-proof-denial"
+  },
+  {
+    "kind": "control",
+    "id": "control/observe-settled-intent"
+  },
+  {
+    "kind": "process",
+    "id": "case/settled-no-send"
+  },
+  {
+    "kind": "control",
+    "id": "control/arm-lost-response"
+  },
+  {
+    "kind": "process",
+    "id": "case/lost-response-retained"
+  },
+  {
+    "kind": "control",
+    "id": "control/disarm-and-observe-lost"
+  },
+  {
+    "kind": "process",
+    "id": "case/restart-no-send"
+  },
+  {
+    "kind": "process",
+    "id": "prepare/revoke-own-positive"
+  },
+  {
+    "kind": "control",
+    "id": "control/revoke-submitter"
+  },
+  {
+    "kind": "process",
+    "id": "case/revoked-after-disable"
+  }
+]

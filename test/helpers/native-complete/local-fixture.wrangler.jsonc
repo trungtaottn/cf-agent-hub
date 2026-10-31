@@ -1,0 +1,8 @@
+{
+ "name":"complete-local-source-fixture",
+ "main":"local-fixture-worker.ts",
+ "compatibility_date":"2026-10-19",
+ "durable_objects":{"bindings":[{"name":"WORKSPACE","class_name":"WorkspaceDO"},{"name":"CONTROLLER","class_name":"RequiredFixtureController"}]},
+ "migrations":[{"tag":"v1","new_sqlite_classes":["WorkspaceDO","RequiredFixtureController"]}],
+ "r2_buckets":[{"binding":"ARTIFACT_BUCKET","bucket_name":"complete-local-artifacts"},{"binding":"RECOVERY_BUCKET","bucket_name":"complete-local-recovery"}]
+}

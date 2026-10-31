@@ -1,0 +1,2775 @@
+{
+  "source_commit": "95bd3889713f1bfed28be4bc70d7ef77c956d3e5",
+  "expected": {
+    "baseline": [
+      [],
+      [],
+      [],
+      [],
+      []
+    ],
+    "missingRoster": [
+      [
+        {
+          "code": "R2_CASE_PREPARATION_COVERAGE",
+          "message": "Exact fresh prepared case roster required"
+        }
+      ],
+      [],
+      [],
+      [],
+      [
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "browser/literal-untrusted-text"
+        }
+      ]
+    ],
+    "wrongDigest": [
+      [
+        {
+          "code": "R2_CASE_PREPARATION_HASH",
+          "message": "getWorkspace/human/authorized"
+        }
+      ],
+      [
+        {
+          "code": "R2_CASE_SUBJECT_HASH",
+          "message": "getWorkspace/human/authorized"
+        }
+      ],
+      [],
+      [],
+      []
+    ],
+    "wrongEpoch": [
+      [
+        {
+          "code": "R2_CASE_SUBJECT",
+          "message": "getWorkspace/human/authorized: workspace/epoch mismatch"
+        }
+      ],
+      [
+        {
+          "code": "R2_CASE_SUBJECT",
+          "message": "getWorkspace/human/authorized: workspace/epoch mismatch"
+        },
+        {
+          "code": "R2_CASE_PREDICATE",
+          "message": "getWorkspace/human/authorized: subject observed_authority_epoch"
+        }
+      ],
+      [],
+      [],
+      []
+    ],
+    "wrongActor": [
+      [
+        {
+          "code": "R2_CASE_SUBJECT",
+          "message": "getWorkspace/human/authorized: actor kind mismatch"
+        },
+        {
+          "code": "R2_CASE_SUBJECT",
+          "message": "getWorkspace/human/authorized: native principal/agent/credential"
+        }
+      ],
+      [
+        {
+          "code": "R2_CASE_SUBJECT",
+          "message": "getWorkspace/human/authorized: actor kind mismatch"
+        },
+        {
+          "code": "R2_CASE_SUBJECT",
+          "message": "getWorkspace/human/authorized: native principal/agent/credential"
+        }
+      ],
+      [],
+      [],
+      []
+    ],
+    "missingCommand": [
+      [],
+      [],
+      [],
+      [
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "native/getWorkspace/success"
+        },
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "native/listTasks/success"
+        },
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "native/createTask/success"
+        },
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "native/getTask/success"
+        },
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "native/patchTask/success"
+        },
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "native/readyTask/success"
+        },
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "native/claimTask/success"
+        },
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "native/submitTaskResult/success"
+        },
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "native/acceptTaskResult/success"
+        },
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "native/failTask/success"
+        },
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "native/cancelTask/success"
+        },
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "native/requeueTask/success"
+        },
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "native/getRun/success"
+        },
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "native/heartbeatRun/success"
+        },
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "native/listAgents/success"
+        },
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "native/getAgent/success"
+        },
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "native/createRuntime/success"
+        },
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "native/heartbeatRuntime/success"
+        },
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "native/createMessage/success"
+        },
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "native/getInbox/success"
+        },
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "native/getThread/success"
+        },
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "native/ackMessages/success"
+        },
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "native/listArtifacts/success"
+        },
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "native/stageArtifact/success"
+        },
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "native/getArtifact/success"
+        },
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "native/uploadArtifactContent/success"
+        },
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "native/downloadArtifactContent/success"
+        },
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "native/commitArtifact/success"
+        },
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "native/listEvents/success"
+        },
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "native/searchWorkspace/success"
+        },
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "native/getConfiguration/success"
+        },
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "native/getProfile/success"
+        },
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "native/listTaskResults/success"
+        },
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "native/lost-response-retained"
+        },
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "native/restart-no-send"
+        },
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "native/settled-no-send"
+        },
+        {
+          "code": "R2_CASE_CONTEXT",
+          "message": "native/revoked-after-disable"
+        }
+      ],
+      []
+    ],
+    "badProducer": [
+      [],
+      [],
+      [],
+      [
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/getWorkspace/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/listTasks/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/createTask/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/getTask/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/patchTask/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/readyTask/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/claimTask/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/submitTaskResult/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/acceptTaskResult/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/failTask/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/cancelTask/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/requeueTask/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/getRun/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/heartbeatRun/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/listAgents/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/getAgent/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/createRuntime/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/heartbeatRuntime/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/createMessage/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/getInbox/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/getThread/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/ackMessages/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/listArtifacts/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/stageArtifact/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/getArtifact/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/uploadArtifactContent/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/downloadArtifactContent/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/commitArtifact/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/listEvents/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/searchWorkspace/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/getConfiguration/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/getProfile/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/listTaskResults/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/lost-response-retained"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/restart-no-send"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/settled-no-send"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/revoked-after-disable"
+        }
+      ],
+      []
+    ],
+    "childDenialAsHarness": [
+      [],
+      [],
+      [],
+      [
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/getWorkspace/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/listTasks/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/createTask/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/getTask/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/patchTask/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/readyTask/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/claimTask/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/submitTaskResult/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/acceptTaskResult/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/failTask/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/cancelTask/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/requeueTask/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/getRun/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/heartbeatRun/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/listAgents/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/getAgent/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/createRuntime/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/heartbeatRuntime/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/createMessage/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/getInbox/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/getThread/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/ackMessages/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/listArtifacts/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/stageArtifact/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/getArtifact/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/uploadArtifactContent/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/downloadArtifactContent/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/commitArtifact/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/listEvents/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/searchWorkspace/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/getConfiguration/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/getProfile/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/listTaskResults/success"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/lost-response-retained"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/restart-no-send"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/settled-no-send"
+        },
+        {
+          "code": "R2_CASE_PRODUCER",
+          "message": "native/revoked-after-disable"
+        }
+      ],
+      []
+    ],
+    "futureGlobalPreparation": [
+      [],
+      [
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getWorkspace/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getWorkspace/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getWorkspace/native/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getWorkspace/native/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getWorkspace/native/native-facade"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getWorkspace/native/native-revoked-after-eviction"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listTasks/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listTasks/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listTasks/native/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listTasks/native/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listTasks/native/native-facade"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listTasks/native/native-revoked-after-eviction"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "createTask/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "createTask/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "createTask/native/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "createTask/native/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "createTask/native/native-facade"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "createTask/native/native-revoked-after-eviction"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getTask/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getTask/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getTask/native/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getTask/native/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getTask/native/native-facade"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getTask/native/native-revoked-after-eviction"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "patchTask/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "patchTask/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "patchTask/native/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "patchTask/native/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "patchTask/native/native-facade"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "patchTask/native/native-revoked-after-eviction"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "readyTask/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "readyTask/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "readyTask/native/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "readyTask/native/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "readyTask/native/native-facade"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "readyTask/native/native-revoked-after-eviction"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "claimTask/native/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "claimTask/native/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "claimTask/human/forbidden"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "claimTask/native/native-facade"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "claimTask/native/native-revoked-after-eviction"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "submitTaskResult/native/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "submitTaskResult/native/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "submitTaskResult/human/forbidden"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "submitTaskResult/native/native-facade"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "submitTaskResult/native/native-revoked-after-eviction"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "acceptTaskResult/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "acceptTaskResult/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "acceptTaskResult/native/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "acceptTaskResult/native/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "acceptTaskResult/native/native-facade"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "acceptTaskResult/native/native-revoked-after-eviction"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "failTask/native/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "failTask/native/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "failTask/human/forbidden"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "failTask/native/native-facade"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "failTask/native/native-revoked-after-eviction"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "cancelTask/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "cancelTask/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "cancelTask/native/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "cancelTask/native/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "cancelTask/native/native-facade"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "cancelTask/native/native-revoked-after-eviction"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "requeueTask/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "requeueTask/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "requeueTask/native/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "requeueTask/native/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "requeueTask/native/native-facade"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "requeueTask/native/native-revoked-after-eviction"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getRun/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getRun/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getRun/native/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getRun/native/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getRun/native/native-facade"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getRun/native/native-revoked-after-eviction"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "heartbeatRun/native/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "heartbeatRun/native/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "heartbeatRun/human/forbidden"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "heartbeatRun/native/native-facade"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "heartbeatRun/native/native-revoked-after-eviction"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listAgents/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listAgents/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listAgents/native/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listAgents/native/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listAgents/native/native-facade"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listAgents/native/native-revoked-after-eviction"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "createAgent/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "createAgent/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "createAgent/native/forbidden"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getAgent/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getAgent/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getAgent/native/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getAgent/native/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getAgent/native/native-facade"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getAgent/native/native-revoked-after-eviction"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "patchAgent/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "patchAgent/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "patchAgent/native/forbidden"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "archiveAgent/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "archiveAgent/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "archiveAgent/native/forbidden"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "createRuntime/native/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "createRuntime/native/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "createRuntime/human/forbidden"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "createRuntime/native/native-facade"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "createRuntime/native/native-revoked-after-eviction"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "heartbeatRuntime/native/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "heartbeatRuntime/native/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "heartbeatRuntime/human/forbidden"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "heartbeatRuntime/native/native-facade"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "heartbeatRuntime/native/native-revoked-after-eviction"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "createMessage/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "createMessage/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "createMessage/native/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "createMessage/native/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "createMessage/native/native-facade"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "createMessage/native/native-revoked-after-eviction"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getInbox/native/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getInbox/native/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getInbox/human/forbidden"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getInbox/native/native-facade"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getInbox/native/native-revoked-after-eviction"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getThread/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getThread/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getThread/native/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getThread/native/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getThread/native/native-facade"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getThread/native/native-revoked-after-eviction"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "ackMessages/native/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "ackMessages/native/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "ackMessages/human/forbidden"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "ackMessages/native/native-facade"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "ackMessages/native/native-revoked-after-eviction"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listArtifacts/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listArtifacts/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listArtifacts/native/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listArtifacts/native/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listArtifacts/native/native-facade"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listArtifacts/native/native-revoked-after-eviction"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listArtifacts/human/missing-binding"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listArtifacts/human/aliased-binding"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listArtifacts/native/missing-binding"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listArtifacts/native/aliased-binding"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "stageArtifact/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "stageArtifact/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "stageArtifact/native/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "stageArtifact/native/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "stageArtifact/native/native-facade"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "stageArtifact/native/native-revoked-after-eviction"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "stageArtifact/human/missing-binding"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "stageArtifact/human/aliased-binding"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "stageArtifact/native/missing-binding"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "stageArtifact/native/aliased-binding"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getArtifact/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getArtifact/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getArtifact/native/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getArtifact/native/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getArtifact/native/native-facade"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getArtifact/native/native-revoked-after-eviction"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getArtifact/human/missing-binding"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getArtifact/human/aliased-binding"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getArtifact/native/missing-binding"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getArtifact/native/aliased-binding"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "uploadArtifactContent/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "uploadArtifactContent/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "uploadArtifactContent/native/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "uploadArtifactContent/native/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "uploadArtifactContent/native/native-facade"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "uploadArtifactContent/native/native-revoked-after-eviction"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "uploadArtifactContent/human/missing-binding"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "uploadArtifactContent/human/aliased-binding"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "uploadArtifactContent/native/missing-binding"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "uploadArtifactContent/native/aliased-binding"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "downloadArtifactContent/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "downloadArtifactContent/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "downloadArtifactContent/native/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "downloadArtifactContent/native/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "downloadArtifactContent/native/native-facade"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "downloadArtifactContent/native/native-revoked-after-eviction"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "downloadArtifactContent/human/missing-binding"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "downloadArtifactContent/human/aliased-binding"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "downloadArtifactContent/native/missing-binding"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "downloadArtifactContent/native/aliased-binding"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "commitArtifact/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "commitArtifact/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "commitArtifact/native/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "commitArtifact/native/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "commitArtifact/native/native-facade"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "commitArtifact/native/native-revoked-after-eviction"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "commitArtifact/human/missing-binding"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "commitArtifact/human/aliased-binding"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "commitArtifact/native/missing-binding"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "commitArtifact/native/aliased-binding"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listEvents/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listEvents/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listEvents/native/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listEvents/native/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listEvents/native/native-facade"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listEvents/native/native-revoked-after-eviction"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listCredentials/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listCredentials/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listCredentials/native/forbidden"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "createCredential/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "createCredential/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "createCredential/native/forbidden"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "revokeCredential/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "revokeCredential/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "revokeCredential/native/forbidden"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "searchWorkspace/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "searchWorkspace/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "searchWorkspace/native/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "searchWorkspace/native/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "searchWorkspace/native/native-facade"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "searchWorkspace/native/native-revoked-after-eviction"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "startAuth/public/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "startAuth/public/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getAuthSession/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getAuthSession/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getAuthSession/native/forbidden"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "logoutAuth/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "logoutAuth/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "logoutAuth/native/forbidden"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getConfiguration/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getConfiguration/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getConfiguration/native/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getConfiguration/native/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getConfiguration/native/native-facade"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getConfiguration/native/native-revoked-after-eviction"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getProfile/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getProfile/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getProfile/native/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getProfile/native/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getProfile/native/native-facade"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getProfile/native/native-revoked-after-eviction"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "putProfile/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "putProfile/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "putProfile/native/forbidden"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "previewProfile/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "previewProfile/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "previewProfile/native/forbidden"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "exportProfile/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "exportProfile/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "exportProfile/native/forbidden"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getPreferences/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getPreferences/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getPreferences/native/forbidden"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "putPreferences/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "putPreferences/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "putPreferences/native/forbidden"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getOperations/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getOperations/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getOperations/native/forbidden"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getReadiness/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getReadiness/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getReadiness/native/forbidden"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "previewCatalogChange/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "previewCatalogChange/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "previewCatalogChange/native/forbidden"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "applyCatalogChange/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "applyCatalogChange/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "applyCatalogChange/native/forbidden"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listTaskResults/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listTaskResults/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listTaskResults/native/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listTaskResults/native/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listTaskResults/native/native-facade"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listTaskResults/native/native-revoked-after-eviction"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "previewImport/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "previewImport/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "previewImport/native/forbidden"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "applyImport/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "applyImport/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "applyImport/native/forbidden"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getImport/human/authorized"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getImport/human/foreign-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getImport/native/forbidden"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "requestTaskDecision/human/unavailable"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "requestTaskDecision/native/unavailable"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listApprovals/human/unavailable"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listApprovals/native/unavailable"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getApproval/human/unavailable"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "getApproval/native/unavailable"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "approveApproval/human/unavailable"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "approveApproval/native/unavailable"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "rejectApproval/human/unavailable"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "rejectApproval/native/unavailable"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "resources/human/foreign-graph"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "createTask/human/missing-policy"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "workspace/human/maintenance"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "authority/human/revoke-after-eviction"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "authority/human/expire-after-eviction"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listTasks/human/cursor-encrypt"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listTasks/human/cursor-decrypt"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "createTask/human/fingerprint-fresh"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "createTask/human/fingerprint-retained-replay"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "commitArtifact/human/after-r2-read"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "downloadArtifactContent/human/after-r2-read"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "resources/native/foreign-graph"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "createTask/native/missing-policy"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "workspace/native/maintenance"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "authority/native/revoke-after-eviction"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "authority/native/expire-after-eviction"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listTasks/native/cursor-encrypt"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "listTasks/native/cursor-decrypt"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "createTask/native/fingerprint-fresh"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "createTask/native/fingerprint-retained-replay"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "commitArtifact/native/after-r2-read"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "downloadArtifactContent/native/after-r2-read"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "imports/human/same-workspace-other-owner"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "tasks/native/foreign-task-own-run"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "catalog/human/remap-scope"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "receipts/native/result-acceptance"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "runtime/native/different-proof"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "grants/native/no-union"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "idempotency/human/namespace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "dispatcher/native/post-signing"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "routing/public/no-fallback"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "auth/public/callback-workspace"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "publication/native-profile/no-final-await"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "publication/human-session/no-final-await"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "publication/native-maintenance/no-final-await"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "scheduler/system/failed-arm-restart-retry"
+        }
+      ],
+      [
+        {
+          "code": "R2_CASE_TIME",
+          "message": "task/two-claims-one-run"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "task/last-wip-slot"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "task/server-retained-replay"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "task/idempotency-mismatch"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "task/ownership-replay-denied"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "task/expired-unswept-wip"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "artifact/nonempty-lifecycle"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "artifact/empty-lifecycle"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "artifact/digest-mismatch"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "artifact/cleanup-retains-committed"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "artifact/interrupted-put-hold"
+        }
+      ],
+      [
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/getWorkspace/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/listTasks/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/createTask/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/getTask/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/patchTask/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/readyTask/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/claimTask/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/submitTaskResult/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/acceptTaskResult/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/failTask/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/cancelTask/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/requeueTask/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/getRun/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/heartbeatRun/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/listAgents/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/getAgent/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/createRuntime/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/heartbeatRuntime/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/createMessage/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/getInbox/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/getThread/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/ackMessages/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/listArtifacts/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/stageArtifact/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/getArtifact/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/uploadArtifactContent/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/downloadArtifactContent/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/commitArtifact/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/listEvents/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/searchWorkspace/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/getConfiguration/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/getProfile/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/listTaskResults/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/lost-response-retained"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/restart-no-send"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/settled-no-send"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/revoked-after-disable"
+        }
+      ],
+      [
+        {
+          "code": "R2_CASE_TIME",
+          "message": "browser/keyboard-command"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "browser/independent-accept"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "browser/conflict-explicit-review"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "browser/lost-response-same-intent"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "browser/revoked-purge"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "browser/tasks-only-readonly"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "browser/bounded-page"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "browser/partial-error"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "browser/narrow-keyboard-dialog"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "browser/literal-untrusted-text"
+        }
+      ]
+    ],
+    "futureRecord": [
+      [],
+      [],
+      [],
+      [
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/getWorkspace/success"
+        }
+      ],
+      []
+    ],
+    "wrongCandidate": [
+      [],
+      [],
+      [],
+      [
+        {
+          "code": "R2_CASE_CANDIDATE",
+          "message": "native/getWorkspace/success: revision"
+        },
+        {
+          "code": "R2_CASE_CANDIDATE",
+          "message": "native/listTasks/success: revision"
+        },
+        {
+          "code": "R2_CASE_CANDIDATE",
+          "message": "native/createTask/success: revision"
+        },
+        {
+          "code": "R2_CASE_CANDIDATE",
+          "message": "native/getTask/success: revision"
+        },
+        {
+          "code": "R2_CASE_CANDIDATE",
+          "message": "native/patchTask/success: revision"
+        },
+        {
+          "code": "R2_CASE_CANDIDATE",
+          "message": "native/readyTask/success: revision"
+        },
+        {
+          "code": "R2_CASE_CANDIDATE",
+          "message": "native/claimTask/success: revision"
+        },
+        {
+          "code": "R2_CASE_CANDIDATE",
+          "message": "native/submitTaskResult/success: revision"
+        },
+        {
+          "code": "R2_CASE_CANDIDATE",
+          "message": "native/acceptTaskResult/success: revision"
+        },
+        {
+          "code": "R2_CASE_CANDIDATE",
+          "message": "native/failTask/success: revision"
+        },
+        {
+          "code": "R2_CASE_CANDIDATE",
+          "message": "native/cancelTask/success: revision"
+        },
+        {
+          "code": "R2_CASE_CANDIDATE",
+          "message": "native/requeueTask/success: revision"
+        },
+        {
+          "code": "R2_CASE_CANDIDATE",
+          "message": "native/getRun/success: revision"
+        },
+        {
+          "code": "R2_CASE_CANDIDATE",
+          "message": "native/heartbeatRun/success: revision"
+        },
+        {
+          "code": "R2_CASE_CANDIDATE",
+          "message": "native/listAgents/success: revision"
+        },
+        {
+          "code": "R2_CASE_CANDIDATE",
+          "message": "native/getAgent/success: revision"
+        },
+        {
+          "code": "R2_CASE_CANDIDATE",
+          "message": "native/createRuntime/success: revision"
+        },
+        {
+          "code": "R2_CASE_CANDIDATE",
+          "message": "native/heartbeatRuntime/success: revision"
+        },
+        {
+          "code": "R2_CASE_CANDIDATE",
+          "message": "native/createMessage/success: revision"
+        },
+        {
+          "code": "R2_CASE_CANDIDATE",
+          "message": "native/getInbox/success: revision"
+        },
+        {
+          "code": "R2_CASE_CANDIDATE",
+          "message": "native/getThread/success: revision"
+        },
+        {
+          "code": "R2_CASE_CANDIDATE",
+          "message": "native/ackMessages/success: revision"
+        },
+        {
+          "code": "R2_CASE_CANDIDATE",
+          "message": "native/listArtifacts/success: revision"
+        },
+        {
+          "code": "R2_CASE_CANDIDATE",
+          "message": "native/stageArtifact/success: revision"
+        },
+        {
+          "code": "R2_CASE_CANDIDATE",
+          "message": "native/getArtifact/success: revision"
+        },
+        {
+          "code": "R2_CASE_CANDIDATE",
+          "message": "native/uploadArtifactContent/success: revision"
+        },
+        {
+          "code": "R2_CASE_CANDIDATE",
+          "message": "native/downloadArtifactContent/success: revision"
+        },
+        {
+          "code": "R2_CASE_CANDIDATE",
+          "message": "native/commitArtifact/success: revision"
+        },
+        {
+          "code": "R2_CASE_CANDIDATE",
+          "message": "native/listEvents/success: revision"
+        },
+        {
+          "code": "R2_CASE_CANDIDATE",
+          "message": "native/searchWorkspace/success: revision"
+        },
+        {
+          "code": "R2_CASE_CANDIDATE",
+          "message": "native/getConfiguration/success: revision"
+        },
+        {
+          "code": "R2_CASE_CANDIDATE",
+          "message": "native/getProfile/success: revision"
+        },
+        {
+          "code": "R2_CASE_CANDIDATE",
+          "message": "native/listTaskResults/success: revision"
+        },
+        {
+          "code": "R2_CASE_CANDIDATE",
+          "message": "native/lost-response-retained: revision"
+        },
+        {
+          "code": "R2_CASE_CANDIDATE",
+          "message": "native/restart-no-send: revision"
+        },
+        {
+          "code": "R2_CASE_CANDIDATE",
+          "message": "native/settled-no-send: revision"
+        },
+        {
+          "code": "R2_CASE_CANDIDATE",
+          "message": "native/revoked-after-disable: revision"
+        }
+      ],
+      []
+    ],
+    "wrongSubject": [
+      [],
+      [],
+      [],
+      [
+        {
+          "code": "R2_CASE_SUBJECT_HASH",
+          "message": "native/getWorkspace/success"
+        }
+      ],
+      []
+    ],
+    "missingObservations": [
+      [],
+      [],
+      [],
+      [
+        {
+          "code": "R2_CASE_OBSERVATIONS",
+          "message": "native/getWorkspace/success"
+        }
+      ],
+      []
+    ],
+    "missingAssembly": [
+      [],
+      [],
+      [],
+      [
+        {
+          "code": "R2_CASE_ASSEMBLY",
+          "message": "Evidence assembly must be source contract command"
+        }
+      ],
+      []
+    ],
+    "earlyAssembly": [
+      [],
+      [],
+      [],
+      [
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/getWorkspace/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/listTasks/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/createTask/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/getTask/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/patchTask/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/readyTask/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/claimTask/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/submitTaskResult/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/acceptTaskResult/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/failTask/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/cancelTask/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/requeueTask/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/getRun/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/heartbeatRun/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/listAgents/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/getAgent/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/createRuntime/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/heartbeatRuntime/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/createMessage/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/getInbox/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/getThread/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/ackMessages/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/listArtifacts/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/stageArtifact/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/getArtifact/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/uploadArtifactContent/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/downloadArtifactContent/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/commitArtifact/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/listEvents/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/searchWorkspace/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/getConfiguration/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/getProfile/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/listTaskResults/success"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/lost-response-retained"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/restart-no-send"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/settled-no-send"
+        },
+        {
+          "code": "R2_CASE_TIME",
+          "message": "native/revoked-after-disable"
+        }
+      ],
+      []
+    ],
+    "duplicateCase": [
+      [],
+      [],
+      [],
+      [
+        {
+          "code": "R2_CASE_COVERAGE",
+          "message": "Exact native roster required"
+        }
+      ],
+      []
+    ],
+    "commandAlias": [
+      [],
+      [],
+      [],
+      [
+        {
+          "code": "R2_CASE_COMMAND_COVERAGE",
+          "message": "native/getWorkspace/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_COVERAGE",
+          "message": "native/listTasks/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_COVERAGE",
+          "message": "native/createTask/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_COVERAGE",
+          "message": "native/getTask/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_COVERAGE",
+          "message": "native/patchTask/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_COVERAGE",
+          "message": "native/readyTask/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_COVERAGE",
+          "message": "native/claimTask/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_COVERAGE",
+          "message": "native/submitTaskResult/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_COVERAGE",
+          "message": "native/acceptTaskResult/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_COVERAGE",
+          "message": "native/failTask/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_COVERAGE",
+          "message": "native/cancelTask/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_COVERAGE",
+          "message": "native/requeueTask/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_COVERAGE",
+          "message": "native/getRun/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_COVERAGE",
+          "message": "native/heartbeatRun/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_COVERAGE",
+          "message": "native/listAgents/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_COVERAGE",
+          "message": "native/getAgent/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_COVERAGE",
+          "message": "native/createRuntime/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_COVERAGE",
+          "message": "native/heartbeatRuntime/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_COVERAGE",
+          "message": "native/createMessage/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_COVERAGE",
+          "message": "native/getInbox/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_COVERAGE",
+          "message": "native/getThread/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_COVERAGE",
+          "message": "native/ackMessages/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_COVERAGE",
+          "message": "native/listArtifacts/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_COVERAGE",
+          "message": "native/stageArtifact/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_COVERAGE",
+          "message": "native/getArtifact/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_COVERAGE",
+          "message": "native/uploadArtifactContent/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_COVERAGE",
+          "message": "native/downloadArtifactContent/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_COVERAGE",
+          "message": "native/commitArtifact/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_COVERAGE",
+          "message": "native/listEvents/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_COVERAGE",
+          "message": "native/searchWorkspace/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_COVERAGE",
+          "message": "native/getConfiguration/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_COVERAGE",
+          "message": "native/getProfile/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_COVERAGE",
+          "message": "native/listTaskResults/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_COVERAGE",
+          "message": "native/lost-response-retained"
+        },
+        {
+          "code": "R2_CASE_COMMAND_COVERAGE",
+          "message": "native/restart-no-send"
+        },
+        {
+          "code": "R2_CASE_COMMAND_COVERAGE",
+          "message": "native/settled-no-send"
+        },
+        {
+          "code": "R2_CASE_COMMAND_COVERAGE",
+          "message": "native/revoked-after-disable"
+        }
+      ],
+      []
+    ],
+    "malformedCommitment": [
+      [],
+      [],
+      [],
+      [
+        {
+          "code": "R2_CASE_COMMAND_CASES",
+          "message": "native/getWorkspace/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_CASES",
+          "message": "native/listTasks/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_CASES",
+          "message": "native/createTask/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_CASES",
+          "message": "native/getTask/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_CASES",
+          "message": "native/patchTask/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_CASES",
+          "message": "native/readyTask/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_CASES",
+          "message": "native/claimTask/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_CASES",
+          "message": "native/submitTaskResult/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_CASES",
+          "message": "native/acceptTaskResult/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_CASES",
+          "message": "native/failTask/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_CASES",
+          "message": "native/cancelTask/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_CASES",
+          "message": "native/requeueTask/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_CASES",
+          "message": "native/getRun/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_CASES",
+          "message": "native/heartbeatRun/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_CASES",
+          "message": "native/listAgents/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_CASES",
+          "message": "native/getAgent/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_CASES",
+          "message": "native/createRuntime/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_CASES",
+          "message": "native/heartbeatRuntime/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_CASES",
+          "message": "native/createMessage/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_CASES",
+          "message": "native/getInbox/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_CASES",
+          "message": "native/getThread/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_CASES",
+          "message": "native/ackMessages/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_CASES",
+          "message": "native/listArtifacts/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_CASES",
+          "message": "native/stageArtifact/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_CASES",
+          "message": "native/getArtifact/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_CASES",
+          "message": "native/uploadArtifactContent/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_CASES",
+          "message": "native/downloadArtifactContent/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_CASES",
+          "message": "native/commitArtifact/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_CASES",
+          "message": "native/listEvents/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_CASES",
+          "message": "native/searchWorkspace/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_CASES",
+          "message": "native/getConfiguration/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_CASES",
+          "message": "native/getProfile/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_CASES",
+          "message": "native/listTaskResults/success"
+        },
+        {
+          "code": "R2_CASE_COMMAND_CASES",
+          "message": "native/lost-response-retained"
+        },
+        {
+          "code": "R2_CASE_COMMAND_CASES",
+          "message": "native/restart-no-send"
+        },
+        {
+          "code": "R2_CASE_COMMAND_CASES",
+          "message": "native/settled-no-send"
+        },
+        {
+          "code": "R2_CASE_COMMAND_CASES",
+          "message": "native/revoked-after-disable"
+        }
+      ],
+      []
+    ]
+  }
+}

@@ -1,0 +1,357 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cf-agent-hub.invalid/local-r2-sandbox-result-v3.schema.json",
+  "title": "Local source checks, route observations and synthetic human revocation; never native conformance",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "const": "local-r2-sandbox-result"
+    },
+    "version": {
+      "const": 3
+    },
+    "status": {
+      "const": "local-source-checks-passed"
+    },
+    "transport": {
+      "const": "local-worker-dispatch"
+    },
+    "nativeConformance": {
+      "const": false
+    },
+    "issue48Complete": {
+      "const": false
+    },
+    "acceptance": {
+      "const": "not-evaluated"
+    },
+    "cleanup": {
+      "const": "closed"
+    },
+    "rounds": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "prefixItems": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "round": {
+              "const": 1
+            },
+            "freshState": {
+              "const": true
+            },
+            "journeyDone": {
+              "const": true
+            },
+            "selfReviewDenied": {
+              "const": true
+            },
+            "wrongRuntimeProofDenied": {
+              "const": true
+            },
+            "configurationDisabled": {
+              "const": true
+            },
+            "selectedStateUnchanged": {
+              "const": true
+            },
+            "httpRequests": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 32
+            },
+            "sqlStatements": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 128
+            },
+            "responseBytes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2097152
+            },
+            "sqlBytes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2097152
+            },
+            "route_observer": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "record_count": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 32
+                },
+                "records_sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "committed_response_suppressed": {
+                  "const": true
+                },
+                "memory_only": {
+                  "const": true
+                },
+                "native_transport": {
+                  "const": false
+                }
+              },
+              "required": [
+                "record_count",
+                "records_sha256",
+                "committed_response_suppressed",
+                "memory_only",
+                "native_transport"
+              ]
+            },
+            "human_revocation": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "same_credential",
+                "same_epoch",
+                "records_sha256",
+                "runtime_count",
+                "issuer_calls",
+                "human_calls",
+                "synthetic_issuer",
+                "native_conformance"
+              ],
+              "properties": {
+                "same_credential": {
+                  "const": true
+                },
+                "same_epoch": {
+                  "const": true
+                },
+                "records_sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "runtime_count": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 8
+                },
+                "issuer_calls": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 8
+                },
+                "human_calls": {
+                  "const": 4
+                },
+                "synthetic_issuer": {
+                  "const": true
+                },
+                "native_conformance": {
+                  "const": false
+                }
+              }
+            }
+          },
+          "required": [
+            "round",
+            "freshState",
+            "journeyDone",
+            "selfReviewDenied",
+            "wrongRuntimeProofDenied",
+            "configurationDisabled",
+            "selectedStateUnchanged",
+            "httpRequests",
+            "sqlStatements",
+            "responseBytes",
+            "sqlBytes",
+            "route_observer",
+            "human_revocation"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "round": {
+              "const": 2
+            },
+            "freshState": {
+              "const": true
+            },
+            "journeyDone": {
+              "const": true
+            },
+            "selfReviewDenied": {
+              "const": true
+            },
+            "wrongRuntimeProofDenied": {
+              "const": true
+            },
+            "configurationDisabled": {
+              "const": true
+            },
+            "selectedStateUnchanged": {
+              "const": true
+            },
+            "httpRequests": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 32
+            },
+            "sqlStatements": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 128
+            },
+            "responseBytes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2097152
+            },
+            "sqlBytes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2097152
+            },
+            "route_observer": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "record_count": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 32
+                },
+                "records_sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "committed_response_suppressed": {
+                  "const": true
+                },
+                "memory_only": {
+                  "const": true
+                },
+                "native_transport": {
+                  "const": false
+                }
+              },
+              "required": [
+                "record_count",
+                "records_sha256",
+                "committed_response_suppressed",
+                "memory_only",
+                "native_transport"
+              ]
+            },
+            "human_revocation": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "same_credential",
+                "same_epoch",
+                "records_sha256",
+                "runtime_count",
+                "issuer_calls",
+                "human_calls",
+                "synthetic_issuer",
+                "native_conformance"
+              ],
+              "properties": {
+                "same_credential": {
+                  "const": true
+                },
+                "same_epoch": {
+                  "const": true
+                },
+                "records_sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "runtime_count": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 8
+                },
+                "issuer_calls": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 8
+                },
+                "human_calls": {
+                  "const": 4
+                },
+                "synthetic_issuer": {
+                  "const": true
+                },
+                "native_conformance": {
+                  "const": false
+                }
+              }
+            }
+          },
+          "required": [
+            "round",
+            "freshState",
+            "journeyDone",
+            "selfReviewDenied",
+            "wrongRuntimeProofDenied",
+            "configurationDisabled",
+            "selectedStateUnchanged",
+            "httpRequests",
+            "sqlStatements",
+            "responseBytes",
+            "sqlBytes",
+            "route_observer",
+            "human_revocation"
+          ]
+        }
+      ],
+      "items": false
+    },
+    "budgets": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "httpRequestsPerRound": {
+          "const": 32
+        },
+        "sqlStatementsPerRound": {
+          "const": 128
+        },
+        "rowsPerQuery": {
+          "const": 128
+        },
+        "responseBytesPerRound": {
+          "const": 2097152
+        },
+        "sqlBytesPerRound": {
+          "const": 2097152
+        }
+      },
+      "required": [
+        "httpRequestsPerRound",
+        "sqlStatementsPerRound",
+        "rowsPerQuery",
+        "responseBytesPerRound",
+        "sqlBytesPerRound"
+      ]
+    }
+  },
+  "required": [
+    "type",
+    "version",
+    "status",
+    "transport",
+    "nativeConformance",
+    "issue48Complete",
+    "acceptance",
+    "cleanup",
+    "rounds",
+    "budgets"
+  ]
+}
