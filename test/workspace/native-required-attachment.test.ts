@@ -1,3 +1,4 @@
+import {neutralProfile} from '../../src/config/profile';
 import {it,expect} from 'vitest';
 import {env} from 'cloudflare:workers';
 import {runInDurableObject} from 'cloudflare:test';
@@ -19,6 +20,17 @@ it('compiles the entire selected required process schedule without a subset or d
 it('has no shape-only success fallback for unknown family or invented selected state',()=>{
  expect(()=>reconcileRequiredFamily({step_id:'success/invented',before:[],after:[],responses:[]})).toThrow();
  expect(()=>reconcileRequiredFamily({step_id:'success/getWorkspace',before:[],after:[],responses:[]})).toThrow();
+});
+
+it.each([true,false])('independent workspace projection binds agents:read to selected grant rows (%s)',granted=>{
+ const scopes=['workspace:read',...(granted?['agents:read']:[])];
+ const selected=[{selector:'M',canonical:canonicalJson([{workspace_id:'ws_example',admission_state:'installed'}])},{selector:'F',canonical:canonicalJson([{state:'open'}])},{selector:'G',canonical:canonicalJson([{scopes_json:JSON.stringify(scopes)}])}];
+ const data={id:'ws_example',display_name:neutralProfile.display_name,contract_revision:'0.1',actor:{kind:'agent',principal_id:'agent_research',agent_id:'agent_research'},effective_scopes:[...scopes].sort()};
+ const input={step_id:'success/getWorkspace',before:selected,after:selected,bindings:{},actor:{agent_id:'agent_research',credential_id:'cred_s'},responses:[{operation:'getWorkspace',status:200,data:{data,request_id:'req_projection'}}]};
+ expect(()=>reconcileRequiredFamily(input)).not.toThrow();
+ const changed=structuredClone(input);changed.responses[0].data.data.effective_scopes=granted?['workspace:read']:['agents:read','workspace:read'];
+ expect(()=>reconcileRequiredFamily(changed)).toThrow('REQUIRED_FAMILY_REJECTED');
+ const extra=structuredClone(input);extra.responses[0].data.data.effective_scopes.push('agents:manage');expect(()=>reconcileRequiredFamily(extra)).toThrow();
 });
 
 const tokens={S:'A'.repeat(43),R:'B'.repeat(42)+'A',X:'C'.repeat(42)+'A'};
