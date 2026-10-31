@@ -1,3 +1,4 @@
+import {projectTaskResult} from '../tasks/results';
 import {getArtifact} from '../artifacts/repository';
 import {assertAdmissionOpen} from '../recovery/maintenance';
 import {taskRecord,taskVisible,taskView} from '../tasks/repository';
@@ -31,6 +32,8 @@ const definitions={
  'task.cancelled':{resource:'task',summary:'Task cancelled.'},
  'task.requeued':{resource:'task',summary:'Task requeued.'},
  'task.ready':{resource:'task',summary:'Task scheduled Ready.'},
+ 'task.result_submitted':{resource:'task',summary:'Task result submitted for independent review.'},
+ 'task.result_accepted':{resource:'task',summary:'Task result independently accepted.'},
  'task.failed':{resource:'task',summary:'Task attempt failed.'},
  'task.expired':{resource:'task',summary:'Task execution lease expired.'},
  'task.claimed':{resource:'task',summary:'Task claimed.'},
@@ -65,6 +68,19 @@ export function appendEvent(tx:WorkspaceTransaction,event:RedactedEventInput):{i
   if(!run||task.active_run_id!==null||event.actor.kind!=='agent'||event.actor.agentId!==run.agent_id||event.actor.credentialId!==run.credential_id||run.ended_at!==event.nowMs)throw new HttpError('INTERNAL_ERROR',500);
   row.run_id=run.id;row.fence=run.fence;
  }
+ if(event.type==='task.result_submitted'||event.type==='task.result_accepted'){
+  const task=taskRecord(tx,event.workspaceId,event.resourceId);
+  const result=tx.one<{id:string;run_id:string;submitted_kind:string;submitted_principal_id:string;submitted_agent_id:string|null;created_at:number}>('SELECT id,run_id,submitted_kind,submitted_principal_id,submitted_agent_id,created_at FROM task_results WHERE workspace_id=? AND task_id=? AND id=?',[event.workspaceId,task.id,task.current_result_id]);
+  const run=result?tx.one<{fence:number;agent_id:string;status:string;ended_at:number}>('SELECT fence,agent_id,status,ended_at FROM runs WHERE workspace_id=? AND task_id=? AND id=?',[event.workspaceId,task.id,result.run_id]):null;
+  if(!result||!run||run.status!=='submitted'||run.ended_at===null||task.active_run_id!==null||task.latest_run_id!==result.run_id||task.approval_id!==null)throw new HttpError('INTERNAL_ERROR',500);
+  if(event.type==='task.result_submitted'){
+   if(task.state!=='review'||result.created_at!==event.nowMs||run.ended_at!==event.nowMs||event.actor.kind!==result.submitted_kind||event.actor.principalId!==result.submitted_principal_id||event.actor.agentId!==result.submitted_agent_id||run.agent_id!==event.actor.agentId)throw new HttpError('INTERNAL_ERROR',500);
+  }else{
+   const acceptance=tx.one<{reviewer_principal_id:string;reviewer_agent_id:string|null;reason:string;created_at:number}>('SELECT reviewer_principal_id,reviewer_agent_id,reason,created_at FROM task_acceptances WHERE workspace_id=? AND task_id=? AND task_version=? AND result_id=? AND run_id=?',[event.workspaceId,task.id,task.task_version,result.id,result.run_id]);
+   if(task.state!=='done'||!acceptance||acceptance.reviewer_principal_id!==event.actor.principalId||acceptance.reviewer_agent_id!==event.actor.agentId||acceptance.created_at!==event.nowMs||acceptance.reason!==event.historyReason||event.actor.principalId===result.submitted_principal_id||event.actor.agentId!==null&&event.actor.agentId===result.submitted_agent_id)throw new HttpError('INTERNAL_ERROR',500);
+  }
+  row.run_id=result.run_id;row.fence=run.fence;
+ }
  if(event.type==='task.cancelled'||event.type==='task.requeued'){
   if(!validateTaskReasonRequest({expected_version:1,reason:event.historyReason})||new TextEncoder().encode(JSON.stringify({expected_version:1,reason:event.historyReason})).byteLength>65536)throw new HttpError('INTERNAL_ERROR',500);
   const task=taskRecord(tx,event.workspaceId,event.resourceId);
@@ -73,6 +89,8 @@ export function appendEvent(tx:WorkspaceTransaction,event:RedactedEventInput):{i
    const run=tx.one<{id:string;fence:number;status:string;ended_at:number}>('SELECT id,fence,status,ended_at FROM runs WHERE workspace_id=? AND task_id=? AND id=?',[event.workspaceId,task.id,task.latest_run_id]);
    if(run?.status==='cancelled'&&run.ended_at===event.nowMs){row.run_id=run.id;row.fence=run.fence;}
   }
+ }else if(event.type==='task.result_accepted'){
+  if(!validateTaskReasonRequest({expected_version:1,reason:event.historyReason})||new TextEncoder().encode(JSON.stringify({expected_version:1,reason:event.historyReason})).byteLength>65536)throw new HttpError('INTERNAL_ERROR',500);
  }else if(event.historyReason!==undefined)throw new HttpError('INTERNAL_ERROR',500);
  return persistEvent(tx,row,historyTaskId,event.historyReason??null);
 }
@@ -138,6 +156,18 @@ export const resourceEventVisibility:EventVisibility=(tx,actor,resource,event,no
   if(resource.kind==='artifact'){getArtifact(tx,{actor,nowMs},event.resource_id);return true;}
   if(event.type==='message.accepted'||event.type==='message.acknowledged'){
    assertMessageVisible(tx,actor,event.resource_id,nowMs);return true;
+  }
+  if(event.type==='task.result_submitted'||event.type==='task.result_accepted'){
+   if(resource.kind!=='task'||event.run_id===null||event.fence===null||event.task_version===null)return false;
+   const result=tx.one<{id:string;submitted_kind:string;submitted_principal_id:string;submitted_agent_id:string|null;created_at:number;fence:number;ended_at:number}>("SELECT r.id,r.submitted_kind,r.submitted_principal_id,r.submitted_agent_id,r.created_at,n.fence,n.ended_at FROM task_results r JOIN runs n ON n.workspace_id=r.workspace_id AND n.task_id=r.task_id AND n.id=r.run_id WHERE r.workspace_id=? AND r.task_id=? AND r.run_id=? AND n.status='submitted'",[actor.workspaceId,resource.id,event.run_id]);
+   if(!result||result.fence!==event.fence||!projectTaskResult(tx,actor,resource.id,result.id))return false;
+   if(event.type==='task.result_submitted'){
+    if(event.actor.kind!==result.submitted_kind||event.actor.principal_id!==result.submitted_principal_id||event.actor.agent_id!==result.submitted_agent_id||new Date(result.created_at).toISOString()!==event.occurred_at||result.created_at!==result.ended_at)return false;
+   }else{
+    const acceptance=tx.one<{reviewer_principal_id:string;reviewer_agent_id:string|null;created_at:number}>('SELECT reviewer_principal_id,reviewer_agent_id,created_at FROM task_acceptances WHERE workspace_id=? AND task_id=? AND task_version=? AND result_id=? AND run_id=?',[actor.workspaceId,resource.id,event.task_version,result.id,event.run_id]);
+    if(!acceptance||acceptance.reviewer_principal_id!==event.actor.principal_id||acceptance.reviewer_agent_id!==event.actor.agent_id||new Date(acceptance.created_at).toISOString()!==event.occurred_at)return false;
+   }
+   const task=taskRecord(tx,actor.workspaceId,resource.id);if(!taskVisible(actor,task)||event.task_version>task.task_version)return false;taskView(tx,actor,task,nowMs);return true;
   }
   if(event.type==='task.failed'||event.type==='task.expired'){
    if(resource.kind!=='task'||event.run_id===null||event.fence===null||event.task_version===null)return false;

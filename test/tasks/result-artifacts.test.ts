@@ -1,0 +1,53 @@
+import {it,expect} from 'vitest';
+import {runInDurableObject,evictDurableObject} from 'cloudflare:test';
+import {reviewFixture,setupReview,client,submission,reviewSnapshot,committedEvidence,proof} from '../helpers/results';
+import {artifactContext,stage,bytes} from '../helpers/artifacts';
+import {uploadArtifactContent} from '../../src/artifacts/content';
+import {sha256} from '../../src/config/bootstrap';
+import {claimIdentity} from '../helpers/claims';
+import {withTransaction} from '../../src/storage/transaction';
+import {resolveActor} from '../../src/auth/authorize';
+import {projectEvent,resourceEventVisibility} from '../../src/audit/events';
+import {listTaskResults} from '../../src/tasks/history';
+import {messageInput,owned,commandContext} from '../helpers/messages';
+import {messageCommand} from '../../src/messages/commands';
+import {executeCommand} from '../../src/workspace/commands';
+import {authorizeArtifactRead} from '../../src/artifacts/repository';
+const accept={expected_version:4,reason:'Accepted verified immutable evidence'};
+function history(s:DurableObjectStorage,credential='credential_other') {return withTransaction(s,tx=>{const actor=resolveActor(tx,claimIdentity(s,credential),Date.now());return listTaskResults(tx,{actor,nowMs:Date.now()},'task_a',{limit:50,binding:{workspaceId:actor.workspaceId,principalId:actor.principalId,lane:actor.kind,credentialId:actor.credentialId,sessionId:actor.sessionId,operation:'task-results',queryHash:'a'.repeat(64)}});});}
+it('real_committed_artifacts_keep_order_and_associations_across_restart_and_independent_acceptance',async()=>{const f=await reviewFixture('result-artifact-roundtrip');let now=0;await runInDurableObject(f.stub,async(_o,s)=>{now=await setupReview(s.storage,f.name);await committedEvidence(s.storage,f.name,now+1,'artifact_z');await committedEvidence(s.storage,f.name,now+1,'artifact_a');const send=await client(s.storage,f.name,now+2),response=await send('submit-result',submission(['artifact_z','artifact_a']));expect(response.status).toBe(200);expect(await response.json()).toMatchObject({data:{task:{result:{artifact_ids:['artifact_z','artifact_a']}}}});expect(s.storage.sql.exec('SELECT artifact_id,ordinal FROM result_artifacts ORDER BY ordinal').toArray()).toEqual([{artifact_id:'artifact_z',ordinal:0},{artifact_id:'artifact_a',ordinal:1}]);expect(s.storage.sql.exec("SELECT count(*) AS n FROM artifact_associations WHERE resource_kind='result'").one().n).toBe(2);});await evictDurableObject(f.stub);await runInDurableObject(f.stub,async(_o,s)=>{expect(history(s.storage).items[0].artifact_ids).toEqual(['artifact_z','artifact_a']);expect((await(await client(s.storage,f.name,now+3))('accept-result',accept,'accept','other')).status).toBe(200);expect(history(s.storage).items[0].submitted_by.agent_id).toBe('agent_research');});});
+it.each(['staged','uploaded','foreign','wrong-task','wrong-run','duplicate','count','aggregate','individual','hidden'] as const)('invalid_%s_result_artifact_rejects_atomically',async bad=>{const f=await reviewFixture('result-artifact-'+bad);await runInDurableObject(f.stub,async(_o,s)=>{const now=await setupReview(s.storage,f.name),ctx={...artifactContext(s.storage,f.name,'invalid',now+1),proofHash:await sha256(proof)};let ids=['artifact_a'];if(bad==='staged'||bad==='uploaded'){await stage(ctx);if(bad==='uploaded')await uploadArtifactContent({...ctx,idempotencyKey:'upload'},'artifact_a',bytes(),'upload');}else if(bad==='foreign'){
+ // Foreign synthetic retained intent has no relationship to the authenticated workspace.
+ s.storage.sql.exec("INSERT INTO artifacts(id,workspace_id,task_id,run_id,owner_kind,owner_principal_id,owner_agent_id,authority_epoch,artifact_version,filename,media_type,byte_size,sha256,status,created_at,expires_at) VALUES('artifact_a','ws_foreign',NULL,NULL,'human','foreign',NULL,1,1,'x','text/plain',5,?,'staged',1,3)",'a'.repeat(64));
+ }else{await committedEvidence(s.storage,f.name,now+1,'artifact_a',bad==='wrong-task'?'task_b':'task_a',null);
+ if(bad==='wrong-run'){s.storage.sql.exec("INSERT INTO runs SELECT 'old_run',workspace_id,task_id,agent_id,runtime_instance_id,credential_id,authority_epoch,'submitted',1,77,lease_expires_at,started_at,started_at,replay_policy_version,replay_rule_id,replay_evidence_ref FROM runs WHERE id='run_a'");s.storage.sql.exec("UPDATE artifacts SET run_id='old_run' WHERE id='artifact_a'");s.storage.sql.exec("INSERT INTO artifact_associations VALUES('ws_example','artifact_a','run','old_run')");}
+ if(bad==='duplicate')ids.push('artifact_a');if(bad==='count')ids=['a','b','c','d','e','f'];
+ if(bad==='hidden')s.storage.sql.exec("INSERT INTO artifact_associations VALUES('ws_example','artifact_a','checkpoint','closed')");
+ if(bad==='aggregate'||bad==='individual'){
+  // Boundary metadata fixture; these are not claimed to be physical multi-megabyte uploads.
+  if(bad==='aggregate'){for(const id of ['artifact_b','artifact_c'])await committedEvidence(s.storage,f.name,now+1,id);ids=['artifact_a','artifact_b','artifact_c'];}
+  const n=bad==='individual'?10485761:10485760;s.storage.sql.exec('UPDATE artifacts SET byte_size=?',n);s.storage.sql.exec('UPDATE artifact_generations SET expected_byte_size=?,observed_byte_size=?',n,n);
+ }
+ }
+ const send=await client(s.storage,f.name,now+2),before=reviewSnapshot(s.storage),response=await send('submit-result',submission(ids));expect(response.status).toBe(['duplicate','count'].includes(bad)?400:['aggregate','individual'].includes(bad)?413:404);expect(reviewSnapshot(s.storage)).toEqual(before);
+ });});
+it.each(['result_artifacts','artifact_associations','scheduler_state'] as const)('submission_%s_fault_rolls_back_all_result_families',async table=>{const f=await reviewFixture('result-artifact-fault-'+table);await runInDurableObject(f.stub,async(_o,s)=>{const now=await setupReview(s.storage,f.name);await committedEvidence(s.storage,f.name,now+1);s.storage.sql.exec(`CREATE TRIGGER reject_result_edge BEFORE ${table==='scheduler_state'?'UPDATE':'INSERT'} ON ${table} BEGIN SELECT RAISE(ABORT,'synthetic_result_edge_abort'); END`);const before=reviewSnapshot(s.storage),send=await client(s.storage,f.name,now+2);expect((await send('submit-result',submission(['artifact_a']))).status).toBe(500);expect(reviewSnapshot(s.storage)).toEqual(before);});});
+it('new_private_message_association_hides_current_and_historical_result_events_and_replay',async()=>{const f=await reviewFixture('result-historical-message');await runInDurableObject(f.stub,async(_o,s)=>{const now=await setupReview(s.storage,f.name);await committedEvidence(s.storage,f.name,now+1);const send=await client(s.storage,f.name,now+2);expect((await send('submit-result',submission(['artifact_a']),'submit')).status).toBe(200);const eventId=s.storage.sql.exec<{id:string}>("SELECT id FROM events WHERE type='task.result_submitted'").one().id;const project=()=>withTransaction(s.storage,tx=>{const actor=resolveActor(tx,claimIdentity(s.storage,'credential_other'),now+3);return projectEvent(tx,actor,eventId,now+3,resourceEventVisibility);});expect(project()).not.toBeNull();expect(history(s.storage).items).toHaveLength(1);expect((await send('requeue',{expected_version:4,reason:'Revise'},'requeue','human')).status).toBe(200);expect(project()).not.toBeNull();const message=messageInput({recipient_agent_ids:['agent_research'],refs:[],artifact_ids:['artifact_a']});executeCommand(await commandContext(s.storage,f.name,message,'private'),claimIdentity(s.storage),messageCommand(owned(s.storage,f.name)),message);expect(history(s.storage).items).toEqual([]);expect(project()).toBeNull();s.storage.sql.exec("UPDATE native_credentials SET scopes_json='[\"tasks:execute\",\"tasks:read\",\"artifacts:read\",\"runtimes:manage\"]' WHERE credential_id='credential_research_1'");expect((await send('submit-result',submission(['artifact_a']),'submit')).status).toBe(403);});});
+it.each([false,true])('new_private_message_graph_denies_independent_acceptance_replay_%s_without_mutation',async replay=>{const f=await reviewFixture('result-review-hidden-'+replay);await runInDurableObject(f.stub,async(_o,s)=>{
+ const now=await setupReview(s.storage,f.name);await committedEvidence(s.storage,f.name,now+1);const send=await client(s.storage,f.name,now+2);
+ expect((await send('submit-result',submission(['artifact_a']))).status).toBe(200);
+ if(replay)expect((await send('accept-result',accept,'accept','other','')).status).toBe(200);
+ const message=messageInput({recipient_agent_ids:['agent_research'],refs:[],artifact_ids:['artifact_a']});
+ expect(executeCommand(await commandContext(s.storage,f.name,message,'private-review'),claimIdentity(s.storage),messageCommand(owned(s.storage,f.name)),message).status).toBe(201);
+ const before=reviewSnapshot(s.storage);expect((await send('accept-result',accept,'accept','other','')).status).toBe(403);expect(reviewSnapshot(s.storage)).toEqual(before);
+ if(replay){const eventId=s.storage.sql.exec<{id:string}>("SELECT id FROM events WHERE type='task.result_accepted'").one().id;expect(withTransaction(s.storage,tx=>projectEvent(tx,resolveActor(tx,claimIdentity(s.storage,'credential_other'),now+3),eventId,now+3,resourceEventVisibility))).toBeNull();}
+ });});
+it('new_result_edge_exceeding_readable_association_budget_rolls_back_entire_submission',async()=>{const f=await reviewFixture('result-post-write-graph-budget');await runInDurableObject(f.stub,async(_o,s)=>{
+ const now=await setupReview(s.storage,f.name);await committedEvidence(s.storage,f.name,now+1);
+ // Synthetic retained run associations share one visible task: exactly 2048 edges
+ // are readable before submission, while its new reverse result edge is 2049.
+ s.storage.transactionSync(()=>{for(let i=0;i<2046;i++){const id='retained_'+i;s.storage.sql.exec("INSERT INTO runs SELECT ?,workspace_id,task_id,agent_id,runtime_instance_id,credential_id,authority_epoch,'submitted',1,?,lease_expires_at,started_at,started_at,replay_policy_version,replay_rule_id,replay_evidence_ref FROM runs WHERE id='run_a'",id,i+2);s.storage.sql.exec("INSERT INTO artifact_associations VALUES('ws_example','artifact_a','run',?)",id);}});
+ expect(s.storage.sql.exec('SELECT count(*) AS n FROM artifact_associations').one().n).toBe(2048);
+ expect(()=>withTransaction(s.storage,tx=>authorizeArtifactRead(tx,{actor:resolveActor(tx,claimIdentity(s.storage),now+2),nowMs:now+2},'artifact_a'))).not.toThrow();
+ const before=reviewSnapshot(s.storage),send=await client(s.storage,f.name,now+2);expect((await send('submit-result',submission(['artifact_a']))).status).toBe(503);expect(reviewSnapshot(s.storage)).toEqual(before);
+ });});

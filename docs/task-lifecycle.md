@@ -1,6 +1,6 @@
 # Task lifecycle
 
-Status: Local metadata source with broader lifecycle implementation and live acceptance pending · Contract revision 0.1.
+Status: Local R2 source through independent result acceptance; R3 decisions and live acceptance pending · Contract revision0.1.
 
 This is the canonical proposed state machine. A task represents a durable unit of work and its review outcome. A run represents one execution attempt. A notification or ACK represents message delivery. These objects have independent lifecycles and must never substitute for one another.
 
@@ -122,3 +122,11 @@ Explicit Backlog/Review requeue clears prior current result/approval context und
 Ownership-changing POST success schedules the existing shared alarm repair in the DO lifetime without awaiting after final authorized response projection. The durable dirty generation survives failed arming; the existing catalog sweep can repair it. Cancellation/expiry do not promise that an external runtime stopped its side effects. A lost response must replay the same key/body, then fresh-read current run/task state rather than treating a historical replayed claim as a renewed lease.
 
 See [issue31 evidence](r2-task-plans/issue-031-execution.md) for exact scope, fixture-only decision/result limitations, migration and remaining gates.
+
+## Local issue35 submission and independent acceptance
+
+The local source now implements Doing→Review submission and Review→Done acceptance; it is not deployed acceptance. Submit ends the exact current native-owned run as submitted with ended_at, clears active execution authority, retains the immutable result and marks the shared scheduler dirty in the same event/history/outcome transaction. Exact task version, fence, lease, runtime proof/presence, epoch, maintenance generation, eligibility and committed artifact associations remain required.
+
+An independent human or native agent with current tasks:review and complete result visibility may accept. Either a matching stable principal or a matching stable agent rejects, regardless of alternate token/runtime or submitter archive. Acceptance has separate immutable actor/result/run/version/time evidence and private reason. It never grants execution or creates an R3 approval. Submission returns the ended Run; acceptance returns null Run/Approval while Task retains the result and latest run.
+
+Cancel-first denies submit. Submit-first cancellation needs the new version and retains history/associations; requeue clears only current result and preserves budget and stable historical attribution. Current authorization still applies to original replay/history/events even after requeue. A lost response never implies a fresh attempt. See [issue35 evidence](r2-task-plans/issue-035-execution.md).
