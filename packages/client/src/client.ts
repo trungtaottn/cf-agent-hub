@@ -1,7 +1,7 @@
 import {clientOperations} from '../../../src/http/generated/client-operations';
 import {prepareNativeOperation} from './native-request';
 import type {HttpOperationData} from '../../../src/http/dto';
-import type {BrowserReadOperation,BrowserTaskCommandOperation,BrowserTaskCommandOptions,RequestFor} from './types';
+import type {BrowserComposeOperation,BrowserComposeOptions,BrowserReadOperation,BrowserTaskCommandOperation,BrowserTaskCommandOptions,RequestFor} from './types';
 import {HttpTransport,Deadline,ClientFault,failure,faultResult} from './transport';
 import type {ApiResult,HubClientOptions,Operation,OperationInputs,RequestOptions} from './types';
 import {
@@ -96,6 +96,27 @@ export class HubClient {
    const response=await this.#transport.open(prepared.path+(prepared.queryCanonical?'?'+prepared.queryCanonical:''),{method:'GET',headers:{accept:'application/json'},credentials:'same-origin',mode:'same-origin',redirect:'error',cache:'no-store',signal:deadline.signal},deadline);
    if(response.status===401||response.status===403)this.#csrfToken=null;
    return await this.#transport.json<HttpOperationData[K]>(response,{page:contract.page,status:contract.status,validateEnvelope:contract.validateResponse,maxBytes:1048576,deadline});
+  }catch(error){return faultResult(error);}finally{deadline.dispose();}
+ }
+ /** Closed composition lane: durable intent/key ownership remains with the caller.
+  * No native credential plumbing, automatic retry or caller-controlled headers. */
+ async compose<K extends BrowserComposeOperation>(operation:K,input:RequestFor<K>,options:BrowserComposeOptions):Promise<ApiResult<HttpOperationData[K]>>{
+  const allowed:readonly string[]=['createMessage','createTask'];
+  if(!allowed.includes(operation))return failure('OPERATION_UNAVAILABLE','Operation unavailable in the browser composition surface');
+  let prepared:ReturnType<typeof prepareNativeOperation>,headers:Headers,signal:AbortSignal|undefined;
+  try{
+   if(!record(options)||Object.keys(options).some(key=>key!=='idempotencyKey'&&key!=='signal'))throw new ClientFault('INVALID_REQUEST');
+   const key=options.idempotencyKey;signal=options.signal;
+   if(!nonempty(key)||key.trim()!==key||/[\r\n]/.test(key)||signal!==undefined&&!(signal instanceof AbortSignal))throw new ClientFault('INVALID_REQUEST');
+   prepared=prepareNativeOperation('https://browser.invalid',this.#workspaceId,operation,input);
+   if(!this.#csrfToken)return failure('CSRF_REQUIRED','Session CSRF token required');
+   headers=new Headers({accept:'application/json','content-type':'application/json','idempotency-key':key,'x-csrf-token':this.#csrfToken});
+  }catch{return failure('INVALID_REQUEST','Invalid request');}
+  const contract=clientOperations[operation],deadline=new Deadline(30_000,signal);
+  try{
+   const response=await this.#transport.open(prepared.path,{method:prepared.method,headers,body:prepared.canonicalBody,credentials:'same-origin',mode:'same-origin',redirect:'error',cache:'no-store',signal:deadline.signal},deadline);
+   if(response.status===401||response.status===403)this.#csrfToken=null;
+   return await this.#transport.json<HttpOperationData[K]>(response,{status:contract.status,validateEnvelope:contract.validateResponse,maxBytes:1048576,deadline});
   }catch(error){return faultResult(error);}finally{deadline.dispose();}
  }
  /** Four canonical task mutations only. No native credentials, retries or caller headers. */

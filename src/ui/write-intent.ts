@@ -4,6 +4,11 @@ export type WriteInput=ProfileWriteRequest|PreferencesWriteRequest;
 export type WriteTransport<T=unknown>=(operation:WriteOperation,input:WriteInput,options:{idempotencyKey:string})=>Promise<ApiResult<T>>;
 export interface WriteIntent{operation:WriteOperation;input:WriteInput;key:string;serializedBody:string;}
 export interface WriteState<T>{status:'idle'|'pending'|'uncertain'|'conflict'|'rejected'|'succeeded';intent:WriteIntent|null;result:ApiResult<T>|null;}
+/** Shared response classification only; durability/replay permission remain with each owner. */
+export function classifyWriteResult(result:ApiResult<unknown>):'succeeded'|'rejected'|'conflict'|'uncertain'{
+ const knownPreflight=!result.ok&&result.status===null&&['INVALID_REQUEST','CSRF_REQUIRED','OPERATION_UNAVAILABLE'].includes(result.error.code);
+ return result.ok?'succeeded':knownPreflight?'rejected':result.error.code==='VERSION_CONFLICT'?'conflict':result.status===null||result.error.code==='INVALID_RESPONSE'||result.status>=500?'uncertain':'rejected';
+}
 /** A deliberate intent owns one immutable key/body until its outcome is known. */
 export class IntentWriter<T=unknown>{
  #generation=0;#state:WriteState<T>={status:'idle',intent:null,result:null};
@@ -27,9 +32,7 @@ export class IntentWriter<T=unknown>{
   try{result=await this.transport(intent.operation,JSON.parse(intent.serializedBody) as WriteInput,{idempotencyKey:intent.key});}
   catch{result={ok:false,status:null,error:{code:'NETWORK_ERROR',message:'Network request failed',retryable:true},requestId:null};}
   if(generation!==this.#generation)return null;
-  const knownPreflight=!result.ok&&result.status===null&&['INVALID_REQUEST','CSRF_REQUIRED','OPERATION_UNAVAILABLE'].includes(result.error.code);
-  const status=result.ok?'succeeded':knownPreflight?'rejected':result.error.code==='VERSION_CONFLICT'?'conflict':
-   result.status===null||result.error.code==='INVALID_RESPONSE'||result.status>=500?'uncertain':'rejected';
+  const status=classifyWriteResult(result);
   this.#state={status,intent:result.ok?null:intent,result};return result;
  }
  reviewed():void{if(this.#state.status==='pending'||this.#state.status==='uncertain')throw Error('Reconcile the original write first');this.invalidate();}
