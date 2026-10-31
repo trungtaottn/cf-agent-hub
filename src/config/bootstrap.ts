@@ -10,28 +10,45 @@ export function canonicalJson(value:unknown):string {
  const record=value as Record<string,unknown>;
  return '{'+Object.keys(record).sort().map(k=>JSON.stringify(k)+':'+canonicalJson(record[k])).join(',')+'}';
 }
-export async function sha256(value:string):Promise<string> {
+export async function sha256(value:string,guard?:()=>Promise<void>):Promise<string> {
  const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value));
+ if(guard)await guard();
  return Array.from(new Uint8Array(bytes),b=>b.toString(16).padStart(2,'0')).join('');
 }
-function validateRetirement(config:DeploymentConfig,tombstone:{workspace_id:string;agent_id:string;retired_at_epoch:number}):void {
+export function validateRetirement(config:DeploymentConfig,tombstone:{workspace_id:string;agent_id:string;retired_at_epoch:number}):void {
  if(!config.workspace_catalog.some(x=>x.workspace_id===tombstone.workspace_id)||
   !config.static_participants.some(x=>x.workspace_id===tombstone.workspace_id&&x.agent_id===tombstone.agent_id)||
   tombstone.retired_at_epoch>config.config_epoch)throw Error('INVALID_RETIREMENT');
 }
-export async function prepareBootstrap(configInput:unknown,bundleInput:unknown,workspaceId:string):Promise<ValidatedBootstrap> {
+export async function prepareBootstrap(configInput:unknown,bundleInput:unknown,workspaceId:string,guard?:()=>Promise<void>):Promise<ValidatedBootstrap> {
  const config=parseDeployment(configInput);
  if(!validateBundle(bundleInput))throw Error('INVALID_BUNDLE');
  const bundle=structuredClone(bundleInput);resolveWorkspace(config,workspaceId);
- if(bundle.config_epoch!==config.config_epoch||bundle.config_digest!==await sha256(canonicalJson(config)))throw Error('CONFIG_DIGEST_MISMATCH');
+ if(bundle.config_epoch!==config.config_epoch||bundle.config_digest!==await sha256(canonicalJson(config),guard))throw Error('CONFIG_DIGEST_MISMATCH');
  for(const tombstone of bundle.retired_credentials)validateRetirement(config,tombstone);
  const order=(a:{workspace_id:string;credential_id:string},b:{workspace_id:string;credential_id:string})=>
   a.workspace_id<b.workspace_id?-1:a.workspace_id>b.workspace_id?1:a.credential_id<b.credential_id?-1:a.credential_id>b.credential_id?1:0;
- return {config,bundle,workspaceId,installationDigest:await sha256(canonicalJson({config,credentials:[...bundle.credentials].sort(order),retired_credentials:[...bundle.retired_credentials].sort(order)}))};
+ return {config,bundle,workspaceId,installationDigest:await sha256(canonicalJson({config,credentials:[...bundle.credentials].sort(order),retired_credentials:[...bundle.retired_credentials].sort(order)}),guard)};
 
 }
+/** Shared install/restore continuity rules; no authority source rows are enumerated here. */
+export function assertPrincipalContinuity(prior:{issuer:string;subject:string},next:{issuer:string;subject:string}):void {
+ if(prior.issuer!==next.issuer||prior.subject!==next.subject)throw Error('PRINCIPAL_IMMUTABLE');
+}
+export function assertCredentialContinuity(config:DeploymentConfig,workspaceId:string,credential:Credential,ref:DeploymentConfig['static_credential_refs'][number]|undefined,hash:VerificationBundle['credentials'][number]|undefined,tombstone:VerificationBundle['retired_credentials'][number]|undefined):void {
+ if(credential.retired_at_epoch!==null)validateRetirement(config,{...credential,workspace_id:workspaceId,retired_at_epoch:credential.retired_at_epoch});
+ if(ref){
+  if(credential.retired_at_epoch!==null||ref.agent_id!==credential.agent_id||hash?.token_sha256!==credential.token_sha256)throw Error('CREDENTIAL_IMMUTABLE');
+ }else if(!tombstone||tombstone.agent_id!==credential.agent_id||tombstone.token_sha256!==credential.token_sha256||(credential.retired_at_epoch!==null?tombstone.retired_at_epoch!==credential.retired_at_epoch:tombstone.retired_at_epoch!==config.config_epoch))throw Error('RETIREMENT_REQUIRED');
+}
+export function assertNewCredentialExpiry(expiresAt:number,nowMs:number):void {
+ if(!Number.isFinite(expiresAt)||expiresAt<=nowMs||expiresAt>nowMs+90*86400000)throw Error('CREDENTIAL_EXPIRY');
+}
+export function nextAuthorityVersion(version:number,advance:boolean):number {
+ if(!Number.isSafeInteger(version)||version<1||advance&&version>=Number.MAX_SAFE_INTEGER)throw Error('R2_VERSION_EXHAUSTED');return version+(advance?1:0);
+}
 interface Metadata {workspace_id:string;object_name:string;config_epoch:number;installation_digest:string;admission_state:string;}
-interface Credential {credential_id:string;agent_id:string;token_sha256:string;retired_at_epoch:number|null;}
+export interface Credential {credential_id:string;agent_id:string;token_sha256:string;retired_at_epoch:number|null;}
 export function installConfiguration(tx:WorkspaceTransaction,config:DeploymentConfig,input:ValidatedBootstrap,nowMs:number):{epoch:number;installationDigest:string} {
  const {workspaceId,bundle,installationDigest}=input,mapping=resolveWorkspace(config,workspaceId);
  const old=tx.one<Metadata>('SELECT * FROM workspace_metadata WHERE id=1');
@@ -83,23 +100,18 @@ function applyAuthorityRows(tx:WorkspaceTransaction,config:DeploymentConfig,inpu
  const existing=tx.all<Credential>('SELECT credential_id,agent_id,token_sha256,retired_at_epoch FROM native_credentials'+(r2?" WHERE origin='operator_static'":''));
  const references=config.static_credential_refs.filter(x=>x.workspace_id===workspaceId);
  for(const credential of existing) {
-  // Stored tombstones remain bound to the reviewed catalog even when incoming history is omitted.
-  if(credential.retired_at_epoch!==null)validateRetirement(config,{...credential,workspace_id:workspaceId,retired_at_epoch:credential.retired_at_epoch});
   const ref=references.find(x=>x.credential_id===credential.credential_id),tombstone=retired.get(keyed(workspaceId,credential.credential_id));
-  if(ref) {
-   if(credential.retired_at_epoch!==null||ref.agent_id!==credential.agent_id||hashes.get(keyed(workspaceId,ref.credential_id))!.token_sha256!==credential.token_sha256)throw Error('CREDENTIAL_IMMUTABLE');
-  } else if(!tombstone||tombstone.agent_id!==credential.agent_id||tombstone.token_sha256!==credential.token_sha256||
-    (credential.retired_at_epoch!==null?tombstone.retired_at_epoch!==credential.retired_at_epoch:tombstone.retired_at_epoch!==config.config_epoch))throw Error('RETIREMENT_REQUIRED');
+  assertCredentialContinuity(config,workspaceId,credential,ref,hashes.get(keyed(workspaceId,credential.credential_id)),tombstone);
  }
  for(const ref of references)if(!existing.some(x=>x.credential_id===ref.credential_id)) {
   const expiry=Date.parse(ref.expires_at);
-  if(expiry<=nowMs||expiry>nowMs+90*86400000)throw Error('CREDENTIAL_EXPIRY');
+  assertNewCredentialExpiry(expiry,nowMs);
  }
  // Retain disabled identity records so future installs cannot silently rebind principals.
  tx.exec('UPDATE human_grants SET enabled=0,config_epoch=?',[config.config_epoch]);
  for(const grant of config.human_grants.filter(x=>x.workspace_id===workspaceId)) {
   const prior=tx.one<{issuer:string;subject:string}>('SELECT issuer,subject FROM human_grants WHERE principal_id=?',[grant.principal_id]);
-  if(prior&&(prior.issuer!==grant.issuer||prior.subject!==grant.subject))throw Error('PRINCIPAL_IMMUTABLE');
+  if(prior)assertPrincipalContinuity(prior,grant);
   tx.exec('INSERT INTO human_grants (principal_id,workspace_id,issuer,subject,scopes_json,project_ids_json,enabled,config_epoch) VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(principal_id) DO UPDATE SET scopes_json=excluded.scopes_json,project_ids_json=excluded.project_ids_json,enabled=excluded.enabled,config_epoch=excluded.config_epoch',[grant.principal_id,workspaceId,grant.issuer,grant.subject,canonicalJson(grant.scopes),canonicalJson(grant.project_ids),Number(grant.enabled),config.config_epoch]);
  }
  for(const agent of config.static_participants.filter(x=>x.workspace_id===workspaceId)){

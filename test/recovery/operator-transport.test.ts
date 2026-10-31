@@ -17,7 +17,7 @@ async function installedSource(){
  const installed=await stub.installOperation({principalId:'operator_fixture',workspaceId:workspace,requestId:'request_source_install',operation:'install',expectedEpoch:0,expectedInstallationDigest:null,operationId:'source_install',requestFingerprint:'1'.repeat(64),proofExpiresAt:Date.now()+120000},input);
  expect(installed.ok).toBe(true);return {input,stub};
 }
-describe('current authenticated operator recovery keeps binding and capture-only gates',()=>{
+describe('current authenticated operator recovery keeps binding and state admission gates',()=>{
  it('does not consume binary bytes before service authorization or expected-epoch admission',async()=>{
   const body=envelope('write-chunk',{index:0,sha256:'a'.repeat(64),byte_size:1},'binary_denied',999),policy=parseOperatorPolicy(bindings.OPERATOR_POLICY);
   for(const jwt of [null,await assertion(),await assertion({common_name:'install-only.access'})]){
@@ -50,10 +50,10 @@ describe('current authenticated operator recovery keeps binding and capture-only
   expect(await stub.recoveryOperation(ctx,body)).toEqual({ok:false,code:'RECOVERY_UNAVAILABLE'});
   expect(await stub.authoritySnapshot({workspaceId:workspace,objectName:'recovery-source-workspace'})).toEqual(before);
  });
- it('current probe stays unavailable and absent captured chunks conflict without binary or success receipts',async()=>{
+ it('uninstalled current probe and absent captured chunks conflict without binary or success receipts',async()=>{
   const jwt=await assertion(),policy=parseOperatorPolicy(bindings.OPERATOR_POLICY),mapping=policy.workspace_catalog.find(x=>x.workspace_id===workspace)!;
   const target=bindings.WORKSPACE.getByName(mapping.object_name) as DurableObjectStub<WorkspaceDO>,before=await target.authoritySnapshot({workspaceId:workspace,objectName:mapping.object_name});
-  for(const [body,status,code] of [[envelope('probe',{},'probe_unavailable',0,workspace,null),503,'AUTH_UNAVAILABLE'],[envelope('read-chunk',{index:0},'read_unavailable',0),409,'CONFLICT']] as const){
+  for(const [body,status,code] of [[envelope('probe',{},'probe_unavailable',0,workspace,null),409,'CONFLICT'],[envelope('read-chunk',{index:0},'read_unavailable',0),409,'CONFLICT']] as const){
    for(let repeat=0;repeat<2;repeat++){const response=await jsonCall(body,jwt);expect(response.status).toBe(status);
     expect(response.headers.get('X-CFHub-Recovery-Chunk')).toBeNull();expect(response.headers.get('content-type')).not.toBe('application/octet-stream');
     const result=await response.json() as {error?:{code:string};data?:unknown;receipt?:unknown};expect(result.error?.code).toBe(code);expect(result).not.toHaveProperty('data');expect(result).not.toHaveProperty('receipt');}

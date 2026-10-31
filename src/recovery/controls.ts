@@ -1,3 +1,5 @@
+import {resolveCurrentDelivery,retireCurrentWorkspace,resumeCurrentWorkspace} from './current-controls';
+import {recoverySchema} from './protocol';
 import {withTransaction,type WorkspaceTransaction} from '../storage/transaction';
 import {canonicalJson} from '../config/bootstrap';
 import {markSchedulerDirty} from '../outbox/scheduler-state';
@@ -14,6 +16,7 @@ function controlJob(tx:WorkspaceTransaction,w:RecoveryWorkspace,ctx:RecoveryCont
  const maintenance=maintenanceRow(tx);if(job.state!=='complete'||job.details.receipt?.status!=='complete'||!maintenance||maintenance.capture_id!==ctx.captureId||!['captured','restored'].includes(maintenance.state))throw Error('RECOVERY_CONTROL_CONFLICT');return job;
 }
 export async function resolveDelivery(w:RecoveryWorkspace,ctx:RecoveryContext,input:{delivery_id:string;disposition:'confirmed_delivered'|'failed_without_redrive';evidence_sha256:string}):Promise<RecoveryReceipt>{
+ if(withTransaction(w.storage,tx=>recoverySchema(tx,ctx))===16)return resolveCurrentDelivery(w,ctx,input);
  if(ctx.operation!=='resolve-delivery'||!ctx.captureId)throw Error('INVALID_RECOVERY_CONTEXT');
  withTransaction(w.storage,tx=>assertRecoveryContext(tx,w,ctx));
  const id='resolution_'+(await digestBytes(canonicalBytes([w.workspaceId,ctx.captureId,input.delivery_id]))).slice(0,48);
@@ -26,6 +29,7 @@ export async function resolveDelivery(w:RecoveryWorkspace,ctx:RecoveryContext,in
   const receipt:RecoveryReceipt={id,capture_id:ctx.captureId!,workspace_id:w.workspaceId,status:'complete',checks:[{name:'delivery_resolution',passed:true,code:input.disposition}],...unresolvedSummary(tx,job),started_at:new Date(now).toISOString(),ended_at:new Date(now).toISOString()};storeOperation(tx,ctx,receipt,now);return receipt;});
 }
 export async function retireWorkspace(w:RecoveryWorkspace,ctx:RecoveryContext):Promise<RetirementReceipt>{
+ if(withTransaction(w.storage,tx=>recoverySchema(tx,ctx))===16)return retireCurrentWorkspace(w,ctx);
  if(ctx.operation!=='retire'||!ctx.captureId)throw Error('INVALID_RECOVERY_CONTEXT');
  const admission=withTransaction(w.storage,tx=>{const fence=assertRecoveryContext(tx,w,ctx),prior=priorOperation(tx,ctx);if(prior){if(!validateRetirementReceipt(prior))throw Error('RECOVERY_OPERATION_CONFLICT');return {fence,prior,job:null};}const job=controlJob(tx,w,ctx);if(job.operation!=='capture')throw Error('RECOVERY_RETIREMENT_CONFLICT');return {fence,prior:null,job};});if(admission.prior)return admission.prior;
  const id='retired_'+(await digestBytes(canonicalBytes([w.workspaceId,ctx.captureId,ctx.expectedEpoch]))).slice(0,48),job=admission.job!;
@@ -33,6 +37,7 @@ export async function retireWorkspace(w:RecoveryWorkspace,ctx:RecoveryContext):P
  return withTransaction(w.storage,tx=>{assertRecoveryContext(tx,w,ctx,admission.fence);const prior=priorOperation(tx,ctx);if(prior){if(!validateRetirementReceipt(prior))throw Error('RECOVERY_OPERATION_CONFLICT');return prior;}controlJob(tx,w,ctx);transitionMaintenance(tx,{state:'retired',epoch:ctx.expectedEpoch,barrierId:receipt.barrier_id,captureId:ctx.captureId!,nowMs:w.clock.nowMs(),advance:true});storeOperation(tx,ctx,receipt,w.clock.nowMs());return receipt;});
 }
 export async function resumeWorkspace(w:RecoveryWorkspace,ctx:RecoveryContext,input:{receipt_id:string;ledger:CurrentLedger;source_retirement_receipt:RetirementReceipt|null;cutover_record:CutoverRecord|null}):Promise<ResumeReceipt>{
+ if(withTransaction(w.storage,tx=>recoverySchema(tx,ctx))===16)return resumeCurrentWorkspace(w,ctx,input);
  if(ctx.operation!=='resume'||!ctx.captureId)throw Error('INVALID_RECOVERY_CONTEXT');
  const admitted=withTransaction(w.storage,tx=>{const fence=assertRecoveryContext(tx,w,ctx),prior=priorOperation(tx,ctx);if(prior){if(!validateResumeReceipt(prior))throw Error('RECOVERY_OPERATION_CONFLICT');return {fence,prior,job:null};}const job=controlJob(tx,w,ctx);if(job.details.receipt!.id!==input.receipt_id)throw Error('RECOVERY_RECEIPT_CONFLICT');return {fence,prior:null,job};});if(admitted.prior)return admitted.prior;const job=admitted.job!;
  const ledger=await verifyCurrentLedger(input.ledger,ctx.ledgerAnchor,w,job.operation==='restore'?job.details.checkpoint.authority_epoch:undefined);

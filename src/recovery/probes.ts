@@ -1,3 +1,5 @@
+import {recordCurrentProbe} from './current-probes';
+import {recoverySchema} from './protocol';
 import {withTransaction,type WorkspaceTransaction} from '../storage/transaction';
 import {canonicalJson} from '../config/bootstrap';
 import {admissionOpen,maintenanceRow,readAdmissionFence,sameFence} from './maintenance-v1';
@@ -20,6 +22,7 @@ export function readResumeProbeLink(tx:WorkspaceTransaction,workspaceId:string,a
  try{const receipt:unknown=row?JSON.parse(row.outcome_json):null;return validateResumeReceipt(receipt)?receipt:null;}catch{return null;}
 }
 export async function recordProbe(w:RecoveryWorkspace,ctx:RecoveryContext):Promise<ProbeReceipt>{
+ if(withTransaction(w.storage,tx=>recoverySchema(tx,ctx))===16)return recordCurrentProbe(w,ctx);
  if(ctx.operation!=='probe'||ctx.captureId!==null)throw Error('INVALID_RECOVERY_CONTEXT');
  const fence=withTransaction(w.storage,tx=>{const fence=assertRecoveryContext(tx,w,ctx);const row=maintenanceRow(tx);if(row&&!['open','captured','restored'].includes(row.state))throw Error('RECOVERY_BUSY');return fence;});
  const prior=withTransaction(w.storage,tx=>{assertRecoveryContext(tx,w,ctx,fence);return priorOperation(tx,ctx);});if(prior){if(!validateProbeReceipt(prior))throw Error('RECOVERY_OPERATION_CONFLICT');return prior;}

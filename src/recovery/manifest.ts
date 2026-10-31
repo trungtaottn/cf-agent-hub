@@ -12,10 +12,21 @@ export async function signRecord<T extends Authenticated>(value:T,integrity:Reco
  if(value.auth.key_id!==integrity.keyId||value.auth.algorithm!=='HMAC-SHA256')throw Error('RECOVERY_KEY_MISMATCH');
  guard();const key=await integrityKey(integrity,['sign']);guard();const tag=hex(await crypto.subtle.sign('HMAC',key,integrityPreimage(value).buffer));guard();return {...value,auth:{...value.auth,tag}};
 }
-export async function verifyRecord(value:Authenticated,integrity:RecoveryIntegrity):Promise<void>{
+export async function signRecordAsync<T extends Authenticated>(input:T,integrity:RecoveryIntegrity,guard:()=>Promise<void>):Promise<T>{
+ const value=structuredClone(input);
+ if(value.auth.key_id!==integrity.keyId||value.auth.algorithm!=='HMAC-SHA256')throw Error('RECOVERY_KEY_MISMATCH');
+ if(canonicalBytes(value).length>CONTROL_LIMIT)throw Error('RECOVERY_RESULT_LIMIT');
+ await guard();const key=await integrityKey(integrity,['sign']);await guard();
+ const tag=hex(await crypto.subtle.sign('HMAC',key,integrityPreimage(value).buffer));await guard();return {...value,auth:{...value.auth,tag}};
+}
+export async function verifyRecord(input:Authenticated,integrity:RecoveryIntegrity,guard?:()=>Promise<void>):Promise<void>{
+ const value=guard?structuredClone(input):input;
  if(value.auth.key_id!==integrity.keyId||value.auth.algorithm!=='HMAC-SHA256'||!/^[a-f0-9]{64}$/.test(value.auth.tag))throw Error('RECOVERY_AUTH_MISMATCH');
- const key=await integrityKey(integrity,['verify']),tag=Uint8Array.from(value.auth.tag.match(/../g)!,s=>parseInt(s,16));
- if(!await crypto.subtle.verify('HMAC',key,tag.buffer,integrityPreimage(value).buffer))throw Error('RECOVERY_AUTH_MISMATCH');
+ if(guard){if(canonicalBytes(value).length>CONTROL_LIMIT)throw Error('RECOVERY_RESULT_LIMIT');await guard();}
+ const key=await integrityKey(integrity,['verify']);if(guard)await guard();
+ const tag=Uint8Array.from(value.auth.tag.match(/../g)!,s=>parseInt(s,16));
+ const verified=await crypto.subtle.verify('HMAC',key,tag.buffer,integrityPreimage(value).buffer);if(guard)await guard();
+ if(!verified)throw Error('RECOVERY_AUTH_MISMATCH');
 }
 export function validateManifestShape(value:unknown):asserts value is RecoveryManifest {
  if(!validateRecoveryManifest(value)||canonicalBytes(value).length>CONTROL_LIMIT)throw Error('INVALID_RECOVERY_MANIFEST');
@@ -40,13 +51,19 @@ export function validateManifestShape(value:unknown):asserts value is RecoveryMa
 }
 export async function verifyManifest(value:unknown,integrity:RecoveryIntegrity):Promise<Extract<RecoveryManifest,{format_version:1}>>{validateManifestShape(value);if(value.format_version!==1)throw Error('RECOVERY_FORMAT_UNAVAILABLE');await verifyRecord(value,integrity);return structuredClone(value);}
 export interface VerifiedLedger {ledger:CurrentLedger;input:ValidatedBootstrap;digest:string;}
-export async function verifyCurrentLedger(value:unknown,anchor:LedgerAnchor|null,w:Pick<RecoveryWorkspace,'workspaceId'|'objectName'|'environmentId'|'integrity'>,minimumEpoch?:number):Promise<VerifiedLedger>{
- if(!validateCurrentLedger(value)||!anchor||canonicalBytes(value).length>CONTROL_LIMIT||value.workspace_id!==w.workspaceId||value.environment_id!==w.environmentId||value.authority_epoch!==anchor.authorityEpoch)throw Error('RECOVERY_LEDGER_MISMATCH');
- await verifyRecord(value,w.integrity);const digest=await digestBytes(canonicalBytes(value));if(digest!==anchor.sha256)throw Error('RECOVERY_LEDGER_ANCHOR_CONFLICT');
- const input=await prepareBootstrap(value.config,value.verification_bundle,w.workspaceId),mapping=resolveWorkspace(input.config,w.workspaceId);
+export async function verifyCurrentLedger(incoming:unknown,anchor:LedgerAnchor|null,w:Pick<RecoveryWorkspace,'workspaceId'|'objectName'|'environmentId'|'integrity'>,minimumEpoch?:number,guard?:()=>Promise<void>):Promise<VerifiedLedger>{
+ if(!validateCurrentLedger(incoming)||!anchor||canonicalBytes(incoming).length>CONTROL_LIMIT||incoming.workspace_id!==w.workspaceId||incoming.environment_id!==w.environmentId||incoming.authority_epoch!==anchor.authorityEpoch)throw Error('RECOVERY_LEDGER_MISMATCH');
+ const value=guard?structuredClone(incoming):incoming;
+ await verifyRecord(value,w.integrity,guard);if(guard)await guard();
+ const digest=await digestBytes(canonicalBytes(value));if(guard)await guard();if(digest!==anchor.sha256)throw Error('RECOVERY_LEDGER_ANCHOR_CONFLICT');
+ const input=await prepareBootstrap(value.config,value.verification_bundle,w.workspaceId,guard);if(guard)await guard();const mapping=resolveWorkspace(input.config,w.workspaceId);
  if(input.config.config_epoch!==value.authority_epoch||input.installationDigest!==value.installation_digest||mapping.objectName!==w.objectName||minimumEpoch!==undefined&&value.authority_epoch<=minimumEpoch)throw Error('RECOVERY_LEDGER_MISMATCH');
- const identities=new Set<string>();for(const prior of value.retired_authorities){if(!validateRetirementReceipt(prior)||prior.workspace_id!==w.workspaceId||prior.authority_epoch>=value.authority_epoch||identities.has(prior.id))throw Error('RECOVERY_LEDGER_HISTORY_MISMATCH');identities.add(prior.id);await verifyRecord(prior,w.integrity);}
+ const identities=new Set<string>();for(const prior of value.retired_authorities){if(!validateRetirementReceipt(prior)||prior.workspace_id!==w.workspaceId||prior.authority_epoch>=value.authority_epoch||identities.has(prior.id))throw Error('RECOVERY_LEDGER_HISTORY_MISMATCH');identities.add(prior.id);await verifyRecord(prior,w.integrity,guard);if(guard)await guard();}
  return {ledger:structuredClone(value),input,digest};
 }
-export async function verifyRetirement(value:unknown,integrity:RecoveryIntegrity):Promise<RetirementReceipt>{if(!validateRetirementReceipt(value))throw Error('INVALID_RETIREMENT_RECEIPT');await verifyRecord(value,integrity);return structuredClone(value);}
-export async function verifyCutover(value:unknown,integrity:RecoveryIntegrity):Promise<CutoverRecord>{if(!validateCutoverRecord(value))throw Error('INVALID_CUTOVER_RECORD');await verifyRecord(value,integrity);return structuredClone(value);}
+export async function verifyRetirement(incoming:unknown,integrity:RecoveryIntegrity,guard?:()=>Promise<void>):Promise<RetirementReceipt>{
+ if(!validateRetirementReceipt(incoming)||guard&&canonicalBytes(incoming).length>CONTROL_LIMIT)throw Error('INVALID_RETIREMENT_RECEIPT');const value=guard?structuredClone(incoming):incoming;await verifyRecord(value,integrity,guard);if(guard)await guard();return structuredClone(value);
+}
+export async function verifyCutover(incoming:unknown,integrity:RecoveryIntegrity,guard?:()=>Promise<void>):Promise<CutoverRecord>{
+ if(!validateCutoverRecord(incoming)||guard&&canonicalBytes(incoming).length>CONTROL_LIMIT)throw Error('INVALID_CUTOVER_RECORD');const value=guard?structuredClone(incoming):incoming;await verifyRecord(value,integrity,guard);if(guard)await guard();return structuredClone(value);
+}
