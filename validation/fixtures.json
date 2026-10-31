@@ -81,6 +81,10 @@
     {
       "file": "examples/recovery/manifest-v2.json",
       "schema": "spec/recovery-manifest.schema.json"
+    },
+    {
+      "file": "examples/decisions/policy-valid.json",
+      "schema": "spec/decision-policy.schema.json"
     }
   ]
 }

@@ -103,6 +103,19 @@ export type ExecutionPolicy = {
 "evidence_ref": string;
 }>;
 };
+export type DecisionPolicy = {
+"policy_version": number;
+"expiry_seconds": number;
+"expiry_batch_limit": number;
+"actions": Array<{
+"action_id": string;
+"schema_version": number;
+"schema_sha256": string;
+"reviewer_ids": Array<string>;
+"resource_kinds": Array<string>;
+}>;
+};
+export declare function validateDecisionPolicyShape(input: unknown): input is DecisionPolicy;
 export declare function validateDeployment(input: unknown): input is DeploymentConfig;
 export declare function validateBundle(input: unknown): input is VerificationBundle;
 export declare function validateExecutionPolicyShape(input: unknown): input is ExecutionPolicy;
