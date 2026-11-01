@@ -33,7 +33,7 @@ it('recognized decision routes enforce unchanged R1 grants while unimplemented r
   {path:'tasks/task_a:request-decision',method:'POST',body:decisionRequest('task_a'),status:403,code:'FORBIDDEN'},
   {path:'approvals',method:'GET',body:undefined,status:403,code:'FORBIDDEN'},
   {path:'approvals',method:'POST',body:{},status:404,code:'NOT_FOUND'},
-  {path:'approvals/approval_a:approve',method:'POST',body:approvalDecision(),status:404,code:'NOT_FOUND'},
+  {path:'approvals/approval_a:approve',method:'POST',body:approvalDecision(),status:403,code:'FORBIDDEN'},
   {path:'teams',method:'POST',body:{},status:404,code:'NOT_FOUND'},
  ];
  for(const probe of probes){

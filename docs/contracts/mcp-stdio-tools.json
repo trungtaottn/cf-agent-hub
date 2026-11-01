@@ -2,7 +2,7 @@
   "contractRevision": 1,
   "protocolVersion": "2025-11-25",
   "sdkVersion": "1.32.2",
-  "status": "Partial source:16 executable operations; decision slot unavailable; no17-tool parity",
+  "status": "17 native source mappings; decision production action registry empty; no17-tool positive parity",
   "tools": [
     {
       "name": "hub_workspace_get",
@@ -3226,7 +3226,7 @@
     {
       "name": "hub_task_request_decision",
       "operation": "requestTaskDecision",
-      "available": false,
+      "available": true,
       "mutation": true,
       "requiredScopes": [
         "tasks:execute"

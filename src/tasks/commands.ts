@@ -1,3 +1,4 @@
+import {cancelBoundDecision} from '../approvals/cancellation';
 import type {WorkspaceTransaction} from '../storage/transaction';
 import type {ActorContext,CommandContext} from '../workspace/context';
 import type {Task,TaskCreateRequest,TaskPatchRequest,TaskVersionRequest,TaskReasonRequest,TaskCommandResult} from '../http/dto';
@@ -54,17 +55,18 @@ export function readyTask(tx:WorkspaceTransaction,ctx:CommandContext,id:string,r
 export function requeueTask(tx:WorkspaceTransaction,ctx:CommandContext,id:string,request:TaskReasonRequest):TaskCommandResult{
  body(request,validateTaskReasonRequest);const actor=taskAccess(tx,ctx.actor,'tasks:schedule',id,ctx.nowMs),row=taskRecord(tx,actor.workspaceId,id),task=taskView(tx,actor,row,ctx.nowMs);
  version(row,request.expected_version);
- if(!['backlog','review'].includes(row.state)||row.active_run_id!==null)throw new HttpError('INVALID_STATE',409);
+ if(!['backlog','review'].includes(row.state)||row.active_run_id!==null||row.approval_id!==null)throw new HttpError('INVALID_STATE',409);
  assertTaskEligible(tx,{...ctx,actor},task,task.assigned_agent_id);
  tx.exec("UPDATE tasks SET state='ready',task_version=?,current_result_id=NULL,approval_id=NULL,updated_at=? WHERE workspace_id=? AND id=?",[nextVersion(row.task_version),ctx.nowMs,actor.workspaceId,id]);
  return {task:taskView(tx,actor,taskRecord(tx,actor.workspaceId,id),ctx.nowMs),run:null,approval:null};
 }
 /** Cancels local authority only. External agent effects cannot be undone by this transaction. */
-export function cancelTask(tx:WorkspaceTransaction,ctx:CommandContext,id:string,request:TaskReasonRequest):TaskCommandResult{
+export function cancelTask(tx:WorkspaceTransaction,ctx:CommandContext,id:string,request:TaskReasonRequest,eventId?:string):TaskCommandResult{
  body(request,validateTaskReasonRequest);const actor=taskAccess(tx,ctx.actor,'tasks:cancel',id,ctx.nowMs),row=taskRecord(tx,actor.workspaceId,id);
  taskView(tx,actor,row,ctx.nowMs);version(row,request.expected_version);
  if(!['backlog','ready','doing','waiting','review'].includes(row.state))throw new HttpError('INVALID_STATE',409);
  const taskVersion=nextVersion(row.task_version);
+ cancelBoundDecision(tx,row,taskVersion,eventId,ctx.nowMs);
  if(row.active_run_id!==null){
   const run=runRecord(tx,actor.workspaceId,row.active_run_id);
   if(row.state!=='doing'||row.latest_run_id!==run.id||run.task_id!==id||run.status!=='active'||run.ended_at!==null)throw new HttpError('INVALID_STATE',409);
@@ -80,7 +82,7 @@ function reasonCommand(id:string,action:'cancel'|'requeue'):CommandDescriptor<Ta
   resource(tx,ctx,request){body(request,validateTaskReasonRequest);taskAccess(tx,ctx.actor,operation,null,ctx.nowMs);const row=taskRecord(tx,ctx.actor.workspaceId,id);return {kind:'task',id,projectId:row.project_id};},
   checkAccess(tx,ctx){const actor=taskAccess(tx,ctx.actor,operation,id,ctx.nowMs);taskView(tx,actor,taskRecord(tx,actor.workspaceId,id),ctx.nowMs);},
   checkReplay(tx,ctx,_request,outcome){const actor=taskAccess(tx,ctx.actor,operation,id,ctx.nowMs);if(!validateTaskCommandResult(outcome.data)||outcome.data.task.id!==id||outcome.data.run!==null||outcome.data.approval!==null)throw new HttpError('INTERNAL_ERROR',500);assertTaskOutcomeVisible(tx,actor,outcome.data.task,ctx.nowMs);},
-  execute(tx,ctx,request){const data=action==='cancel'?cancelTask(tx,ctx,id,request):requeueTask(tx,ctx,id,request);return {outcome:{status:200,data},event:{type:action==='cancel'?'task.cancelled':'task.requeued',resourceType:'task',resourceId:id,resourceVersion:null,threadId:null,historyReason:request.reason}};}
+  execute(tx,ctx,request,eventId){const data=action==='cancel'?cancelTask(tx,ctx,id,request,eventId):requeueTask(tx,ctx,id,request);return {outcome:{status:200,data},event:{type:action==='cancel'?'task.cancelled':'task.requeued',resourceType:'task',resourceId:id,resourceVersion:null,threadId:null,historyReason:request.reason}};}
  };
 }
 export const cancelTaskCommand=(id:string)=>reasonCommand(id,'cancel');

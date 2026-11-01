@@ -1,3 +1,8 @@
+import {fingerprintRequest} from '../../src/workspace/idempotency';
+import {cancelTaskCommand} from '../../src/tasks/commands';
+import {executeCommand} from '../../src/workspace/commands';
+import {commandContext} from '../helpers/settings';
+import {isCompletedRestoreDecisionHead,isRestoreDecisionCancellationGap} from '../../src/recovery/decision-provenance';
 import {resumeThenNext,restoreWithAuditChecks} from './decision-roundtrip-fixture';
 import {it,expect} from 'vitest';
 import {runInDurableObject} from 'cloudflare:test';
@@ -95,4 +100,81 @@ it('retains consumed lineage through restore, recapture and second restore only 
   w.storage.sql.exec("DELETE FROM idempotency_outcomes WHERE operation='operator.recovery.imported-audit'");
   expect(()=>withTransaction(w.storage,tx=>verifyDecisionSourceRow(tx,'decision_lifecycle_heads',tx.one<any>('SELECT * FROM decision_lifecycle_heads')!))).toThrow('RECOVERY_DECISION_GRAPH_MISMATCH');
  });
+},180000);
+
+it('retains synthetic cancellation history after one authenticated restore gap without inventing a lifecycle transition',async()=>{
+ let f=await source('r3_recovery_cancel_gap');
+ await runInDurableObject(f.source,(_instance,{storage})=>withTransaction(storage,tx=>{
+  const task=tx.one<any>("SELECT * FROM tasks WHERE id='task_b'")!,original=tx.one<any>("SELECT * FROM runs WHERE id='run_b'")!;
+  const now=original.ended_at+1,run={...original,id:'run_consumed',fence:2,status:'active',run_version:1,started_at:now,ended_at:null};
+  const keys=Object.keys(run);tx.exec('INSERT INTO runs ('+keys.join(',')+') VALUES ('+keys.map(()=>'?').join(',')+')',keys.map(k=>run[k]));
+  tx.exec("UPDATE approvals SET status='approved',approval_version=2,decided_at=?,decided_by_json=?,consumed_run_id='run_consumed',consumed_fence=2 WHERE id='approval_test'",[now,canonicalJson({kind:'human',principal_id:'human_reviewer',agent_id:null})]);
+  for(const [sequence,kind,before,after] of [[2,'approve','waiting','ready'],[3,'claim','ready','doing']] as const)tx.exec('INSERT INTO decision_lifecycle_transitions VALUES(?,?,?,?,?,?,?,?,?,?,?,?)',['transition_'+sequence,task.workspace_id,'approval_test',task.id,sequence,kind,task.task_version+sequence-2,task.task_version+sequence-1,before,after,sequence===3?'run_consumed':null,now]);
+  tx.exec("UPDATE tasks SET state='doing',task_version=task_version+2,active_run_id='run_consumed',latest_run_id='run_consumed',next_fence=3 WHERE id='task_b'");
+  tx.exec("UPDATE decision_lifecycle_heads SET task_state='doing',task_version=task_version+2,transition_count=3,last_transition_id='transition_3'");
+ }));
+ const capture=await captureCurrentFixture(f),restored=await restoreCurrentFixture(f,capture);
+ f=await resumeThenNext(f,capture,restored.receipt,1);
+ await withCurrentRecoveryWorkspace(f,'source',w=>withTransaction(w.storage,tx=>{
+  const task=tx.one<any>("SELECT * FROM tasks WHERE id='task_b'")!;
+  const head=tx.one<any>('SELECT * FROM decision_lifecycle_heads')!,approval=tx.one<any>('SELECT * FROM approvals')!,now=Date.now();
+  expect(isCompletedRestoreDecisionHead(tx,task,head,approval,now)).toBe(true);
+  for(const patch of [{workspace_id:'foreign'},{task_version:task.task_version+1},{latest_run_id:'run_b'},{active_run_id:'run_b'},{flags_json:'[]'}])expect(isCompletedRestoreDecisionHead(tx,{...task,...patch},head,approval,now)).toBe(false);
+  for(const patch of [{workspace_id:'foreign'},{consumed_fence:3},{consumed_run_id:'run_b'},{id:'foreign'}])expect(isCompletedRestoreDecisionHead(tx,task,head,{...approval,...patch},now)).toBe(false);
+  expect(isCompletedRestoreDecisionHead(tx,task,head,approval,0)).toBe(false);
+  const audit=tx.one<any>("SELECT * FROM idempotency_outcomes WHERE operation='operator.recovery.audit'");
+  if(!audit)throw Error('expected actual native restore audit');
+  tx.exec("UPDATE idempotency_outcomes SET fingerprint=? WHERE operation='operator.recovery.audit'",['f'.repeat(64)]);expect(isCompletedRestoreDecisionHead(tx,task,head,approval,now)).toBe(false);tx.exec("UPDATE idempotency_outcomes SET fingerprint=? WHERE operation='operator.recovery.audit'",[audit.fingerprint]);
+  tx.exec("INSERT INTO decision_lifecycle_transitions VALUES('transition_cancel',?,'approval_test',?,4,'cancel',?,?,'backlog','cancelled',NULL,?)",[task.workspace_id,task.id,task.task_version,task.task_version+1,now]);
+  tx.exec("UPDATE tasks SET state='cancelled',task_version=task_version+1 WHERE id='task_b'");
+  tx.exec("UPDATE approvals SET status='invalidated' WHERE id='approval_test'");
+  tx.exec("UPDATE decision_lifecycle_heads SET task_state='cancelled',task_version=?,transition_count=4,last_transition_id='transition_cancel'",[task.task_version+1]);
+  for(const table of ['decision_lifecycle_heads','decision_lifecycle_transitions'])for(const row of tx.all<any>('SELECT * FROM '+table))verifyDecisionSourceRow(tx,table,row);
+  const current=tx.one<any>("SELECT * FROM tasks WHERE id='task_b'")!,updated=tx.one<any>('SELECT * FROM approvals')!,previous=tx.one<any>("SELECT * FROM decision_lifecycle_transitions WHERE id='transition_3'")!,cancel=tx.one<any>("SELECT * FROM decision_lifecycle_transitions WHERE id='transition_cancel'")!;
+  expect(isCompletedRestoreDecisionHead(tx,current,head,updated,now)).toBe(false);
+  expect(isRestoreDecisionCancellationGap(tx,updated,previous,cancel)).toBe(true);
+  for(const patch of [{before_version:cancel.before_version+1,after_version:cancel.after_version+1},{workspace_id:'foreign'},{run_id:'run_consumed'},{kind:'expiry'},{created_at:0}])expect(isRestoreDecisionCancellationGap(tx,updated,previous,{...cancel,...patch})).toBe(false);
+
+ }));
+ const expected=await decisionRows(f,'source'),next=await captureCurrentFixture(f);
+ expect((await restoreCurrentFixture(f,next)).state).toBe('complete');expect(await decisionRows(f,'target')).toEqual(expected);
+},180000);
+
+it('runs the existing cancel command with fresh synthetic human authority after real restore and preserves its history on recapture',async()=>{
+ let f=await source('r3_recovery_command_cancel');
+ await runInDurableObject(f.source,(_instance,{storage})=>withTransaction(storage,tx=>{
+  const task=tx.one<any>("SELECT * FROM tasks WHERE id='task_b'")!,original=tx.one<any>("SELECT * FROM runs WHERE id='run_b'")!;
+  const now=original.ended_at+1,run={...original,id:'run_consumed',fence:2,status:'active',run_version:1,started_at:now,ended_at:null};
+  const keys=Object.keys(run);tx.exec('INSERT INTO runs ('+keys.join(',')+') VALUES ('+keys.map(()=>'?').join(',')+')',keys.map(k=>run[k]));
+  tx.exec("UPDATE approvals SET status='approved',approval_version=2,decided_at=?,decided_by_json=?,consumed_run_id='run_consumed',consumed_fence=2 WHERE id='approval_test'",[now,canonicalJson({kind:'human',principal_id:'human_reviewer',agent_id:null})]);
+  for(const [sequence,kind,before,after] of [[2,'approve','waiting','ready'],[3,'claim','ready','doing']] as const)tx.exec('INSERT INTO decision_lifecycle_transitions VALUES(?,?,?,?,?,?,?,?,?,?,?,?)',['transition_'+sequence,task.workspace_id,'approval_test',task.id,sequence,kind,task.task_version+sequence-2,task.task_version+sequence-1,before,after,sequence===3?'run_consumed':null,now]);
+  tx.exec("UPDATE tasks SET state='doing',task_version=task_version+2,active_run_id='run_consumed',latest_run_id='run_consumed',next_fence=3 WHERE id='task_b'");
+  tx.exec("UPDATE decision_lifecycle_heads SET task_state='doing',task_version=task_version+2,transition_count=3,last_transition_id='transition_3'");
+ }));
+ const capture=await captureCurrentFixture(f),restored=await restoreCurrentFixture(f,capture);
+ f=await resumeThenNext(f,capture,restored.receipt,1);
+ await withCurrentRecoveryWorkspace(f,'source',async w=>{
+  const task=w.storage.sql.exec<any>("SELECT * FROM tasks WHERE id='task_b'").one(),now=Date.now();
+  // A new synthetic authenticated session at the restored epoch, never revival of an old proof.
+  w.storage.sql.exec("INSERT INTO sessions(id,workspace_id,principal_id,token_digest,csrf_digest,issuer,subject,created_at,expires_at,revoked_at,auth_epoch) SELECT 'session_after_restore',g.workspace_id,g.principal_id,'digest_after_restore','csrf_after_restore',g.issuer,g.subject,?,?,NULL,m.config_epoch FROM human_grants g JOIN workspace_metadata m ON m.workspace_id=g.workspace_id WHERE g.principal_id='human_operator'",now,now+100000);
+  const session=w.storage.sql.exec<any>("SELECT * FROM sessions WHERE id='session_after_restore'").one();
+  const identity={kind:'human' as const,workspaceId:session.workspace_id,issuer:session.issuer,subject:session.subject,sessionId:session.id};
+  const body={expected_version:task.task_version,reason:'Synthetic safety cancellation after actual restore'},ctx=await commandContext(w.storage,f.sourceName,body,'cancel_restored');
+  ctx.fingerprint=await fingerprintRequest('POST','/v2/workspaces/ws_example/tasks/task_b/cancel',{},body);
+  const snapshot=()=>Object.fromEntries(['tasks','approvals','decision_lifecycle_heads','decision_lifecycle_transitions','events','task_history','idempotency_outcomes'].map(t=>[t,w.storage.sql.exec('SELECT * FROM '+t).toArray()])),before=snapshot();
+  expect(()=>executeCommand(ctx,{...identity,sessionId:'session_settings'},cancelTaskCommand('task_b'),body)).toThrow();expect(snapshot()).toEqual(before);
+  w.storage.sql.exec("UPDATE human_grants SET enabled=0 WHERE principal_id='human_operator'");
+  expect(()=>executeCommand(ctx,identity,cancelTaskCommand('task_b'),body)).toThrow();expect(snapshot()).toEqual(before);
+  w.storage.sql.exec("UPDATE human_grants SET enabled=1 WHERE principal_id='human_operator'");
+  const audit=w.storage.sql.exec<any>("SELECT * FROM idempotency_outcomes WHERE operation='operator.recovery.audit'").one();
+  w.storage.sql.exec("UPDATE idempotency_outcomes SET fingerprint=? WHERE operation='operator.recovery.audit'",'f'.repeat(64));
+  const wrongProof=snapshot();expect(()=>executeCommand(ctx,identity,cancelTaskCommand('task_b'),body)).toThrow();expect(snapshot()).toEqual(wrongProof);
+  w.storage.sql.exec("UPDATE idempotency_outcomes SET fingerprint=? WHERE operation='operator.recovery.audit'",audit.fingerprint);
+  const result=executeCommand(ctx,identity,cancelTaskCommand('task_b'),body);expect(result.status).toBe(200);
+  expect(w.storage.sql.exec("SELECT state,approval_id FROM tasks WHERE id='task_b'").one()).toEqual({state:'cancelled',approval_id:null});
+  expect(w.storage.sql.exec('SELECT status,consumed_run_id,consumed_fence FROM approvals').one()).toEqual({status:'invalidated',consumed_run_id:'run_consumed',consumed_fence:2});
+  expect(w.storage.sql.exec("SELECT before_version,after_version,before_state,after_state,run_id FROM decision_lifecycle_transitions WHERE kind='cancel'").one()).toEqual({before_version:task.task_version,after_version:task.task_version+1,before_state:'backlog',after_state:'cancelled',run_id:null});
+ });
+ const expected=await decisionRows(f,'source'),next=await captureCurrentFixture(f);
+ expect((await restoreCurrentFixture(f,next)).state).toBe('complete');expect(await decisionRows(f,'target')).toEqual(expected);
 },180000);

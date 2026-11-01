@@ -44,6 +44,9 @@ const clientContracts=inventory.supported.map(id=>{
  const scheme=op.security?.find(s=>Object.hasOwn(s,'NativeBearer'));
  return {id,request,responseName,data:download?null:resolve(responseSchema).properties.data,metadata:{method:op.method,path:op.path,native:Boolean(scheme),runtimeProof:Boolean(scheme&&Object.hasOwn(scheme,'RuntimeProof')),idempotency:op.parameters.some(p=>p.in==='header'&&p.name.toLowerCase()==='idempotency-key'),status:Number(status),upload,download,page:!download&&Boolean(resolve(responseSchema).properties.page),invocationMode:id==='createRuntime'?'enrollment':'ordinary'}};
 });
+// Additive decision request wrapper reuses the existing canonical body validator.
+const decisionClientContracts=clientContracts.filter(c=>c.id==='requestTaskDecision');
+const sharedClientContracts=clientContracts.filter(c=>c.id!=='requestTaskDecision');
 const seen=new Set(),aliases=[];
 function type(s) {
  if(s.$ref){const parts=s.$ref.split('/').slice(3),name=parts.shift();if(parts.length){let target=schemas[name];for(const part of parts)target=target[part.replaceAll('~1','/').replaceAll('~0','~')];return type(target);}collect(name);return name;}
@@ -65,7 +68,7 @@ const ajv=new Ajv2020({strict:false,code:{source:true,esm:true}});addFormats(ajv
 ajv.addSchema({$id:'cfhub-http',components:{schemas}});
 const exports={};
 for(const name of validated){ajv.addSchema({$id:name,$ref:'cfhub-http#/components/schemas/'+name});exports['validate'+name]=name;}
-for(const c of clientContracts){const name='ClientRequest_'+c.id;const request=JSON.parse(JSON.stringify(c.request).replaceAll('\"#/components/', '\"cfhub-http#/components/'));ajv.addSchema({$id:name,...request});exports['validate'+name]=name;}
+for(const c of sharedClientContracts){const name='ClientRequest_'+c.id;const request=JSON.parse(JSON.stringify(c.request).replaceAll('\"#/components/', '\"cfhub-http#/components/'));ajv.addSchema({$id:name,...request});exports['validate'+name]=name;}
 const validatorHeader='// Generated from spec/openapi.json; npm run generate:auth.\nimport ucs2Module from "ajv/dist/runtime/ucs2length.js";\nimport formatsModule from "ajv-formats/dist/formats.js";\nimport equalModule from "ajv/dist/runtime/equal.js";\nconst ucs2Length=typeof ucs2Module==="function"?ucs2Module:ucs2Module.default;\nconst fullFormats=formatsModule.fullFormats;\nconst equal=typeof equalModule==="function"?equalModule:equalModule.default;\n';
 const js=validatorHeader+standalone(ajv,exports).replaceAll('require("ajv/dist/runtime/ucs2length").default','ucs2Length').replaceAll('require("ajv-formats/dist/formats").fullFormats','fullFormats').replaceAll('require("ajv/dist/runtime/equal").default','equal')+'\n';
 // Backend decision outputs are canonical but intentionally outside the native host's
@@ -75,8 +78,20 @@ decisionAjv.addSchema({$id:'cfhub-http',components:{schemas}});
 const decisionExports={};
 for(const name of decisionOutputs){decisionAjv.addSchema({$id:name,$ref:'cfhub-http#/components/schemas/'+name});decisionExports['validate'+name]=name;}
 const decisionJs=validatorHeader+standalone(decisionAjv,decisionExports).replaceAll('require("ajv/dist/runtime/ucs2length").default','ucs2Length').replaceAll('require("ajv-formats/dist/formats").fullFormats','fullFormats').replaceAll('require("ajv/dist/runtime/equal").default','equal')+'\n';
+const decisionClientAjv=new Ajv2020({strict:false,code:{source:true,esm:true}});addFormats(decisionClientAjv);
+const decisionClientExports={};
+for(const c of decisionClientContracts){
+ const envelope=structuredClone(c.request);envelope.properties.body={};
+ decisionClientAjv.addSchema({$id:c.id,...envelope});decisionClientExports['validateEnvelope_'+c.id]=c.id;
+}
+const decisionClientJs=validatorHeader+'import * as bodyValidators from "./auth-validators.js";\n'+standalone(decisionClientAjv,decisionClientExports).replaceAll('require("ajv/dist/runtime/ucs2length").default','ucs2Length').replaceAll('require("ajv-formats/dist/formats").fullFormats','fullFormats').replaceAll('require("ajv/dist/runtime/equal").default','equal')+'\n'+decisionClientContracts.map(c=>{
+ const bodyName=c.request.properties.body.$ref?.split('/').at(-1);
+ if(!bodyName||!validated.includes(bodyName))throw Error('Missing canonical decision body validator');
+ return 'export function validateClientRequest_'+c.id+'(input){return validateEnvelope_'+c.id+'(input)&&bodyValidators.validate'+bodyName+'(input.body);}'
+}).join('\n')+'\n';
+const decisionClientDts='// Generated from spec/openapi.json.\nimport type {HttpOperationRequests} from "../dto";\n'+decisionClientContracts.map(c=>'export declare function validateClientRequest_'+c.id+'(input:unknown): input is HttpOperationRequests['+JSON.stringify(c.id)+'];').join('\n')+'\n';
 const decisionDts='// Generated from spec/openapi.json.\nimport type {'+decisionOutputs.join(',')+'} from "../dto";\n'+decisionOutputs.map(name=>'export declare function validate'+name+'(input:unknown): input is '+name+';').join('\n')+'\n';
-const dts='// Generated from spec/openapi.json.\nimport type {'+['HttpOperationRequests',...validated].join(',')+'} from "../dto";\n'+validated.map(name=>'export declare function validate'+name+'(input:unknown): input is '+name+';').join('\n')+'\n'+clientContracts.map(c=>'export declare function validateClientRequest_'+c.id+'(input:unknown): input is HttpOperationRequests['+JSON.stringify(c.id)+'];').join('\n')+'\n';
+const dts='// Generated from spec/openapi.json.\nimport type {'+['HttpOperationRequests',...validated].join(',')+'} from "../dto";\n'+validated.map(name=>'export declare function validate'+name+'(input:unknown): input is '+name+';').join('\n')+'\n'+sharedClientContracts.map(c=>'export declare function validateClientRequest_'+c.id+'(input:unknown): input is HttpOperationRequests['+JSON.stringify(c.id)+'];').join('\n')+'\n';
 const dto='// Generated from spec/openapi.json; npm run generate:auth.\n'+aliases.join('\n')+'\nexport interface HttpOperationRequests {\n'+requestTypes+'\n}\nexport interface HttpOperationData {\n'+dataTypes+'\n}\nexport interface HttpDTOMap {\n'+[...seen].map(name=>JSON.stringify(name)+':'+name+';').join('\n')+'\n}\nexport const authReturnPaths = '+JSON.stringify(schemas.AuthStartRequest.properties.return_path.enum)+' as const;\n';
 function byteRules(s,path=[]){
  if(s.$ref){let target=spec;for(const part of s.$ref.split('/').slice(1))target=target[part.replaceAll('~1','/').replaceAll('~0','~')];return byteRules(target,path);}
@@ -90,8 +105,8 @@ function byteRules(s,path=[]){
 }
 const fields=[...new Set(Object.values(schemas).flatMap(function walk(s){return [...Object.keys(s.properties??{}),...Object.values(s.properties??{}).flatMap(walk),...(s.items?walk(s.items):[])];}))].sort();
 const registry='// Generated from spec/openapi.json; npm run generate:auth.\nimport * as validators from "./auth-validators.js";\nexport const httpSchemas = {\n'+inputs.map(name=>JSON.stringify(name)+':{validate:validators.validate'+name+',byteRules:'+JSON.stringify(byteRules(schemas[name]))+'}').join(',\n')+'\n} as const;\nexport type HttpSchemaName=keyof typeof httpSchemas;\nexport const httpFieldNames = '+JSON.stringify(fields)+' as const;\n';
-const clientRegistry='// Generated from the reviewed inventory + spec/openapi.json; npm run generate:auth.\nimport * as validators from \"./auth-validators.js\";\nexport const clientOperations = {\n'+clientContracts.map(c=>JSON.stringify(c.id)+':{...'+JSON.stringify(c.metadata)+',validateRequest:validators.validateClientRequest_'+c.id+',validateResponse:'+(c.responseName?'validators.validate'+c.responseName:'null')+',byteRules:'+JSON.stringify(byteRules(c.request))+'}').join(',\n')+'\n} as const;\nexport type EnabledOperationId=keyof typeof clientOperations;\nexport const artifactClientMaxBytes='+JSON.stringify(schemas.ArtifactStageRequest.properties.byte_size.maximum)+';\n';
+const clientRegistry='// Generated from the reviewed inventory + spec/openapi.json; npm run generate:auth.\nimport * as validators from \"./auth-validators.js\";\nimport * as decisionClientValidators from \"./decision-client-validators.js\";\nexport const clientOperations = {\n'+clientContracts.map(c=>JSON.stringify(c.id)+':{...'+JSON.stringify(c.metadata)+',validateRequest:'+(c.id==='requestTaskDecision'?'decisionClientValidators':'validators')+'.validateClientRequest_'+c.id+',validateResponse:'+(c.responseName?'validators.validate'+c.responseName:'null')+',byteRules:'+JSON.stringify(byteRules(c.request))+'}').join(',\n')+'\n} as const;\nexport type EnabledOperationId=keyof typeof clientOperations;\nexport const artifactClientMaxBytes='+JSON.stringify(schemas.ArtifactStageRequest.properties.byte_size.maximum)+';\n';
 await mkdir('src/http/generated',{recursive:true});
-for(const [path,content]of [['src/http/dto.ts',dto],['src/http/generated/auth-validators.js',js],['src/http/generated/auth-validators.d.ts',dts],['src/http/generated/http-schemas.ts',registry],['src/http/generated/client-operations.ts',clientRegistry],['src/http/generated/decision-validators.js',decisionJs],['src/http/generated/decision-validators.d.ts',decisionDts]]){
+for(const [path,content]of [['src/http/dto.ts',dto],['src/http/generated/auth-validators.js',js],['src/http/generated/auth-validators.d.ts',dts],['src/http/generated/http-schemas.ts',registry],['src/http/generated/client-operations.ts',clientRegistry],['src/http/generated/decision-validators.js',decisionJs],['src/http/generated/decision-validators.d.ts',decisionDts],['src/http/generated/decision-client-validators.js',decisionClientJs],['src/http/generated/decision-client-validators.d.ts',decisionClientDts]]){
  if(process.argv.includes('--check')){if(await readFile(path,'utf8')!==content)throw Error('Stale generated file: '+path);}else await writeFile(path,content);
 }

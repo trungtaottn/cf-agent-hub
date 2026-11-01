@@ -1,3 +1,7 @@
+import {DecisionReads,renderDecisionList} from './approvals/decision-list';
+import {renderDecisionDetail} from './approvals/decision-detail';
+import {isApprovalPanel,approvalPanelHref,decisionCallbackCurrent,type DecisionCallbackBinding} from './approvals/panel';
+import {createDecisionReader,applyDecisionReadCapabilities} from './approvals/host';
 import {MessageComposition} from './compose/message-form';
 import {MessageForm} from './compose/message-form-view';
 import {TaskComposition} from './compose/task-form';
@@ -27,7 +31,8 @@ const models={
  operations:new ReadModel<Operations>({isEmpty:()=>false}),thread:new ReadModel<Message[]>({isEmpty:items=>items.length===0})
 };
 let connectionGeneration=0;
-let client:HubClient,authority=0,session:AuthSession|null=null,denied=false,currentView=location.pathname.slice(1)||'overview',threadId:string|null=null,eventCursor:string|null=null,threadCursor:string|null=null;
+let client:HubClient,authority=0,session:AuthSession|null=null,denied=false,currentView=isApprovalPanel(location.pathname,location.search)?'approvals':location.pathname.slice(1)||'overview',threadId:string|null=null,eventCursor:string|null=null,threadCursor:string|null=null;
+let approvalsAvailable=false,approvalViewGeneration=0,approvalRenderGeneration=0;
 let factoryMode=false,factoryProjectId:string|null=null,factoryWorkRoleId:string|null=null;
 let factoryObservationRender=0;
 let factoryAuthority:{authority:number;connection:number;principalId:string}|null=null;
@@ -44,7 +49,7 @@ function eraseComposition(broadcast=true){
  if(broadcast&&scope)composeChannel?.postMessage({type:'erase',...scope});
  if(scope)void compositionStorage.erase(scope);
 }
-composeChannel?.addEventListener('message',event=>{const value=event.data;if(value&&typeof value==='object'&&value.type==='erase'&&value.workspaceId===workspace&&typeof value.principalId==='string'&&value.principalId===(composeScope?.principalId??session?.actor.principal_id)){eraseComposition(false);++connectionGeneration;factoryAuthority=null;factoryObservations.disconnect();render();notice.textContent='Composition cleared in another tab. Refresh current session before composing.';}});
+composeChannel?.addEventListener('message',event=>{const value=event.data;if(value&&typeof value==='object'&&value.type==='erase'&&value.workspaceId===workspace&&typeof value.principalId==='string'&&value.principalId===(composeScope?.principalId??session?.actor.principal_id)){eraseComposition(false);++connectionGeneration;disposeDecisions();factoryAuthority=null;factoryObservations.disconnect();render();notice.textContent='Composition cleared in another tab. Refresh current session before composing.';}});
 async function verifyCompositionAuthority(kind:'message'|'task'|'upload'='message'):Promise<boolean>{
  const generation=authority,connection=connectionGeneration,principal=session?.actor.principal_id;
  const auth=await compositionRequest(()=>client.request<AuthSession>('getAuthSession',{}),true);
@@ -114,6 +119,29 @@ const readTaskProjection:BrowserReadRequest=(async(operation,input,options)=>{
  return result;
 }) as BrowserReadRequest;
 const taskReads=new TaskReads({workspaceId:workspace,request:readTaskProjection,changed:()=>render()});
+function decisionContext():DecisionCallbackBinding{return {authority,connection:connectionGeneration,principalId:session?.actor.kind==='human'?session.actor.principal_id:null,view:approvalViewGeneration,render:approvalRenderGeneration,active:currentView==='approvals'&&!denied&&approvalsAvailable,online:navigator.onLine};}
+function disposeDecisions():void{++approvalViewGeneration;++approvalRenderGeneration;decisionReads.invalidate();}
+const decisionReads=new DecisionReads({workspaceId:workspace,currentBinding:()=>{
+ const context=decisionContext();return context.active&&context.principalId?{principalId:context.principalId,generation:context.connection,renderGeneration:context.view,online:context.online}:null;
+},reader:createDecisionReader({workspaceId:workspace,client:()=>client,currentContext:decisionContext,onAuthDenied:invalidateAll,
+ onAccess:async(data,requestId,current)=>{await models.workspace.refresh(async()=>({ok:true,status:200,data,requestId}));if(!current())return;
+  const capabilities=applyDecisionReadCapabilities(data,requestId,{tasks:taskReads,events:models.events,eventsEnabled:Boolean(models.configuration.state.data?.enabled_features.includes('events')),clearEventCursor:()=>{eventCursor=null;},current});if(!capabilities||!current())return;
+  tasksAvailable=capabilities.tasks;eventsAvailable=capabilities.events;approvalsAvailable=capabilities.approvals;
+  if(!data.effective_scopes.includes('operations:read')){operationsAvailable=false;models.operations.unavailable('CURRENT_SCOPE_REQUIRED',requestId);}
+  if(!tasksAvailable){taskActions.invalidateAuthority();taskActionPanel.navigation();}
+  if(!approvalsAvailable)disposeDecisions();render();},
+ onTaskDenied:(id,code,requestId)=>{eventCursor=null;models.events.unavailable('TASK_ACCESS_CHANGED',requestId);taskReads.forgetTask(id,requestId,code);render();}
+}),changed:()=>{if(currentView==='approvals')render();}});
+function renderApprovals():HTMLElement{
+ const shell=el('div',undefined,{'data-testid':'approvals-panel'});
+ if(!approvalsAvailable||denied||session?.actor.kind!=='human'){shell.append(el('p','Approvals unavailable: current human approvals:read and tasks:read are required.'));return shell;}
+ if(!navigator.onLine||models.workspace.state.status!=='ready'){shell.append(el('p','Approvals disconnected or stale. Refresh current authority before inspecting private inputs.'));return shell;}
+ const captured=decisionContext(),current=()=>decisionCallbackCurrent(captured,decisionContext());
+ shell.append(el('p','Source: '+source+'/approvals',{class:'evidence'}),el('p','Read-only decision inspection. No product action is enabled by this view; the server checks current policy and availability.'),button('Refresh approvals',()=>{if(current())void decisionReads.refreshList();},{'data-focus-key':'approvals-refresh'}),renderDecisionList(decisionReads.list.state,id=>{if(current())void decisionReads.select(id);}));
+ if(decisionReads.page?.has_more)shell.append(button('Next approvals page',()=>{if(current())void decisionReads.next();},{'data-focus-key':'approvals-next'}));
+ if(decisionReads.selectedId){shell.append(button('Close decision detail',()=>{if(current())void decisionReads.select(null);},{'data-focus-key':'approval-close'}),button('Refresh decision detail',()=>{if(current())void decisionReads.refreshDetail();},{'data-focus-key':'approval-detail-refresh'}),renderDecisionDetail(decisionReads.detail.state));}
+ return shell;
+}
 async function readTaskCommandAccess():Promise<ApiResult<Workspace>>{
  const generation=authority,connection=connectionGeneration,principal=session?.actor.principal_id;
  const invalid=():ApiResult<never>=>({ok:false,status:null,requestId:null,error:{code:'OBSERVATION_INVALIDATED',message:'Current authority required',retryable:false}});
@@ -229,7 +257,7 @@ const settings=new SettingsPanel({
 function invalidateAll(status:401|403,id:string|null):void{
  resetFactoryView();
  eraseComposition();
- ++authority;++connectionGeneration;denied=true;session=null;client?.setCsrfToken(null);eventCursor=null;threadCursor=null;threadId=null;
+ ++authority;++connectionGeneration;approvalsAvailable=false;disposeDecisions();denied=true;session=null;client?.setCsrfToken(null);eventCursor=null;threadCursor=null;threadId=null;
  for(const model of Object.values(models))model.invalidate(status===401?'UNAUTHENTICATED':'FORBIDDEN',id);
  taskReads.invalidate(status===401?'UNAUTHENTICATED':'FORBIDDEN',id);tasksAvailable=false;
  taskActions.invalidateAuthority();taskActionPanel.navigation();
@@ -252,7 +280,7 @@ function renderSession():void{
   },{class:'secondary'}));
  }else{
   sessionElement.append(el('span',denied?'Access denied. Sign in to refresh current authority.':'Sign in to read this workspace.'),button('Sign in',async()=>{
-   const result=await request<AuthStartData>('startAuth',{return_path:currentView==='tasks'?'/tasks':currentView==='settings'?'/settings':currentView==='activity'?'/activity':'/overview'});
+   const result=await request<AuthStartData>('startAuth',{return_path:currentView==='tasks'||currentView==='approvals'?'/tasks':currentView==='settings'?'/settings':currentView==='activity'?'/activity':'/overview'});
    if(result.ok)location.assign(result.data.authorization_url);else notice.textContent=result.error.message;
   }));
  }
@@ -282,28 +310,30 @@ function setFactoryMode(enabled:boolean):void{
  render();
 }
 function navigate(name:string,selectedThread:string|null=null):void{
- resetFactoryView();
+ disposeDecisions();resetFactoryView();
  hideComposition();
  taskActions.invalidatePreparation();taskActionPanel.navigation();
  currentView=name;selectThread(selectedThread);
  const query=new URLSearchParams({workspace});if(selectedThread)query.set('thread',selectedThread);
- history.pushState(null,'','/'+name+'?'+query.toString());
+ history.pushState(null,'',name==='approvals'?approvalPanelHref(workspace):'/'+name+'?'+query.toString());
  if(name==='tasks'){void taskReads.select(null);void taskReads.refreshBoard();}
+ if(name==='approvals'&&approvalsAvailable)void decisionReads.refreshList();
  render();byId('main').focus();
  if(selectedThread)void refreshThread(selectedThread,false);
 }
 function navigateTask(id:string|null):void{
- hideComposition();
+ disposeDecisions();hideComposition();
  taskActions.invalidatePreparation();taskActionPanel.navigation();
  currentView='tasks';selectThread(null);const query=new URLSearchParams({workspace});if(id)query.set('task',id);
  history.pushState(null,'','/tasks?'+query.toString());void taskReads.select(id);if(factoryMode)void factoryObservations.selectPrimary(id);render();byId('main').focus();
 }
 function renderNavigation():void{
  const visibleViews=models.profile.state.data?.profile.navigation.visible_views;
- const entries=([['overview','Overview'],['activity','Activity'],['tasks','Tasks'],['inbox','Inbox'],['settings','Settings']] as const).filter(([name])=>{
+ const entries=([['overview','Overview'],['activity','Activity'],['tasks','Tasks'],['approvals','Approvals'],['inbox','Inbox'],['settings','Settings']] as const).filter(([name])=>{
   // Overview is a permanent safe fallback; Settings is deliberately outside profile navigation.
   if(name==='overview')return true;
   if(name==='settings')return profileAvailable||preferencesAvailable||denied;
+  if(name==='approvals')return approvalsAvailable&&session?.actor.kind==='human'&&Boolean(visibleViews?.includes('approvals'));
   if(name==='tasks')return tasksAvailable&&Boolean(visibleViews?.includes('tasks')||visibleViews?.includes('kanban'));
   if(visibleViews&&!visibleViews.includes(name))return false;
   if(name==='activity')return eventsAvailable||denied;
@@ -319,7 +349,7 @@ function renderNavigation():void{
  for(const [index,[name,label]]of entries.entries()){
   let link=navigationLinks.get(name);
   if(!link){
-   link=el('a',label,{href:'/'+name+'?workspace='+encodeURIComponent(workspace)});
+   link=el('a',label,{href:name==='approvals'?approvalPanelHref(workspace):'/'+name+'?workspace='+encodeURIComponent(workspace)});
    link.addEventListener('click',event=>{event.preventDefault();navigate(name);});navigationLinks.set(name,link);
   }
   if(currentView===name&&!threadId)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');
@@ -391,14 +421,15 @@ function threadSection():HTMLElement{
 }
 function render():void{
  syncFactoryObservationState();
- const observationRender=++factoryObservationRender;
+ const observationRender=++factoryObservationRender;++approvalRenderGeneration;
  renderNavigation();
  const composeButton=byId('compose-message-open') as HTMLButtonElement|null;if(composeButton)composeButton.disabled=!compositionBinding()||models.workspace.state.status!=='ready'||!models.workspace.state.data?.effective_scopes.includes('messages:send')||(!models.workspace.state.data.effective_scopes.includes('messages:read')||!models.workspace.state.data.effective_scopes.includes('agents:read'));
  const taskComposeButton=byId('compose-task-open') as HTMLButtonElement|null;if(taskComposeButton){const eligible=!!compositionBinding()&&models.workspace.state.status==='ready'&&!!models.workspace.state.data?.effective_scopes.includes('tasks:create');taskComposeButton.hidden=!eligible;taskComposeButton.disabled=!eligible;}
  const heading=document.querySelector('h1')!;
- heading.textContent=currentView==='tasks'?(factoryMode?'Factory evidence explorer':taskReads.selectedId?'Task detail':'Workspace tasks'):threadId?'Thread history':currentView==='activity'?'Workspace activity':currentView==='settings'?'Workspace settings':currentView==='inbox'?'Agent inbox':'Workspace overview';
- const active=currentView==='tasks'?(taskReads.selectedId?[taskReads.task.state,taskReads.run.state,taskReads.results.read.state,taskReads.events.read.state,taskReads.artifacts.state]:Object.values(taskReads.columns).map(page=>page.read.state)):currentView==='inbox'?[]:threadId?[models.thread.state]:currentView==='settings'?[models.workspace.state,models.profile.state,models.preferences.state]:[models.configuration.state,...(eventsAvailable||denied?[models.events.state]:[]),...(operationsAvailable?[models.operations.state]:[])];
+ heading.textContent=currentView==='approvals'?'Workspace approvals':currentView==='tasks'?(factoryMode?'Factory evidence explorer':taskReads.selectedId?'Task detail':'Workspace tasks'):threadId?'Thread history':currentView==='activity'?'Workspace activity':currentView==='settings'?'Workspace settings':currentView==='inbox'?'Agent inbox':'Workspace overview';
+ const active=currentView==='approvals'?(decisionReads.selectedId?[decisionReads.list.state,decisionReads.detail.state]:[decisionReads.list.state]):currentView==='tasks'?(taskReads.selectedId?[taskReads.task.state,taskReads.run.state,taskReads.results.read.state,taskReads.events.read.state,taskReads.artifacts.state]:Object.values(taskReads.columns).map(page=>page.read.state)):currentView==='inbox'?[]:threadId?[models.thread.state]:currentView==='settings'?[models.workspace.state,models.profile.state,models.preferences.state]:[models.configuration.state,...(eventsAvailable||denied?[models.events.state]:[]),...(operationsAvailable?[models.operations.state]:[])];
  byId('page-status').textContent=denied?'forbidden — current authority required':currentView==='inbox'?'Unavailable for human sessions':'Read status: '+summarizeReadStates(active);
+ if(currentView==='approvals'){replacePreservingFocus(view,renderApprovals(),byId('main'));return;}
  if(currentView==='tasks'){
   const shell=el('div'),modes=el('div',undefined,{role:'group','aria-label':'Task presentation'});
   modes.append(button('Task board',()=>setFactoryMode(false),{'aria-pressed':String(!factoryMode),'data-focus-key':'task-mode-board',class:'secondary'}),button('Factory evidence',()=>setFactoryMode(true),{'aria-pressed':String(factoryMode),'data-focus-key':'task-mode-factory',class:'secondary',...(!tasksAvailable||denied?{disabled:''}:{})}));shell.append(modes);
@@ -466,7 +497,9 @@ async function refreshReads():Promise<void>{
   const observed=models.workspace.state;
   if(observed.status==='ready'&&observed.data){
    const scopes=observed.data.effective_scopes;tasksAvailable=scopes.includes('tasks:read');
+   approvalsAvailable=session?.actor.kind==='human'&&scopes.includes('approvals:read')&&scopes.includes('tasks:read');if(!approvalsAvailable)disposeDecisions();
    taskReads.setCapabilities({tasks:tasksAvailable,events:eventsAvailable&&scopes.includes('events:read'),artifacts:scopes.includes('artifacts:read')});
+   if(currentView==='approvals'&&approvalsAvailable){await decisionReads.refreshList();if(decisionReads.selectedId)await decisionReads.refreshDetail();}
    if(currentView==='tasks'&&tasksAvailable)await Promise.all([taskReads.refreshBoard(),taskReads.selectedId?taskReads.refreshTask():Promise.resolve()]);
   }else taskReads.disconnect();
  }
@@ -485,15 +518,15 @@ async function boot():Promise<void>{
  const initialTask=new URL(location.href).searchParams.get('task');if(currentView==='tasks'&&initialTask&&!denied)await taskReads.select(initialTask);
  const initialThread=new URL(location.href).searchParams.get('thread');if(initialThread&&!denied){selectThread(initialThread);currentView='activity';await refreshThread(initialThread);}
  if(location.pathname==='/'&&models.preferences.state.data&&!denied){
-  const preferred=models.preferences.state.data.effective.default_view;if(preferred==='activity'&&eventsAvailable)navigate('activity');else if(preferred==='tasks'&&tasksAvailable)navigate('tasks');
+  const preferred=models.preferences.state.data.effective.default_view;if(preferred==='activity'&&eventsAvailable)navigate('activity');else if(preferred==='tasks'&&tasksAvailable)navigate('tasks');else if(preferred==='approvals'&&approvalsAvailable)navigate('approvals');
  }
 }
-addEventListener('popstate',()=>{resetFactoryView();hideComposition();taskActions.invalidatePreparation();taskActionPanel.navigation();currentView=location.pathname.slice(1)||'overview';selectThread(new URL(location.href).searchParams.get('thread'));render();if(threadId)void refreshThread(threadId);if(currentView==='tasks'){void taskReads.select(new URL(location.href).searchParams.get('task'));void taskReads.refreshBoard();}});
-addEventListener('offline',()=>{hideComposition();++connectionGeneration;taskActions.invalidatePreparation();for(const model of Object.values(models))model.disconnect();taskReads.disconnect();factoryAuthority=null;factoryObservations.disconnect();render();});
-addEventListener('online',()=>{hideComposition();++connectionGeneration;taskActions.invalidatePreparation();void refreshReads();});
-setInterval(()=>{taskReads.markStale(Date.now(),60_000);for(const model of Object.values(models))model.markStale(Date.now(),60_000);if(models.workspace.state.status!=='ready'&&taskActions.state.status==='ready')taskActions.invalidatePreparation();render();},15_000);
+addEventListener('popstate',()=>{disposeDecisions();resetFactoryView();hideComposition();taskActions.invalidatePreparation();taskActionPanel.navigation();currentView=isApprovalPanel(location.pathname,location.search)?'approvals':location.pathname.slice(1)||'overview';selectThread(new URL(location.href).searchParams.get('thread'));render();if(currentView==='approvals'&&approvalsAvailable)void decisionReads.refreshList();if(threadId)void refreshThread(threadId);if(currentView==='tasks'){void taskReads.select(new URL(location.href).searchParams.get('task'));void taskReads.refreshBoard();}});
+addEventListener('offline',()=>{hideComposition();++connectionGeneration;disposeDecisions();taskActions.invalidatePreparation();for(const model of Object.values(models))model.disconnect();taskReads.disconnect();factoryAuthority=null;factoryObservations.disconnect();render();});
+addEventListener('online',()=>{hideComposition();++connectionGeneration;disposeDecisions();taskActions.invalidatePreparation();void refreshReads();});
+setInterval(()=>{decisionReads.markStale(Date.now(),60_000);taskReads.markStale(Date.now(),60_000);for(const model of Object.values(models))model.markStale(Date.now(),60_000);if(models.workspace.state.status!=='ready'&&taskActions.state.status==='ready')taskActions.invalidatePreparation();render();},15_000);
 void boot();
 
 document.addEventListener('visibilitychange',()=>{syncFactoryObservationState();});
-addEventListener('pagehide',event=>{factoryObservations.setActive(false);hideComposition();if(!(event as PageTransitionEvent).persisted){factoryObservations.dispose();composeChannel?.close();void compositionStorage.dispose();}});
-addEventListener('pageshow',event=>{if((event as PageTransitionEvent).persisted){hideComposition();++connectionGeneration;void refreshReads();}});
+addEventListener('pagehide',event=>{disposeDecisions();factoryObservations.setActive(false);hideComposition();if(!(event as PageTransitionEvent).persisted){factoryObservations.dispose();composeChannel?.close();void compositionStorage.dispose();}});
+addEventListener('pageshow',event=>{if((event as PageTransitionEvent).persisted){hideComposition();++connectionGeneration;disposeDecisions();void refreshReads();}});

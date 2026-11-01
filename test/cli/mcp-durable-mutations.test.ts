@@ -44,3 +44,14 @@ describe('MCP durable explicit-key admission',()=>{
   const f=await fixture();await f.mutations.prepareOrReuse('heartbeatRuntime',request,{idempotencyKey:'same'});f.provider.rotateCredential('Q'.repeat(43));await expect(f.mutations.prepareOrReuse('heartbeatRuntime',request,{idempotencyKey:'same'})).rejects.toThrow();expect(f.fetch).not.toHaveBeenCalled();
  });
 });
+
+it('unresolved owner heartbeat blocks decision request before native send',async()=>{
+ const f=await fixture(),heartbeat=await f.mutations.prepareOrReuse('heartbeatRuntime',request,{idempotencyKey:'heartbeat-unknown'});f.fetch.mockImplementationOnce(async()=>{throw Error('lost');});await f.mutations.dispatch(heartbeat.id);
+ const input={path:{task_id:'task'},body:{expected_version:3,run_id:'run',fence:1,checkpoint:{summary:'Synthetic',artifact_ids:[]},proposal:{summary:'Synthetic',action:'synthetic.task-review',scope:{project_id:null,resource_ids:['task']},artifact_ids:[],inputs:{artifact_id:'artifact',sha256:'a'.repeat(64)}}}};
+ const decision=await f.mutations.prepareOrReuse('requestTaskDecision',input,{idempotencyKey:'decision'});const result=await f.mutations.dispatch(decision.id);expect(result).toMatchObject({ok:false,error:{code:'NETWORK_ERROR'}});expect(f.fetch).toHaveBeenCalledTimes(1);
+});
+it('decision UNKNOWN keeps exact key and first-dispatch lifetime through restart',async()=>{
+ const f=await fixture(),input={path:{task_id:'task'},body:{expected_version:3,run_id:'run',fence:1,checkpoint:{summary:'Original',artifact_ids:[]},proposal:{summary:'Synthetic',action:'synthetic.task-review',scope:{project_id:null,resource_ids:['task']},artifact_ids:[],inputs:{artifact_id:'artifact',sha256:'a'.repeat(64)}}}};
+ const first=await f.mutations.prepareOrReuse('requestTaskDecision',input,{idempotencyKey:'exact-decision'});f.fetch.mockImplementationOnce(async()=>{throw Error('lost');});expect((await f.mutations.dispatch(first.id)).ok).toBe(false);f.mutations.close();
+ const next=new DurableMutations(f.opts);closed.push(next);expect(await next.prepareOrReuse('requestTaskDecision',input,{idempotencyKey:'exact-decision'})).toEqual(first);await expect(next.prepareOrReuse('requestTaskDecision',{...input,body:{...input.body,fence:2}},{idempotencyKey:'exact-decision'})).rejects.toThrow();f.clock.now+=86400000;expect((await next.dispatch(first.id)).ok).toBe(false);expect(f.fetch).toHaveBeenCalledTimes(1);
+});

@@ -8,6 +8,7 @@
     "patchTask",
     "readyTask",
     "claimTask",
+    "requestTaskDecision",
     "submitTaskResult",
     "acceptTaskResult",
     "failTask",
@@ -62,7 +63,6 @@
     "listTaskObservations"
   ],
   "excluded": {
-    "requestTaskDecision": "R3 unavailable",
     "listApprovals": "R3 unavailable",
     "getApproval": "R3 unavailable",
     "approveApproval": "R3 unavailable",

@@ -32,7 +32,7 @@ export function checkpointSnapshot(value:Checkpoint):Checkpoint {
  return structuredClone(value);
 }
 interface HumanRow {workspace_id:string;principal_id:string;issuer:string;subject:string;enabled:number;config_epoch:number;scopes_json:string;project_ids_json:string;}
-function currentReviewer(tx:WorkspaceTransaction,workspaceId:string,principalId:string,epoch:number,configured:{issuer:string;subject:string;enabled:boolean;scopes:readonly string[];project_ids:readonly string[]|null}|undefined,required:readonly string[]):{grant:ResourceGrant;evidence:DecisionReviewerRequirements} {
+export function currentReviewer(tx:WorkspaceTransaction,workspaceId:string,principalId:string,epoch:number,configured:{issuer:string;subject:string;enabled:boolean;scopes:readonly string[];project_ids:readonly string[]|null}|undefined,required:readonly string[]):{grant:ResourceGrant;evidence:DecisionReviewerRequirements} {
  const row=tx.one<HumanRow>('SELECT * FROM human_grants WHERE workspace_id=? AND principal_id=?',[workspaceId,principalId]);
  if(!configured||!configured.enabled||!row||row.enabled!==1||row.workspace_id!==workspaceId||row.principal_id!==principalId||row.config_epoch!==epoch||row.issuer!==configured.issuer||row.subject!==configured.subject)unavailable();
  const scopes:unknown=JSON.parse(row.scopes_json),projects:unknown=JSON.parse(row.project_ids_json);

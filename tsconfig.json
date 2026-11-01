@@ -40,6 +40,12 @@
     "src/ui/factory/explorer.ts",
     "test/ui/factory-explorer.test.ts",
     "src/ui/factory/observations.ts",
-    "test/ui/factory-observations.test.ts"
+    "test/ui/factory-observations.test.ts",
+    "src/ui/approvals/decision-detail.ts",
+    "src/ui/approvals/decision-list.ts",
+    "src/ui/approvals/input-viewer.ts",
+    "src/ui/approvals/panel.ts",
+    "src/ui/approvals/host.ts",
+    "test/ui/decision.test.ts"
   ]
 }

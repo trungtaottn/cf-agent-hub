@@ -17,9 +17,10 @@ export const descriptor=Object.freeze({
 });
 export const syntheticPolicy:DecisionPolicy={policy_version:3,expiry_seconds:120,expiry_batch_limit:2,actions:[{action_id:descriptor.actionId,schema_version:descriptor.schemaVersion,schema_sha256:schemaSha256,reviewer_ids:['human_operator','human_reviewer'],resource_kinds:['task']}]};
 export const proposal=(hash:string):Proposal=>({summary:'Synthetic only',action:descriptor.actionId,scope:{project_id:null,resource_ids:['task_a']},artifact_ids:[],inputs:{artifact_id:'input_a',sha256:hash}});
-export async function decisionFixture(name:string,policy:DecisionPolicy|null=syntheticPolicy,reviewerCount=2){
+export async function decisionFixture(name:string,policy:DecisionPolicy|null=syntheticPolicy,reviewerCount=2,humanCancel=false){
  const raw=await fixture(name);
  raw.config.human_grants[0].scopes=[...raw.config.human_grants[0].scopes,'tasks:read','tasks:create','tasks:edit','tasks:schedule','artifacts:read','approvals:read','approvals:decide','credentials:manage'];
+ if(humanCancel)raw.config.human_grants[0].scopes.push('tasks:cancel');
  raw.config.human_grants.push({...raw.config.human_grants[0],principal_id:'human_reviewer',subject:'synthetic-reviewer-subject'});
  for(let index=2;index<reviewerCount;index++)raw.config.human_grants.push({...raw.config.human_grants[0],principal_id:'human_reviewer_'+index,subject:'synthetic-reviewer-'+index});
  const credential={...raw.config.static_credential_refs[0],scopes:['workspace:read','events:read','tasks:read','tasks:claim','tasks:execute','runtimes:manage','artifacts:read','artifacts:write'] as typeof raw.config.static_credential_refs[0]['scopes']};

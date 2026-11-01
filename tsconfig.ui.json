@@ -23,6 +23,7 @@
     "test/client/task-action-view.test.ts",
     "test/client/message-form-view.test.ts",
     "test/ui/factory-explorer.test.ts",
-    "test/ui/factory-observations.test.ts"
+    "test/ui/factory-observations.test.ts",
+    "test/ui/decision.test.ts"
   ]
 }

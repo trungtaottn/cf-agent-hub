@@ -4,7 +4,15 @@ import {resolveContext} from '../../packages/cli/src/context';
 import {formatResult,classifyResult} from '../../packages/cli/src/output';
 import {clientOperations} from '../../src/http/generated/client-operations';
 describe('CLI command contract',()=>{
- it('covers exactly the generated native inventory',()=>expect(Object.values(nativeCommandMap).map(x=>x.operation).sort()).toEqual(Object.entries(clientOperations).filter(([,v])=>v.native).map(([k])=>k).sort()));
+ it('partitions the exact native inventory into 34 CLI commands and the explicit MCP-only decision request',()=>{
+  const cli:string[]=Object.values(nativeCommandMap).map(x=>x.operation).sort();
+  const native=Object.entries(clientOperations).filter(([,v])=>v.native).map(([k])=>k).sort();
+  expect(cli).toHaveLength(34);expect(new Set(cli).size).toBe(34);
+  expect(native).toHaveLength(35);
+  expect(native.filter(operation=>!cli.includes(operation))).toEqual(['requestTaskDecision']);
+  expect([...cli,'requestTaskDecision'].sort()).toEqual(native);
+  expect(()=>parseCommand(['tasks','request-decision','task-example','--input','body.json'])).toThrow('CLI_ARGUMENT_REJECTED');
+ });
  it('maps false and exact integer lexemes',()=>{expect(parseCommand(['inbox','list','--acknowledged','false','--limit','20']).input.query).toEqual({acknowledged:false,limit:20});});
  it.each(['1e2','+2','02','2.0',' 2','9007199254740992'])('rejects invalid numeric %s',n=>expect(()=>parseCommand(['events','list','--limit',n])).toThrow('CLI_ARGUMENT_REJECTED'));
  it.each([['tasks','list','--all'],['tasks','list','--limit','1','--limit','2'],['tasks','list','--token','secret-canary'],['tasks','show'],['tasks','show','a','b'],['artifacts','upload','a'],['artifacts','upload','a','--file','f','--content-id','c'],['events','list','--cursor','x','--after-sequence','1']].map(args=>({args})))('rejects unsupported shell input',({args})=>expect(()=>parseCommand(args)).toThrow('CLI_ARGUMENT_REJECTED'));

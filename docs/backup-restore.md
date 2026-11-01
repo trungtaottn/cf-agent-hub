@@ -256,6 +256,13 @@ release is denied, not re-admitted. Original16/17 continuity remains supported.
 The three genuine18 fixtures and their provenance are immutable inputs; see
 [their provenance record](../test/fixtures/genuine-schema18-provenance/README.md).
 
+A later safety cancellation may retain one authenticated restore-expiry gap in
+the decision history: the cancellation records its actual before/after versions,
+while the original decision transition and consumed run binding remain unchanged.
+The command gate requires completed restore provenance and independent current
+authorization. Staged import evidence is usable only for historical validation,
+never for command admission. Arbitrary version gaps remain invalid.
+
 Focused source tests are `schema18-restore-upgrade`, `schema18-frozen-controls`,
 `schema18-restore-continuity` and `r3-decisions`. These are synthetic local
 compatibility checks, not deployed recovery, current product action authority,

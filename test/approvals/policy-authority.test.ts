@@ -103,7 +103,7 @@ it('recognized human approval scopes never become managed native credential auth
  });
  const base='https://hub.example.invalid/v2/workspaces/ws_example/';
  for(const [path,method] of [['tasks/task_a:request-decision','POST'],['approvals/approval_a','GET'],['approvals/approval_a:approve','POST'],['approvals/approval_a:reject','POST']]){
-  const body=path.startsWith('tasks/')?decisionRequest('task_a'):approvalDecision(),implemented=path.startsWith('tasks/')||method==='GET';
+  const body=path.startsWith('tasks/')?decisionRequest('task_a'):approvalDecision(),implemented=true;
   const response=await f.stub.fetch(new Request(base+path,{method,headers:{'content-type':'application/json','idempotency-key':'unauthenticated-boundary'},...(method==='POST'?{body:JSON.stringify(body)}:{})}));await decisionError(response,implemented?401:404,implemented?'UNAUTHENTICATED':'NOT_FOUND');
  }
 });

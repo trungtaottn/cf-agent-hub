@@ -1,4 +1,5 @@
 /** Internal source composition only. Production fixes an empty action registry. */
+import {createHumanDecisionCommands} from './human-commands-source';
 import type {DecisionActionDescriptor} from './action-registry';
 import {createProposalInputVerifier,type ProposalInputContext} from './input-binding-source';
 import type {VerifiedProposalInput} from './contracts';
@@ -89,5 +90,5 @@ export function createDecisionCommands(descriptors:readonly DecisionActionDescri
    }
   };
  }
- return Object.freeze({prepareRequestTaskDecision});
+ return Object.freeze({prepareRequestTaskDecision,...createHumanDecisionCommands(descriptors)});
 }
