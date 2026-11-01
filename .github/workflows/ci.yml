@@ -25,9 +25,10 @@ concurrency:
 jobs:
   source:
     runs-on: ubuntu-24.04
-    # Expanded R2 source + browser gates take ~20 minutes; retain a bounded job
-    # budget with orchestration headroom without changing per-test safety limits.
-    timeout-minutes: 30
+    # Observed serial Workers alone take ~20 minutes; the 30-minute aggregate
+    # cap canceled progressing browser tests. Bound the complete source/browser/docs
+    # job at 45 minutes without changing per-test limits or serial execution.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -49,7 +50,7 @@ jobs:
       - run: node scripts/check-observation-adapter.mjs
       - run: npm run check:runtime
       - run: npx --no-install playwright install --with-deps chromium
-      - run: npm run test:ui
+      - run: npm run test:ui -- --reporter=line
       - name: Documentation contracts
         run: |
           python -m pip install --requirement requirements-docs.txt
