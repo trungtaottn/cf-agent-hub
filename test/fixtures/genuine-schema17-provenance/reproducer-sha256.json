@@ -1,0 +1,5 @@
+{
+  "reproducer/test/recovery/schema17-frozen-verification.test.ts": "dd3fc2bf5b38bcb40d4c62ecba46ef8c6e046c9f913ec601ec3500ae0007eab0",
+  "reproducer/test/recovery/schema17-producer.test.ts": "3d8c624399c524db1a2fb037be25b6076faca4a6de0fdb32849ad63a211cbfb3",
+  "reproducer/vitest.schema17-capture.config.ts": "79f6c0611d4141cb1495516fa220feb5f3daac4c24067d836e5c46012693aeb4"
+}

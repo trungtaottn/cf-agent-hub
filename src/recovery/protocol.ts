@@ -63,14 +63,14 @@ export type RecoveryManifestV2=Extract<RecoveryManifest,{format_version:2}>;
 export type RecoveryArtifactEntry=RecoveryManifestV2['artifacts'][number];
 
 /** Exact recovery capability tuple; operation dispatch separately gates capture and current16 restore/control. */
-export function recoverySchema(tx:WorkspaceTransaction,ctx:Pick<RecoveryContext,'operation'|'captureId'>):7|15|16|17{
+export function recoverySchema(tx:WorkspaceTransaction,ctx:Pick<RecoveryContext,'operation'|'captureId'>):7|15|16|17|18{
  const n=tx.one<{version:number}>('SELECT MAX(version) AS version FROM schema_migrations')?.version;
  if(n!==7){
-  if(n!==15&&n!==16&&n!==CURRENT_SCHEMA_VERSION)throw Error('RECOVERY_FORMAT_UNAVAILABLE');
+  if(n!==15&&n!==16&&n!==17&&n!==CURRENT_SCHEMA_VERSION)throw Error('RECOVERY_FORMAT_UNAVAILABLE');
   if(n===15){if(!['capture','read-chunk','status'].includes(ctx.operation))throw Error('RECOVERY_FORMAT_UNAVAILABLE');const job=frozenSchema15Capture(tx);if(!job||job.capture_id!==ctx.captureId)throw Error('RECOVERY_FORMAT_UNAVAILABLE');}
-  if(n===16&&!retainedSchema16Recovery(tx))throw Error('RECOVERY_FORMAT_UNAVAILABLE');
+  if((n===16||n===17)&&!retainedSchema16Recovery(tx))throw Error('RECOVERY_FORMAT_UNAVAILABLE');
  }
  try{assertSchemaVersion(tx,n);}catch{throw Error('RECOVERY_FORMAT_UNAVAILABLE');}return n;
 }
-export type CurrentRecoveryManifest=Extract<RecoveryManifest,{checkpoint:{schema_version:15|16|17}}>;
+export type CurrentRecoveryManifest=Extract<RecoveryManifest,{checkpoint:{schema_version:15|16|17|18}}>;
 export type CurrentRecoveryArtifactEntry=CurrentRecoveryManifest['artifacts'][number];

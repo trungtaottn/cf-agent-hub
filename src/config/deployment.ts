@@ -49,6 +49,12 @@ export function parseDeployment(input:unknown):DeploymentConfig {
  for(const policy of config.workspace_policies) {
   if(policy.decision_policy!==undefined){try{parseDecisionPolicy(policy.decision_policy);}catch{invalid("workspace_policies.decision_policy");}}
   if(policy.execution_policy!==undefined){try{parseExecutionPolicy(policy.execution_policy);}catch{invalid("workspace_policies.execution_policy");}}
+  if(policy.observation_pilot!==undefined){
+   const pilot=policy.observation_pilot;
+   unique(pilot.slots,x=>x.agent_id,'observation_pilot.slots.agent_id');
+   unique(pilot.slots,x=>x.checkout_slot_id,'observation_pilot.slots.checkout_slot_id');
+   for(const slot of pilot.slots)if(!agentExists(policy.workspace_id,slot.agent_id))invalid('observation_pilot.slots.agent_id');
+  }
   unique(policy.notification_destinations,x=>x.destination_id,'notification_destinations.destination_id');
   for(const dest of policy.notification_destinations)if(!approvedHttpsUrl(dest.url)||!agentExists(policy.workspace_id,dest.agent_id))invalid('notification_destinations');
  }

@@ -1,3 +1,4 @@
+import {assertObservationGraph} from '../observations/repository';
 import {physicalRecoverySchema} from './target-schema';
 import {reserveArtifactCopyEffect} from './restore-artifact-effect';
 import {canonicalJson} from '../config/bootstrap';
@@ -54,8 +55,8 @@ export async function advanceCurrentVerify(w:RecoveryWorkspace,ctx:RecoveryConte
    if(current.details.verifyIndex===current.details.manifest.database.chunks.length){current.details.verifyIndex=0;
     if(stage==='fixup')current.details.stage='validate';
     else if(stage==='validate'){
-     sourceCounts(tx,current);const inventory=captureArtifactInventory(tx,w,current.capture_id,1000);if(canonicalJson(inventory.artifacts)!==canonicalJson(current.details.manifest.artifacts)||canonicalJson(inventory.unfinished)!==canonicalJson(current.details.manifest.unfinished_artifact_ids))throw Error('RECOVERY_ARTIFACT_IDENTITY_MISMATCH');current.details.stage='hash';current.details.phase='hash_chunks';
-    }else{current.details.stage='additions';current.details.phase='overlay_authority';}
+     sourceCounts(tx,current);if(current.details.manifest.checkpoint.schema_version===18)assertObservationGraph(tx);const inventory=captureArtifactInventory(tx,w,current.capture_id,1000);if(canonicalJson(inventory.artifacts)!==canonicalJson(current.details.manifest.artifacts)||canonicalJson(inventory.unfinished)!==canonicalJson(current.details.manifest.unfinished_artifact_ids))throw Error('RECOVERY_ARTIFACT_IDENTITY_MISMATCH');current.details.stage='hash';current.details.phase='hash_chunks';
+    }else{current.details.stage=physicalRecoverySchema(tx)===18?'invalidate_observation_records':'additions';current.details.phase='overlay_authority';}
    }return finishRestoreStep(tx,w,ctx,current);
   });
  }
@@ -71,6 +72,16 @@ export async function advanceCurrentVerify(w:RecoveryWorkspace,ctx:RecoveryConte
     const high=current.details.manifest.checkpoint.event_sequence;if(!tx.one("SELECT name FROM sqlite_sequence WHERE name='events'"))tx.exec("INSERT INTO sqlite_sequence (name,seq) VALUES ('events',?)",[high]);else tx.exec("UPDATE sqlite_sequence SET seq=? WHERE name='events'",[high]);
    }return finishRestoreStep(tx,w,ctx,current);});
  }
+ if(stage==='invalidate_observation_records'||stage==='invalidate_observation_slots'){
+  return withTransaction(w.storage,tx=>{const current=assertCurrentRestoreJob(tx,w,ctx,job.id);
+   if(physicalRecoverySchema(tx)!==18)throw Error('RECOVERY_SCHEMA_MISMATCH');
+   // Source bytes, graph, caps and aggregate digest were verified before any transform.
+   // Separate persisted stages make the records-before-slots order crash-resumable.
+   if(stage==='invalidate_observation_records'){tx.exec('DELETE FROM observation_records');current.details.stage='invalidate_observation_slots';}
+   else{if(tx.one('SELECT 1 FROM observation_records LIMIT 1'))throw Error('RECOVERY_RESTORED_AUTHORITY');tx.exec('DELETE FROM observation_slots');current.details.stage='additions';}
+   return finishRestoreStep(tx,w,ctx,current);
+  });
+ }
  if(stage!=='additions')throw Error('INVALID_RECOVERY_PHASE');
  const verified=await verifyCurrentLedger(job.details.ledger,ctx.ledgerAnchor,w,job.details.manifest.checkpoint.authority_epoch,guard),authority=prepareRestoreAuthority(verified.input,job.created_at);await guard();
  return withTransaction(w.storage,tx=>{const current=assertCurrentRestoreJob(tx,w,ctx,job.id),names:RestoreAuthorityTable[]=['human_grants','static_agents','native_credentials'];
@@ -80,7 +91,8 @@ export async function advanceCurrentVerify(w:RecoveryWorkspace,ctx:RecoveryConte
   }
   const columns=tableDefinition('workspace_metadata').columns;const source=sourceRow({columns:columns.map(c=>c.name)} as CurrentRecoveryChunk,current.details.sourceMetadata!);
   tx.exec('UPDATE workspace_metadata SET message_retained_after_created_at=?,message_retained_after_id=?,event_retained_after_sequence=? WHERE id=1',[source.message_retained_after_created_at,source.message_retained_after_id,source.event_retained_after_sequence]);inspectRegistry(tx,physicalRecoverySchema(tx));
-  if(physicalRecoverySchema(tx)===17&&tx.one('SELECT id FROM creation_admissions LIMIT 1'))throw Error('RECOVERY_RESTORED_AUTHORITY');
+  if(physicalRecoverySchema(tx)>=17&&tx.one('SELECT id FROM creation_admissions LIMIT 1'))throw Error('RECOVERY_RESTORED_AUTHORITY');
+  if(physicalRecoverySchema(tx)===18&&(tx.one('SELECT 1 FROM observation_records LIMIT 1')||tx.one('SELECT 1 FROM observation_slots LIMIT 1')))throw Error('RECOVERY_RESTORED_AUTHORITY');
   current.details.receipt=receipt(tx,w,current);current.state='complete';current.details.stage='complete';current.details.phase='complete';transitionMaintenance(tx,{state:'restored',epoch:ctx.expectedEpoch,barrierId:'barrier_'+current.id.slice(4),captureId:current.capture_id,nowMs:w.clock.nowMs(),advance:false});return finishRestoreStep(tx,w,ctx,current);
  });
 }

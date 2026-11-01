@@ -3,13 +3,13 @@ import {HttpError} from './envelopes';
 import type {Entropy} from '../workspace/context';
 /** Only routes with implemented query/retention semantics may mint cursors.
  * Future task/search/history owners extend this closed map with their own bindings. */
-const cursorOperations={inbox:'message',thread:'message',events:'sequence',agents:'message',credentials:'message',tasks:'message',artifacts:'message','task-results':'sequence',search:'message'} as const;
+const cursorOperations={inbox:'message',thread:'message',events:'sequence',agents:'message',credentials:'message',tasks:'message',artifacts:'message','task-results':'sequence',search:'message','observation-records':'sequence'} as const;
 export interface CursorBinding {workspaceId:string;principalId:string;lane:'human'|'agent';credentialId:string|null;sessionId:string|null;operation:keyof typeof cursorOperations;queryHash:string;}
 export interface MessagePosition {createdAt:number;id:string;}
 export type CursorPosition=MessagePosition|number;
 export interface CursorPayload {version:1;binding:CursorBinding;highWater:CursorPosition;lastScanned:CursorPosition;expiresAt:number;}
 const utf8=new TextEncoder();
-const padded=(operation:CursorBinding['operation'])=>operation==='tasks'||operation==='task-results'||operation==='artifacts'||operation==='search';
+const padded=(operation:CursorBinding['operation'])=>operation==='tasks'||operation==='task-results'||operation==='artifacts'||operation==='search'||operation==='observation-records';
 const PADDED_CLEAR_BYTES=1508; // 12 nonce + 16 GCM tag + 1508 clear => exactly 2048 base64url bytes.
 const invalid=():never=>{throw new HttpError('INVALID_REQUEST',400);};
 const position=(v:unknown):v is CursorPosition=>typeof v==='number'?Number.isSafeInteger(v)&&v>=0:!!v&&typeof v==='object'&&Object.keys(v).sort().join(',')==='createdAt,id'&&Number.isSafeInteger((v as MessagePosition).createdAt)&&(v as MessagePosition).createdAt>=0&&typeof (v as MessagePosition).id==='string'&&(v as MessagePosition).id.length>0;
@@ -44,7 +44,7 @@ export function createCursorCodec(keyHex:string,entropy:Entropy){
    if(!validCursorPayload(payload,payload.binding))return invalid();
    const nonce=new Uint8Array(entropy.bytes(12));if(nonce.byteLength!==12)throw new HttpError('INTERNAL_ERROR',500);
    let clear=utf8.encode(canonicalJson(payload));
-   if(padded(payload.binding.operation)){if(clear.byteLength>PADDED_CLEAR_BYTES)throw new HttpError('INTERNAL_ERROR',500);const fixed=new Uint8Array(PADDED_CLEAR_BYTES).fill(32);fixed.set(clear);clear=fixed;}
+   if(padded(payload.binding.operation)){if(clear.byteLength>PADDED_CLEAR_BYTES)throw new HttpError(payload.binding.operation==='observation-records'?'LIMIT_EXCEEDED':'INTERNAL_ERROR',payload.binding.operation==='observation-records'?409:500);const fixed=new Uint8Array(PADDED_CLEAR_BYTES).fill(32);fixed.set(clear);clear=fixed;}
    const ciphertext=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv:nonce,additionalData:utf8.encode(canonicalJson(payload.binding)),tagLength:128},await key(),clear));
    const bytes=new Uint8Array(12+ciphertext.length);bytes.set(nonce);bytes.set(ciphertext,12);return base64(bytes);
   },

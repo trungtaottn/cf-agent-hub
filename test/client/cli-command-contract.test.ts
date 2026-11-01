@@ -20,7 +20,7 @@ describe('CLI command contract',()=>{
 // Independent expected shell vectors, not generated from the implementation table.
 const commands=[
  ['workspace show','getWorkspace'],['workspace configuration','getConfiguration'],['workspace profile','getProfile'],
- ['tasks list','listTasks'],['tasks create --input body.json','createTask'],['tasks show t','getTask','task_id'],['tasks update t --input body.json','patchTask','task_id'],['tasks ready t --input body.json','readyTask','task_id'],['tasks claim t --input body.json','claimTask','task_id'],['tasks submit-result t --input body.json','submitTaskResult','task_id'],['tasks accept-result t --input body.json','acceptTaskResult','task_id'],['tasks fail t --input body.json','failTask','task_id'],['tasks cancel t --input body.json','cancelTask','task_id'],['tasks requeue t --input body.json','requeueTask','task_id'],['tasks results t','listTaskResults','task_id'],
+ ['tasks list','listTasks'],['tasks create --input body.json','createTask'],['tasks show t','getTask','task_id'],['tasks update t --input body.json','patchTask','task_id'],['tasks ready t --input body.json','readyTask','task_id'],['tasks claim t --input body.json','claimTask','task_id'],['tasks submit-result t --input body.json','submitTaskResult','task_id'],['tasks accept-result t --input body.json','acceptTaskResult','task_id'],['tasks fail t --input body.json','failTask','task_id'],['tasks cancel t --input body.json','cancelTask','task_id'],['tasks requeue t --input body.json','requeueTask','task_id'],['tasks results t','listTaskResults','task_id'],['tasks observations t','listTaskObservations','task_id'],
  ['runs show t','getRun','run_id'],['runs heartbeat t --input body.json','heartbeatRun','run_id'],['agents list','listAgents'],['agents show t','getAgent','agent_id'],['runtime register --input body.json','createRuntime'],['runtime heartbeat t --input body.json','heartbeatRuntime','runtime_instance_id'],['messages send --input body.json','createMessage'],['messages ack --input body.json','ackMessages'],['inbox list','getInbox'],['threads show t','getThread','thread_id'],['artifacts list','listArtifacts'],['artifacts stage --content-id c --input body.json','stageArtifact'],['artifacts show t','getArtifact','artifact_id'],['artifacts upload t --file content','uploadArtifactContent','artifact_id'],['artifacts download t --output content','downloadArtifactContent','artifact_id'],['artifacts commit t --input body.json','commitArtifact','artifact_id'],['events list','listEvents'],['search --query hello','searchWorkspace']
 ];
 describe('CLI complete shell vectors',()=>{
@@ -38,4 +38,14 @@ describe('CLI complete shell vectors',()=>{
   expect(JSON.parse(formatResult({ok:true,status:201,requestId:'r',data:{runtime_id:'rt'}},{enrollment:true}).stdout).data).toEqual({runtime:{runtime_id:'rt'},runtime_token:null,revealed:false});
   expect(JSON.parse(formatResult({ok:false,status:409,requestId:'r',error:{code:'VERSION_CONFLICT',message:'malicious',retryable:false,details:{current_version:2}}}).stdout)).toEqual({error:{code:'VERSION_CONFLICT',message:'Resource version changed',retryable:false,request_id:'r',details:{current_version:2}}});
  });
+});
+
+it('maps the read-only diagnostic observation command with exact session-bound pagination',()=>{
+ const session='obs_'+'a'.repeat(48),cursor='a'.repeat(2048);
+ const parsed=parseCommand(['tasks','observations','task-example','--limit','50','--expected-session-id',session,'--cursor',cursor]);
+ expect(parsed.operation).toBe('listTaskObservations');expect(parsed.input).toEqual({path:{task_id:'task-example'},query:{limit:50,expected_session_id:session,cursor}});
+ expect(clientOperations.listTaskObservations.validateRequest(parsed.input)).toBe(true);
+ expect(()=>parseCommand(['tasks','observations','task-example','--cursor',cursor])).toThrow('CLI_ARGUMENT_REJECTED');
+ expect(()=>parseCommand(['tasks','observations','task-example','--input','body.json'])).toThrow('CLI_ARGUMENT_REJECTED');
+ for(const command of ['establish-observation','append-observations','replace-observation','observation-owner-status'])expect(()=>parseCommand(['tasks',command,'task-example'])).toThrow('CLI_ARGUMENT_REJECTED');
 });

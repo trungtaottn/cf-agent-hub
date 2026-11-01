@@ -72,7 +72,7 @@ it('keeps exact release fences on existing16 restore execution without altering 
   expect(w.storage.sql.exec('SELECT * FROM recovery_jobs').toArray()).toEqual(before);expect(w.storage.sql.exec('SELECT MAX(version) AS v FROM schema_migrations').one().v).toBe(16);
  });
 },90000);
-it('restarts genuine completed16 restore, resolves historical effects, probes16 and migrates authorized resume atomically to17',async()=>{
+it('restarts genuine completed16 restore, resolves historical effects, probes16 and migrates authorized resume atomically to18',async()=>{
  const {f,work}=await install('completed');
  const ids=await work(w=>w.storage.sql.exec<{id:string}>("SELECT id FROM outbox WHERE status IN ('pending','in_flight')").toArray().map(r=>r.id));
  for(const id of ids){const body={delivery_id:id,disposition:'failed_without_redrive' as const,evidence_sha256:'a'.repeat(64)};await work(async w=>resolveDelivery(w,await recoveryContext(w,'resolve-delivery',body,f.captureId,{anchor:f.anchor,operationId:'resolve_'+id}),body));}
@@ -83,5 +83,5 @@ it('restarts genuine completed16 restore, resolves historical effects, probes16 
  const body={receipt_id:frozen.completed.progress.receipt!.id,ledger:f.ledger,source_retirement_receipt:retirement,cutover_record:cutover};
  const resume=()=>work(async w=>resumeWorkspace(w,await recoveryContext(w,'resume',body,f.captureId,{anchor:f.anchor,operationId:'restored16_resume'}),body));
  const result=await resume();await evictDurableObject(f.target);expect(await resume()).toEqual(result);
- await work(w=>{expect(w.storage.sql.exec('SELECT MAX(version) AS v FROM schema_migrations').one().v).toBe(17);expect(w.storage.sql.exec('SELECT * FROM creation_admissions').toArray()).toEqual([]);expect(w.storage.sql.exec('SELECT state FROM maintenance_state').one().state).toBe('open');});
+ await work(w=>{expect(w.storage.sql.exec('SELECT MAX(version) AS v FROM schema_migrations').one().v).toBe(18);expect(w.storage.sql.exec('SELECT * FROM creation_admissions').toArray()).toEqual([]);expect(w.storage.sql.exec('SELECT state FROM maintenance_state').one().state).toBe('open');});
 },90000);

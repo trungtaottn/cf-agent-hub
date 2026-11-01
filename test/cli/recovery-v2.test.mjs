@@ -45,8 +45,8 @@ async function currentManifest(schema=16){
  const value={format_version:2,capture_id:'capture_one',workspace_id:'ws_example',environment_id:'source_env',started_at:'2026-10-25T00:00:00Z',ended_at:'2026-10-25T00:01:00Z',checkpoint:{barrier_id:'barrier_one',event_sequence:0,schema_version:schema,contract_revision:'0.2',authority_epoch:1},release:{revision:'fixture_revision',worker_version:'fixture_worker',binding_ids:['workspace_binding','recovery_bucket'],catalog_mapping:{workspace_id:'ws_example',object_name:'source_object'}},database:{sha256:'a'.repeat(64),byte_size:3,table_counts:Object.fromEntries(registryForSchema(schema).map(t=>[t.name,t.name==='schema_migrations'?schema:tables.includes(t.name)?1:0])),chunks},artifacts:[],unfinished_artifact_ids:[],auth:{key_id:'synthetic_key',algorithm:'HMAC-SHA256',tag:'0'.repeat(64)}};
  return {manifest:await signRecord(value,integrity),integrity};
 }
-test('current manifest dispatcher authenticates17 and retained15/16 and rejects forged or unsupported',async()=>{
- for(const schema of [15,16,17]){const{manifest,integrity}=await currentManifest(schema);assert.deepEqual(await verifyCliManifest(manifest,integrity),manifest);await assert.rejects(verifyCliManifest({...manifest,environment_id:'forged'},integrity));await assert.rejects(verifyCliManifest({...manifest,checkpoint:{...manifest.checkpoint,schema_version:18}},integrity));}
+test('current manifest dispatcher authenticates18 and retained15/16/17 and rejects forged or unsupported',async()=>{
+ for(const schema of [15,16,17,18]){const{manifest,integrity}=await currentManifest(schema);assert.deepEqual(await verifyCliManifest(manifest,integrity),manifest);await assert.rejects(verifyCliManifest({...manifest,environment_id:'forged'},integrity));await assert.rejects(verifyCliManifest({...manifest,checkpoint:{...manifest.checkpoint,schema_version:19}},integrity));}
 });
 import fs from 'node:fs';
 import {retainedControlLimit,supportedControlManifest} from '../../scripts/lib/recovery-client.mjs';
@@ -102,3 +102,12 @@ test('V1 manifest authentication and decoder stay compatible',async()=>{
 });
 
 test('unchanged authenticated manifest binding does not rewrite complete evidence',async()=>{const {manifest}=await currentManifest(16);const digest=crypto.createHash('sha256').update(canonicalBytes(manifest)).digest('hex');let saves=0;const session={state:{manifest_sha256:digest,complete:true},save(){saves++;}};bindSessionManifest(session,manifest);assert.equal(saves,0);assert.equal(session.manifest,manifest);});
+
+test("current18 CLI dispatch preserves immutable17 registry and selects exact18 diagnostics",()=>{
+ assert.equal(registryForSchema(17).some(t=>t.name==="observation_slots"),false);
+ assert.deepEqual(registryForSchema(18).slice(-2).map(t=>t.name),["observation_slots","observation_records"]);
+ const value={format_version:2,schema_version:18,capture_id:"capture_one",index:0,table:"observation_records",columns:["session_id","sequence","ingest_order","received_at","record_json","record_bytes"],rows:[["obs_synthetic",1,1,1,"{}",2]]};
+ const bytes=encodeCurrentChunk(value);assert.deepEqual(decodeCliChunk(bytes,{format_version:2,checkpoint:{schema_version:18}}),value);
+ assert.throws(()=>decodeCliChunk(bytes,{format_version:2,checkpoint:{schema_version:17}}));
+ for(const schema of [16,17,18]){const m={format_version:2,checkpoint:{contract_revision:"0.2",schema_version:schema}};assert.doesNotThrow(()=>supportedControlManifest(m));assert.equal(retainedControlLimit("resume",m),RESUME_ENVELOPE_LIMIT);}
+});

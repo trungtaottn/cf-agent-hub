@@ -115,7 +115,25 @@ describe('real process death and competing writers',()=>{
  afterAll(()=>{for(const child of children)if(child.exitCode===null)child.kill('SIGKILL');rmSync(fixtureRoot,{recursive:true,force:true});});
  const child=(args:string[])=>{const c=fork(fixture,args,{stdio:['ignore','pipe','pipe','ipc']});children.push(c);return c;};
  const message=(c:ChildProcess)=>new Promise<Record<string,any>>((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('synthetic subprocess timed out')),10000);c.once('message',m=>{clearTimeout(timer);resolve(m as Record<string,any>);});c.once('error',reject);});
- const kill=(c:ChildProcess)=>new Promise<void>(resolve=>{c.once('exit',(_code,signal)=>{expect(signal).toBe('SIGKILL');resolve();});c.kill('SIGKILL');});
+ const kill=async(c:ChildProcess)=>{
+  if(c.exitCode!==null||c.signalCode!==null)throw Error('subprocess exited before SIGKILL');
+  const exited=new Promise<NodeJS.Signals|null>(resolve=>c.once('exit',(_code,signal)=>resolve(signal)));
+  expect(c.kill('SIGKILL')).toBe(true);
+  // Assert in the awaited test, not an event callback that can throw and leave it pending.
+  expect(await exited).toBe('SIGKILL');
+ };
+ it('kill_helper_rejects_an_already_exited_child_instead_of_hanging',async()=>{
+  const c=child([root(),'clock']);await new Promise<void>(resolve=>c.once('exit',()=>resolve()));
+  await expect(kill(c)).rejects.toThrow('subprocess exited before SIGKILL');
+ });
+ it.each(['before-record','intent','attached','dispatch'])('crash_fixture_%s_stays_alive_until_SIGKILL_after_parent_delay',async phase=>{
+  const c=child([root(),'create',phase]);
+  const exited=new Promise<{code:number|null;signal:NodeJS.Signals|null}>(resolve=>c.once('exit',(code,signal)=>resolve({code,signal})));
+  expect((await message(c)).stage).toBe(phase);
+  // Give the child an idle event loop before killing it, as a delayed CI parent can.
+  const state=await Promise.race([exited,new Promise<'waiting'>(resolve=>setTimeout(()=>resolve('waiting'),100))]);
+  expect(state).toBe('waiting');await kill(c);
+ });
  it('crash_before_record_sends_nothing',async()=>{const p=root(),c=child([p,'create','before-record']);expect((await message(c)).stage).toBe('before-record');await kill(c);const j=open(p,false);expect(await j.get('not-created')).toBe(null);j.close();const db=dbOpen(p,false);expect(db.read(sql=>sql.prepare('SELECT count(*) AS n FROM journal_entries').get())).toEqual({n:0});});
  it.each(['intent','attached'] as const)('SIGKILL_after_%s_preserves_complete_intent_without_new_key',async phase=>{const p=root(),c=child([p,'create',phase]);const m=await message(c);await kill(c);const e=await open(p,false).get(m.id);expect(e?.request).toEqual(request);expect(e?.principal).toEqual(binding);expect(e?.key).toBe(phase==='intent'?null:'synthetic-process-key');expect(e?.firstDispatch).toBe(null);});
  it('SIGKILL_after_first_dispatch_restart_clock_cannot_prove_continuity',async()=>{const p=root(),c=child([p,'create','dispatch']);const m=await message(c);await kill(c);const j=open(p,false),e=await j.get(m.id);expect(e?.firstDispatch).not.toBe(null);expect(await j.authorizeReplay(m.id,binding,request,new LinuxReplayClock().sample())).toBe('no-send-reconcile');expect((await j.get(m.id))?.key).toBe('synthetic-process-key');});

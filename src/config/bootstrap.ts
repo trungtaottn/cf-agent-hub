@@ -61,7 +61,7 @@ export function installConfiguration(tx:WorkspaceTransaction,config:DeploymentCo
    retainOpenMaintenance(tx,old.config_epoch,nowMs);return {epoch:old.config_epoch,installationDigest};
   }
  }
- applyAuthorityRows(tx,config,input,nowMs);
+ applyAuthorityRows(tx,config,input,nowMs,true);
  tx.exec("INSERT INTO workspace_metadata (id,workspace_id,object_name,config_epoch,config_digest,installation_digest,config_json,bundle_json,installed_at) VALUES (1,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET config_epoch=excluded.config_epoch,config_digest=excluded.config_digest,installation_digest=excluded.installation_digest,config_json=excluded.config_json,bundle_json=excluded.bundle_json,installed_at=excluded.installed_at",[workspaceId,mapping.objectName,config.config_epoch,bundle.config_digest,installationDigest,canonicalJson(config),canonicalJson(bundle),nowMs]);
  retainOpenMaintenance(tx,config.config_epoch,nowMs);return {epoch:config.config_epoch,installationDigest};
 }
@@ -73,10 +73,11 @@ export function restoreAuthorityOverlay(tx:WorkspaceTransaction,input:ValidatedB
  if(!metadata||metadata.admission_state!=='maintenance'||metadata.workspace_id!==workspaceId||metadata.object_name!==mapping.objectName||metadata.config_epoch!==config.config_epoch||metadata.installation_digest!==input.installationDigest)throw Error('RESTORE_OVERLAY_CONFLICT');
  applyAuthorityRows(tx,config,input,nowMs);
 }
-function applyAuthorityRows(tx:WorkspaceTransaction,config:DeploymentConfig,input:ValidatedBootstrap,nowMs:number):void {
+function applyAuthorityRows(tx:WorkspaceTransaction,config:DeploymentConfig,input:ValidatedBootstrap,nowMs:number,invalidateDiagnostics=false):void {
  const {workspaceId,bundle}=input;
  const schemaVersion=tx.one<{version:number}>('SELECT MAX(version) AS version FROM schema_migrations')?.version;
  if(!EXPECTED_SCHEMA_VERSIONS.some(version=>version===schemaVersion))throw Error('UNSUPPORTED_SCHEMA');
+ if(invalidateDiagnostics&&schemaVersion!==undefined&&schemaVersion>=18){tx.exec('DELETE FROM observation_records');tx.exec('DELETE FROM observation_slots');}
  const r2=hasR2AuthoritySchema(schemaVersion);
  if(r2){
   for(const agent of config.static_participants.filter(x=>x.workspace_id===workspaceId)){

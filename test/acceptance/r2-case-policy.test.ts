@@ -30,7 +30,7 @@ function validateAll(f:any){return [validatePreparations(f.preparations,f.contex
 function record(f:any,id:string){return Object.values(f.receipts).flatMap((r:any)=>r.records).find((r:any)=>r.id===id) as any;}
 describe('typed policy source parity and fixed predicates',()=>{
  it('source matrix independently enumerates exactly322 identical phase IDs',()=>{expect(CASE_POLICY.filter(c=>c.family==='isolation').map(c=>c.id).sort()).toEqual(requiredIsolationEvidence());});
- it('native success roster matches33 actual native operation descriptors',()=>{expect(CASE_POLICY.filter(c=>c.family==='native'&&c.id.endsWith('/success')).map(c=>c.operation).sort()).toEqual(Object.entries(clientOperations).filter(([,v])=>v.native).map(([k])=>k).sort());});
+ it('native success roster matches33 actual native operation descriptors',()=>{expect(CASE_POLICY.filter(c=>c.family==='native'&&c.id.endsWith('/success')).map(c=>c.operation).sort()).toEqual(Object.entries(clientOperations).filter(([name,v])=>v.native&&Object.hasOwn(CASE_OPERATIONS,name)).map(([k])=>k).sort());});
  it('accepts complete synthetic structural fixture while not claiming real evidence',()=>{const f=makeCaseEvidence();expect(f.synthetic).toBe(true);expect(validateAll(f)).toEqual([]);expect(shape('r2-case-preparations')(f.preparations)).toBe(true);for(const family of familyNames){const validate=shape('r2-'+family);expect(validate(f.receipts[family]),JSON.stringify(validate.errors)).toBe(true);}});
  it('native artifact metadata preflights are2requests, not sourcefacade1',()=>{for(const op of ['uploadArtifactContent','downloadArtifactContent','commitArtifact']){const f=makeCaseEvidence();record(f,'native/'+op+'/success').observations.request_count=1;expect(validateCaseFamily(f.receipts.native,f.context).some(x=>x.code==='R2_CASE_PREDICATE')).toBe(true);}});
  it('does not invent native positive restart or pending journal state',()=>{const f=makeCaseEvidence();record(f,'native/restart-no-send').observations.request_count=1;expect(validateAll(f).length).toBeGreaterThan(0);const g=makeCaseEvidence();record(g,'native/lost-response-retained').observations.journal_state='pending';expect(shape('r2-native')(g.receipts.native)).toBe(false);});
@@ -56,11 +56,14 @@ describe('prepared request applicability',()=>{
  it('a no-runtime-proof getWorkspace cannot claim a proof hash',()=>{const f=makeCaseEvidence(),entry=f.preparations.subjects.find((x:any)=>x.case_id==='native/revoked-after-disable');entry.subject.proof_sha256=caseHash('inapplicable-proof');entry.subject_sha256=caseHash(entry.subject);f.subjectDigests.set(entry.case_id,entry.subject_sha256);expect(validatePreparations(f.preparations,f.context).some(x=>x.code==='R2_CASE_SUBJECT')).toBe(true);});
 });
 
-it('frozen54-operation R2 catalog excludes exactly the four reviewed R3 browser preparation/recovery operations',()=>{
+it('frozen54-operation R2 catalog excludes four R3 browser operations and the diagnostic observation read',()=>{
  const r3Only=['reconcileMessageCreation','reconcileTaskCreation','prepareMessageCreation','prepareTaskCreation'];
  expect(Object.keys(CASE_OPERATIONS)).toHaveLength(54);
  for(const name of r3Only){expect(Object.hasOwn(CASE_OPERATIONS,name)).toBe(false);const actual=clientOperations[name as keyof typeof clientOperations];expect(actual).toMatchObject({native:false,runtimeProof:false,method:'POST',status:200});}
- const r2=Object.entries(clientOperations).filter(([name])=>!r3Only.includes(name));
+ expect(Object.hasOwn(CASE_OPERATIONS,'listTaskObservations')).toBe(false);
+ expect(clientOperations.listTaskObservations).toMatchObject({native:true,runtimeProof:false,method:'GET',status:200,page:true});
+ for(const name of ['establishObservationSession','appendObservationBatch','replaceObservationSession','getObservationOwnerStatus']){expect(Object.hasOwn(CASE_OPERATIONS,name)).toBe(false);expect(Object.hasOwn(clientOperations,name)).toBe(false);}
+ const r2=Object.entries(clientOperations).filter(([name])=>!r3Only.includes(name)&&name!=='listTaskObservations');
  expect(r2.map(([name])=>name).sort()).toEqual(Object.keys(CASE_OPERATIONS).sort());
  for(const [name,actual] of r2){const {validateRequest,validateResponse,byteRules,...descriptor}=actual;expect(CASE_OPERATIONS[name]).toEqual(descriptor);}
 });
@@ -93,5 +96,5 @@ describe('zero-byte digests retain their actual SHA256 meaning',()=>{
 });
 
 // Run the same coverage guards independently of the Workers suite's all-executed receipt hook.
-it('R2 isolation coverage keeps exactly54 cases alongside reviewed R3 recovery reads',()=>{expect(isolationOperations).toHaveLength(54);expect(()=>assertIsolationCoverage(isolationOperations)).not.toThrow();});
+it('R2 isolation coverage keeps exactly54 cases alongside reviewed R3 recovery and observation reads',()=>{expect(isolationOperations).toHaveLength(54);expect(()=>assertIsolationCoverage(isolationOperations)).not.toThrow();});
 it('R2 isolation coverage still rejects omitted operations and empty actor lanes',()=>{expect(()=>assertIsolationCoverage(isolationOperations.filter(x=>x.operation!=='searchWorkspace'))).toThrow('missing searchWorkspace');expect(()=>assertIsolationCoverage(isolationOperations.map(x=>x.operation==='getWorkspace'?{...x,lanes:[]}:x))).toThrow('lane coverage');});

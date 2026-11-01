@@ -3,7 +3,7 @@ import {runInDurableObject} from 'cloudflare:test';
 import spec from '../../spec/openapi.json';
 import {control} from '../helpers/auth';
 import {acceptanceFixture,apiRequest,sqlSnapshot} from '../helpers/r1-acceptance';
-import {validateError,validateMessage,validateMessageCreationReconciliationResponse} from '../../src/http/generated/auth-validators.js';
+import {validateError,validateMessage,validateMessageCreationReconciliationResponse,validateObservationEstablishRequest,validateObservationBatchRequest,validateObservationReplaceRequest} from '../../src/http/generated/auth-validators.js';
 
 beforeEach(async()=>{await control('reset');});
 const unavailable=Object.entries(spec.paths).flatMap(([path,item])=>Object.entries(item).flatMap(([method,value])=>{
@@ -18,21 +18,42 @@ const artifactOperations=new Set(['listArtifacts','getArtifact','downloadArtifac
 const importOperations=new Set(['previewImport','applyImport','getImport']);
 const availableOperations=new Set([...identityOperations,...taskOperations,...catalogOperations,...artifactOperations,...importOperations,'searchWorkspace']);
 const identityBody:Record<string,unknown>={previewImport:{source_namespace:'source_denied',source_revision:'revision1',rows:[]},applyImport:{expected_import_version:1,preview_sha256:'0'.repeat(64),accept_rejected_rows:false},submitTaskResult:{expected_version:1,run_id:'unavailable_run',fence:1,result:{summary:'Denied',artifact_ids:[]}},acceptTaskResult:{expected_version:1,reason:'Denied'},stageArtifact:{task_id:null,run_id:null,filename:'denied.txt',media_type:'text/plain',byte_size:0,sha256:'0'.repeat(64)},commitArtifact:{expected_artifact_version:1},claimTask:{expected_version:1,runtime_instance_id:'unavailable_runtime'},failTask:{expected_version:1,run_id:'unavailable_run',fence:1,reason:'Denied',outcome_unknown:true},cancelTask:{expected_version:1,reason:'Denied'},requeueTask:{expected_version:1,reason:'Denied'},heartbeatRun:{expected_run_version:1,fence:1},previewCatalogChange:{expected_profile_revision:1,kind:'project',id:'project_a',operation:'archive',replacement_id:null,reason:'Denied'},applyCatalogChange:{preview_id:'plan_denied',expected_profile_revision:1},createTask:{title:'Denied synthetic task',description:''},patchTask:{expected_version:1,title:'Denied'},readyTask:{expected_version:1},createRuntime:{label:'Denied runtime'},heartbeatRuntime:{expected_runtime_version:1},createAgent:{display_name:'Denied synthetic',description:'',work_role_ids:[]},patchAgent:{expected_agent_version:1,description:'Denied'},archiveAgent:{expected_agent_version:1,reason:'Denied'},createCredential:{agent_id:'agent_research',label:'Denied',scopes:['messages:read'],project_ids:null,expires_at:new Date(Date.now()+3600000).toISOString()},revokeCredential:{expected_credential_version:1,reason:'Denied'}};
+// Source-installed observations are a distinct disabled-pilot boundary, not unimplemented404
+// or a new grant for the unchanged canonical R1 configuration.
+const observationOperations=new Set(['establishObservationSession','appendObservationBatch','replaceObservationSession','getObservationOwnerStatus','listTaskObservations']);
+const observationSessionId='obs_'+'a'.repeat(48);
+const observationBodies:Record<string,{body:unknown;validate:(value:unknown)=>boolean}>={
+ establishObservationSession:{body:{run_id:'unavailable_run',fence:1,adapter_id:'synthetic_adapter',adapter_version:'1'},validate:validateObservationEstablishRequest},
+ appendObservationBatch:{body:{run_id:'unavailable_run',fence:1,first_sequence:1,records:[{observed_at:'2026-11-01T00:00:00Z',relative_path:'src/synthetic.ts',activity:'read-observed',source_oid:null}]},validate:validateObservationBatchRequest},
+ replaceObservationSession:{body:{run_id:'unavailable_run',fence:1,expected_session_id:observationSessionId,expected_high_water:0,replacement_request_id:'00000000-0000-4000-8000-000000000001',reason:'coverage_loss'},validate:validateObservationReplaceRequest},
+};
 const recoveryOperations=new Set(['reconcileMessageCreation','reconcileTaskCreation','prepareMessageCreation','prepareTaskCreation']);
-for(const route of unavailable.filter(route=>!recoveryOperations.has(route.operation)))it((availableOperations.has(route.operation)?'ungranted operation ':'unavailable ')+route.operation+' has no R1 mutation surface',async()=>{
+for(const route of unavailable.filter(route=>!recoveryOperations.has(route.operation)))it((observationOperations.has(route.operation)?'disabled observation pilot ':availableOperations.has(route.operation)?'ungranted operation ':'unavailable ')+route.operation+' has no R1 mutation surface',async()=>{
  const f=await acceptanceFixture(('r1_unavailable_'+route.operation).toLowerCase());
- const path=route.path.replace('/v2/workspaces/{workspace_id}','').replace(/\{[^}]+\}/g,'unavailable_fixture')+(route.operation==='searchWorkspace'?'?q=needle':'');
+ const path=route.path.replace('/v2/workspaces/{workspace_id}','').replace('{session_id}',observationSessionId).replace(/\{[^}]+\}/g,'unavailable_fixture')+(route.operation==='searchWorkspace'?'?q=needle':'');
  // Keep the old canonical R1 grant/config unchanged. A real scoped target makes
  // 403 prove lack of authority rather than merely a nonexistent resource.
  if(taskOperations.has(route.operation))await runInDurableObject(f.a.stub,(_o,state)=>{state.storage.sql.exec("INSERT INTO tasks(id,workspace_id,title,description,state,task_version,proposal_version,retry_count,retry_limit,flags_json,created_at,updated_at) SELECT 'unavailable_fixture',workspace_id,'Existing synthetic task','','backlog',1,0,0,0,'[]',1,1 FROM workspace_metadata WHERE id=1");});
  // Catalog reuses R1 profile:edit; explicitly narrow it to test denial, never widen authority.
  if(catalogOperations.has(route.operation))await runInDurableObject(f.a.stub,(_o,state)=>{const rows=state.storage.sql.exec<{principal_id:string;scopes_json:string}>('SELECT principal_id,scopes_json FROM human_grants').toArray();for(const row of rows)state.storage.sql.exec('UPDATE human_grants SET scopes_json=? WHERE principal_id=?',JSON.stringify((JSON.parse(row.scopes_json) as string[]).filter(scope=>scope!=='profile:edit')),row.principal_id);});
  const beforeA=await sqlSnapshot(f.a),beforeB=await sqlSnapshot(f.b);
- const response=await f.http(apiRequest(f.a,path,route.method,['GET','HEAD'].includes(route.method)?undefined:identityBody[route.operation]??{},{cookie:f.sessionCookie,'x-csrf-token':f.csrf,'idempotency-key':'unavailable',...(route.operation==='uploadArtifactContent'?{'content-type':'application/octet-stream'}:{}),...(['heartbeatRuntime','claimTask','failTask','heartbeatRun','submitTaskResult'].includes(route.operation)?{'x-runtime-token':btoa('x'.repeat(32)).replace(/=+$/,'')}:{})}));
+ const observationBody=observationBodies[route.operation];
+ if(observationOperations.has(route.operation)){
+  // No optional mapping or new authority is installed merely to make denial pass.
+  for(const snapshot of [beforeA,beforeB]){
+   const config=JSON.parse(String(snapshot.tables.workspace_metadata[0]!.config_json)) as {workspace_policies:Array<Record<string,unknown>>};
+   expect(config.workspace_policies.every(policy=>!Object.hasOwn(policy,'observation_pilot'))).toBe(true);
+  }
+  if(observationBody)expect(observationBody.validate(observationBody.body),'disabled-pilot requests remain valid closed operation inputs').toBe(true);
+ }
+
+ const response=await f.http(apiRequest(f.a,path,route.method,['GET','HEAD'].includes(route.method)?undefined:observationBody?.body??identityBody[route.operation]??{},{cookie:f.sessionCookie,'x-csrf-token':f.csrf,'idempotency-key':'unavailable',...(route.operation==='uploadArtifactContent'?{'content-type':'application/octet-stream'}:{}),...(['heartbeatRuntime','claimTask','failTask','heartbeatRun','submitTaskResult'].includes(route.operation)?{'x-runtime-token':btoa('x'.repeat(32)).replace(/=+$/,'')}:{})}));
  // Fail verifies current run proof before resource disclosure; unchanged R1 humans have none.
  const deniedStatus=route.operation==='failTask'?401:403;
- expect(response.status,'unavailable or ungranted route must fail without effects').toBe(availableOperations.has(route.operation)?deniedStatus:404);
- const value=await response.json() as {error:{code:string}};expect(validateError(value)).toBe(true);expect(value.error.code).toBe(availableOperations.has(route.operation)?deniedStatus===401?'UNAUTHENTICATED':'FORBIDDEN':'NOT_FOUND');
+ const expectedStatus=observationOperations.has(route.operation)?503:availableOperations.has(route.operation)?deniedStatus:404;
+ const expectedCode=observationOperations.has(route.operation)?'DEPENDENCY_UNAVAILABLE':availableOperations.has(route.operation)?deniedStatus===401?'UNAUTHENTICATED':'FORBIDDEN':'NOT_FOUND';
+ expect(response.status,'exact unavailable, disabled-pilot or ungranted boundary must fail without effects').toBe(expectedStatus);
+ const value=await response.json() as {error:{code:string}};expect(validateError(value)).toBe(true);expect(value.error.code).toBe(expectedCode);expect('data'in value).toBe(false);
  expect((await sqlSnapshot(f.a)).digest).toBe(beforeA.digest);expect((await sqlSnapshot(f.b)).digest).toBe(beforeB.digest);
 },30_000);
 

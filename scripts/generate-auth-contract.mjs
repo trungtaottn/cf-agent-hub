@@ -10,9 +10,11 @@ const r2=[...reconciliation,"Task", "Run", "Artifact", "Agent", "Credential", "C
 const r2Inputs=["CatalogPreviewRequest", "CatalogApplyRequest", "ImportApplyRequest", "TaskCreateRequest", "TaskPatchRequest", "TaskVersionRequest", "TaskReasonRequest", "TaskClaimRequest", "TaskSubmitResultRequest", "TaskFailRequest", "RunHeartbeatRequest", "AgentCreateRequest", "AgentPatchRequest", "AgentArchiveRequest", "RuntimeCreateRequest", "RuntimeHeartbeatRequest", "ArtifactStageRequest", "ArtifactCommitRequest", "CredentialCreateRequest", "CredentialRevokeRequest", "ImportEnvelope"];
 // R3 schema-only bridge: these roots do not enable client operations or routes.
 const decisionInputs=['TaskRequestDecisionRequest','ApprovalDecisionRequest'];
-const inputs=[...decisionInputs,'AuthStartRequest','AuthCallbackQuery','AuthLogoutRequest','MessageCreateRequest','MessageAckRequest','ProfileWriteRequest','PreferencesWriteRequest',...r2Inputs];
-const roots=['Workspace','WorkspaceResponse','Readiness','ReadinessResponse','Liveness','Operations','OperationsResponse','AckResult',...inputs,'AuthStartDataResponse','AuthSessionResponse','AuthLogoutDataResponse','Error','Event','Message','MessageNotification',...settings,...r2];
-const validated=['Workspace','WorkspaceResponse','Readiness','ReadinessResponse','Liveness','Operations','OperationsResponse',...inputs,'Error','Event','Message','MessageNotification',...settings,'AuthStartData','AuthSession','AuthLogoutData',...r2.filter(name=>!inputs.includes(name))];
+const observationInputs=['ObservationEstablishRequest','ObservationBatchRequest','ObservationReplaceRequest'];
+const observationRoots=Object.keys(schemas).filter(name=>name.startsWith('Observation'));
+const inputs=[...decisionInputs,'AuthStartRequest','AuthCallbackQuery','AuthLogoutRequest','MessageCreateRequest','MessageAckRequest','ProfileWriteRequest','PreferencesWriteRequest',...r2Inputs,...observationInputs];
+const roots=['Workspace','WorkspaceResponse','Readiness','ReadinessResponse','Liveness','Operations','OperationsResponse','AckResult',...inputs,'AuthStartDataResponse','AuthSessionResponse','AuthLogoutDataResponse','Error','Event','Message','MessageNotification',...settings,...r2,...observationRoots];
+const validated=['Workspace','WorkspaceResponse','Readiness','ReadinessResponse','Liveness','Operations','OperationsResponse',...inputs,'Error','Event','Message','MessageNotification',...settings,'AuthStartData','AuthSession','AuthLogoutData',...r2.filter(name=>!inputs.includes(name)),...observationRoots.filter(name=>!observationInputs.includes(name))];
 // This inventory selects supported source operations; OpenAPI remains the wire/policy owner.
 const inventory=JSON.parse(await readFile('src/contracts/client-operations.json','utf8'));
 const resolve=s=>{if(!s?.$ref)return s;let node=spec;for(const p of s.$ref.split('/').slice(1))node=node[p.replaceAll('~1','/').replaceAll('~0','~')];return node;};
@@ -24,7 +26,7 @@ const clientContracts=inventory.supported.map(id=>{
  for(const location of ['path','query']){
   const parameters=op.parameters.filter(p=>p.in===location&&p.name!=='workspace_id');if(!parameters.length)continue;
   const needs=parameters.filter(p=>p.required).map(p=>p.name);
-  properties[location]={type:'object',additionalProperties:false,properties:Object.fromEntries(parameters.map(p=>[p.name,p.schema])),required:needs};
+  properties[location]=location==='query'&&op['x-query-schema']?op['x-query-schema']:{type:'object',additionalProperties:false,properties:Object.fromEntries(parameters.map(p=>[p.name,p.schema])),required:needs};
   if(needs.length)required.push(location);
  }
  const body=op.requestBody?.content,upload=Boolean(body?.['application/octet-stream']);

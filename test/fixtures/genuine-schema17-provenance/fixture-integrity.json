@@ -1,0 +1,26 @@
+{
+  "schema17_files": {
+    "genuine-schema17-bundle.json": {
+      "sha256": "d0d644570bbafefdb70cf7a14e7ee6423915c25b8af7efc6be60acc4ed0bca4a",
+      "bytes": 200397
+    },
+    "genuine-schema17-restore-lifecycle-bundle.json": {
+      "sha256": "a1941c46700256b53d233df68df21c5f69c29a574b5fb581c121f864fe290ac2",
+      "bytes": 1121930
+    },
+    "genuine-schema17-snapshot-bundle.json": {
+      "sha256": "ae56ad75c572d3f44d9fc30f2e8f57389c1e1e2b10a13b51314c849ac77ff5bf",
+      "bytes": 517600
+    }
+  },
+  "unchanged_original_schema16_files": {
+    "genuine-schema16-bundle.json": "6e00dfe948058a370aa232af80121c6a93459786cb175b4057c1faa655f924a7",
+    "genuine-schema16-restore-lifecycle-bundle.json": "3af3dfb2df6078f8682177631266021363c82fa947894a19d748f8d208a029c8",
+    "genuine-schema16-snapshot-bundle.json": "69cc32cf470e001ae6dac2a5e6f35acb70bf146ad83ba3f19b995cfc4eeb0e06"
+  },
+  "manifest_canonical_sha256": "6dba0866f88ca9fd061bf171a872647a6fa58c69f1015c59c8ab5c57dc030c18",
+  "local_commit": "e427ab862183527516daba5dd53e78d1222a8dce",
+  "source_tree": "3c6eb659c6ad6d30ddd30bc6b22500d819a6c73a",
+  "public_commit": "77ee610c13a61077dc866a66556eafdfcb1d2553",
+  "original_tracked_files_verified_unchanged": 1338
+}

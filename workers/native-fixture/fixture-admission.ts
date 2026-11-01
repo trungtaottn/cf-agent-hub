@@ -8,13 +8,15 @@ import {canonicalJson,sha256} from '../../src/config/bootstrap';
 import * as selected from './selected-state';
 import type {SelectedOriginal} from './selected-state';
 import currentIdentity from './selected-state-schema17-profile.json';
+import schema18Identity from './selected-state-schema18-profile.json';
 type Row=Record<string,string|number|null>;
 type Workspace={id:string;object_name:string;installation_sha256:string;generation:number};
 type NativeActor={agent_id:string;credential_id:string;token_sha256:string};
 interface Expected {role:'primary'|'foreign';epoch:number;config_sha256:string;origin:string;audience:string;workspaces:{primary:Workspace;foreign:Workspace};actors:{S:NativeActor;R:NativeActor;X:NativeActor};human:{principal_id:string;issuer:string;subject:string;session_id:string;token_sha256:string;csrf_sha256:string};}
-function admissionProfile(schemaVersion:16|17){
-const createCompleteSelectedState=schemaVersion===16?selected.createCompleteSelectedState:selected.createCurrentCompleteSelectedState;
-const completePhaseReservation=schemaVersion===16?selected.completePhaseReservation:selected.currentCompletePhaseReservation;
+function admissionProfile(schemaVersion:16|17|18){
+const createCompleteSelectedState=schemaVersion===16?selected.createCompleteSelectedState:schemaVersion===17?selected.createCurrentCompleteSelectedState:selected.createSchema18CompleteSelectedState;
+const completePhaseReservation=schemaVersion===16?selected.completePhaseReservation:schemaVersion===17?selected.currentCompletePhaseReservation:selected.schema18CompletePhaseReservation;
+const identity=schemaVersion===18?schema18Identity:currentIdentity;
 const privateCaptures=new WeakMap<object,Readonly<{originals:readonly Readonly<SelectedOriginal>[]}>>();
 function freezeSource(value:unknown):void {if(value!==null&&typeof value==='object'){for(const child of Object.values(value))freezeSource(child);Object.freeze(value);}}
 freezeSource(manifest);
@@ -93,7 +95,7 @@ async function admitCompleteFixture(storage:DurableObjectStorage,input:unknown){
   }
   check(await sha256(m.config_json)===e.config_sha256);
   const commitments=[];for(const r of capture.originals)commitments.push({selector:r.selector,sha256:await sha256(r.canonical),byte_size:r.byteSize});
-  const selectedStateSha256=await sha256(canonicalJson(schemaVersion===16?commitments:{profile:currentIdentity.profile,catalog_sha256:currentIdentity.catalog_sha256,commitments})),validatedAt=Date.now();check(validatedAt>=captureEndedAt&&expiresAt>validatedAt);
+  const selectedStateSha256=await sha256(canonicalJson(schemaVersion===16?commitments:{profile:identity.profile,catalog_sha256:identity.catalog_sha256,commitments})),validatedAt=Date.now();check(validatedAt>=captureEndedAt&&expiresAt>validatedAt);
   const result=Object.freeze({scope:'source-fixture-baseline' as const,installedAuthority:false,native_conformance:false,human_authentication:'not-performed' as const,role:e.role,workspaceId:w.id,configSha256:e.config_sha256,installationSha256:w.installation_sha256,epoch:e.epoch,maintenanceGeneration:w.generation,captureStartedAt,captureEndedAt,validatedAt,expiresAt,selectedStateSha256,actualQueries:reader.snapshot().actualQueries});
   privateCaptures.set(result,Object.freeze({originals:capture.originals}));return result;
  }catch{return reject();}
@@ -103,3 +105,5 @@ return Object.freeze({admitCompleteFixture,readFixtureAdmissionCapture});
 }
 export const {admitCompleteFixture,readFixtureAdmissionCapture}=admissionProfile(16);
 export const {admitCompleteFixture:admitCurrentCompleteFixture,readFixtureAdmissionCapture:readCurrentFixtureAdmissionCapture}=admissionProfile(17);
+
+export const {admitCompleteFixture:admitSchema18CompleteFixture,readFixtureAdmissionCapture:readSchema18FixtureAdmissionCapture}=admissionProfile(18);

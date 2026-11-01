@@ -1,0 +1,18 @@
+{
+  "schema_version": 18,
+  "s_executions": 130,
+  "query_admissions": 2555,
+  "bridge_json_admission_bytes": 180805484,
+  "bridge_delta": 5330,
+  "canonical_admission_bytes": 7888422,
+  "s_canonical_bytes": 262,
+  "attachment_bridge_bytes": 2369184,
+  "attachment_bridge_delta": 246,
+  "private_query1": {
+    "rawScalarRowBytes": 8,
+    "jsonRowBytes": 28,
+    "rawScalarBytes": 144,
+    "jsonArrayBytes": 523,
+    "rows": 18
+  }
+}

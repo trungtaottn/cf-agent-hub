@@ -58,7 +58,8 @@
     "reconcileMessageCreation",
     "reconcileTaskCreation",
     "prepareMessageCreation",
-    "prepareTaskCreation"
+    "prepareTaskCreation",
+    "listTaskObservations"
   ],
   "excluded": {
     "requestTaskDecision": "R3 unavailable",
@@ -67,6 +68,10 @@
     "approveApproval": "R3 unavailable",
     "rejectApproval": "R3 unavailable",
     "callbackAuth": "Browser redirect protocol",
-    "getLiveness": "Public non-workspace probe"
+    "getLiveness": "Public non-workspace probe",
+    "establishObservationSession": "Native observation owner transport only; outside frozen R2 conformance/MCP/delegable operations",
+    "appendObservationBatch": "Native observation owner transport only; outside frozen R2 conformance/MCP/delegable operations",
+    "replaceObservationSession": "Native observation owner transport only; outside frozen R2 conformance/MCP/delegable operations",
+    "getObservationOwnerStatus": "Native observation owner transport only; outside frozen R2 conformance/MCP/delegable operations"
   }
 }

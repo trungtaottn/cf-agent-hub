@@ -1,0 +1,77 @@
+{
+  "scope": "Immutable native16/17 artifacts before additive18 source work",
+  "artifacts": {
+    "scripts/generate-native-schema17.mjs": {
+      "bytes": 3801,
+      "sha256": "f6856c7000fccecc49bf78aa605590e67c6592eb19018d8772bbcf61cf276ad3"
+    },
+    "scripts/lib/native-complete-control-roles.json": {
+      "bytes": 1907,
+      "sha256": "146095e9f334ac9d414944f6031ef02a8d21b14e210f16fe68e45ffd05363de6"
+    },
+    "scripts/lib/native-complete-fixture-schema17.json": {
+      "bytes": 9226,
+      "sha256": "a49ff8be77e8d1ee53d1e010001a941e543e820fc9b350fe64994bcce5d1425e"
+    },
+    "scripts/lib/native-complete-fixture.json": {
+      "bytes": 9139,
+      "sha256": "3ae71f86ab8bec34059efc8fd12e511bfa202a850d7aa1eb54cfab9722df8912"
+    },
+    "scripts/lib/native-complete-ledger.json": {
+      "bytes": 2184,
+      "sha256": "83d8ec4ebe95a7112bacb6c133c1182af6b0ef579965d8bae029d409d63bc9e9"
+    },
+    "scripts/lib/native-complete-original-caps.json": {
+      "bytes": 1190,
+      "sha256": "4a717cc702c5b92689821929858eb522a454a394874c7a31d09d37ee67814771"
+    },
+    "scripts/lib/native-complete-processes.json": {
+      "bytes": 4171,
+      "sha256": "784c2aecaa09d0e0d16cff5bd34eab1c7ba3991538275238596909bada7bb157"
+    },
+    "scripts/lib/native-complete-request-limits.json": {
+      "bytes": 47476,
+      "sha256": "af57316b5a779961f91cdea4375ffa1a78c66ed531195acac2f7e92a766509e1"
+    },
+    "scripts/lib/native-complete-response-limits.json": {
+      "bytes": 47888,
+      "sha256": "6c894a1475b37204ed6fbfc2e3876b6a70b7cb577887928062f804da663fc3a0"
+    },
+    "test/helpers/native-observer/descriptors-schema17.json": {
+      "bytes": 52235,
+      "sha256": "75dcca69584ed2ffb2b0e06d8cf085c5f385725dd961b9d2219419e39ea7c7eb"
+    },
+    "test/helpers/native-observer/descriptors.json": {
+      "bytes": 52153,
+      "sha256": "560eee9c8ad996317812d81b0a70d2d618fe6db588075f8ea07e239a498ee392"
+    },
+    "tsconfig.native-service.json": {
+      "bytes": 219,
+      "sha256": "d4c7c2403ffe7f3124af8f21437833da5dd12c08d57072d274e182996fa9fdd4"
+    },
+    "workers/native-fixture/complete-selectors-schema17.json": {
+      "bytes": 176122,
+      "sha256": "d87fba0579774590ea0193ad0161a37d2b7cd6f7a5bca53b04ca9990aefdd08a"
+    },
+    "workers/native-fixture/complete-selectors.json": {
+      "bytes": 176040,
+      "sha256": "e63f87cd0c522867507d9fa1c373d78f21f8cb70f9a2fc52a8d9c350be179a81"
+    },
+    "workers/native-fixture/required-application-plan.json": {
+      "bytes": 42931,
+      "sha256": "f16404cae85c81589e901adddcb5588b793ca444130e622ead4145708d507e40"
+    },
+    "workers/native-fixture/required-controller-plan.json": {
+      "bytes": 4325,
+      "sha256": "7bf328f109499b963f1e5d12cf72b01c7c116942facaf975d65f257d90967355"
+    },
+    "workers/native-fixture/required-schema17-commitments.json": {
+      "bytes": 415,
+      "sha256": "2f305227878f80e77596952caeba04d37ce54af9c7d9b867150a97aa9ace6472"
+    },
+    "workers/native-fixture/selected-state-schema17-profile.json": {
+      "bytes": 165,
+      "sha256": "1078b0a25b7e2ae17dde2260c859bdd1d930ad6c1bc4f35b6190b14ee54475af"
+    }
+  }
+}

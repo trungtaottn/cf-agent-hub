@@ -1,0 +1,800 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cf-agent-hub:observation-proposal:1",
+  "title": "B0 closed observation shapes \u2014 proposed, not installed",
+  "description": "Design artifact. Runtime enforces UTF8/request/metadata/path/sequence relations; x-utf8-max-bytes is documentation, NOT executable validation. No authority granted. Error envelope stays existing OpenAPI Error. This root is a definitions library, not a route validator. Compile explicit operation $refs. Error/Page copied from pinned product77ee610 OpenAPI; no new error vocabulary.",
+  "$defs": {
+    "Id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "SessionId": {
+      "type": "string",
+      "pattern": "^obs_[a-f0-9]{48}$"
+    },
+    "Digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "Timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{3})?Z$"
+    },
+    "Activity": {
+      "enum": [
+        "read-observed",
+        "write-observed",
+        "test-started",
+        "test-finished"
+      ]
+    },
+    "Coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "configured_events": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Activity"
+          }
+        },
+        "completeness": {
+          "const": "unknown"
+        },
+        "reported_loss": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "configured_events",
+        "completeness",
+        "reported_loss"
+      ]
+    },
+    "Record": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "observed_at": {
+          "$ref": "#/$defs/Timestamp"
+        },
+        "relative_path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024,
+          "x-utf8-max-bytes": 1024
+        },
+        "activity": {
+          "$ref": "#/$defs/Activity"
+        },
+        "source_oid": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 512,
+          "x-utf8-max-bytes": 512
+        }
+      },
+      "required": [
+        "observed_at",
+        "relative_path",
+        "activity",
+        "source_oid"
+      ]
+    },
+    "EstablishRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "run_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "fence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "adapter_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "adapter_version": {
+          "$ref": "#/$defs/Id"
+        }
+      },
+      "required": [
+        "run_id",
+        "fence",
+        "adapter_id",
+        "adapter_version"
+      ]
+    },
+    "BatchRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "run_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "fence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "first_sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "records": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "$ref": "#/$defs/Record"
+          }
+        }
+      },
+      "required": [
+        "run_id",
+        "fence",
+        "first_sequence",
+        "records"
+      ]
+    },
+    "ReplaceRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "run_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "fence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "expected_session_id": {
+          "$ref": "#/$defs/SessionId"
+        },
+        "expected_high_water": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "replacement_request_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "reason": {
+          "const": "coverage_loss"
+        }
+      },
+      "required": [
+        "run_id",
+        "fence",
+        "expected_session_id",
+        "expected_high_water",
+        "replacement_request_id",
+        "reason"
+      ]
+    },
+    "BatchReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "batch_receipt"
+        },
+        "session_id": {
+          "$ref": "#/$defs/SessionId"
+        },
+        "first_sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "last_sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "record_count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 32
+        },
+        "accepted_at": {
+          "$ref": "#/$defs/Timestamp"
+        },
+        "request_fingerprint": {
+          "$ref": "#/$defs/Digest"
+        }
+      },
+      "required": [
+        "kind",
+        "session_id",
+        "first_sequence",
+        "last_sequence",
+        "record_count",
+        "accepted_at",
+        "request_fingerprint"
+      ]
+    },
+    "ReplacementReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "replacement_receipt"
+        },
+        "old_session_id": {
+          "$ref": "#/$defs/SessionId"
+        },
+        "new_session_id": {
+          "$ref": "#/$defs/SessionId"
+        },
+        "new_epoch": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "replacement_request_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "accepted_at": {
+          "$ref": "#/$defs/Timestamp"
+        },
+        "request_fingerprint": {
+          "$ref": "#/$defs/Digest"
+        }
+      },
+      "required": [
+        "kind",
+        "old_session_id",
+        "new_session_id",
+        "new_epoch",
+        "replacement_request_id",
+        "accepted_at",
+        "request_fingerprint"
+      ]
+    },
+    "CurrentBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "current_binding"
+        },
+        "session_id": {
+          "$ref": "#/$defs/SessionId"
+        },
+        "session_epoch": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "run_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "fence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "established_at": {
+          "$ref": "#/$defs/Timestamp"
+        },
+        "coverage": {
+          "$ref": "#/$defs/Coverage"
+        }
+      },
+      "required": [
+        "kind",
+        "session_id",
+        "session_epoch",
+        "run_id",
+        "fence",
+        "established_at",
+        "coverage"
+      ]
+    },
+    "OwnerStatus": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "current_owner_status"
+        },
+        "session_id": {
+          "$ref": "#/$defs/SessionId"
+        },
+        "session_epoch": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "high_water": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "latest_batch_receipt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BatchReceipt"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "latest_replacement_receipt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ReplacementReceipt"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "session_id",
+        "session_epoch",
+        "high_water",
+        "latest_batch_receipt",
+        "latest_replacement_receipt"
+      ]
+    },
+    "PublicBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "task_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "run_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "agent_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "runtime_instance_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "repository_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "checkout_slot_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "fence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "session_id": {
+          "$ref": "#/$defs/SessionId"
+        },
+        "session_epoch": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "task_id",
+        "run_id",
+        "agent_id",
+        "runtime_instance_id",
+        "repository_id",
+        "checkout_slot_id",
+        "fence",
+        "session_id",
+        "session_epoch"
+      ]
+    },
+    "PublicRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "server_received_at": {
+          "$ref": "#/$defs/Timestamp"
+        },
+        "reported": {
+          "$ref": "#/$defs/Record"
+        }
+      },
+      "required": [
+        "sequence",
+        "server_received_at",
+        "reported"
+      ]
+    },
+    "ObservationView": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "retained",
+            "no_retained_data"
+          ]
+        },
+        "binding": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PublicBinding"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "coverage": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Coverage"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "retained_range": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "first_sequence": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                },
+                "last_sequence": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "first_sequence",
+                "last_sequence"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "records": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "$ref": "#/$defs/PublicRecord"
+          }
+        },
+        "read_at": {
+          "$ref": "#/$defs/Timestamp"
+        }
+      },
+      "required": [
+        "status",
+        "binding",
+        "coverage",
+        "retained_range",
+        "truncated",
+        "records",
+        "read_at"
+      ]
+    },
+    "PilotConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "repository_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "adapter_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "adapter_version": {
+          "$ref": "#/$defs/Id"
+        },
+        "supported_events": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Activity"
+          }
+        },
+        "slots": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "agent_id": {
+                "$ref": "#/$defs/Id"
+              },
+              "checkout_slot_id": {
+                "$ref": "#/$defs/Id"
+              }
+            },
+            "required": [
+              "agent_id",
+              "checkout_slot_id"
+            ]
+          }
+        }
+      },
+      "required": [
+        "enabled",
+        "repository_id",
+        "adapter_id",
+        "adapter_version",
+        "supported_events",
+        "slots"
+      ]
+    },
+    "Error": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "error": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "INVALID_REQUEST",
+                "UNAUTHENTICATED",
+                "FORBIDDEN",
+                "NOT_FOUND",
+                "VERSION_CONFLICT",
+                "IDEMPOTENCY_CONFLICT",
+                "INVALID_STATE",
+                "STALE_RUN",
+                "APPROVAL_EXPIRED",
+                "CURSOR_EXPIRED",
+                "LIMIT_EXCEEDED",
+                "RATE_LIMITED",
+                "DEPENDENCY_UNAVAILABLE",
+                "INTERNAL_ERROR"
+              ]
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1
+            },
+            "retryable": {
+              "type": "boolean"
+            },
+            "request_id": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Opaque stable identifier; never infer authority from its value."
+            },
+            "details": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "field": {
+                  "type": "string"
+                },
+                "current_version": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "current_proposal_version": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "resource_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Opaque stable identifier; never infer authority from its value."
+                },
+                "retry_after_seconds": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "feature": {
+                  "enum": [
+                    "artifacts",
+                    "tasks"
+                  ]
+                },
+                "current_revision": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": []
+            }
+          },
+          "required": [
+            "code",
+            "message",
+            "retryable",
+            "request_id"
+          ]
+        }
+      },
+      "required": [
+        "error"
+      ]
+    },
+    "Page": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "has_more": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "next_cursor",
+        "has_more"
+      ]
+    },
+    "EstablishResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "data": {
+          "$ref": "#/$defs/CurrentBinding"
+        },
+        "request_id": {
+          "$ref": "#/$defs/Id"
+        }
+      },
+      "required": [
+        "data",
+        "request_id"
+      ]
+    },
+    "BatchResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "data": {
+          "$ref": "#/$defs/BatchReceipt"
+        },
+        "request_id": {
+          "$ref": "#/$defs/Id"
+        }
+      },
+      "required": [
+        "data",
+        "request_id"
+      ]
+    },
+    "ReplaceResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "data": {
+          "$ref": "#/$defs/ReplacementReceipt"
+        },
+        "request_id": {
+          "$ref": "#/$defs/Id"
+        }
+      },
+      "required": [
+        "data",
+        "request_id"
+      ]
+    },
+    "OwnerStatusResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "data": {
+          "$ref": "#/$defs/OwnerStatus"
+        },
+        "request_id": {
+          "$ref": "#/$defs/Id"
+        }
+      },
+      "required": [
+        "data",
+        "request_id"
+      ]
+    },
+    "ObservationResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "data": {
+          "$ref": "#/$defs/ObservationView"
+        },
+        "page": {
+          "$ref": "#/$defs/Page"
+        },
+        "request_id": {
+          "$ref": "#/$defs/Id"
+        }
+      },
+      "required": [
+        "data",
+        "page",
+        "request_id"
+      ]
+    },
+    "ReadQuery": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        },
+        "cursor": {
+          "type": "string",
+          "minLength": 2048,
+          "maxLength": 2048,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "expected_session_id": {
+          "$ref": "#/$defs/SessionId"
+        }
+      },
+      "required": [],
+      "dependentRequired": {
+        "cursor": [
+          "expected_session_id"
+        ]
+      }
+    }
+  }
+}

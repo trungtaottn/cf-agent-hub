@@ -121,7 +121,7 @@ Guarded current16 readers require the pinned Workers BYOB readAtLeast behavior, 
 
 ## Schema17 creation-admission recovery
 
-New captures use schema17 and the complete 37-table registry. Protected SQL includes
+New captures use schema18 and the complete 39-table registry. The frozen schema17 registry retains its original 37 tables. Protected SQL includes
 pending `creation_admissions` and nullable private `events.creation_binding`; the public
 Event DTO is unchanged. Ordinary restart preserves live pending reservations. Restore
 imports and validates their source evidence while maintenance remains closed, then deletes
@@ -133,12 +133,12 @@ requires current authorization and retained exact evidence.
 
 Existing authenticated schema16 captures remain supported restore inputs. Their original
 36-table registry, columns, chunks, hashes, signatures, and source checkpoint remain16.
-The isolated target runs schema17: source migration rows are evidence, never replacements
+The isolated target runs schema18: source migration rows are evidence, never replacements
 for target migration history; source16 events gain only a NULL private binding at insertion,
 and their extra target column is explicitly verified NULL. Schema16 cannot supply a
 reservation table or binding column. The restore receipt remains bound to the original
-source manifest; target schema17 is reported by target readiness/probe evidence. Neither
-receipt nor source bytes are rewritten as schema17. Frozen15 capture/read compatibility is
+source manifest; target schema18 is reported by target readiness/probe evidence. Neither
+receipt nor source bytes are rewritten as schema18. Frozen15 capture/read compatibility is
 unchanged and does not authorize15 restore. Historical snapshot/receipt fixtures are not
 regenerated to make current tests pass.
 
@@ -147,8 +147,8 @@ A new binary also retains coherent physical16 captures and existing16 restore jo
 restart. Existing16 imports continue under their original16 registry, then remain16 while
 captured/restored/retired maintenance is closed. Retirement stays16 and cannot reopen
 ordinary admission. An authorized resume uses the physical16 probe and commits the open
-transition, canonical migration17, and control outcome atomically; a migration fault rolls
-back all three. Only after schema17 inspection can scheduling or ordinary admission run.
+transition, canonical migrations17/18, and control outcome atomically; a migration fault rolls
+back all three. Only after schema18 inspection can scheduling or ordinary admission run.
 This compatibility lane does not admit new empty16 restores or source17 chunks into16.
 
 Schema compatibility is not cross-build execution permission. Retained16 mutable jobs and
@@ -156,7 +156,7 @@ controls keep their exact declared release revision/worker version and binding f
 A different declared release identity is rejected without rewriting old authority. The
 same-boundary continuation tests do not authorize relabeling a new deployment as the old
 build; changing that boundary requires a separately reviewed explicit re-admission contract.
-Fresh17 restoration of an authenticated16 backup has its own current target authority.
+Fresh18 restoration of an authenticated16 backup has its own current target authority.
 
 ### Frozen16 fixture provenance and reproduction
 
@@ -185,3 +185,45 @@ Schema17 also requires the explicit [current native witness profile](native-comp
 when exercising the native source verification tools. Historical16 proofs are not silently
 expanded or relabeled as17. Supporting the new profile in source does not activate it in any
 installed environment or waive recovery release fences.
+
+
+## Schema18 observation diagnostics (source only)
+
+Observation slots and records are durable diagnostic data, not task/run execution authority.
+A current18 capture authenticates their complete stored rows in the manifest and chunks.
+Capture checks the shared closed metadata/record validator, original relationship graph,
+actual stored projection byte accounting and the two-slot/record limits. Ordinary restart
+preserves them. A historical captured project may differ from the task's current project;
+a historical run/runtime may be expired or revoked. Structural validation does not assert
+current eligibility or silently delete inconvenient history.
+
+Restore accepts original signed16/17 sources into a fresh18 target without relabelling
+source manifests, migration evidence, signatures, chunks or receipts. Original18 diagnostic
+rows are staged only behind the CLOSED target gate. After the entire original graph,
+counts, byte caps and source digest have been verified, the transform invalidates every
+observation record and then every slot in separate persisted, resumable stages. A deletion
+fault rolls back that step. Completion, restored-target probes and resume require both
+physical tables to be empty. Imported sessions are never usable: ordinary historical
+reads, owner-status and append requests are denied throughout import, validation,
+transforms, deletion and restored maintenance. Future use requires new legitimate current
+binding; a restore cannot revive an imported session.
+
+Coherent physical17 captured, restoring, restored and retired lifecycles remain on17
+while closed, under their exact original declared release identity. An authorized resume
+uses the physical17 probe and atomically commits migration18, the open transition and
+control outcome. Physical16 resume similarly applies17 then18 in that transaction.
+Wrong-release continuation remains denied; schema compatibility never permits rewriting
+or impersonating a release fence. Captured-source pending creation reservations preserve
+their existing same-authority semantics; restored targets still invalidate all reservations.
+
+The untouched `test/fixtures/genuine-schema17-{bundle,snapshot-bundle,restore-lifecycle-bundle}.json`
+were produced by actual original17 workerd code at local
+`e427ab862183527516daba5dd53e78d1222a8dce`, public-equivalent PR138 head
+`77ee610c13a61077dc866a66556eafdfcb1d2553`, tree
+`3c6eb659c6ad6d30ddd30bc6b22500d819a6c73a`. Their hashes, original tracked-file inventory,
+synthetic-only scope, limitations and exact-byte archived reproducer are documented in
+[`test/fixtures/genuine-schema17-provenance/README.md`](../test/fixtures/genuine-schema17-provenance/README.md).
+Run `schema17-restore-upgrade`, `schema17-frozen-controls`,
+`schema17-restore-continuity` and `observation-recovery` Workers tests. This is source
+compatibility coverage, not a deployment, operator migration, live recovery or activation
+receipt; exact-head integrated verification and release gates remain separate.

@@ -5960,6 +5960,532 @@
         },
         "x-r1-available": false
       }
+    },
+    "/v2/workspaces/{workspace_id}/tasks/{task_id}/observations:establish": {
+      "parameters": [
+        {
+          "name": "workspace_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        {
+          "name": "task_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Id"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "establishObservationSession",
+        "summary": "Bounded native diagnostic operation; no execution authority",
+        "description": "Optional pilot, disabled without explicit mapping. Reports are unverified with unknown completeness, not test evidence, locks, task commands or authorization. Fresh existing actor/resource/runtime/run/configuration guards; dedicated diagnostic transaction, no domain events, idempotency outcomes or heartbeat. Lost responses remain unknown unless exact retained receipt reconciles.",
+        "security": [
+          {
+            "NativeBearer": [],
+            "RuntimeProof": []
+          }
+        ],
+        "x-required-scopes": [
+          "tasks:execute",
+          "tasks:read",
+          "events:read"
+        ],
+        "x-actor-kind": "agent",
+        "x-contract-status": "source-only-pilot",
+        "x-r1-available": false,
+        "x-max-response-bytes": 1048576,
+        "responses": {
+          "200": {
+            "description": "Diagnostic projection only; no task completion or completeness claim",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObservationEstablishResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "410": {
+            "$ref": "#/components/responses/Gone"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "description": "Sanitized failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ObservationEstablishRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/workspaces/{workspace_id}/tasks/{task_id}/observation-sessions/{session_id}/records": {
+      "parameters": [
+        {
+          "name": "workspace_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        {
+          "name": "task_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        {
+          "name": "session_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/ObservationSessionId"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "appendObservationBatch",
+        "summary": "Bounded native diagnostic operation; no execution authority",
+        "description": "Optional pilot, disabled without explicit mapping. Reports are unverified with unknown completeness, not test evidence, locks, task commands or authorization. Fresh existing actor/resource/runtime/run/configuration guards; dedicated diagnostic transaction, no domain events, idempotency outcomes or heartbeat. Lost responses remain unknown unless exact retained receipt reconciles.",
+        "security": [
+          {
+            "NativeBearer": [],
+            "RuntimeProof": []
+          }
+        ],
+        "x-required-scopes": [
+          "tasks:execute",
+          "tasks:read",
+          "events:read"
+        ],
+        "x-actor-kind": "agent",
+        "x-contract-status": "source-only-pilot",
+        "x-r1-available": false,
+        "x-max-response-bytes": 1048576,
+        "responses": {
+          "200": {
+            "description": "Diagnostic projection only; no task completion or completeness claim",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObservationBatchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "410": {
+            "$ref": "#/components/responses/Gone"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "description": "Sanitized failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ObservationBatchRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/workspaces/{workspace_id}/tasks/{task_id}/observation-sessions:replace": {
+      "parameters": [
+        {
+          "name": "workspace_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        {
+          "name": "task_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Id"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "replaceObservationSession",
+        "summary": "Bounded native diagnostic operation; no execution authority",
+        "description": "Optional pilot, disabled without explicit mapping. Reports are unverified with unknown completeness, not test evidence, locks, task commands or authorization. Fresh existing actor/resource/runtime/run/configuration guards; dedicated diagnostic transaction, no domain events, idempotency outcomes or heartbeat. Lost responses remain unknown unless exact retained receipt reconciles.",
+        "security": [
+          {
+            "NativeBearer": [],
+            "RuntimeProof": []
+          }
+        ],
+        "x-required-scopes": [
+          "tasks:execute",
+          "tasks:read",
+          "events:read"
+        ],
+        "x-actor-kind": "agent",
+        "x-contract-status": "source-only-pilot",
+        "x-r1-available": false,
+        "x-max-response-bytes": 1048576,
+        "responses": {
+          "200": {
+            "description": "Diagnostic projection only; no task completion or completeness claim",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObservationReplaceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "410": {
+            "$ref": "#/components/responses/Gone"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "description": "Sanitized failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ObservationReplaceRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/workspaces/{workspace_id}/tasks/{task_id}/observation-sessions/{session_id}/owner-status": {
+      "parameters": [
+        {
+          "name": "workspace_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        {
+          "name": "task_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        {
+          "name": "session_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/ObservationSessionId"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getObservationOwnerStatus",
+        "summary": "Bounded native diagnostic operation; no execution authority",
+        "description": "Optional pilot, disabled without explicit mapping. Reports are unverified with unknown completeness, not test evidence, locks, task commands or authorization. Fresh existing actor/resource/runtime/run/configuration guards; dedicated diagnostic transaction, no domain events, idempotency outcomes or heartbeat. Lost responses remain unknown unless exact retained receipt reconciles.",
+        "security": [
+          {
+            "NativeBearer": [],
+            "RuntimeProof": []
+          }
+        ],
+        "x-required-scopes": [
+          "tasks:execute",
+          "tasks:read",
+          "events:read"
+        ],
+        "x-actor-kind": "agent",
+        "x-contract-status": "source-only-pilot",
+        "x-r1-available": false,
+        "x-max-response-bytes": 1048576,
+        "responses": {
+          "200": {
+            "description": "Diagnostic projection only; no task completion or completeness claim",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObservationOwnerStatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "410": {
+            "$ref": "#/components/responses/Gone"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "description": "Sanitized failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
+    },
+    "/v2/workspaces/{workspace_id}/tasks/{task_id}/observations": {
+      "parameters": [
+        {
+          "name": "workspace_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        {
+          "name": "task_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Id"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "listTaskObservations",
+        "summary": "Read currently authorized retained unverified observations",
+        "description": "Optional pilot, disabled without explicit mapping. Reports are unverified with unknown completeness, not test evidence, locks, task commands or authorization. Fresh existing actor/resource/runtime/run/configuration guards; dedicated diagnostic transaction, no domain events, idempotency outcomes or heartbeat. Lost responses remain unknown unless exact retained receipt reconciles.",
+        "security": [
+          {
+            "NativeBearer": []
+          },
+          {
+            "HumanSession": []
+          }
+        ],
+        "x-required-scopes": [
+          "tasks:read",
+          "events:read"
+        ],
+        "x-actor-kind": "both",
+        "x-contract-status": "source-only-pilot",
+        "x-r1-available": false,
+        "x-max-response-bytes": 1048576,
+        "responses": {
+          "200": {
+            "description": "Diagnostic projection only; no task completion or completeness claim",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObservationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "410": {
+            "$ref": "#/components/responses/Gone"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "description": "Sanitized failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 2048,
+              "maxLength": 2048,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          },
+          {
+            "name": "expected_session_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ObservationSessionId"
+            }
+          }
+        ],
+        "x-query-schema": {
+          "$ref": "#/components/schemas/ObservationReadQuery"
+        }
+      }
     }
   },
   "components": {
@@ -11446,6 +11972,621 @@
           "event_id",
           "entity_id"
         ]
+      },
+      "ObservationSessionId": {
+        "type": "string",
+        "pattern": "^obs_[a-f0-9]{48}$"
+      },
+      "ObservationDigest": {
+        "type": "string",
+        "pattern": "^[a-f0-9]{64}$"
+      },
+      "ObservationTimestamp": {
+        "type": "string",
+        "format": "date-time",
+        "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{3})?Z$"
+      },
+      "ObservationActivity": {
+        "enum": [
+          "read-observed",
+          "write-observed",
+          "test-started",
+          "test-finished"
+        ]
+      },
+      "ObservationCoverage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "configured_events": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 4,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/ObservationActivity"
+            }
+          },
+          "completeness": {
+            "const": "unknown"
+          },
+          "reported_loss": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "configured_events",
+          "completeness",
+          "reported_loss"
+        ]
+      },
+      "ObservationRecord": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "observed_at": {
+            "$ref": "#/components/schemas/ObservationTimestamp"
+          },
+          "relative_path": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024,
+            "x-utf8-max-bytes": 1024
+          },
+          "activity": {
+            "$ref": "#/components/schemas/ObservationActivity"
+          },
+          "source_oid": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 512,
+            "x-utf8-max-bytes": 512
+          }
+        },
+        "required": [
+          "observed_at",
+          "relative_path",
+          "activity",
+          "source_oid"
+        ]
+      },
+      "ObservationEstablishRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "run_id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "fence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "adapter_id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "adapter_version": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        "required": [
+          "run_id",
+          "fence",
+          "adapter_id",
+          "adapter_version"
+        ]
+      },
+      "ObservationBatchRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "run_id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "fence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "first_sequence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "records": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 32,
+            "items": {
+              "$ref": "#/components/schemas/ObservationRecord"
+            }
+          }
+        },
+        "required": [
+          "run_id",
+          "fence",
+          "first_sequence",
+          "records"
+        ]
+      },
+      "ObservationReplaceRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "run_id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "fence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "expected_session_id": {
+            "$ref": "#/components/schemas/ObservationSessionId"
+          },
+          "expected_high_water": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "replacement_request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reason": {
+            "const": "coverage_loss"
+          }
+        },
+        "required": [
+          "run_id",
+          "fence",
+          "expected_session_id",
+          "expected_high_water",
+          "replacement_request_id",
+          "reason"
+        ]
+      },
+      "ObservationBatchReceipt": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "batch_receipt"
+          },
+          "session_id": {
+            "$ref": "#/components/schemas/ObservationSessionId"
+          },
+          "first_sequence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "last_sequence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "record_count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 32
+          },
+          "accepted_at": {
+            "$ref": "#/components/schemas/ObservationTimestamp"
+          },
+          "request_fingerprint": {
+            "$ref": "#/components/schemas/ObservationDigest"
+          }
+        },
+        "required": [
+          "kind",
+          "session_id",
+          "first_sequence",
+          "last_sequence",
+          "record_count",
+          "accepted_at",
+          "request_fingerprint"
+        ]
+      },
+      "ObservationReplacementReceipt": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "replacement_receipt"
+          },
+          "old_session_id": {
+            "$ref": "#/components/schemas/ObservationSessionId"
+          },
+          "new_session_id": {
+            "$ref": "#/components/schemas/ObservationSessionId"
+          },
+          "new_epoch": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "replacement_request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "accepted_at": {
+            "$ref": "#/components/schemas/ObservationTimestamp"
+          },
+          "request_fingerprint": {
+            "$ref": "#/components/schemas/ObservationDigest"
+          }
+        },
+        "required": [
+          "kind",
+          "old_session_id",
+          "new_session_id",
+          "new_epoch",
+          "replacement_request_id",
+          "accepted_at",
+          "request_fingerprint"
+        ]
+      },
+      "ObservationCurrentBinding": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "current_binding"
+          },
+          "session_id": {
+            "$ref": "#/components/schemas/ObservationSessionId"
+          },
+          "session_epoch": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "run_id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "fence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "established_at": {
+            "$ref": "#/components/schemas/ObservationTimestamp"
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/ObservationCoverage"
+          }
+        },
+        "required": [
+          "kind",
+          "session_id",
+          "session_epoch",
+          "run_id",
+          "fence",
+          "established_at",
+          "coverage"
+        ]
+      },
+      "ObservationOwnerStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "current_owner_status"
+          },
+          "session_id": {
+            "$ref": "#/components/schemas/ObservationSessionId"
+          },
+          "session_epoch": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "high_water": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "latest_batch_receipt": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ObservationBatchReceipt"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "latest_replacement_receipt": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ObservationReplacementReceipt"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "session_id",
+          "session_epoch",
+          "high_water",
+          "latest_batch_receipt",
+          "latest_replacement_receipt"
+        ]
+      },
+      "ObservationPublicBinding": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task_id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "run_id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "agent_id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "runtime_instance_id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "repository_id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "checkout_slot_id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "fence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "session_id": {
+            "$ref": "#/components/schemas/ObservationSessionId"
+          },
+          "session_epoch": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "task_id",
+          "run_id",
+          "agent_id",
+          "runtime_instance_id",
+          "repository_id",
+          "checkout_slot_id",
+          "fence",
+          "session_id",
+          "session_epoch"
+        ]
+      },
+      "ObservationPublicRecord": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sequence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "server_received_at": {
+            "$ref": "#/components/schemas/ObservationTimestamp"
+          },
+          "reported": {
+            "$ref": "#/components/schemas/ObservationRecord"
+          }
+        },
+        "required": [
+          "sequence",
+          "server_received_at",
+          "reported"
+        ]
+      },
+      "ObservationView": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "enum": [
+              "retained",
+              "no_retained_data"
+            ]
+          },
+          "binding": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ObservationPublicBinding"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "coverage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ObservationCoverage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "retained_range": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "first_sequence": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9007199254740991
+                  },
+                  "last_sequence": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "first_sequence",
+                  "last_sequence"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "truncated": {
+            "type": "boolean"
+          },
+          "records": {
+            "type": "array",
+            "maxItems": 50,
+            "items": {
+              "$ref": "#/components/schemas/ObservationPublicRecord"
+            }
+          },
+          "read_at": {
+            "$ref": "#/components/schemas/ObservationTimestamp"
+          }
+        },
+        "required": [
+          "status",
+          "binding",
+          "coverage",
+          "retained_range",
+          "truncated",
+          "records",
+          "read_at"
+        ]
+      },
+      "ObservationEstablishResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ObservationCurrentBinding"
+          },
+          "request_id": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        "required": [
+          "data",
+          "request_id"
+        ]
+      },
+      "ObservationBatchResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ObservationBatchReceipt"
+          },
+          "request_id": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        "required": [
+          "data",
+          "request_id"
+        ]
+      },
+      "ObservationReplaceResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ObservationReplacementReceipt"
+          },
+          "request_id": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        "required": [
+          "data",
+          "request_id"
+        ]
+      },
+      "ObservationOwnerStatusResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ObservationOwnerStatus"
+          },
+          "request_id": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        "required": [
+          "data",
+          "request_id"
+        ]
+      },
+      "ObservationResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ObservationView"
+          },
+          "page": {
+            "$ref": "#/components/schemas/Page"
+          },
+          "request_id": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        "required": [
+          "data",
+          "page",
+          "request_id"
+        ]
+      },
+      "ObservationReadQuery": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          },
+          "cursor": {
+            "type": "string",
+            "minLength": 2048,
+            "maxLength": 2048,
+            "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "expected_session_id": {
+            "$ref": "#/components/schemas/ObservationSessionId"
+          }
+        },
+        "required": [],
+        "dependentRequired": {
+          "cursor": [
+            "expected_session_id"
+          ]
+        }
       }
     },
     "responses": {

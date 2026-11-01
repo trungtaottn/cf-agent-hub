@@ -5,8 +5,8 @@ import {decodeCurrentChunk,encodeCurrentChunk,CHUNK_LIMIT} from '../../src/recov
 import {validateManifestShape} from '../../src/recovery/manifest';
 import {currentRestoreFixture,captureCurrentFixture,restoreCurrentFixture,withCurrentRecoveryWorkspace} from './current-restore-fixture';
 
-it('schema17 preserves pending preparation on restart but invalidates a pre-consume snapshot on restore',async()=>{
- expect(CURRENT_SCHEMA_VERSION).toBe(17);
+it('schema18 preserves pending preparation on restart but invalidates a pre-consume snapshot on restore',async()=>{
+ expect(CURRENT_SCHEMA_VERSION).toBe(18);
  const f=await currentRestoreFixture('restore_creation_admission',{seed:false,artifacts:false});
  const id='event_'+'a'.repeat(48),now=Date.now();
  await runInDurableObject(f.source,async(_instance,{storage})=>{
@@ -16,7 +16,7 @@ it('schema17 preserves pending preparation on restart but invalidates a pre-cons
  await evictDurableObject(f.source);
  await runInDurableObject(f.source,async(_instance,{storage})=>{expect(storage.sql.exec('SELECT id FROM creation_admissions').one().id).toBe(id);});
  const capture=await captureCurrentFixture(f);
- expect(capture.manifest.checkpoint.schema_version).toBe(17);
+ expect(capture.manifest.checkpoint.schema_version).toBe(18);
  expect(capture.manifest.database.table_counts).toHaveProperty('creation_admissions',1);
  expect(capture.chunks.some(c=>decodeCurrentChunk(new Uint8Array(c.bytes)).table==='creation_admissions')).toBe(true);
  const chunks=capture.chunks.map(c=>decodeCurrentChunk(new Uint8Array(c.bytes)));
@@ -48,11 +48,11 @@ it('migrates a physical16 database without changing existing events or legacy ev
  const f=await currentRestoreFixture('migration_creation_admission',{seed:false});
  await runInDurableObject(f.source,async(_instance,{storage})=>{
   // Recreate the exact reviewed pre17 layout, with no historical receipt mutation.
-  storage.sql.exec('DROP TABLE creation_admissions');storage.sql.exec('ALTER TABLE events DROP COLUMN creation_binding');storage.sql.exec('DELETE FROM schema_migrations WHERE version=17');
+  storage.sql.exec('DROP TABLE observation_records');storage.sql.exec('DROP TABLE observation_slots');storage.sql.exec('DELETE FROM schema_migrations WHERE version=18');storage.sql.exec('DROP TABLE creation_admissions');storage.sql.exec('ALTER TABLE events DROP COLUMN creation_binding');storage.sql.exec('DELETE FROM schema_migrations WHERE version=17');
   expect(withTransaction(storage,tx=>inspectRegistry(tx,16)).schemaVersion).toBe(16);
   const before=storage.sql.exec('SELECT * FROM events ORDER BY sequence').toArray();
   migrate(storage);
-  expect(withTransaction(storage,tx=>inspectRegistry(tx)).schemaVersion).toBe(17);
+  expect(withTransaction(storage,tx=>inspectRegistry(tx)).schemaVersion).toBe(18);
   const after=storage.sql.exec('SELECT * FROM events ORDER BY sequence').toArray();
   expect(after.map(({creation_binding,...event})=>{expect(creation_binding).toBeNull();return event;})).toEqual(before);
   expect(storage.sql.exec('SELECT * FROM creation_admissions').toArray()).toEqual([]);

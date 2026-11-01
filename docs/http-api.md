@@ -326,3 +326,25 @@ HTTP200 wraps either `{status:"unknown"}` or `{status:"confirmed",message:Messag
 Missing or different-fingerprint outcomes return the same UNKNOWN result without existence reasons, timestamps or original correlation identifiers. A retained matching row can still confirm after its minimum 24-hour retention eligibility; lookup neither renews retention nor runs cleanup. After actual garbage collection, UNKNOWN remains unresolved indefinitely. Neither UNKNOWN nor an authorization, validation, reference or availability error establishes original rejection, nonexecution, cancellation or permission for a fresh key.
 
 The lookup never invokes command execution, generates entity IDs, writes domain/event/outbox/outcome state or repairs scheduling. Current authority is rechecked in the final synchronous transaction after asynchronous parsing/authentication/CSRF/hash work. Browser drafts and explicit recovery behavior are described in [the composition contract](contracts/r3-composition.md). Exact source/browser evidence belongs in the issue53 checkpoint; these routes alone do not complete issue53 or deployed acceptance.
+
+## Bounded retained observations (source-only optional pilot)
+
+The closed schemas in [OpenAPI](../spec/openapi.json) define five diagnostic routes under `/v2/workspaces/{workspace_id}/tasks/{task_id}`:
+
+| Operation | Method and suffix | Existing authority |
+| --- | --- | --- |
+| `establishObservationSession` | POST `/observations:establish` | Native only; `tasks:execute`, `tasks:read`, `events:read`, exact runtime proof and active run/fence/lease |
+| `appendObservationBatch` | POST `/observation-sessions/{session_id}/records` | Same exact current owner |
+| `replaceObservationSession` | POST `/observation-sessions:replace` | Same exact current owner; session/high-water CAS |
+| `getObservationOwnerStatus` | GET `/observation-sessions/{session_id}/owner-status` | Same exact current owner and proof |
+| `listTaskObservations` | GET `/observations` | Current human/native `tasks:read` AND `events:read`, for both current task and server-captured project |
+
+Configuration absent/disabled returns generic unavailable. No new scope, delegable capability or MCP action exists. The typed browser/native read clients expose the historical read; the four owner operations are dedicated native diagnostic transport, not generic client commands. No observation UI, offline adapter, hook or real-host service is installed by this source change.
+
+Two durable SQL slots retain at most 256 rows per session/512 total, with 16384 bytes of complete stored slot projections and 262144 bytes combined stored projections. Prefix eviction uses private ingest order, never a reported timestamp. No global occupancy/order, absolute checkout root, credential, proof or receipt fingerprint appears in historical reads. Hidden captured projects look like no retained data; that does not mean no external activity occurred. Historical runtime expiry does not itself erase authorized history or grant execution authority.
+
+Each request admits at most 32 records/32768 actual UTF-8 body bytes with closed duplicate-strict JSON, finite nesting/nodes and 1024 streamed read attempts. Paths preserve case/Unicode without URL decoding or normalization and reject absolute/drive paths, backslashes, NUL, empty/dot/dot-dot segments. Per-path/per-label UTF-8 caps are 1024/512 bytes. Read pages contain at most 50 records. Padded cursors are 2048 bytes, bind caller/configuration/session and fixed high-water, and require `expected_session_id` on continuation. Oversized existing identity bindings fail boundedly instead of truncating identifiers. Missing unread retained ranges conflict; consumed-prefix eviction is disclosed as truncation, never silently skipped.
+
+Current authorization is rechecked after asynchronous work, including on replay. Only the latest exact batch/replacement receipt is retained; a matching replacement replay never resets successor counters. Establishment returns a current binding, not confirmation of an original lost establish. A lost append/replacement response remains **UNKNOWN** unless an exact retained receipt reconciles it; denial, expiry, replacement, configuration reset or restore cannot establish original noncommit or authorize blind replay into a successor.
+
+Observation transactions write only diagnostic slots/records/receipts: no domain events, outcomes, outbox, task/run transition or heartbeat renewal. Four per-object observation allocations and a fixed 5000 ms operational deadline bound body/crypto waits independently of authority and ordinary heartbeat. Never-settling body cancellation is not awaited; uncancellable crypto remains counted until settlement, and late completions cannot publish/write. Reports have unknown completeness and are unverified claims, including any configured test event; they are not accepted results or test evidence. Schema18 restore invalidates sessions rather than reviving them; see [backup and restore](backup-restore.md).
