@@ -65,7 +65,9 @@ it('frozen54-operation R2 catalog has an exact reviewed additive browser and nat
  for(const name of ['establishObservationSession','appendObservationBatch','replaceObservationSession','getObservationOwnerStatus']){expect(Object.hasOwn(CASE_OPERATIONS,name)).toBe(false);expect(Object.hasOwn(clientOperations,name)).toBe(false);}
  expect(Object.hasOwn(CASE_OPERATIONS,'requestTaskDecision')).toBe(false);
  expect(clientOperations.requestTaskDecision).toMatchObject({native:true,runtimeProof:true,method:'POST',status:200});
- const additiveNative=['listTaskObservations','requestTaskDecision'];
+ expect(Object.hasOwn(CASE_OPERATIONS,'lookupTaskClaimOutcome')).toBe(false);
+ expect(clientOperations.lookupTaskClaimOutcome).toMatchObject({native:true,runtimeProof:true,idempotency:true,method:'POST',status:200});
+ const additiveNative=['listTaskObservations','lookupTaskClaimOutcome','requestTaskDecision'];
  expect(Object.entries(clientOperations).filter(([name,value])=>value.native&&!Object.hasOwn(CASE_OPERATIONS,name)).map(([name])=>name).sort()).toEqual(additiveNative);
  const r2=Object.entries(clientOperations).filter(([name])=>!r3Only.includes(name)&&!additiveNative.includes(name));
  expect(r2.map(([name])=>name).sort()).toEqual(Object.keys(CASE_OPERATIONS).sort());

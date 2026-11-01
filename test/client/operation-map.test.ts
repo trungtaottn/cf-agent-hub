@@ -7,19 +7,22 @@ describe('generated workspace operation contract',()=>{
  it('has one reviewed inventory, covering every OpenAPI operation explicitly',async()=>{
   const inventory=JSON.parse(readFileSync('src/contracts/client-operations.json','utf8'));
   expect([...inventory.supported,...Object.keys(inventory.excluded)].sort()).toEqual(operations.map(o=>o.operationId).sort());
-  expect(inventory.supported).toHaveLength(60);
+  expect(inventory.supported.filter((id:string)=>id!=='lookupTaskClaimOutcome')).toHaveLength(60);
+  expect(inventory.supported.filter((id:string)=>id==='lookupTaskClaimOutcome')).toEqual(['lookupTaskClaimOutcome']);
   for(const id of disabled)expect(inventory.excluded[id]).toBe('R3 unavailable');
  });
  it('derives every supported method, path, native lane and proof exactly from OpenAPI',async()=>{
   const {clientOperations}=await import('../../src/http/generated/client-operations');
-  expect(Object.keys(clientOperations)).toHaveLength(60);
+  expect(Object.keys(clientOperations).filter(id=>id!=='lookupTaskClaimOutcome')).toHaveLength(60);
+  expect(clientOperations.lookupTaskClaimOutcome).toMatchObject({native:true,runtimeProof:true,idempotency:true,method:'POST',status:200,path:'/v2/workspaces/{workspace_id}/tasks/{task_id}:claim-outcome',upload:false,download:false,page:false,invocationMode:'ordinary'});
   let native=0,proof=0;
   for(const [id,contract] of Object.entries(clientOperations)){
    const op=operations.find(o=>o.operationId===id)!;
    expect(contract.method).toBe(op.method.toUpperCase());expect(contract.path).toBe(op.path);
    const scheme=(op.security??[]).find((s:any)=>Object.hasOwn(s,'NativeBearer'));
    expect(contract.native).toBe(Boolean(scheme));expect(contract.runtimeProof).toBe(Boolean(scheme&&Object.hasOwn(scheme,'RuntimeProof')));
-   native+=Number(contract.native);proof+=Number(contract.runtimeProof);
+   // Preserve the prior inventory counts; only this named reviewed addition is partitioned.
+   if(id!=='lookupTaskClaimOutcome'){native+=Number(contract.native);proof+=Number(contract.runtimeProof);}
   }
   expect(native).toBe(35);expect(proof).toBe(9);
   for(const id of ['reconcileMessageCreation','reconcileTaskCreation','prepareMessageCreation','prepareTaskCreation'] as const)expect(clientOperations[id]).toMatchObject({native:false,runtimeProof:false,method:'POST',status:200});

@@ -93,10 +93,10 @@ export class DurableMutations {
   });
   if(stopped)throw new ClientFault('JOURNAL_RECONCILIATION_REQUIRED');
  }
- #guard(id:string):NativeDispatchGuard{return async context=>{
+ #guard(id:string,firstOnly=false):NativeDispatchGuard{return async context=>{
   this.#lease=context.lease;const original=this.#journal.getSync(id);
   const exact=(entry:JournalEntry|null):entry is JournalEntry=>!!entry&&!!context.binding&&sameBinding(entry.principal,context.binding)&&context.key===entry.key&&entry.key!==null&&requestFingerprint(context.request)===requestFingerprint(entry.request);
-  if(!exact(original))throw new ClientFault('JOURNAL_RECONCILIATION_REQUIRED');
+  if(!exact(original)||firstOnly&&original.firstDispatch!==null)throw new ClientFault('JOURNAL_RECONCILIATION_REQUIRED');
   this.#provider.assertLeaseBinding(original.principal,context.lease);
   if(original.firstDispatch!==null){
    const allowed=context.lease.use(()=>this.#journal.authorizeReplaySync(id,context.binding!,context.request,this.#clock.sample()));
@@ -114,7 +114,7 @@ export class DurableMutations {
   });
   return ()=>{
    this.#lease=context.lease;this.#provider.assertLeaseBinding(original.principal,context.lease);
-   let entry=this.#journal.getSync(id);if(!exact(entry)||entry.replayState==='settled'||entry.replayState==='reconciliation-required')throw new ClientFault('JOURNAL_RECONCILIATION_REQUIRED');
+   let entry=this.#journal.getSync(id);if(!exact(entry)||firstOnly&&entry.firstDispatch!==null||entry.replayState==='settled'||entry.replayState==='reconciliation-required')throw new ClientFault('JOURNAL_RECONCILIATION_REQUIRED');
    if(ownerOperations.has(entry.request.operation)){
     const runtime=this.#provider.runtimeBinding();if(!runtime)throw new ClientFault('CREDENTIAL_CHANGED');
     this.#assertHeartbeatAllowed(entry.principal,runtime.runtimeId,['heartbeatRuntime','heartbeatRun'].includes(entry.request.operation)?id:undefined);
@@ -124,15 +124,36 @@ export class DurableMutations {
    if(this.#journal.authorizeDispatchSync(id,context.binding!,context.request,()=>this.#clock.sample())!=='send-once')throw new ClientFault('JOURNAL_RECONCILIATION_REQUIRED');
   };
  };}
- async dispatch(id:string):Promise<ApiResult<unknown>>{
+ /** Fixed read-only reconciliation for the original MCP claim. No local DTO cache,
+  * clock reset, apply fallback, or change to ordinary native dispatch. */
+ async dispatchMcpClaim(id:string):Promise<ApiResult<unknown>>{return this.#dispatch(id,true);}
+ async dispatch(id:string):Promise<ApiResult<unknown>>{return this.#dispatch(id,false);}
+ #lookupGuard(id:string):NativeDispatchGuard{return context=>{
+  const initial=this.#journal.getSync(id);if(!initial||initial.firstDispatch===null||initial.request.operation!=='claimTask')rejected();
+  const fingerprint=requestFingerprint(initial.request),stamp=JSON.stringify(initial.firstDispatch);
+  const check=()=>{
+   this.#lease=context.lease;const entry=this.#journal.getSync(id);
+   if(!entry||!context.binding||entry.firstDispatch===null||JSON.stringify(entry.firstDispatch)!==stamp||requestFingerprint(entry.request)!==fingerprint||entry.key===null||entry.key!==context.key||!sameBinding(entry.principal,context.binding))throw new ClientFault('JOURNAL_RECONCILIATION_REQUIRED');
+   this.#provider.assertLeaseBinding(entry.principal,context.lease);
+   const restored=restoreRequest(entry.request),{request:_input,...lookup}=prepareNativeOperation(this.#origin,this.#workspace,'lookupTaskClaimOutcome',restored.input);
+   if(restored.operation!=='claimTask'||requestFingerprint(lookup)!==requestFingerprint(context.request))throw new ClientFault('JOURNAL_RECONCILIATION_REQUIRED');
+   const runtime=this.#provider.runtimeBinding();if(!runtime)throw new ClientFault('CREDENTIAL_CHANGED');
+   this.#assertHeartbeatAllowed(entry.principal,runtime.runtimeId);
+  };
+  check();return check;
+ };}
+ async #dispatch(id:string,claimLookup:boolean):Promise<ApiResult<unknown>>{
   try{this.#start();}catch{return failure('LOCAL_INPUT_REJECTED','Local mutation is unavailable');}
   try{
-   const entry=await this.#journal.get(id);if(!entry||entry.key===null||entry.replayState==='settled'||entry.replayState==='reconciliation-required')return failure('JOURNAL_RECONCILIATION_REQUIRED','Retained intent requires read/manual reconciliation; no request sent');
+   const entry=await this.#journal.get(id);
+   if(claimLookup&&(this.#journalProfile!=='mcp-v1'||entry?.request.operation!=='claimTask'))rejected();
+   const lookup=claimLookup&&entry?.firstDispatch!==null;
+   if(!entry||entry.key===null||!lookup&&(entry.replayState==='settled'||entry.replayState==='reconciliation-required'))return failure('JOURNAL_RECONCILIATION_REQUIRED','Retained intent requires read/manual reconciliation; no request sent');
    if(entry.request.origin!==this.#origin||entry.request.workspaceId!==this.#workspace)rejected();
-   const {operation,input}=restoreRequest(entry.request);this.#provider.assertNoSecrets(JSON.stringify(entry.request));
-   const result=await this.#client.call(operation,input as never,{idempotencyKey:entry.key,expectedBinding:entry.principal,dispatchGuard:this.#guard(id),...(clientOperations[operation].runtimeProof?{runtimeProofDispatch:<T>(context:{binding:typeof entry.principal;runtimeId:string;lease:CredentialDispatchLease},send:(proof:string)=>T)=>this.#provider.dispatchRuntimeProof({...context.binding,runtimeId:context.runtimeId},context.lease,send)}:{})});
+   const restored=restoreRequest(entry.request),operation=lookup?'lookupTaskClaimOutcome':restored.operation,input=restored.input;this.#provider.assertNoSecrets(JSON.stringify(entry.request));
+   const result=await this.#client.call(operation,input as never,{idempotencyKey:entry.key,expectedBinding:entry.principal,dispatchGuard:lookup?this.#lookupGuard(id):this.#guard(id,claimLookup),...(clientOperations[operation].runtimeProof?{runtimeProofDispatch:<T>(context:{binding:typeof entry.principal;runtimeId:string;lease:CredentialDispatchLease},send:(proof:string)=>T)=>this.#provider.dispatchRuntimeProof({...context.binding,runtimeId:context.runtimeId},context.lease,send)}:{})});
    // Bodies, auth headers, error details and arbitrary request IDs never enter outcomes.
-   if(result.ok||result.error.code!=='JOURNAL_RECONCILIATION_REQUIRED'){
+   if(!lookup&&(result.ok||result.error.code!=='JOURNAL_RECONCILIATION_REQUIRED')){
     // A successful heartbeat clears its stop only behind the same provider barrier.
     // The native client released its lease after the response; reacquire exact authority.
     const lease=await this.#provider.acquire(entry.principal);this.#lease=lease;

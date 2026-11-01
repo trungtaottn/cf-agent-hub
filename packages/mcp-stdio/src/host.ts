@@ -30,7 +30,7 @@ export function openMcpHost(config:Extract<McpConfig,{initialize:false}>,fetch:t
     const prepared=prepareToolCall(name,args,origin,workspaceId);protectedProvider.assertNoSecrets(JSON.stringify({request:prepared.request,key:prepared.idempotencyKey}));
     active=true;
     try{
-     if(prepared.idempotencyKey!==undefined){const intent=await coordinator.prepareOrReuse(prepared.operation,prepared.request as never,{idempotencyKey:prepared.idempotencyKey});current();return await coordinator.dispatch(intent.id);}
+     if(prepared.idempotencyKey!==undefined){const intent=await coordinator.prepareOrReuse(prepared.operation,prepared.request as never,{idempotencyKey:prepared.idempotencyKey});current();return await (prepared.operation==='claimTask'?coordinator.dispatchMcpClaim(intent.id):coordinator.dispatch(intent.id));}
      return await client.call(prepared.operation,prepared.request as never,{expectedBinding:binding}) as ApiResult<unknown>;
     }finally{active=false;}
    },

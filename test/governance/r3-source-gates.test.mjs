@@ -78,3 +78,23 @@ test('all context source suites have explicit runtime owners without removing pr
  const chronology="'test/acceptance/r3-precommand-chronology.test.ts'";assert.equal(workers.split(chronology).length-1,1);assert.ok(!node.includes(chronology));
  for(const path of ["'test/acceptance/r3.test.ts'","'test/acceptance/r3-request-journey.test.ts'"])assert.equal(workers.split(path).length-1,1);
 });
+
+function assertClaimLookupOwners(registry){
+ const part=name=>registry.split(`export const ${name}=[`)[1]?.split('];')[0];
+ const node=part('nodeInclude'),workers=part('workersInclude'),nodeExclude=part('nodeExclude'),workersExclude=part('workersExclude');
+ for(const value of [node,workers,nodeExclude,workersExclude])assert.notEqual(value,undefined);
+ const nodePaths=['test/client/native-claim-outcome.test.ts','test/cli/mcp-claim-outcome.test.ts','test/mcp/claim-outcome-worker-parity.test.ts'];
+ const workerPaths=['test/tasks/claim-outcome.test.ts','test/http/claim-outcome-routes.test.ts'];
+ for(const path of nodePaths){const token=`'${path}'`;assert.equal(node.split(token).length-1,1,path);assert.ok(!workers.includes(token));assert.ok(!nodeExclude.includes(token));}
+ for(const path of workerPaths){const token=`'${path}'`;assert.equal(workers.split(token).length-1,1,path);assert.ok(!node.includes(token));assert.ok(!workersExclude.includes(token));}
+ // The existing HTTP Node glob must not also execute the actual Workerd route suite.
+ assert.equal(nodeExclude.split("'test/http/claim-outcome-routes.test.ts'").length-1,1);
+}
+test('claim lookup source, custody and actual Worker suites have explicit runtime owners',()=>{
+ const registry=readFileSync(new URL('../helpers/runtime-suites.ts',import.meta.url),'utf8');
+ assertClaimLookupOwners(registry);
+ for(const path of ['test/client/native-claim-outcome.test.ts','test/cli/mcp-claim-outcome.test.ts','test/mcp/claim-outcome-worker-parity.test.ts','test/tasks/claim-outcome.test.ts','test/http/claim-outcome-routes.test.ts']){
+  assert.throws(()=>assertClaimLookupOwners(registry.replace(`'${path}',`,'')),path);
+ }
+ assert.throws(()=>assertClaimLookupOwners(registry.replace("export const nodeExclude=['test/http/claim-outcome-routes.test.ts',","export const nodeExclude=[")));
+});

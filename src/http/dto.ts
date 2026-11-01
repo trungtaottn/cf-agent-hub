@@ -152,6 +152,7 @@ export interface HttpOperationRequests {
 "patchTask":{"path":{"task_id":string};"body":TaskPatchRequest};
 "readyTask":{"path":{"task_id":string};"body":TaskVersionRequest};
 "claimTask":{"path":{"task_id":string};"body":TaskClaimRequest};
+"lookupTaskClaimOutcome":{"path":{"task_id":string};"body":TaskClaimRequest};
 "requestTaskDecision":{"path":{"task_id":string};"body":TaskRequestDecisionRequest};
 "submitTaskResult":{"path":{"task_id":string};"body":TaskSubmitResultRequest};
 "acceptTaskResult":{"path":{"task_id":string};"body":TaskReasonRequest};
@@ -214,6 +215,7 @@ export interface HttpOperationData {
 "patchTask":Task;
 "readyTask":TaskCommandResult;
 "claimTask":TaskCommandResult;
+"lookupTaskClaimOutcome":TaskCommandResult;
 "requestTaskDecision":TaskCommandResult;
 "submitTaskResult":TaskCommandResult;
 "acceptTaskResult":TaskCommandResult;
