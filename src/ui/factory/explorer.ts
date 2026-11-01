@@ -13,23 +13,32 @@ export interface FactoryExplorerOptions {
 function surface(id:string,title:string):HTMLElement{
  const node=el('section',undefined,{class:'card','data-testid':id,'aria-label':title});node.append(el('h2',title));return node;
 }
-function loadedTasks(options:FactoryExplorerOptions,name:TaskState):Task[]{
+function loadedTasks(options:FactoryFilterInput,name:TaskState):Task[]{
  return options.state.capabilities.tasks?(options.state.columns[name].read.state.data??[]).filter(task=>task.workspace_id===options.workspaceId&&task.state===name).slice(0,taskPageLimit):[];
+}
+export type FactoryFilterInput=Pick<FactoryExplorerOptions,'state'|'workspaceId'|'profile'|'profileRead'|'projectId'|'workRoleId'>;
+function filterChoices(options:FactoryFilterInput,kind:'project'|'workRole'):Map<string,string>{
+ const profileRead=options.profileRead;
+ const profileAllowed=profileRead?.data!=null&&(profileRead.status==='ready'||profileRead.status==='stale');
+ const catalog=options.state.capabilities.tasks&&profileAllowed?(kind==='project'?options.profile?.projects:options.profile?.work_roles)??[]:[];
+ const choices=new Map(catalog.map(item=>[item.id,item.display_name+(item.archived?' (archived)':'')]));
+ for(const name of taskStates)for(const task of loadedTasks(options,name)){
+  const id=kind==='project'?task.project_id:task.work_role_id;if(id&&!choices.has(id))choices.set(id,id+' (label unavailable)');
+ }
+ return choices;
+}
+/** Presentation filters cannot retain identifiers absent from every independently visible source. */
+export function normalizeFactoryFilters(options:FactoryFilterInput):{projectId:string|null;workRoleId:string|null}{
+ return {projectId:options.projectId&&filterChoices(options,'project').has(options.projectId)?options.projectId:null,workRoleId:options.workRoleId&&filterChoices(options,'workRole').has(options.workRoleId)?options.workRoleId:null};
 }
 function filterControl(options:FactoryExplorerOptions,kind:'project'|'workRole'):HTMLElement{
  const project=kind==='project',current=project?options.projectId:options.workRoleId;
  const select=el('select',undefined,{'data-focus-key':'factory-filter:'+kind});
  select.append(el('option',project?'All projects':'All work roles',{value:''}));
- const catalog=options.state.capabilities.tasks?(project?options.profile?.projects:options.profile?.work_roles)??[]:[];
- const choices=new Map(catalog.map(item=>[item.id,item.display_name+(item.archived?' (archived)':'')]));
- for(const name of taskStates)for(const task of loadedTasks(options,name)){
-  const id=project?task.project_id:task.work_role_id;if(id&&!choices.has(id))choices.set(id,id+' (label unavailable)');
- }
- for(const [id,label]of choices)select.append(el('option',label,{value:id,...(id===current?{selected:''}:{})}));
- if(current&&!choices.has(current))select.append(el('option','Selected filter unavailable',{value:current,selected:''}));
+ for(const [id,label]of filterChoices(options,kind))select.append(el('option',label,{value:id,...(id===current?{selected:''}:{})}));
  select.value=current??'';
  if(!options.state.capabilities.tasks)select.setAttribute('disabled','');
- select.addEventListener('change',()=>options.onFilter(project?{projectId:select.value||null,workRoleId:options.workRoleId}:{projectId:options.projectId,workRoleId:select.value||null}));
+ select.addEventListener('change',()=>options.onFilter(normalizeFactoryFilters({...options,...(project?{projectId:select.value||null}:{workRoleId:select.value||null})})));
  return labeledControl(project?'Project filter':'Work role filter',select);
 }
 function taskCard(task:Task,options:FactoryExplorerOptions):HTMLElement{
@@ -50,7 +59,7 @@ export function FactoryExplorer(options:FactoryExplorerOptions):HTMLElement{
  const profileState=options.profileRead??{status:'unavailable',data:null,observedAt:null,requestId:null,errorCode:'PROFILE_READ_UNAVAILABLE'} as const;
  // Metadata remains independently sourced; an unavailable profile cannot label authorized task IDs.
  const profileAllowed=profileState.data!==null&&(profileState.status==='ready'||profileState.status==='stale');
- options={...options,profile:profileAllowed?options.profile:null};
+ options={...options,profile:profileAllowed?options.profile:null,...normalizeFactoryFilters(options)};
  const {state,workspaceId}=options,root=el('div',undefined,{class:'factory-explorer','data-testid':'factory-explorer'});
  const overview=surface('factory-overview','Factory overview');
  overview.append(el('p','Read-only evidence explorer. Departments are authorized project/work-role labels, not authority or runtime locations.',{class:'notice'}),el('p','Filters apply only to the loaded pages. Each state is independently observed; matching counts are not workspace totals.'),filterControl(options,'project'),filterControl(options,'workRole'));

@@ -11,7 +11,7 @@ import {el,button,replacePreservingFocus} from './dom';
 import {TaskReads} from './task-reads';
 import {KanbanView} from './kanban';
 import {TaskDetail} from './task-detail';
-import {FactoryExplorer} from './factory/explorer';
+import {FactoryExplorer,normalizeFactoryFilters} from './factory/explorer';
 import {TaskActions,taskActionEligibility} from './task-actions';
 import {TaskActionPanel,type TaskActionAffordances} from './task-action-view';
 import type {BrowserReadRequest} from '../../packages/client/src/types';
@@ -223,6 +223,10 @@ function selectThread(id:string|null):void{
  if(threadId===id)return;
  models.thread.reset();threadCursor=null;threadId=id;
 }
+function reconcileFactoryFilters(filters={projectId:factoryProjectId,workRoleId:factoryWorkRoleId}):void{
+ const normalized=normalizeFactoryFilters({state:taskReads,workspaceId:workspace,profile:models.profile.state.data?.profile??null,profileRead:models.profile.state,...filters});
+ factoryProjectId=normalized.projectId;factoryWorkRoleId=normalized.workRoleId;
+}
 function resetFactoryView():void{factoryMode=false;factoryProjectId=null;factoryWorkRoleId=null;}
 function setFactoryMode(enabled:boolean):void{
  if(enabled&&(currentView!=='tasks'||denied||!tasksAvailable))return;
@@ -349,8 +353,9 @@ function render():void{
   const shell=el('div'),modes=el('div',undefined,{role:'group','aria-label':'Task presentation'});
   modes.append(button('Task board',()=>setFactoryMode(false),{'aria-pressed':String(!factoryMode),'data-focus-key':'task-mode-board',class:'secondary'}),button('Factory evidence',()=>setFactoryMode(true),{'aria-pressed':String(factoryMode),'data-focus-key':'task-mode-factory',class:'secondary',...(!tasksAvailable||denied?{disabled:''}:{})}));shell.append(modes);
   if(factoryMode){
+   reconcileFactoryFilters();
    shell.append(FactoryExplorer({state:taskReads,workspaceId:workspace,profile:models.profile.state.data?.profile??null,profileRead:models.profile.state,projectId:factoryProjectId,workRoleId:factoryWorkRoleId,
-    onFilter:filters=>{factoryProjectId=filters.projectId;factoryWorkRoleId=filters.workRoleId;render();},onSelect:navigateTask,onNext:state=>void taskReads.nextColumn(state),onResultsNext:()=>void taskReads.nextResults(),onEventsNext:()=>void taskReads.nextEvents(),onBack:()=>navigateTask(null),onOpenExistingTask:()=>setFactoryMode(false)}));
+    onFilter:filters=>{reconcileFactoryFilters(filters);render();},onSelect:navigateTask,onNext:state=>void taskReads.nextColumn(state),onResultsNext:()=>void taskReads.nextResults(),onEventsNext:()=>void taskReads.nextEvents(),onBack:()=>navigateTask(null),onOpenExistingTask:()=>setFactoryMode(false)}));
    replacePreservingFocus(view,shell,byId('main'));return;
   }
   const content=taskReads.selectedId?TaskDetail({state:taskReads,workspaceId:workspace,onBack:()=>navigateTask(null),onResultsNext:()=>void taskReads.nextResults(),onEventsNext:()=>void taskReads.nextEvents(),actions:commandAffordances}):KanbanView({state:taskReads,workspaceId:workspace,profile:models.profile.state.data?.profile??null,onSelect:navigateTask,onNext:state=>void taskReads.nextColumn(state),actions:commandAffordances});

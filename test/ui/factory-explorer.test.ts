@@ -25,6 +25,7 @@ describe('Factory evidence projection (structural DOM, not browser proof)',()=>{
  it('bounds pages at20 and keeps independent pagination when filters show no matches',async()=>{
   const value=state();await observe(value.columns.ready.read,Array.from({length:23},(_,i)=>({...task('ready','task_'+i),project_id:'project_one'})));value.columns.ready.page={has_more:true,next_cursor:'next'};
   const next=vi.fn(),full=section(render(value),'factory-tasks-ready');expect(descendants(full,n=>n.tagName==='A')).toHaveLength(20);expect(full.textContent).toContain('not a workspace total');expect(full.textContent).toContain(when);
+  await observe(value.columns.backlog.read,[{...task('backlog','other_project_task'),project_id:'project_other'}]);
   const filtered=section(render(value,{projectId:'project_other',onNext:next}),'factory-tasks-ready');expect(descendants(filtered,n=>n.tagName==='A')).toHaveLength(0);expect(filtered.textContent).toContain('No matching tasks on this page');const control=descendants(filtered,n=>n.tagName==='BUTTON'&&n.textContent==='Next Ready page')[0];control.click();expect(next).toHaveBeenCalledWith('ready');
  });
  it('filters conjunction of authorized project and work role without inventing departments',async()=>{
@@ -79,6 +80,19 @@ describe('Factory evidence projection (structural DOM, not browser proof)',()=>{
   const value=state();await observe(value.columns.backlog.read,[{...task(),project_id:'p'}]);const profile:WorkspaceProfile={contract_revision:'0.1',profile_id:'profile',display_name:'Example',description:'',branding:{accent:'blue'},navigation:{visible_views:['tasks']},projects:[{id:'p',display_name:'Sensitive department',description:'',archived:false}],work_roles:[]};
   const root=render(value,{profile,profileRead:{status:'stale',data:profile,observedAt:'2026-10-31T01:00:00.000Z',requestId:'profile_old',errorCode:null}});expect(section(root,'factory-profile').getAttribute('data-status')).toBe('stale');expect(section(root,'factory-profile').textContent).toContain('2026-10-31T01:00:00.000Z');expect(section(root,'factory-profile').textContent).toContain('/v2/workspaces/ws_example/profile');expect(root.textContent).toContain('Sensitive department');
   const denied=render(value,{profile,profileRead:{status:'forbidden',data:null,observedAt:null,requestId:'denied',errorCode:'FORBIDDEN'}});expect(denied.textContent).not.toContain('Sensitive department');expect(denied.textContent).toContain('p (label unavailable)');expect(section(denied,'factory-profile').getAttribute('data-status')).toBe('forbidden');
+ });
+
+ it('removes orphan formerly private filters from values attributes callbacks and matching rows after profile denial',async()=>{
+  const value=state();await observe(value.columns.backlog.read,[task()]);const onFilter=vi.fn(),root=render(value,{projectId:'private_project',workRoleId:'private_role',profileRead:{status:'forbidden',data:null,observedAt:null,requestId:'denied',errorCode:'FORBIDDEN'},onFilter});
+  const nodes=descendants(root,()=>true),serialized=nodes.map(n=>[n.textContent,...n.attributes.values(),(n as unknown as {value?:string}).value??''].join('|')).join('|');expect(serialized).not.toContain('private_project');expect(serialized).not.toContain('private_role');expect(section(root,'factory-tasks-backlog').textContent).toContain('Durable work');
+  for(const select of nodes.filter(n=>n.tagName==='SELECT')){expect((select as unknown as {value:string}).value).toBe('');for(const listener of select.listeners.get('change')??[])listener({preventDefault(){}});}expect(onFilter).toHaveBeenCalledTimes(2);for(const call of onFilter.mock.calls)expect(call[0]).toEqual({projectId:null,workRoleId:null});
+ });
+ it('retains reference IDs independently visible in authorized task pages after profile denial',async()=>{
+  const value=state();await observe(value.columns.backlog.read,[{...task(),project_id:'visible_project',work_role_id:'visible_role'}]);const onFilter=vi.fn(),root=render(value,{projectId:'visible_project',workRoleId:'visible_role',profileRead:{status:'forbidden',data:null,observedAt:null,requestId:'denied',errorCode:'FORBIDDEN'},onFilter});const selects=descendants(root,n=>n.tagName==='SELECT');expect(selects.map(n=>(n as unknown as {value:string}).value)).toEqual(['visible_project','visible_role']);expect(root.textContent).toContain('visible_project (label unavailable)');expect(root.textContent).toContain('Durable work');
+  for(const listener of selects[1].listeners.get('change')??[])listener({preventDefault(){}});expect(onFilter).toHaveBeenLastCalledWith({projectId:'visible_project',workRoleId:'visible_role'});
+ });
+ it('does not forward injected orphan option values through renderer filter callbacks',async()=>{
+  const value=state(),onFilter=vi.fn(),root=render(value,{onFilter}),select=descendants(root,n=>n.tagName==='SELECT')[0];Object.assign(select,{value:'private_injected'});for(const listener of select.listeners.get('change')??[])listener({preventDefault(){}});expect(onFilter).toHaveBeenLastCalledWith({projectId:null,workRoleId:null});
  });
 
 });

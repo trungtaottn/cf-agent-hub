@@ -1,4 +1,5 @@
 import type {Page} from '@playwright/test';
+import type {AuthSessionResponse,ProfileDataResponse} from '../../src/http/dto';
 import {test,expect,appOrigin,issuerOrigin,readFixtureRoute} from '../helpers/browser';
 import {login,fixtureControl} from '../helpers/ui';
 const review='Review evidence <img src=x onerror="window.fixtureInjected=1">';
@@ -73,4 +74,21 @@ test('event403_on_explicit_refresh_is_section_local_not_whole_session_denial',as
  await factory(page);await page.getByRole('link',{name:review,exact:true}).click();await expect(page.getByTestId('task-results')).toContainText('Current submitted result');
  await page.route('**/v2/workspaces/ws_example/events*',route=>route.fulfill({status:403,contentType:'application/json',body:JSON.stringify({error:{code:'FORBIDDEN',message:'Synthetic event denial',retryable:false,request_id:'factory-event-denied'}})}));
  await page.getByRole('button',{name:'Refresh reads',exact:true}).click();await expect(page.getByTestId('task-events')).toHaveAttribute('data-status','forbidden');await expect(page.getByTestId('task-results')).toContainText('Current submitted result');await expect(page.getByTestId('factory-explorer')).toBeVisible();await expect(page.getByTestId('session-status')).toContainText('human_operator');
+});
+
+test('profile_denial_clears_orphan_filter_ids_and_restores_unfiltered_rows',async({page})=>{
+ await factory(page);
+ await page.evaluate(async()=>{
+  const session=(await (await fetch('/v2/workspaces/ws_example/auth/session')).json() as AuthSessionResponse).data;
+  const current=(await (await fetch('/v2/workspaces/ws_example/profile')).json() as ProfileDataResponse).data;
+  current.profile.projects.push({id:'factory_private_project',display_name:'Private factory department',description:'Synthetic profile-only reference',archived:false});
+  current.profile.work_roles.push({id:'factory_private_role',display_name:'Private factory role',description:'Synthetic profile-only reference',archived:false});
+  const response=await fetch('/v2/workspaces/ws_example/profile',{method:'PUT',headers:{'content-type':'application/json','x-csrf-token':session.csrf_token,'idempotency-key':crypto.randomUUID()},body:JSON.stringify({profile:current.profile,expected_profile_revision:current.profile_revision})});if(!response.ok)throw Error('FACTORY_PROFILE_SETUP_FAILED');
+ });
+ await page.getByRole('button',{name:'Refresh reads',exact:true}).click();const project=page.getByLabel('Project filter',{exact:true}),role=page.getByLabel('Work role filter',{exact:true});
+ await project.selectOption('factory_private_project');await role.selectOption('factory_private_role');await expect(page.getByTestId('factory-tasks-backlog').getByRole('link')).toHaveCount(0);
+ await page.route('**/v2/workspaces/ws_example/profile',route=>route.fulfill({status:403,contentType:'application/json',body:JSON.stringify({error:{code:'FORBIDDEN',message:'Synthetic profile denial',retryable:false,request_id:'factory-filter-denied'}})}));
+ await page.getByRole('button',{name:'Refresh reads',exact:true}).click();await expect(page.getByTestId('factory-profile')).toHaveAttribute('data-status','forbidden');await expect(project).toHaveValue('');await expect(role).toHaveValue('');
+ await expect(page.locator('#view option[value="factory_private_project"],#view option[value="factory_private_role"]')).toHaveCount(0);await expect(page.getByTestId('factory-explorer')).not.toContainText('Private factory department');await expect(page.getByTestId('factory-tasks-backlog').getByRole('link')).toHaveCount(20);
+ await role.selectOption('');await expect(project).toHaveValue('');
 });
