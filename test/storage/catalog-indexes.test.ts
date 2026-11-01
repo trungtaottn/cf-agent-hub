@@ -32,7 +32,7 @@ it('catalog_schema9_upgrade_preserves_all_existing_domain_bytes_and_registers_on
   const before=rows(state.storage),oldSchema=schema(state.storage),versions=state.storage.sql.exec('SELECT * FROM schema_migrations ORDER BY version').toArray();
   expect(()=>withTransaction(state.storage,assertCurrentSchema)).toThrow('UNSUPPORTED_SCHEMA');
   migrate(state.storage,v9);
-  expect(CURRENT_SCHEMA_VERSION).toBe(18);expect(rows(state.storage)).toEqual(before);
+  expect(CURRENT_SCHEMA_VERSION).toBe(19);expect(rows(state.storage)).toEqual(before);
   const afterSchema=schema(state.storage);expect(afterSchema.filter(x=>!['tasks_catalog_project','tasks_catalog_role'].includes(String(x.name)))).toEqual(oldSchema);
   expect(afterSchema.filter(x=>['tasks_catalog_project','tasks_catalog_role'].includes(String(x.name)))).toHaveLength(2);
   expect(state.storage.sql.exec('SELECT * FROM schema_migrations WHERE version<=8 ORDER BY version').toArray()).toEqual(versions);
@@ -63,7 +63,7 @@ it('current_schema_restart_is_idempotent_and_gapped_sequence_rejects',async()=>{
  await evictDurableObject(stub);
  await runInDurableObject(stub,(_o,state)=>{
   expect({schema:schema(state.storage),rows:rows(state.storage),versions:state.storage.sql.exec('SELECT * FROM schema_migrations ORDER BY version').toArray()}).toEqual(before);
-  expect(before.versions.map(row=>row.version)).toEqual(Array.from({length:18},(_,i)=>i+1));state.storage.sql.exec('DELETE FROM schema_migrations WHERE version=8');
+  expect(before.versions.map(row=>row.version)).toEqual(Array.from({length:19},(_,i)=>i+1));state.storage.sql.exec('DELETE FROM schema_migrations WHERE version=8');
   expect(()=>withTransaction(state.storage,assertCurrentSchema)).toThrow('UNSUPPORTED_SCHEMA');
   expect(()=>withTransaction(state.storage,inspectRegistry)).toThrow('RECOVERY_SCHEMA_MISMATCH');
  });
@@ -86,7 +86,7 @@ it.each(['maintenance','retired'])('catalog_schema9_upgrade_preserves_%s_admissi
   expect(()=>migrate(state.storage,v9)).toThrow('FROZEN_SCHEMA_MIGRATION');expect({schema:schema(state.storage),rows:rows(state.storage)}).toEqual(before);
  });
 });
-it.each([9,18] as const)('schema%s keeps historical recovery closed or requires current capture authority before effects',async version=>{
+it.each([9,19] as const)('schema%s keeps historical recovery closed or requires current capture authority before effects',async version=>{
  const {assertRecoveryContext}=await import('../../src/recovery/protocol');
  const {systemClock,systemEntropy}=await import('../../src/workspace/context');
  const selected=version===9?await old8('recovery_historical'):target('recovery_current');

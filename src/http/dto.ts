@@ -134,6 +134,8 @@ export type ObservationReplaceResponse = {"data":ObservationReplacementReceipt;"
 export type ObservationOwnerStatusResponse = {"data":ObservationOwnerStatus;"request_id":Id};
 export type ObservationResponse = {"data":ObservationView;"page":Page;"request_id":Id};
 export type ObservationReadQuery = {"limit"?:number;"cursor"?:string;"expected_session_id"?:ObservationSessionId};
+export type ApprovalResponse = {"data":Approval;"request_id":string};
+export type ApprovalListResponse = {"data":Array<Approval>;"page":Page;"request_id":string};
 export type MessageResponse = {"data":Message;"request_id":string};
 export type MessageListResponse = {"data":Array<Message>;"page":Page;"request_id":string};
 export type AckResultResponse = {"data":AckResult;"request_id":string};
@@ -400,6 +402,8 @@ export interface HttpDTOMap {
 "ObservationOwnerStatusResponse":ObservationOwnerStatusResponse;
 "ObservationResponse":ObservationResponse;
 "ObservationReadQuery":ObservationReadQuery;
+"ApprovalResponse":ApprovalResponse;
+"ApprovalListResponse":ApprovalListResponse;
 "MessageResponse":MessageResponse;
 "MessageListResponse":MessageListResponse;
 "AckResultResponse":AckResultResponse;

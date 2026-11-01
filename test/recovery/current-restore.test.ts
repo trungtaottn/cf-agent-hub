@@ -7,11 +7,11 @@ import {fixtureIntegrity,recoveryContext} from '../helpers/recovery-fixture';
 import {TABLE_REGISTRY} from '../../src/recovery/table-registry';
 import {currentRestoreFixture,captureCurrentFixture,restoreCurrentFixture,withCurrentRecoveryWorkspace,targetArtifactBucket,mutateAuthenticatedCapture} from './current-restore-fixture';
 
-describe('current schema18 isolated restore from genuine capture',()=>{
+describe('current schema19 isolated restore from genuine capture',()=>{
  it('restores real committed bytes, terminal result and active replay-safe run without resurrecting authority',async()=>{
   const f=await currentRestoreFixture('restore_current_fixture');
   const capture=await captureCurrentFixture(f,{evict:true});
-  expect(capture.manifest.checkpoint.schema_version).toBe(18);
+  expect(capture.manifest.checkpoint.schema_version).toBe(19);
   expect(Object.keys(capture.manifest.database.table_counts).sort()).toEqual(TABLE_REGISTRY.map(t=>t.name).sort());
   expect(capture.manifest.artifacts).toHaveLength(1);
   expect(capture.manifest.database.table_counts.tasks).toBe(2);

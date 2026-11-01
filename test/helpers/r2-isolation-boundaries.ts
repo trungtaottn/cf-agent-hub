@@ -1,3 +1,4 @@
+import {decisionRequest,approvalDecision} from './decision-boundary';
 import {it,expect} from 'vitest';
 import {runInDurableObject,evictDurableObject} from 'cloudflare:test';
 import {isolationOperations,recordIsolationEvidence,type IsolationLane} from './r2-isolation-matrix';
@@ -118,10 +119,14 @@ it('idempotency key namespaces distinguish principal and exact target without gl
 
 const unavailable=Object.entries(spec.paths).flatMap(([path,item])=>Object.entries(item).flatMap(([method,value])=>{const operation=(value as {operationId?:string}).operationId;return operation&&['requestTaskDecision','listApprovals','getApproval','approveApproval','rejectApproval'].includes(operation)?[{path,method:method.toUpperCase(),operation}]:[];}));
 for(const route of unavailable)for(const lane of ['human','native'] as const)it(route.operation+' / '+lane+' / unavailable without fallback',async()=>{
- const f=await isolationHttpFixture(('closed_'+route.operation+'_'+lane).toLowerCase()),before=await f.snapshot(),path=route.path.replace('{workspace_id}','ws_example').replace(/\{[^}]+\}/g,'hidden_reference');
+ const f=await isolationHttpFixture(('closed_'+route.operation+'_'+lane).toLowerCase());let path=route.path.replace('{workspace_id}','ws_example').replace(/\{[^}]+\}/g,'hidden_reference'),body:unknown=approvalDecision(),proof:string|undefined;
+ if(route.operation==='requestTaskDecision'){const prepared=await prepareIsolationOperation(f,'submitTaskResult','native'),source=prepared.input.body as {expected_version:number;run_id:string;fence:number};path='/v2/workspaces/ws_example/tasks/'+prepared.input.path!.task_id+':request-decision';body=decisionRequest(prepared.input.path!.task_id,source.expected_version,source.run_id,source.fence);proof=prepared.input.proof;}
+ const before=await f.snapshot();
  const headers:Record<string,string>=lane==='human'?{cookie:f.sessionCookie,origin:f.a.origin,'x-csrf-token':f.csrf}:{authorization:'Bearer '+f.a.token};
- const response=await f.http(new Request(f.a.origin+path,{method:route.method,headers:{...headers,'content-type':'application/json','idempotency-key':'closed-route'},...(['GET','HEAD'].includes(route.method)?{}:{body:'{}'})}));
- await assertDenied(response,404,['hidden_reference']);expect((await f.snapshot()).digest).toBe(before.digest);recordIsolationEvidence(route.operation,lane,'unavailable');
+ const response=await f.http(new Request(f.a.origin+path,{method:route.method,headers:{...headers,...(proof?{'x-runtime-token':proof}:{}),'content-type':'application/json','idempotency-key':'closed-route'},...(['GET','HEAD'].includes(route.method)?{}:{body:JSON.stringify(body)})}));
+ // Historical receipt name stays fixed: unavailable to this caller does not mean route404.
+ const status=route.operation==='requestTaskDecision'?(lane==='native'?503:403):['listApprovals','getApproval'].includes(route.operation)?403:404;
+ const value=await assertDenied(response,status,['hidden_reference']);expect(value.error.code).toBe(status===503?'DEPENDENCY_UNAVAILABLE':status===403?'FORBIDDEN':'NOT_FOUND');expect((await f.snapshot()).digest).toBe(before.digest);recordIsolationEvidence(route.operation,lane,'unavailable');
 });
 it('unknown R4 adapter and recovery paths have no product-router fallback',async()=>{
  const f=await isolationHttpFixture('closed_recovery_adapter'),before=await f.snapshot();

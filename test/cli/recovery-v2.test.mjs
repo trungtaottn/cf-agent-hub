@@ -46,7 +46,7 @@ async function currentManifest(schema=16){
  return {manifest:await signRecord(value,integrity),integrity};
 }
 test('current manifest dispatcher authenticates18 and retained15/16/17 and rejects forged or unsupported',async()=>{
- for(const schema of [15,16,17,18]){const{manifest,integrity}=await currentManifest(schema);assert.deepEqual(await verifyCliManifest(manifest,integrity),manifest);await assert.rejects(verifyCliManifest({...manifest,environment_id:'forged'},integrity));await assert.rejects(verifyCliManifest({...manifest,checkpoint:{...manifest.checkpoint,schema_version:19}},integrity));}
+ for(const schema of [15,16,17,18,19]){const{manifest,integrity}=await currentManifest(schema);assert.deepEqual(await verifyCliManifest(manifest,integrity),manifest);await assert.rejects(verifyCliManifest({...manifest,environment_id:'forged'},integrity));await assert.rejects(verifyCliManifest({...manifest,checkpoint:{...manifest.checkpoint,schema_version:20}},integrity));}
 });
 import fs from 'node:fs';
 import {retainedControlLimit,supportedControlManifest} from '../../scripts/lib/recovery-client.mjs';
@@ -109,5 +109,5 @@ test("current18 CLI dispatch preserves immutable17 registry and selects exact18 
  const value={format_version:2,schema_version:18,capture_id:"capture_one",index:0,table:"observation_records",columns:["session_id","sequence","ingest_order","received_at","record_json","record_bytes"],rows:[["obs_synthetic",1,1,1,"{}",2]]};
  const bytes=encodeCurrentChunk(value);assert.deepEqual(decodeCliChunk(bytes,{format_version:2,checkpoint:{schema_version:18}}),value);
  assert.throws(()=>decodeCliChunk(bytes,{format_version:2,checkpoint:{schema_version:17}}));
- for(const schema of [16,17,18]){const m={format_version:2,checkpoint:{contract_revision:"0.2",schema_version:schema}};assert.doesNotThrow(()=>supportedControlManifest(m));assert.equal(retainedControlLimit("resume",m),RESUME_ENVELOPE_LIMIT);}
+ for(const schema of [16,17,18,19]){const m={format_version:2,checkpoint:{contract_revision:"0.2",schema_version:schema}};assert.doesNotThrow(()=>supportedControlManifest(m));assert.equal(retainedControlLimit("resume",m),RESUME_ENVELOPE_LIMIT);}
 });

@@ -14,7 +14,12 @@ const later=(now:number,delay=ARTIFACT_RETRY_MS)=>Math.min(MAX_TIME,now+delay);
 function installedWorkspace(tx:WorkspaceTransaction):string {assertAdmissionOpen(tx);return tx.one<{workspace_id:string}>('SELECT workspace_id FROM workspace_metadata WHERE id=1')!.workspace_id;}
 /** Malformed historical references cannot create permission to discard retained evidence. */
 function retainedReference(tx:WorkspaceTransaction,workspaceId:string,id:string):boolean {
- return Boolean(tx.one(`SELECT 1 FROM result_artifacts WHERE workspace_id=? AND artifact_id=? LIMIT 1`,[workspaceId,id])||tx.one(`SELECT 1 FROM message_artifacts WHERE workspace_id=? AND artifact_id=? LIMIT 1`,[workspaceId,id])||tx.one(`SELECT 1 FROM artifact_associations WHERE workspace_id=? AND artifact_id=? AND resource_kind IN ('result','message','checkpoint') LIMIT 1`,[workspaceId,id]));
+ return Boolean(decisionRetained(tx,workspaceId,id)||tx.one(`SELECT 1 FROM result_artifacts WHERE workspace_id=? AND artifact_id=? LIMIT 1`,[workspaceId,id])||tx.one(`SELECT 1 FROM message_artifacts WHERE workspace_id=? AND artifact_id=? LIMIT 1`,[workspaceId,id])||tx.one(`SELECT 1 FROM artifact_associations WHERE workspace_id=? AND artifact_id=? AND resource_kind IN ('result','message','checkpoint') LIMIT 1`,[workspaceId,id]));
+}
+/** Exact generation pin survives metadata drift, replacement and terminal decisions. */
+function decisionRetained(tx:WorkspaceTransaction,workspaceId:string,artifactId:string,generationId?:string):boolean {
+ if((tx.one<{version:number}>('SELECT MAX(version) AS version FROM schema_migrations')?.version??0)<19)return false;
+ return !!tx.one(`SELECT 1 FROM decision_artifact_edges WHERE workspace_id=? AND artifact_id=?${generationId?' AND generation_id=?':''} LIMIT 1`,[workspaceId,artifactId,...(generationId?[generationId]:[])]);
 }
 export function nextArtifactDue(tx:WorkspaceTransaction):number|null {
  const values=[tx.one<{due:number}>('SELECT expiry_check_at AS due FROM artifacts WHERE workspace_id=(SELECT workspace_id FROM workspace_metadata WHERE id=1) AND expiry_check_at IS NOT NULL ORDER BY expiry_check_at,id LIMIT 1')?.due,
@@ -48,6 +53,7 @@ function reserveDelete(tx:WorkspaceTransaction,ctx:ArtifactCleanupContext,id:str
  const {fence}=currentConfiguration(tx,ctx.workspace,ctx.admission);const g=tx.one<GenerationRow>('SELECT * FROM artifact_generations WHERE workspace_id=? AND id=?',[ctx.workspace.workspaceId,id]);if(!g)return null;
  const row=artifactRecord(tx,g.workspace_id,g.artifact_id);
  if(g.state==='committed'||row.committed_generation_id===g.id||row.status==='committed'&&row.active_generation_id===g.id){tx.exec('UPDATE artifact_generations SET cleanup_next_at=NULL,cleanup_error_code=NULL WHERE workspace_id=? AND id=?',[g.workspace_id,g.id]);return null;}
+ if(decisionRetained(tx,g.workspace_id,g.artifact_id,g.id))return hold(tx,g,now,'RETAINED_REFERENCE');
  if(row.status!=='expired'&&row.status!=='committed'){tx.exec('UPDATE artifact_generations SET cleanup_next_at=? WHERE workspace_id=? AND id=?',[Math.max(later(now),row.expires_at??MAX_TIME),g.workspace_id,g.id]);return null;}
  if(retainedReference(tx,g.workspace_id,g.artifact_id)&&row.status!=='committed')return hold(tx,g,now,'RETAINED_REFERENCE');
  // Current-schema capture/restore inventory has no reviewed producer yet. Unknown coverage is protective.

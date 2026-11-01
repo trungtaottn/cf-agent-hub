@@ -12,7 +12,7 @@ test('real isolated service binds and observes authorization through the private
  try{
   const outfile=join(directory,'fixture.mjs');await build({entryPoints:[join(process.cwd(),'test/helpers/native-complete/local-fixture.ts')],outfile,bundle:true,platform:'node',format:'esm',packages:'external',logLevel:'silent'});
   local=await(await import(pathToFileURL(outfile).href)).createLocalCompleteFixture();
-  assert.equal(local.profile,'native-r2-required-schema18-v1');
+  assert.equal(local.profile,'native-r2-required-schema19-v1');
   const p=preparationFixture({expected:local.expected,credentialExpiry:local.credentialExpiry},local.profile);
   const initialGrantSha256=Object.fromEntries(p.input.fixtureContext.initial_grants.map(g=>[g.role,g.sha256]));
   const f=signedFixture(local.profile,{...local,initialGrantSha256});assert.equal(f.v.installation.payload.fixture_sha256,local.fixture_sha256);assert.equal(f.v.installation.payload.family_ledger_sha256,local.family_ledger_sha256);service=createCompleteServiceCore(f.input);let sequence=0;

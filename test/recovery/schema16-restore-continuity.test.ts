@@ -83,5 +83,5 @@ it('restarts genuine completed16 restore, resolves historical effects, probes16 
  const body={receipt_id:frozen.completed.progress.receipt!.id,ledger:f.ledger,source_retirement_receipt:retirement,cutover_record:cutover};
  const resume=()=>work(async w=>resumeWorkspace(w,await recoveryContext(w,'resume',body,f.captureId,{anchor:f.anchor,operationId:'restored16_resume'}),body));
  const result=await resume();await evictDurableObject(f.target);expect(await resume()).toEqual(result);
- await work(w=>{expect(w.storage.sql.exec('SELECT MAX(version) AS v FROM schema_migrations').one().v).toBe(18);expect(w.storage.sql.exec('SELECT * FROM creation_admissions').toArray()).toEqual([]);expect(w.storage.sql.exec('SELECT state FROM maintenance_state').one().state).toBe('open');});
+ await work(w=>{expect(w.storage.sql.exec('SELECT MAX(version) AS v FROM schema_migrations').one().v).toBe(19);expect(w.storage.sql.exec('SELECT * FROM creation_admissions').toArray()).toEqual([]);expect(w.storage.sql.exec('SELECT state FROM maintenance_state').one().state).toBe('open');});
 },90000);

@@ -1,5 +1,7 @@
 /** Closed source-owned witness selection, not caller authority or SQL configuration.
  * Historical defaults are frozen16. Schema17/18 must be explicit and hash-bound. */
+import {nativeSchema19Catalog as schema19} from './native-schema19-catalog.mjs';
+import identity19 from '../../workers/native-fixture/selected-state-schema19-profile.json' with {type:'json'};
 import historical from '../../workers/native-fixture/complete-selectors.json' with {type:'json'};
 import {nativeSchema18Catalog as schema18} from './native-schema18-catalog.mjs';
 import identity18 from '../../workers/native-fixture/selected-state-schema18-profile.json' with {type:'json'};
@@ -10,9 +12,11 @@ const freeze=v=>{if(v&&typeof v==='object'){Object.values(v).forEach(freeze);Obj
 const old=freeze({catalog:historical,marker:{}});
 const next=freeze({catalog:current,marker:{selected_state_profile:witness.profile,selected_state_catalog_sha256:witness.catalog_sha256}});
 const next18=freeze({catalog:schema18,marker:{selected_state_profile:identity18.profile,selected_state_catalog_sha256:identity18.catalog_sha256}});
+const next19=freeze({catalog:schema19,marker:{selected_state_profile:identity19.profile,selected_state_catalog_sha256:identity19.catalog_sha256}});
 export function selectNativeSelectedState(tag){
  const p=selectCompleteProfile(tag).profile;
  if(p.selected_state_profile===undefined)return old;
+ if(p.selected_state_profile===identity19.profile&&p.selected_state_catalog_sha256===identity19.catalog_sha256)return next19;
  if(p.selected_state_profile===identity18.profile&&p.selected_state_catalog_sha256===identity18.catalog_sha256)return next18;
  if(p.selected_state_profile!==witness.profile||p.selected_state_catalog_sha256!==witness.catalog_sha256)throw Error('NATIVE_SELECTED_STATE_PROFILE_REJECTED');
  return next;

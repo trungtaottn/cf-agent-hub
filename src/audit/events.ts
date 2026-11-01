@@ -40,6 +40,7 @@ const definitions={
  'task.result_accepted':{resource:'task',summary:'Task result independently accepted.'},
  'task.failed':{resource:'task',summary:'Task attempt failed.'},
  'task.expired':{resource:'task',summary:'Task execution lease expired.'},
+ 'task.decision_requested':{resource:'task',summary:'Task paused for a human decision.'},
  'task.claimed':{resource:'task',summary:'Task claimed.'},
  'artifact.staged':{resource:'artifact',summary:'Artifact staged.'},
  'artifact.uploaded':{resource:'artifact',summary:'Artifact uploaded.'},
@@ -69,6 +70,13 @@ export function appendEvent(tx:WorkspaceTransaction,event:RedactedEventInput):{i
   const task=taskRecord(tx,event.workspaceId,run.task_id);
   if(task.active_run_id!==run.id||task.state!=='doing')throw new HttpError('INTERNAL_ERROR',500);
   historyTaskId=task.id;row.task_version=task.task_version;row.run_id=run.id;row.fence=run.fence;
+ }
+ if(event.type==='task.decision_requested'){
+  const task=taskRecord(tx,event.workspaceId,event.resourceId);
+  const approval=tx.one<{run_id:string;created_at:number;task_version_at_request:number;requested_by_json:string;status:string}>('SELECT run_id,created_at,task_version_at_request,requested_by_json,status FROM approvals WHERE workspace_id=? AND task_id=? AND id=?',[event.workspaceId,task.id,task.approval_id]);
+  const run=approval?tx.one<{id:string;fence:number;agent_id:string;credential_id:string;status:string;ended_at:number}>('SELECT id,fence,agent_id,credential_id,status,ended_at FROM runs WHERE workspace_id=? AND task_id=? AND id=?',[event.workspaceId,task.id,approval.run_id]):null;
+  if(!approval||!run||event.actor.kind!=='agent'||event.actor.agentId!==run.agent_id||event.actor.credentialId!==run.credential_id||task.state!=='waiting'||task.active_run_id!==null||task.latest_run_id!==run.id||run.status!=='paused'||run.ended_at!==event.nowMs||approval.created_at!==event.nowMs||approval.status!=='pending'||approval.task_version_at_request+1!==task.task_version||approval.requested_by_json!==row.actor_json)throw new HttpError('INTERNAL_ERROR',500);
+  row.run_id=run.id;row.fence=run.fence;
  }
  if(event.type==='task.failed'){
   const task=taskRecord(tx,event.workspaceId,event.resourceId);

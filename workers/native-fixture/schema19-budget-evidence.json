@@ -1,0 +1,35 @@
+{
+  "schema_version": 19,
+  "z_required_empty_tables": [
+    "preferences",
+    "outbox",
+    "catalog_plans",
+    "import_plans",
+    "decision_checkpoints",
+    "decision_proposals",
+    "approvals",
+    "decision_artifact_edges",
+    "decision_lifecycle_heads",
+    "decision_lifecycle_transitions",
+    "decision_notice_intents"
+  ],
+  "z_executions": 24,
+  "z_canonical_bytes": 520,
+  "z_raw_scalar_bytes": 277,
+  "s_executions": 130,
+  "query_admissions": 2555,
+  "bridge_json_admission_bytes": 180810814,
+  "bridge_delta": 5330,
+  "canonical_admission_bytes": 7896990,
+  "canonical_delta": 8568,
+  "s_canonical_bytes": 277,
+  "attachment_bridge_bytes": 2369430,
+  "attachment_bridge_delta": 246,
+  "private_query1": {
+    "rawScalarRowBytes": 8,
+    "jsonRowBytes": 28,
+    "rawScalarBytes": 152,
+    "jsonArrayBytes": 552,
+    "rows": 19
+  }
+}

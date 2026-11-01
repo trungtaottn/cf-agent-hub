@@ -9,14 +9,15 @@ import * as selected from './selected-state';
 import type {SelectedOriginal} from './selected-state';
 import currentIdentity from './selected-state-schema17-profile.json';
 import schema18Identity from './selected-state-schema18-profile.json';
+import schema19Identity from './selected-state-schema19-profile.json';
 type Row=Record<string,string|number|null>;
 type Workspace={id:string;object_name:string;installation_sha256:string;generation:number};
 type NativeActor={agent_id:string;credential_id:string;token_sha256:string};
 interface Expected {role:'primary'|'foreign';epoch:number;config_sha256:string;origin:string;audience:string;workspaces:{primary:Workspace;foreign:Workspace};actors:{S:NativeActor;R:NativeActor;X:NativeActor};human:{principal_id:string;issuer:string;subject:string;session_id:string;token_sha256:string;csrf_sha256:string};}
-function admissionProfile(schemaVersion:16|17|18){
-const createCompleteSelectedState=schemaVersion===16?selected.createCompleteSelectedState:schemaVersion===17?selected.createCurrentCompleteSelectedState:selected.createSchema18CompleteSelectedState;
-const completePhaseReservation=schemaVersion===16?selected.completePhaseReservation:schemaVersion===17?selected.currentCompletePhaseReservation:selected.schema18CompletePhaseReservation;
-const identity=schemaVersion===18?schema18Identity:currentIdentity;
+function admissionProfile(schemaVersion:16|17|18|19){
+const createCompleteSelectedState=schemaVersion===16?selected.createCompleteSelectedState:schemaVersion===17?selected.createCurrentCompleteSelectedState:schemaVersion===18?selected.createSchema18CompleteSelectedState:selected.createSchema19CompleteSelectedState;
+const completePhaseReservation=schemaVersion===16?selected.completePhaseReservation:schemaVersion===17?selected.currentCompletePhaseReservation:schemaVersion===18?selected.schema18CompletePhaseReservation:selected.schema19CompletePhaseReservation;
+const identity=schemaVersion===19?schema19Identity:schemaVersion===18?schema18Identity:currentIdentity;
 const privateCaptures=new WeakMap<object,Readonly<{originals:readonly Readonly<SelectedOriginal>[]}>>();
 function freezeSource(value:unknown):void {if(value!==null&&typeof value==='object'){for(const child of Object.values(value))freezeSource(child);Object.freeze(value);}}
 freezeSource(manifest);
@@ -107,3 +108,5 @@ export const {admitCompleteFixture,readFixtureAdmissionCapture}=admissionProfile
 export const {admitCompleteFixture:admitCurrentCompleteFixture,readFixtureAdmissionCapture:readCurrentFixtureAdmissionCapture}=admissionProfile(17);
 
 export const {admitCompleteFixture:admitSchema18CompleteFixture,readFixtureAdmissionCapture:readSchema18FixtureAdmissionCapture}=admissionProfile(18);
+
+export const {admitCompleteFixture:admitSchema19CompleteFixture,readFixtureAdmissionCapture:readSchema19FixtureAdmissionCapture}=admissionProfile(19);

@@ -5,6 +5,7 @@
 import frozenData from './complete-selectors.json';
 import currentData from './complete-selectors-schema17.json';
 import {nativeSchema18Catalog as schema18Data} from '../../scripts/lib/native-schema18-catalog.mjs';
+import {nativeSchema19Catalog as schema19Data} from '../../scripts/lib/native-schema19-catalog.mjs';
 type Scalar=string|number|null;
 type Binding={W:string;C:string;human:string;principal:string;operation:string;target:string;key:string};
 type Limits={queries:number;bridgeBytes:number;canonicalBytes:number};
@@ -12,7 +13,7 @@ type Descriptor={sql:string;parameters:string[];fields:{name:string;type:string}
 type Vector={selectors:string[];phases:string[];privateSelectAdmissions:number;step_id?:string;id?:string};
 export interface SelectedOriginal {selector:string;ordinal:number;canonical:string;byteSize:number;}
 // Private source-owned fixed-profile factory; callers cannot supply a catalog or select fallback.
-function selectedStateProfile(frozenData:typeof schema18Data|typeof currentData|typeof import('./complete-selectors.json')) {
+function selectedStateProfile(frozenData:typeof schema19Data|typeof schema18Data|typeof currentData|typeof import('./complete-selectors.json')) {
 const catalog:Readonly<Record<string,Descriptor>>=frozenData.catalog;
 const vectors:readonly Vector[]=[...frozenData.phaseVectors,...frozenData.externalVectors];
 const TOTAL:Limits={queries:frozenData.totals.privateSelectAdmissions,bridgeBytes:frozenData.totals.bridgeJsonAdmissionBytes,canonicalBytes:frozenData.totals.canonicalAdmissionBytes};
@@ -48,8 +49,8 @@ function decodeCompleteRows(name:unknown,value:unknown){
   for(const [j,key]of Object.keys(row).sort().entries()){const k=JSON.stringify(key),v=JSON.stringify(row[key]);charge((j?1:0)+encoder.encode(k).byteLength+1+encoder.encode(v).byteLength);fields.push(k+':'+v);}
   rows.push(Object.freeze(row));parts.push('{'+fields.join(',')+'}');
  }
- if(name==='S'&&(frozenData===currentData||frozenData===schema18Data)){const version=frozenData===currentData?17:18;requireValue(rows.length===version&&rows.every((row,i)=>row.version===i+1));}
- if(name==='Z')requireValue(rows.length===4&&['preferences','outbox','catalog_plans','import_plans'].every((label,i)=>rows[i].table_name===label&&rows[i].present===0));
+ if(name==='S'&&(frozenData===currentData||frozenData===schema18Data||frozenData===schema19Data)){const version=frozenData===currentData?17:frozenData===schema18Data?18:19;requireValue(rows.length===version&&rows.every((row,i)=>row.version===i+1));}
+ if(name==='Z'){const labels=frozenData===schema19Data?['preferences','outbox','catalog_plans','import_plans','decision_checkpoints','decision_proposals','approvals','decision_artifact_edges','decision_lifecycle_heads','decision_lifecycle_transitions','decision_notice_intents']:['preferences','outbox','catalog_plans','import_plans'];requireValue(rows.length===labels.length&&labels.every((label,i)=>rows[i].table_name===label&&rows[i].present===0));}
  return Object.freeze({rows:Object.freeze(rows),canonical:'['+parts.join(',')+']',byteSize});
 }
 function vector(stepId:unknown,phase:unknown):Vector {
@@ -118,3 +119,5 @@ export const {decodeCompleteRows,completePhaseReservation,createCompleteSelected
 export const {decodeCompleteRows:decodeCurrentCompleteRows,completePhaseReservation:currentCompletePhaseReservation,createCompleteSelectedState:createCurrentCompleteSelectedState}=selectedStateProfile(currentData);
 
 export const {decodeCompleteRows:decodeSchema18CompleteRows,completePhaseReservation:schema18CompletePhaseReservation,createCompleteSelectedState:createSchema18CompleteSelectedState}=selectedStateProfile(schema18Data);
+
+export const {decodeCompleteRows:decodeSchema19CompleteRows,completePhaseReservation:schema19CompletePhaseReservation,createCompleteSelectedState:createSchema19CompleteSelectedState}=selectedStateProfile(schema19Data);

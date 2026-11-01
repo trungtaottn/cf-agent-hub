@@ -1,3 +1,4 @@
+import {verifyDecisionSourceRow} from './decision-graph';
 import {physicalRecoverySchema} from './target-schema';
 import {stageSourceAuditEvidence,validateAndImportSourceAudit} from './restore-audit-history';
 import {appendRestoreExpiryAudit} from './restore-audit';
@@ -57,6 +58,7 @@ export function verifySourceChunk(tx:WorkspaceTransaction,chunk:CurrentRecoveryC
   // Composite references must be checked as a single tuple, never independent columns.
   const groups=new Map<number,(readonly(string|number)[])[]>();for(const fk of table.foreignKeys){const id=Number(fk[0]);groups.set(id,[...(groups.get(id)??[]),fk]);}
   for(const parts of groups.values()){if(parts.some(p=>raw[String(p[3])]===null))continue;exists(tx,'SELECT 1 FROM "'+parts[0][2]+'" WHERE '+parts.map(p=>'"'+p[4]+'"=?').join(' AND '),parts.map(p=>raw[String(p[3])]));}
+  if(chunk.schema_version===19)verifyDecisionSourceRow(tx,chunk.table,raw,job);
   if(chunk.table==='thread_participants')identity(tx,raw.participant_kind,raw.participant_id,raw.participant_id,job.workspace_id);
   if(chunk.table==='inbox')exists(tx,'SELECT 1 FROM static_agents WHERE workspace_id=? AND agent_id=?',[job.workspace_id,raw.recipient_agent_id]);
   if(chunk.table==='messages'){

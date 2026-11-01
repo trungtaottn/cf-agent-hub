@@ -17,3 +17,13 @@ describe('canonical standalone approval validation',()=>{
   expect('validateApproval' in sharedValidators).toBe(false);
  });
 });
+it('isolates closed canonical decision envelopes and command bodies for browser transport',()=>{
+ const roots=validators as Record<string,unknown>;
+ const approve=JSON.parse(readFileSync(new URL('../../examples/http/approval-approve.response.json',import.meta.url),'utf8'));
+ const body=JSON.parse(readFileSync(new URL('../../examples/http/approval-approve.request.json',import.meta.url),'utf8'));
+ for(const [name,value] of [['ApprovalResponse',{data:approval,request_id:'synthetic'}],['ApprovalListResponse',{data:[approval],page:{next_cursor:null,has_more:false},request_id:'synthetic'}],['TaskCommandResultResponse',approve],['ApprovalDecisionRequest',body]] as const){
+  expect(typeof roots['validate'+name]).toBe('function');
+  const validate=roots['validate'+name] as (v:unknown)=>boolean;
+  expect(validate(value)).toBe(true);expect(validate({...value,extra_authority:true})).toBe(false);
+ }
+});

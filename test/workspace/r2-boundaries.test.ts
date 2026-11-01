@@ -1,3 +1,4 @@
+import {decisionRequest,approvalDecision,decisionError,decisionEffects} from '../helpers/decision-boundary';
 import {it,expect} from 'vitest';
 import {env} from 'cloudflare:workers';
 import {runInDurableObject} from 'cloudflare:test';
@@ -12,7 +13,7 @@ async function setup(name:string){
  const raw=await fixture(name),digest=await sha256('A'.repeat(43));raw.bundle.credentials[0].token_sha256=digest;
  const stub=env.WORKSPACE.getByName(name);await stub.reconcileConfiguration(operator(),await prepareBootstrap(raw.config,raw.bundle,'ws_example'));
  const identity:VerifiedIdentity={kind:'agent',workspaceId:'ws_example',credentialId:'credential_research_1',tokenDigest:digest};
- return {stub,identity};
+ return {stub,identity,config:raw.config};
 }
 it('unknown_event_resource_and_missing_producer_deny_even_with_permissive_hook',async()=>{
  const {stub,identity}=await setup('r2-unknown-event');
@@ -24,16 +25,20 @@ it('unknown_event_resource_and_missing_producer_deny_even_with_permissive_hook',
   }
  }));
 });
-it('r3_and_unimplemented_r2_routes_remain_unavailable_without_durable_writes',async()=>{
- const {stub}=await setup('r2-unavailable');
- // Runtime enrollment and task metadata are owned by #26/#27; catalog by #28, execution/cancellation by #29–31, artifacts by #32/#33 and result review by #35; search recognition by #36; human-only imports by #37; valid-body old-R1 denial is covered in r1-isolation.
- const paths=['tasks/task_a:request-decision','approvals','approvals/approval_a:approve'];
- const snapshot=()=>runInDurableObject(stub,(_o,state)=>({events:state.storage.sql.exec('SELECT * FROM events').toArray(),outcomes:state.storage.sql.exec('SELECT * FROM idempotency_outcomes').toArray(),scheduler:state.storage.sql.exec('SELECT * FROM scheduler_state').toArray(),tables:state.storage.sql.exec("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").toArray()}));
- const before=await snapshot();
- for(const path of paths){
-  const request=()=>new Request('https://hub.example.invalid/v2/workspaces/ws_example/'+path,{method:'POST',headers:{authorization:'Bearer '+'A'.repeat(43),'content-type':'application/json'},body:'{}'});
-  expect((await entry.fetch(request(),env)).status).toBe(404);
-  expect((await stub.fetch(request())).status).toBe(404);
+it('recognized decision routes enforce unchanged R1 grants while unimplemented routes remain404',async()=>{
+ const {stub,config}=await setup('r2-unavailable');
+ const bindings={...env,DEPLOYMENT_CONFIG:JSON.stringify(config),WORKSPACE:{getByName:()=>stub}} as unknown as Env;
+ const snapshot=()=>runInDurableObject(stub,(_o,state)=>decisionEffects(state.storage)),before=await snapshot();
+ const probes=[
+  {path:'tasks/task_a:request-decision',method:'POST',body:decisionRequest('task_a'),status:403,code:'FORBIDDEN'},
+  {path:'approvals',method:'GET',body:undefined,status:403,code:'FORBIDDEN'},
+  {path:'approvals',method:'POST',body:{},status:404,code:'NOT_FOUND'},
+  {path:'approvals/approval_a:approve',method:'POST',body:approvalDecision(),status:404,code:'NOT_FOUND'},
+  {path:'teams',method:'POST',body:{},status:404,code:'NOT_FOUND'},
+ ];
+ for(const probe of probes){
+  const request=()=>new Request('https://hub.example.invalid/v2/workspaces/ws_example/'+probe.path,{method:probe.method,headers:{authorization:'Bearer '+'A'.repeat(43),'x-runtime-token':'B'.repeat(42)+'A','content-type':'application/json','idempotency-key':'boundary'},...(probe.body===undefined?{}:{body:JSON.stringify(probe.body)})});
+  await decisionError(await entry.fetch(request(),bindings),probe.status,probe.code);await decisionError(await stub.fetch(request()),probe.status,probe.code);
  }
  expect(await snapshot()).toEqual(before);
 });

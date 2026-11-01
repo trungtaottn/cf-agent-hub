@@ -9,6 +9,7 @@ test('R3 source additions execute without replacing existing source or browser g
  const source=section('source');assert.ok(source);
  for(const command of [
   'npm run check',
+  'node scripts/generate-native-schema19.mjs --check',
   'node scripts/check-observation-adapter.mjs',
   'npm ci --prefix packages/mcp-stdio --ignore-scripts',
   'node packages/mcp-stdio/scripts/check.mjs',

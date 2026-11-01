@@ -105,3 +105,14 @@ export function isImportedRestoreExpiryEvent(tx:WorkspaceTransaction,event:Event
   return !!job&&isCompletedRestoreAuditJob(job)&&job.workspace_id===event.workspace_id&&job.manifest_digest===record.fingerprint&&job.created_at===record.created_at;
  }catch{return false;}
 }
+/** INTERNAL source-validation provenance only. Does not change public event visibility. */
+export function isStagedRestoreExpiryEvent(tx:WorkspaceTransaction,event:Event,expected:CurrentRestoreJob):boolean {
+ try{
+  const live=loadCurrentRestoreJob(tx,expected.id);
+  if(!live||live.state!=='running'||live.details.stage!=='validate'||live.details.phase!=='verify_pages'||live.details.pending?.kind!=='verify'||canonicalJson(live)!==canonicalJson(expected))return false;
+  const record=tx.one<Row>('SELECT * FROM idempotency_outcomes WHERE principal_id=? AND operation=? AND target=? AND key=?',[principal,importedOperation,event.id,event.id]);
+  if(!record||record.workspace_id!==event.workspace_id||record.workspace_id!==live.workspace_id||record.status!==200||record.original_request_id!==event.id||record.event_id!==event.id||record.expires_at!==Number.MAX_SAFE_INTEGER)return false;
+  const value=imported(parse(String(record.outcome_json)));
+  return value.importer_job_id===live.id&&value.importer_manifest_digest===live.manifest_digest&&record.fingerprint===live.manifest_digest&&record.created_at===live.created_at&&exactTuple(tx,event,value.original);
+ }catch{return false;}
+}

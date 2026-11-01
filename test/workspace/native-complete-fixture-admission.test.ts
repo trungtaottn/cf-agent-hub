@@ -1,4 +1,4 @@
-import currentIdentity from '../../workers/native-fixture/selected-state-schema18-profile.json';
+import currentIdentity from '../../workers/native-fixture/selected-state-schema19-profile.json';
 import {it,expect} from 'vitest';
 import {env} from 'cloudflare:workers';
 import {runInDurableObject} from 'cloudflare:test';
@@ -7,8 +7,8 @@ import {login,request as authRequest} from '../helpers/auth';
 import {prepareBootstrap,canonicalJson,sha256} from '../../src/config/bootstrap';
 import manifest from '../../scripts/lib/native-complete-fixture.json';
 import selectorData from '../../workers/native-fixture/complete-selectors.json';
-import {createSchema18CompleteSelectedState as createCompleteSelectedState,decodeCompleteRows} from '../../workers/native-fixture/selected-state';
-import {admitCompleteFixture as admitSchema16Fixture,admitSchema18CompleteFixture as admitCompleteFixture,readSchema18FixtureAdmissionCapture as readFixtureAdmissionCapture} from '../../workers/native-fixture/fixture-admission';
+import {createSchema19CompleteSelectedState as createCompleteSelectedState,decodeCompleteRows} from '../../workers/native-fixture/selected-state';
+import {admitCompleteFixture as admitSchema16Fixture,admitSchema19CompleteFixture as admitCompleteFixture,readSchema19FixtureAdmissionCapture as readFixtureAdmissionCapture} from '../../workers/native-fixture/fixture-admission';
 const P='ws_example',F='ws_foreign';
 async function installed(name:string,modify?:(config:Awaited<ReturnType<typeof fixture>>['config'])=>void,humanLogin=true){
  const raw=await fixture(name+'-p'),config=raw.config,c=manifest.configuration_constraints;

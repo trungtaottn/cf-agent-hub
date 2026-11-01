@@ -84,7 +84,7 @@ it('restarts genuine completed17 restore, resolves historical effects, probes17 
  const body={receipt_id:frozen.completed.progress.receipt!.id,ledger:f.ledger,source_retirement_receipt:retirement,cutover_record:cutover};
  const resume=()=>work(async w=>resumeWorkspace(w,await recoveryContext(w,'resume',body,f.captureId,{anchor:f.anchor,operationId:'restored17_resume'}),body));
  const result=await resume();await evictDurableObject(f.target);expect(await resume()).toEqual(result);
- await work(w=>{expect(w.storage.sql.exec('SELECT MAX(version) AS v FROM schema_migrations').one().v).toBe(18);expect(w.storage.sql.exec('SELECT * FROM creation_admissions').toArray()).toEqual([]);expect(w.storage.sql.exec('SELECT state FROM maintenance_state').one().state).toBe('open');});
+ await work(w=>{expect(w.storage.sql.exec('SELECT MAX(version) AS v FROM schema_migrations').one().v).toBe(19);expect(w.storage.sql.exec('SELECT * FROM creation_admissions').toArray()).toEqual([]);expect(w.storage.sql.exec('SELECT state FROM maintenance_state').one().state).toBe('open');});
 },90000);
 it('decodes retained17 job counts for an authenticated16 source without relabelling source bytes',async()=>{
  // Synthetic parser coverage for the previously supported16→17 target path; not a new genuine17 capture.

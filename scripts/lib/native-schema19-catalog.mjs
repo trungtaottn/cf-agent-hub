@@ -1,0 +1,4 @@
+/** Trusted additive19 delta; frozen18 bytes remain canonical for historical18. */
+import {nativeSchema18Catalog as prior} from './native-schema18-catalog.mjs';
+import delta from '../../workers/native-fixture/schema19-runtime-delta.json' with {type:'json'};
+export const nativeSchema19Catalog={...prior,witness_profile:delta.witness_profile,schema_version:delta.schema_version,catalog:{...prior.catalog,S:delta.S,Z:delta.Z},phaseVectors:prior.phaseVectors.map((v,i)=>({...v,bridgeJsonAdmissionBytes:delta.phase_bridge_bytes[i],canonicalAdmissionBytes:delta.phase_canonical_bytes[i]})),externalVectors:prior.externalVectors.map((v,i)=>({...v,bridgeJsonAdmissionBytes:delta.external_bridge_bytes[i],canonicalAdmissionBytes:delta.external_canonical_bytes[i]})),totals:{...prior.totals,bridgeJsonAdmissionBytes:delta.bridge_total,canonicalAdmissionBytes:delta.canonical_total}};

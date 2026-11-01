@@ -227,3 +227,37 @@ Run `schema17-restore-upgrade`, `schema17-frozen-controls`,
 `schema17-restore-continuity` and `observation-recovery` Workers tests. This is source
 compatibility coverage, not a deployment, operator migration, live recovery or activation
 receipt; exact-head integrated verification and release gates remain separate.
+
+### Inactive schema19 decision history compatibility
+
+Schema19 extends the existing format2/revision0.2 registry, not the historical
+16/17/18 branches. The source action registry remains empty: stored synthetic
+history and source tests do not activate a product action or complete the R3
+journey. All decision checkpoint/proposal, approval, retained artifact-role and
+lifecycle rows are historical restore data, never restored execution authority.
+
+The staged source graph must be validated before authority transformations:
+workspace/task/run/checkpoint/proposal tuples, exact immutable input generations,
+complete role edges, bounded closed stored JSON and contiguous lifecycle lineage.
+Current reviewer grants are not retroactively applied to erase historical facts.
+The exact retained artifacts still use the existing private byte inventory and
+hash verification. Pending expiry timestamps are retained without renewal;
+restored Waiting tasks and paused, ended request runs do not restart. Fresh
+claims require the separately owned current policy/runtime/fence checks. An
+actively executing consumed approval restores with the existing uncertainty
+transform; its consumed binding and historical decision lineage must not be
+cleared or rewritten into a new decision transition.
+
+Original signed18 sources can restore into fresh19. Coherent captured, restoring,
+restored and retired physical18 state remains physical18 across restart, under
+its original exact release identity. Only the existing authorized resume path
+atomically migrates to19, opens admission and records the outcome. An incompatible
+release is denied, not re-admitted. Original16/17 continuity remains supported.
+The three genuine18 fixtures and their provenance are immutable inputs; see
+[their provenance record](../test/fixtures/genuine-schema18-provenance/README.md).
+
+Focused source tests are `schema18-restore-upgrade`, `schema18-frozen-controls`,
+`schema18-restore-continuity` and `r3-decisions`. These are synthetic local
+compatibility checks, not deployed recovery, current product action authority,
+#65 integrated journey completion or R3 release acceptance. Existing chunk,
+artifact, control and native-host ceilings remain unchanged.

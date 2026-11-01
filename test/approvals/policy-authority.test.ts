@@ -1,3 +1,4 @@
+import {decisionRequest,approvalDecision,decisionError} from '../helpers/decision-boundary';
 import {it,expect} from 'vitest';
 import {runInDurableObject} from 'cloudflare:test';
 import {decisionFixture,decisionActor,proposal,syntheticPolicy,testLookup,claimSetup} from '../helpers/decision-policy';
@@ -91,7 +92,7 @@ it('refreshes actor task graph and admission fences and never extends a run leas
  });
 });
 
-it('recognized human approval scopes never become managed native credential scopes or routes',async()=>{
+it('recognized human approval scopes never become managed native credential authority',async()=>{
  const f=await decisionFixture('decision_human_scope_only');await runInDurableObject(f.stub,async(_o,s)=>{
   const {now}=claimSetup(s.storage),{human}=await import('../helpers/settings'),{resolveActor}=await import('../../src/auth/authorize'),{issueCredential}=await import('../../src/auth/native-credentials'),identity=human(s.storage),before=snapshot(s.storage);
   for(const scope of ['approvals:read','approvals:decide'] as const)expect(()=>withTransaction(s.storage,tx=>{
@@ -102,7 +103,8 @@ it('recognized human approval scopes never become managed native credential scop
  });
  const base='https://hub.example.invalid/v2/workspaces/ws_example/';
  for(const [path,method] of [['tasks/task_a:request-decision','POST'],['approvals/approval_a','GET'],['approvals/approval_a:approve','POST'],['approvals/approval_a:reject','POST']]){
-  const response=await f.stub.fetch(new Request(base+path,{method,headers:{'content-type':'application/json'},...(method==='POST'?{body:'{}'}:{})}));expect(response.status).toBe(404);
+  const body=path.startsWith('tasks/')?decisionRequest('task_a'):approvalDecision(),implemented=path.startsWith('tasks/')||method==='GET';
+  const response=await f.stub.fetch(new Request(base+path,{method,headers:{'content-type':'application/json','idempotency-key':'unauthenticated-boundary'},...(method==='POST'?{body:JSON.stringify(body)}:{})}));await decisionError(response,implemented?401:404,implemented?'UNAUTHENTICATED':'NOT_FOUND');
  }
 });
 it('rechecks exact policy digests semantic revision and native metadata without renewing deadline',async()=>{

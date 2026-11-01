@@ -31,7 +31,7 @@ export async function replayCurrentRestoreAdmission(w:RecoveryWorkspace,ctx:Reco
 export async function beginCurrentRestore(w:RecoveryWorkspace,ctx:RecoveryContext,manifestInput:RecoveryManifest,ledgerInput:CurrentLedger):Promise<RecoveryJobProgress>{
  ctx=structuredClone(ctx);
  if(ctx.operation!=='restore'||!ctx.captureId)throw Error('INVALID_RECOVERY_CONTEXT');
- validateManifestShape(manifestInput);if(manifestInput.format_version!==2||manifestInput.checkpoint.contract_revision!=='0.2'||manifestInput.checkpoint.schema_version!==16&&manifestInput.checkpoint.schema_version!==17&&manifestInput.checkpoint.schema_version!==18)throw Error('RECOVERY_FORMAT_UNAVAILABLE');
+ validateManifestShape(manifestInput);if(manifestInput.format_version!==2||manifestInput.checkpoint.contract_revision!=='0.2'||manifestInput.checkpoint.schema_version!==16&&manifestInput.checkpoint.schema_version!==17&&manifestInput.checkpoint.schema_version!==18&&manifestInput.checkpoint.schema_version!==19)throw Error('RECOVERY_FORMAT_UNAVAILABLE');
  manifestInput=structuredClone(manifestInput);if(canonicalBytes(ledgerInput).length>65536)throw Error('RECOVERY_BYTES_LIMIT');ledgerInput=structuredClone(ledgerInput);
  const replay=await replayCurrentRestoreAdmission(w,ctx,manifestInput);if(replay)return replay;
  const fence=withTransaction(w.storage,tx=>{const f=assertRecoveryContext(tx,w,ctx);emptyTarget(tx);inspectRegistry(tx);return f;});
