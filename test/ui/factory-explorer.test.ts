@@ -1,3 +1,4 @@
+import {FactoryObservationReads} from '../../src/ui/factory/observation-reads';
 import {factoryAppSource} from '../helpers/factory-app-source.mjs';
 import ts from 'typescript';
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
@@ -120,4 +121,23 @@ it('detached observation DOM callbacks cannot act across primary or host lifecyc
  const live=host.capture();live.onCompare('c');live.onRemoveComparison();live.onNext('a');live.onRefresh('a');for(const call of Object.values(calls)){expect(call).toHaveBeenCalledOnce();call.mockClear();}
  const old=host.capture();const root=render(value,{observations:{...old,state:{slots:[a]}}});const select=descendants(root,n=>n.tagName==='SELECT'&&n.getAttribute('aria-label')==='Compare reported paths')[0];Object.assign(select,{value:'c'});host.select('b');for(const listener of select.listeners.get('change')??[])listener({preventDefault(){}});expect(calls.compare).not.toHaveBeenCalled();old.onRemoveComparison();old.onNext('a');old.onRefresh('a');for(const call of Object.values(calls))expect(call).not.toHaveBeenCalled();host.select('a');for(const listener of select.listeners.get('change')??[])listener({preventDefault(){}});expect(calls.compare).not.toHaveBeenCalled();
  for(const invalidate of ['rerender','authority','connection','principal','leave']){const previous=host.capture();host[invalidate]();previous.onCompare('c');previous.onRemoveComparison();previous.onNext('a');previous.onRefresh('a');}for(const call of Object.values(calls))expect(call).not.toHaveBeenCalled();
+});
+
+it('cross-tab reset withholds reports before a held response settles and shows restart only after fresh task read',async()=>{
+ vi.useFakeTimers();vi.stubGlobal('navigator',{onLine:true});Object.assign(document,{visibilityState:'visible'});
+ const source=ts.createSourceFile('app.ts',factoryAppSource,ts.ScriptTarget.Latest,true),sync=source.statements.find(s=>ts.isFunctionDeclaration(s)&&s.name?.text==='syncFactoryObservationState')!,callback=source.statements.find(s=>s.getText(source).startsWith("composeChannel?.addEventListener('message'"))!;
+ const code=ts.transpileModule(sync.getText(source)+'\n'+callback.getText(source),{compilerOptions:{target:ts.ScriptTarget.ES2023}}).outputText;
+ const value={...state(),selectedId:'one'},current={...task('doing','one'),latest_run_id:null,active_run_id:null};await observe(value.task,current);
+ const report={status:'retained',binding:{task_id:'one',run_id:'run_old',agent_id:'agent_example',runtime_instance_id:'runtime_example',repository_id:'repo',checkout_slot_id:'checkout',session_id:'obs_'+'a'.repeat(48),session_epoch:1,fence:1},coverage:{configured_events:['read-observed'],completeness:'unknown',reported_loss:false},retained_range:{first_sequence:1,last_sequence:1},truncated:false,records:[{sequence:1,server_received_at:when,reported:{observed_at:when,relative_path:'src/shared.ts',activity:'read-observed',source_oid:null}}],read_at:when};
+ let release!:()=>void;const held=new Promise<void>(resolve=>{release=resolve;});let reportCalls=0,taskCalls=0,syncHost=()=>{},displayed=render(value),onMessage!:(event:{data:unknown})=>void;
+ const request:any=async(operation:string)=>{if(operation==='getTask'){taskCalls++;return {ok:true,status:200,requestId:'task',data:current};}expect(operation).toBe('listTaskObservations');if(++reportCalls===2)await held;return {ok:true,status:200,requestId:'report',data:report,page:{has_more:false,next_cursor:null}};};
+ const controller=new FactoryObservationReads({workspaceId:'ws_example',request,verifyAuthority:async()=>true,changed:()=>renderHost()});
+ function renderHost(){syncHost();displayed=render(value,{observations:{state:controller,onCompare:vi.fn(),onRemoveComparison:vi.fn(),onNext:vi.fn(),onRefresh:vi.fn()}});}
+ const host=new Function('factoryObservations','render','composeChannel','models',`let connectionGeneration=1,factoryAuthority={},workspace='ws_example',factoryMode=true,currentView='tasks',denied=false,eventsAvailable=true,composeScope={principalId:'human_operator'},session={actor:{principal_id:'human_operator'}},notice={textContent:''};const eraseComposition=()=>{};${code};return {sync:syncFactoryObservationState,principal:()=>session.actor.principal_id};`)(controller,renderHost,{addEventListener:(_name:string,listener:typeof onMessage)=>{onMessage=listener;}},{workspace:{state:{status:'ready',data:{effective_scopes:['tasks:read','events:read']}}}});syncHost=host.sync;
+ try{
+  syncHost();await controller.selectPrimary('one');expect(displayed.textContent).toContain('src/shared.ts');await vi.advanceTimersByTimeAsync(2000);expect(reportCalls).toBe(2);
+  onMessage({data:{type:'erase',workspaceId:'ws_example',principalId:'human_operator'}});const proof=()=>section(displayed,'factory-observation-evidence-1');
+  expect(controller.slots[0].requiresExplicitRefresh).toBe(true);expect(controller.slots[0].task.state.status).toBe('stale');expect(proof().textContent).toContain('Selected task unavailable — report details withheld.');expect(proof().textContent).not.toContain('Explicit refresh required');expect(displayed.textContent).not.toContain('src/shared.ts');const before=taskCalls;
+  release();await vi.advanceTimersByTimeAsync(0);expect(taskCalls).toBeGreaterThan(before);expect(proof().textContent).toContain('Explicit refresh required');expect(displayed.textContent).not.toContain('src/shared.ts');expect(host.principal()).toBe('human_operator');await vi.advanceTimersByTimeAsync(4000);expect(reportCalls).toBe(2);expect(displayed.textContent).not.toContain('src/shared.ts');
+ }finally{release();controller.dispose();vi.useRealTimers();}
 });
