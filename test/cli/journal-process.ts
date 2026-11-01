@@ -6,7 +6,9 @@ const binding={origin:'https://hub.example',workspaceId:'ws_synthetic',principal
 const request={operation:'createTask',method:'POST',path:'/v2/workspaces/ws_synthetic/tasks',queryCanonical:'',canonicalBody:'{"title":"Synthetic task"}',origin:binding.origin,workspaceId:binding.workspaceId};
 const [directory,mode,phase,id,key]=process.argv.slice(2);
 const authority=(value:unknown)=>JSON.stringify(value)===JSON.stringify(binding);
-const pause=()=>new Promise<void>(()=>{});
+// An unresolved Promise alone does not keep Node alive at a crash boundary.
+// Keep a referenced handle until the parent actually terminates us with SIGKILL.
+const pause=()=>new Promise<void>(()=>{setInterval(()=>{},1000);});
 if(mode==='hold-lock'){
  const db=new ProtectedSqlite({directory,name:'journal.sqlite',create:false});
  db.transaction(()=>{process.send?.({stage:'locked'});Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,500);});db.close();process.disconnect?.();
