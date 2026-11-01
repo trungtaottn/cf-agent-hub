@@ -1,5 +1,9 @@
 /** Actual private-build OIDC/session/HTTP/SQL/R2 acceptance, NOT production action availability. */
 import type {Page,Request,Response as BrowserResponse} from '@playwright/test';
+import {createHash} from 'node:crypto';
+import {installDecisionResponseObserver,type DecisionObserverHost} from '../helpers/decision-response-observer';
+import {validateTaskCommandResultResponse} from '../../src/http/generated/decision-validators.js';
+import {parseExactJson} from '../../src/approvals/exact-json';
 import type {AuthSessionResponse} from '../../src/http/dto';
 import {test,expect,appOrigin,issuerOrigin,readFixtureRoute} from '../helpers/browser';
 import {login,fixtureControl} from '../helpers/ui';
@@ -38,28 +42,35 @@ async function prepare(page:Page,action:'approval'|'rejection',reason='Synthetic
  await page.getByRole('button',{name:'Confirm reviewed request',exact:true}).click();await expect(page.getByRole('button',{name:'Send decision request',exact:true})).toBeEnabled();
 }
 async function send(page:Page,id:string,action='approve'){
- const initialLocation=page.url();let mainFrameNavigations=0,status:number|null=null,bodyStarted=false;
+ const initialLocation=page.url();let mainFrameNavigations=0,status:number|null=null,write:Request|null=null,writes=0;
  const navigated=(frame:ReturnType<Page['mainFrame']>)=>{if(frame===page.mainFrame())mainFrameNavigations=Math.min(33,mainFrameNavigations+1);};
- // Begin retaining actual CDP bytes as soon as the response arrives, not after
- // click's post-action wait. Handle rejection immediately; never invent a body.
- const captured=page.waitForResponse(r=>matches(r.request(),id,action)).then(async actual=>{
-  status=actual.status();expect(status).toBe(200);bodyStarted=true;return {actual,body:await actual.json()};
- }).then(value=>({ok:true as const,value}),error=>({ok:false as const,error}));
- page.on('framenavigated',navigated);
+ const issued=(request:Request)=>{if(matches(request,id,action)){++writes;if(!write)write=request;}};
+ await page.evaluate(path=>(globalThis as unknown as DecisionObserverHost).__decisionResponseObserver!.arm(path),commandPath(id,action));
+ // PRIMARY actual fetch-clone body, never a fallback to expected data or CDP cache.
+ const captured=page.evaluate(()=>(globalThis as unknown as DecisionObserverHost).__decisionResponseObserver!.take()).then(value=>({ok:true as const,value}),error=>({ok:false as const,error}));
+ const response=page.waitForResponse(r=>r.request()===write&&matches(r.request(),id,action));void response.catch(()=>{});
+ page.on('request',issued);page.on('framenavigated',navigated);
  try{
-  await page.getByRole('button',{name:'Send decision request',exact:true}).click();const result=await captured;if(!result.ok)throw result.error;
-  const {actual,body}=result.value;expect(body.data.run===null).toBe(true);expect(body.data.approval.id===id).toBe(true);
-  expect(page.url()===initialLocation).toBe(true);expect(mainFrameNavigations).toBe(0);
-  await expect(page.getByText('Server confirmed the original decision transition, not execution or completion.',{exact:true})).toBeVisible();return actual;
- }catch(error){const current=new URL(page.url());console.log('DECISION_BODY_CAPTURE_DIAGNOSTIC '+JSON.stringify({status,bodyStarted,mainFrameNavigations,sameLocation:page.url()===initialLocation,viewIsApprovals:current.pathname==='/tasks'&&current.searchParams.get('panel')==='approvals'}));throw error;
- }finally{page.off('framenavigated',navigated);}
+  await page.getByRole('button',{name:'Send decision request',exact:true}).click();const actual=await response;status=actual.status();expect(status).toBe(200);
+  const result=await captured;if(!result.ok)throw result.error;const receipt=result.value,request=actual.request();
+  expect(receipt.status).toBe(status);expect(receipt.path).toBe(commandPath(id,action));expect(receipt.method).toBe(request.method());
+  const digest=(value:string)=>createHash('sha256').update(value).digest('hex');
+  expect(receipt.bodySha256).toBe(digest(request.postData()??''));expect(receipt.keySha256).toBe(digest((await request.allHeaders())['idempotency-key']??''));
+  const body=parseExactJson(new TextEncoder().encode(receipt.text),{maxBytes:1048576,maxDepth:64,maxNodes:100000});
+  if(!validateTaskCommandResultResponse(body))throw Error('DECISION_OBSERVER_INVALID_CANONICAL_RESPONSE');
+  expect(body.data.run===null).toBe(true);expect(body.data.approval?.id===id).toBe(true);
+  expect(page.url()===initialLocation).toBe(true);expect(mainFrameNavigations).toBe(0);expect(writes).toBe(1);
+  await expect(page.getByText('Server confirmed the original decision transition, not execution or completion.',{exact:true})).toBeVisible();
+  await page.evaluate(()=>(globalThis as unknown as DecisionObserverHost).__decisionResponseObserver!.verify());return actual;
+ }catch(error){const current=new URL(page.url());console.log('DECISION_BODY_CAPTURE_DIAGNOSTIC '+JSON.stringify({status,mainFrameNavigations,writes,sameLocation:page.url()===initialLocation,viewIsApprovals:current.pathname==='/tasks'&&current.searchParams.get('panel')==='approvals'}));try{await outcomeDiagnostic(page,{kind:'primary-body-capture-failed',status,code:null});}catch{console.log('DECISION_OUTCOME_DIAGNOSTIC_UNAVAILABLE');}throw error;
+ }finally{page.off('request',issued);page.off('framenavigated',navigated);await page.evaluate(()=>(globalThis as unknown as DecisionObserverHost).__decisionResponseObserver!.dispose());}
 }
 function observeAccess(page:Page){const requests:Request[]=[],sessions:BrowserResponse[]=[];page.on('request',r=>{if(new URL(r.url()).pathname.startsWith(base))requests.push(r);});page.on('response',r=>{if(new URL(r.url()).pathname===base+'/auth/session')sessions.push(r);});return {requests,sessions};}
 async function assertFinalAccess(observed:ReturnType<typeof observeAccess>,write:Request){
  const position=observed.requests.indexOf(write);expect(position).toBeGreaterThan(1);expect(observed.requests.slice(position-2,position).map(r=>r.method()+' '+new URL(r.url()).pathname)).toEqual(['GET '+base+'/auth/session','GET '+base]);
  const session=observed.sessions.filter(r=>observed.requests.indexOf(r.request())<position).at(-1);expect(!!session).toBe(true);const value=await session!.json(),headers=await write.allHeaders();expect(typeof value.data.csrf_token==='string'&&headers['x-csrf-token']===value.data.csrf_token).toBe(true);
 }
-test.beforeEach(async({page})=>{await page.goto(appOrigin+'/health/live');await fixtureControl(page,'reset');});
+test.beforeEach(async({page})=>{await page.addInitScript(installDecisionResponseObserver);await page.goto(appOrigin+'/health/live');await fixtureControl(page,'reset');});
 
 test('actual OIDC human approves exact bound inputs with fresh final session CSRF and frozen intent',async({page})=>{
  const {state,item}=await enter(page,'approve');await expect(page.getByLabel('Full original JSON input')).toBeVisible();const observed=observeAccess(page);

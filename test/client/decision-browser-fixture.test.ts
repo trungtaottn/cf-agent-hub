@@ -61,34 +61,37 @@ it('reset during bounded preflight or old verification cannot dispatch or publis
 });
 
 import ts from 'typescript';
+import {createHash} from 'node:crypto';
+import {validateTaskCommandResultResponse} from '../../src/http/generated/decision-validators.js';
+import {parseExactJson} from '../../src/approvals/exact-json';
 function actualBrowserSend(){
  const source=ts.createSourceFile('decision-session.spec.ts',readFileSync(new URL('../decision-browser/decision-session.spec.ts',import.meta.url),'utf8'),ts.ScriptTarget.Latest,true);
  const declaration=source.statements.find(s=>ts.isFunctionDeclaration(s)&&s.name?.text==='send')!;
  const code=ts.transpileModule(declaration.getText(source),{compilerOptions:{target:ts.ScriptTarget.ES2023}}).outputText;
  const visible={};const assertion=(value:unknown)=>({toBe:(expected:unknown)=>expect(value).toBe(expected),toBeVisible:async()=>expect(value).toBe(visible)});
- return {send:new Function('matches','expect',code+';return send;')(()=>true,assertion),visible};
+ const commandPath=(id:string,action:string)=>'/v2/workspaces/ws_example/approvals/'+id+':'+action;
+ return {send:new Function('matches','expect','commandPath','createHash','parseExactJson','validateTaskCommandResultResponse','outcomeDiagnostic',code+';return send;')(()=>true,assertion,commandPath,createHash,parseExactJson,validateTaskCommandResultResponse,vi.fn(async()=>{})),visible};
 }
-it('captures actual decision JSON while the UI click is still outstanding, retaining response and UI checks',async()=>{
- const {send,visible}=actualBrowserSend();let arrived!:(value:unknown)=>void,finishClick!:()=>void;const response=new Promise(r=>{arrived=r;}),clicked=new Promise<void>(r=>{finishClick=r;});
- const json=vi.fn(async()=>({data:{run:null,approval:{id:'approval'}}})),actual={status:()=>200,json};
- const page={waitForResponse:()=>response,getByRole:()=>({click:()=>{arrived(actual);return clicked;}}),getByText:()=>visible,url:()=> 'https://hub.fixture.example.invalid/tasks?panel=approvals',on:vi.fn(),off:vi.fn(),mainFrame:()=>null};
- const running=send(page,'approval');await Promise.resolve();await Promise.resolve();const eager=json.mock.calls.length;finishClick();expect(await running).toBe(actual);expect(eager).toBe(1);expect(json).toHaveBeenCalledOnce();
+function actualEnvelope(){
+ const source=ts.createSourceFile('decision-actions.test.ts',readFileSync(new URL('../ui/decision-actions.test.ts',import.meta.url),'utf8'),ts.ScriptTarget.Latest,true),declaration=source.statements.find(s=>ts.isFunctionDeclaration(s)&&s.name?.text==='snapshot')!;
+ const code=ts.transpileModule(declaration.getText(source),{compilerOptions:{target:ts.ScriptTarget.ES2023}}).outputText;
+ const actor={kind:'human',principal_id:'human',agent_id:null},value=new Function('actor',code+';return snapshot();')(actor);
+ return {request_id:'r',data:{task:{...value.task,state:'ready',task_version:5},run:null,approval:{...value.approval,status:'approved',approval_version:2,decided_at:'2026-11-01T01:00:00Z',decided_by:actor,decision_reason:'Synthetic'}}};
+}
+function primarySendFixture(text=JSON.stringify(actualEnvelope()),captureFailure?:Error){
+ const {send,visible}=actualBrowserSend(),events=new Map<string,Function>(),calls:string[]=[],body='{"reason":"Synthetic"}',key='synthetic-key';
+ const request={method:()=> 'POST',postData:()=>body,allHeaders:async()=>({'idempotency-key':key})},actual={request:()=>request,status:()=>200,json:vi.fn(()=>{throw Error('CDP_MUST_NOT_BE_USED');})};
+ const digest=(value:string)=>createHash('sha256').update(value).digest('hex');
+ const receipt={path:'/v2/workspaces/ws_example/approvals/approval:approve',method:'POST',status:200,bodySha256:digest(body),keySha256:digest(key),text};
+ const observer={arm:vi.fn(()=>{calls.push('arm');}),take:vi.fn(async()=>{calls.push('take');if(captureFailure)throw captureFailure;return receipt;}),verify:vi.fn(),dispose:vi.fn()};
+ vi.stubGlobal('__decisionResponseObserver',observer);let resolve!:(response:typeof actual)=>void,predicate:(response:typeof actual)=>boolean=()=>false;
+ const page={evaluate:async(fn:Function,arg?:unknown)=>fn(arg),waitForResponse:(fn:typeof predicate)=>{predicate=fn;return new Promise<typeof actual>(r=>{resolve=r;});},getByRole:()=>({click:async()=>{calls.push('click');events.get('request')?.(request);if(predicate(actual))resolve(actual);}}),getByText:()=>visible,url:()=> 'https://hub.fixture.example.invalid/tasks?panel=approvals',on:(name:string,callback:Function)=>{events.set(name,callback);},off:vi.fn(),mainFrame:()=>null};
+ return {send,page,actual,receipt,observer,calls};
+}
+it('uses mandatory primary actual-clone JSON and exact request digests without consulting CDP body storage',async()=>{
+ const f=primarySendFixture();try{expect(await f.send(f.page,'approval')).toBe(f.actual);expect(f.calls).toEqual(['arm','take','click']);expect(f.actual.json).not.toHaveBeenCalled();expect(f.observer.verify).toHaveBeenCalledOnce();expect(f.observer.dispose).toHaveBeenCalledOnce();}finally{vi.unstubAllGlobals();}
 });
-it('never converts unavailable actual decision JSON into success or skips its payload assertions',async()=>{
- const {send,visible}=actualBrowserSend();
- for(const json of [async()=>{throw Error('CDP_BODY_UNAVAILABLE');},async()=>({data:{run:'unexpected',approval:{id:'approval'}}}),async()=>({data:{run:null,approval:{id:'other'}}})]){
-  const actual={status:()=>200,json},page={waitForResponse:async()=>actual,getByRole:()=>({click:async()=>{}}),getByText:()=>visible,url:()=> 'https://hub.fixture.example.invalid/tasks?panel=approvals',on:vi.fn(),off:vi.fn(),mainFrame:()=>null};
-  await expect(send(page,'approval')).rejects.toThrow();
- }
-});
-it('preserves the original body error and rejects unexpected post-click main-frame navigation with closed diagnostics',async()=>{
- const {send,visible}=actualBrowserSend(),failure=Error('CDP_BODY_UNAVAILABLE'),frame={},messages:string[]=[];const log=vi.spyOn(console,'log').mockImplementation(message=>{messages.push(String(message));});
- try{
-  let onNavigation:(frame:object)=>void=()=>{};const actual={status:()=>200,json:async():Promise<unknown>=>{throw failure;}},page={waitForResponse:async()=>actual,getByRole:()=>({click:async()=>{}}),getByText:()=>visible,url:()=> 'https://hub.fixture.example.invalid/tasks?panel=approvals',on:(_name:string,callback:(frame:object)=>void)=>{onNavigation=callback;},off:vi.fn(),mainFrame:()=>frame};
-  await expect(send(page,'approval')).rejects.toBe(failure);
-  actual.json=async()=>({data:{run:null,approval:{id:'approval'}}});page.getByRole=()=>({click:async()=>{onNavigation(frame);}});
-  await expect(send(page,'approval')).rejects.toThrow();
-  const diagnostics=messages.map(message=>JSON.parse(message.replace('DECISION_BODY_CAPTURE_DIAGNOSTIC ','')));
-  expect(diagnostics.map(d=>d.mainFrameNavigations)).toEqual([0,1]);for(const d of diagnostics)expect(Object.keys(d)).toEqual(['status','bodyStarted','mainFrameNavigations','sameLocation','viewIsApprovals']);
- }finally{log.mockRestore();}
+it('rejects primary observer errors, invalid JSON/canonical envelopes and wrong request fingerprints without fallback',async()=>{
+ const failure=Error('PRIMARY_BODY_UNAVAILABLE');const cases=[()=>primarySendFixture(undefined,failure),()=>primarySendFixture('{'),()=>primarySendFixture('{"data":{"run":null,"approval":{"id":"approval"}}}'),()=>{const f=primarySendFixture();f.receipt.keySha256='0'.repeat(64);return f;},()=>{const f=primarySendFixture();f.receipt.bodySha256='0'.repeat(64);return f;}];
+ for(const create of cases){const f=create();try{await expect(f.send(f.page,'approval')).rejects.toThrow();expect(f.actual.json).not.toHaveBeenCalled();expect(f.observer.dispose).toHaveBeenCalledOnce();}finally{vi.unstubAllGlobals();}}
 });
