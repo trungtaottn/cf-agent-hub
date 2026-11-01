@@ -1,0 +1,9 @@
+{
+  "file": "reproducer.tar.gz",
+  "sha256": "46c9647c8be731c6cd7e304a59c94916190fd6589bd8e23ccb23442f3237da36",
+  "source_files": [
+    "test/recovery/schema18-producer.test.ts",
+    "test/recovery/schema18-frozen-verification.test.ts",
+    "vitest.schema18-capture.config.ts"
+  ]
+}

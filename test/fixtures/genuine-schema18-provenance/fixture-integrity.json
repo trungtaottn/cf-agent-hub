@@ -1,0 +1,13 @@
+{
+  "files": {
+    "genuine-schema18-bundle.json": "3a653d93ef49553578f3f6f687994231cad65f129d5a3f4055d26e243b3beb66",
+    "genuine-schema18-restore-lifecycle-bundle.json": "c42f39cf8a1e518fea413cffe92e8dd0ef8e8d4489979baad33160389ac9412f",
+    "genuine-schema18-snapshot-bundle.json": "ecb3bbdefd9343a160800e6d16935136986b88cdd2e640a59ad670ea153ae47d"
+  },
+  "canonical_signed_manifest_sha256": "1bde7ca4945a5d5afa1bc988eacf5a5b5b1492ad37e4291aa8fa04b4a8b197f4",
+  "unchanged_original_schema17_files": {
+    "genuine-schema17-bundle.json": "d0d644570bbafefdb70cf7a14e7ee6423915c25b8af7efc6be60acc4ed0bca4a",
+    "genuine-schema17-restore-lifecycle-bundle.json": "a1941c46700256b53d233df68df21c5f69c29a574b5fb581c121f864fe290ac2",
+    "genuine-schema17-snapshot-bundle.json": "ae56ad75c572d3f44d9fc30f2e8f57389c1e1e2b10a13b51314c849ac77ff5bf"
+  }
+}

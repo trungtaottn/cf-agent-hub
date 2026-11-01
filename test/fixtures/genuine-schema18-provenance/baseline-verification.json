@@ -1,0 +1,14 @@
+{
+  "capture_worktree": {
+    "head": "ad0f1b39a1431aa29726b5fc3b77c1a13e08118b",
+    "tree": "6c1e3df81b9b2ff72bb531438085a7d860b3182f",
+    "original_tracked_count": 1432,
+    "mismatches": []
+  },
+  "restored_baseline": {
+    "head": "ad0f1b39a1431aa29726b5fc3b77c1a13e08118b",
+    "tree": "6c1e3df81b9b2ff72bb531438085a7d860b3182f",
+    "original_tracked_count": 1432,
+    "mismatches": []
+  }
+}

@@ -29,10 +29,13 @@ it('built_trusted_API_lazily_reopens_real_protected_store_and_is_silent',async()
  const r=spawnSync(process.execPath,['--input-type=module','-e',source],{encoding:'utf8',timeout:4000});expect({status:r.status,stdout:r.stdout,stderr:r.stderr}).toEqual({status:0,stdout:'',stderr:''});const persisted=readFileSync(join(directory,'state.json'),'utf8');expect(JSON.parse(persisted)).toMatchObject({phase:'awaiting-owner-status',session:{highWater:null}});expect(persisted).not.toMatch(/SSSS|PPPP|runtime_token|authorization/);
  }finally{f.close();rmSync(directory,{recursive:true,force:true});}
 });
-it('native_complete_host_bytes_inventory_and_cap_remain_exact_frozen_baseline',()=>{
+// Historical B1/adapter-only baseline: 4,170,954 bytes, SHA256
+// 0362f94729789325c39c7c45d52ef039dafae164a1a2a40130268ee5bfb67cfa.
+// Current schema18 + reviewed MCP journal profile has a distinct exact identity.
+it('native_complete_host_matches_reviewed_schema18_mcp_identity_and_unchanged_cap',()=>{
  const result=spawnSync(process.execPath,['scripts/build-native-host.mjs'],{encoding:'utf8',timeout:30000});expect(result.status).toBe(0);
- const bytes=readFileSync('dist/native-host/host-v2.mjs');expect(bytes.length).toBe(4170954);expect(bytes.length).toBeLessThanOrEqual(4194304);expect(createHash('sha256').update(bytes).digest('hex')).toBe('0362f94729789325c39c7c45d52ef039dafae164a1a2a40130268ee5bfb67cfa');
- const manifest=readFileSync('dist/native-host/host-v2.manifest.json');expect(createHash('sha256').update(manifest).digest('hex')).toBe('ac80f8cebbd067b25a49cac49ef7a6a60fae84e69ed8bcd0d91f06e467f527ee');
+ const bytes=readFileSync('dist/native-host/host-v2.mjs');expect(bytes.length).toBe(4172654);expect(bytes.length).toBeLessThanOrEqual(4194304);expect(createHash('sha256').update(bytes).digest('hex')).toBe('47fe545f2e76e24de882fcd490d866475bddacac3ae53810c94fdbc27346cc56');
+ const manifest=readFileSync('dist/native-host/host-v2.manifest.json');expect(createHash('sha256').update(manifest).digest('hex')).toBe('f2d8559d34de8d182318c2e932c4827d8edd091e411bdad2a74298498c6a461a');
 },30000);
 it('built_entry_budget_includes_trusted_preparation_and_stalled_stdin',()=>{
  const source=`import {runTrustedHook} from './${artifact}';const start=performance.now(),binding=${JSON.stringify(binding)};await runTrustedHook(()=>{Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,1500);return {binding,root:'/private/checkout',profile:'claude-posttooluse-path-docs-20261101-v1',observedAt:'2026-11-01T00:00:00.000Z',state:{flock:{}},credentialDirectory:'/missing',currentBinding:()=>binding}},new ReadableStream({pull(){return new Promise(()=>{})}}),start);if(performance.now()-start<1800||performance.now()-start>2500)process.exitCode=1;`;
