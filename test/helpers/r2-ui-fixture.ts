@@ -74,7 +74,10 @@ export async function seedR2UiFixture(options:{worker:FixtureWorker;storage:Fixt
   assert.equal((await call<Task>('/tasks/'+cancelled.id)).data.state,'cancelled');
  }
  await assertPersisted();
- return {facts,assertPersisted,readForPreview:async(path:string,options:{signal:AbortSignal})=>{
+ return {facts,assertPersisted,seedRetainedWaiting:async()=>{
+  // Read-only retained-state fixture, NOT an implemented approval transition.
+  await storage.exec("UPDATE tasks SET state='waiting',title='Seeded retained Waiting — approval unavailable',task_version=task_version+1 WHERE id=?",backlog.at(-1)!.id);
+ },readForPreview:async(path:string,options:{signal:AbortSignal})=>{
   if(!path.startsWith('/')||path.startsWith('//')||path.includes('\\')||path.length>4096||new URL(path,origin).origin!==origin)throw Error('PREVIEW_PATH_REJECTED');
   return normalizeFixturePreviewResponse(await worker.fetch(origin+path,{method:'GET',redirect:'manual',headers:{cookie:'cfhub_session='+sessionToken},signal:options.signal}));
  },advanceBacklog:async()=>ready(backlog[0]!),revokeHumans:async()=>{await storage.exec("UPDATE sessions SET revoked_at=? WHERE workspace_id='ws_example' AND revoked_at IS NULL",Date.now());}};

@@ -129,6 +129,7 @@ try {
   if(action==='drop-next-preferences-response'){dropPreferencesResponse=true;return;}
   if(action==='resume-preferences-responses'){dropPreferencesResponse=false;return;}
   if(action==='restart'){await worker.evictDurableObject('WORKSPACE',{name:currentName});return;}
+  if(action==='factory-retained-waiting'){if(!r2Fixture)throw Error('R2_FIXTURE_NOT_READY');await r2Fixture.seedRetainedWaiting();return;}
   if(action==='r2-advance-backlog'){if(!r2Fixture)throw Error('R2_FIXTURE_NOT_READY');await r2Fixture.advanceBacklog();return;}
   if(action==='r2-revoke-human'){if(!r2Fixture)throw Error('R2_FIXTURE_NOT_READY');await r2Fixture.revokeHumans();return;}
   if(action==='fresh'||action==='r2-board'){

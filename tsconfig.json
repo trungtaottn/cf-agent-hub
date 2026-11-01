@@ -36,6 +36,8 @@
     "src/ui/task-action-view.ts",
     "test/client/task-action-view.test.ts",
     "src/ui/compose/message-form-view.ts",
-    "test/client/message-form-view.test.ts"
+    "test/client/message-form-view.test.ts",
+    "src/ui/factory/explorer.ts",
+    "test/ui/factory-explorer.test.ts"
   ]
 }
