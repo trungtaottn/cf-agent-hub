@@ -7,7 +7,7 @@ import type {Task,TaskCommandResult,RuntimeIssue,Artifact,TaskRequestDecisionReq
 import {parseExactJson} from '../../src/approvals/exact-json';
 import {descriptor,schemaSha256} from './decision-browser-composition';
 export const decisionEffectTables=Object.freeze(['decision_checkpoints','decision_proposals','approvals','decision_artifact_edges','decision_lifecycle_heads','decision_lifecycle_transitions','decision_notice_intents','tasks','runs','task_history','events','outbox','idempotency_outcomes']);
-const actions=Object.freeze(['reset','drop-next-decision','hold-next-content','release-content','revoke-decide','revoke-artifacts','restore-grants','read-state']);
+const actions=Object.freeze(['reset','drop-next-decision','resume-decisions','hold-next-content','release-content','revoke-decide','revoke-artifacts','restore-grants','read-state']);
 const digest=(value:string|Uint8Array)=>createHash('sha256').update(value).digest('hex');
 export async function boundedFixtureBytes(body:ReadableStream<Uint8Array>|null,limit:number):Promise<Uint8Array>{
  if(!body)throw Error('FIXTURE_BODY_REQUIRED');
@@ -89,19 +89,41 @@ export async function seedDecisionBrowserFixture(options:{worker:FixtureWorker;s
 export class DecisionBrowserProbe {
  receipts: {approvalId:string;action:string;bodySha256:string;keySha256:string;status:number;dropped:boolean}[]=[];
  #epoch=0;get generation(){return this.#epoch;}
- #drop=false;#hold=false;#release:(()=>void)|null=null;
- armDrop(){this.#drop=true;}
+ #drop=false;#pin:string|null=null;#busy=false;#completedDrop=false;#hold=false;#release:(()=>void)|null=null;
+ armDrop(){if(this.#busy||this.#pin!==null)throw Error('FIXTURE_OUTAGE_ALREADY_STARTED');this.#drop=true;}
+ resumeDecisions(){if(this.#busy||!this.#completedDrop)throw Error('FIXTURE_NO_COMPLETED_DROP');this.#drop=false;}
+ /** Reserve the single attempt slot before any await; drift is refused BEFORE effects. */
+ async dispatch(request:Request,send:()=>Promise<Response>,verify:(approvalId:string,action:string)=>Promise<void>,generation=this.#epoch):Promise<Response>{
+  if(generation!==this.#epoch)throw Error('FIXTURE_GENERATION_CHANGED');
+  const match=/^\/v2\/workspaces\/ws_example\/approvals\/([A-Za-z0-9_-]{1,128}):(approve|reject)$/.exec(new URL(request.url).pathname);
+  if(!match||request.method!=='POST')return this.observe(request,await send(),verify,generation);
+  if(this.#busy)throw Error('FIXTURE_DECISION_IN_FLIGHT');
+  if(this.receipts.length>=32)throw Error('FIXTURE_RECEIPT_LIMIT');
+  this.#busy=true;const drop=this.#drop;
+  try{
+   const body=await boundedFixtureBytes(request.clone().body,65536);
+   try{
+    if(generation!==this.#epoch)throw Error('FIXTURE_GENERATION_CHANGED');
+    const identity=JSON.stringify([match[1],match[2],digest(body),digest(request.headers.get('idempotency-key')??'')]);
+    if(this.#pin!==null&&identity!==this.#pin)throw Error('FIXTURE_INTENT_DRIFT');
+    if(drop&&this.#pin===null)this.#pin=identity;
+   }finally{body.fill(0);}
+   const response=await send();
+   if(generation!==this.#epoch){void response.body?.cancel().catch(()=>{});throw Error('FIXTURE_GENERATION_CHANGED');}
+   return await this.observe(request,response,verify,generation,drop);
+  }finally{if(generation===this.#epoch)this.#busy=false;}
+ }
  armContent(){if(this.#hold||this.#release)throw Error('FIXTURE_CONTENT_ALREADY_HELD');this.#hold=true;}
  releaseContent(){this.#hold=false;this.#release?.();this.#release=null;}
- reset(){this.#epoch++;this.#drop=false;this.releaseContent();this.receipts=[];}
- async observe(request:Request,response:Response,verify:(approvalId:string,action:string)=>Promise<void>,generation=this.#epoch){
+ reset(){this.#epoch++;this.#drop=false;this.#pin=null;this.#busy=false;this.#completedDrop=false;this.releaseContent();this.receipts=[];}
+ async observe(request:Request,response:Response,verify:(approvalId:string,action:string)=>Promise<void>,generation=this.#epoch,drop=this.#drop){
   if(generation!==this.#epoch)return response;
   const path=new URL(request.url).pathname,match=/^\/v2\/workspaces\/ws_example\/approvals\/([A-Za-z0-9_-]{1,128}):(approve|reject)$/.exec(path);
   if(match&&request.method==='POST'){
    if(this.receipts.length>=32)throw Error('FIXTURE_RECEIPT_LIMIT');
-   const body=request.body?await boundedFixtureBytes(request.body,65536):new Uint8Array();if(generation!==this.#epoch){body.fill(0);return response;}const dropped=this.#drop&&response.ok;
+   const body=request.body?await boundedFixtureBytes(request.body,65536):new Uint8Array();if(generation!==this.#epoch){body.fill(0);return response;}const dropped=drop&&response.ok;
    this.receipts.push({approvalId:match[1]!,action:match[2]!,bodySha256:digest(body),keySha256:digest(request.headers.get('idempotency-key')??''),status:response.status,dropped});body.fill(0);
-   if(dropped){this.#drop=false;await boundedFixtureBytes(response.body,1048576);await verify(match[1]!,match[2]!);throw Error('FIXTURE_DROP_COMMITTED_RESPONSE');}
+   if(dropped){const bytes=await boundedFixtureBytes(response.body,1048576);bytes.fill(0);if(generation!==this.#epoch)throw Error('FIXTURE_GENERATION_CHANGED');await verify(match[1]!,match[2]!);if(generation!==this.#epoch)throw Error('FIXTURE_GENERATION_CHANGED');this.#completedDrop=true;throw Error('FIXTURE_DROP_COMMITTED_RESPONSE');}
   }
   if(this.#hold&&request.method==='GET'&&/^\/v2\/workspaces\/ws_example\/artifacts\/[A-Za-z0-9_-]{1,128}\/content$/.test(path)){
    this.#hold=false;let timer:ReturnType<typeof setTimeout>|undefined,release:(()=>void)|undefined;

@@ -1,5 +1,7 @@
 /** Static stylesheet emitted by build-ui; no runtime inline styles or arbitrary tokens. */
 export const styles=String.raw`
+[data-testid=approvals-panel]{min-width:0;overflow-wrap:anywhere}
+[data-testid=approvals-panel] pre{max-width:100%;white-space:pre-wrap;overflow-wrap:anywhere}
 :root{font-family:Inter,ui-sans-serif,system-ui,sans-serif;color-scheme:light;--bg:#f4f6f8;--surface:#fff;--text:#172330;--muted:#586572;--line:#dce2e8;--accent:#315ea8;--focus:#8c4fe5;--danger:#9d293a;--warn:#866014;--radius:12px;background:var(--bg);color:var(--text);line-height:1.55;font-size:16px}
 :root[data-theme=dark]{color-scheme:dark;--bg:#10171f;--surface:#19232f;--text:#e6edf4;--muted:#a9b7c7;--line:#354354;--accent:#91b9ff;--focus:#c4a0ff;--danger:#ffadba;--warn:#ecd086}
 @media(prefers-color-scheme:dark){:root[data-theme=system]{color-scheme:dark;--bg:#10171f;--surface:#19232f;--text:#e6edf4;--muted:#a9b7c7;--line:#354354;--accent:#91b9ff;--focus:#c4a0ff;--danger:#ffadba;--warn:#ecd086}}

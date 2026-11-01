@@ -16,7 +16,7 @@ import {DecisionBrowserProbe} from '../helpers/decision-browser-fixture';
 it('drops only a real successful decision after committed verification and retains digest-only replay facts',async()=>{
  const probe=new DecisionBrowserProbe();probe.armDrop();let checked=0;
  const request=()=>new Request('https://hub.fixture.example.invalid/v2/workspaces/ws_example/approvals/approval_a:approve',{method:'POST',headers:{'idempotency-key':'fixed-key'},body:'{"reason":"private reason"}'});
- await expect(probe.observe(request(),Response.json({data:{accepted:true}}),async()=>{checked++;})).rejects.toThrow('FIXTURE_DROP_COMMITTED_RESPONSE');expect(checked).toBe(1);
+ await expect(probe.observe(request(),Response.json({data:{accepted:true}}),async()=>{checked++;})).rejects.toThrow('FIXTURE_DROP_COMMITTED_RESPONSE');expect(checked).toBe(1);probe.resumeDecisions();
  expect((await probe.observe(request(),Response.json({data:{accepted:true}}),async()=>{})).status).toBe(200);
  expect(probe.receipts).toHaveLength(2);expect(probe.receipts[0]?.bodySha256).toBe(probe.receipts[1]?.bodySha256);expect(JSON.stringify(probe.receipts)).not.toContain('private reason');expect(JSON.stringify(probe.receipts)).not.toContain('fixed-key');probe.reset();expect(probe.receipts).toEqual([]);
 });
@@ -26,3 +26,36 @@ it('does not let old response evidence enter a reset fixture generation',async()
 
 it('cancels unfinished control bytes at the fixed deadline without publishing partial JSON',async()=>{vi.useFakeTimers();try{let cancelled=false;const promise=boundedFixtureBytes(new ReadableStream<Uint8Array>({start(controller){controller.enqueue(new TextEncoder().encode('{'));},cancel(){cancelled=true;}}),1024);const rejection=expect(promise).rejects.toThrow('FIXTURE_BODY_TIMEOUT');await vi.advanceTimersByTimeAsync(5000);await rejection;expect(cancelled).toBe(true);}finally{vi.useRealTimers();}});
 it('bounds held content and cancels its actual body on timeout',async()=>{vi.useFakeTimers();try{const probe=new DecisionBrowserProbe();probe.armContent();let cancelled=false;const response=new Response(new ReadableStream<Uint8Array>({cancel(){cancelled=true;}}));const promise=probe.observe(new Request('https://hub.fixture.example.invalid/v2/workspaces/ws_example/artifacts/a/content'),response,async()=>{});const rejection=expect(promise).rejects.toThrow('FIXTURE_CONTENT_HOLD_TIMEOUT');await vi.advanceTimersByTimeAsync(5000);await rejection;expect(cancelled).toBe(true);probe.reset();}finally{vi.useRealTimers();}});
+
+it('holds a fixed intent outage until explicit resume and refuses drift before dispatch',async()=>{
+ const probe=new DecisionBrowserProbe();probe.armDrop();const send=vi.fn(async()=>Response.json({data:{accepted:true}})),verify=vi.fn(async()=>{});
+ const request=(key='fixed-key',body='{"reason":"private reason"}',id='approval_a')=>new Request('https://hub.fixture.example.invalid/v2/workspaces/ws_example/approvals/'+id+':approve',{method:'POST',headers:{'idempotency-key':key},body});
+ for(let i=0;i<3;i++)await expect(probe.dispatch(request(),send,verify)).rejects.toThrow('FIXTURE_DROP_COMMITTED_RESPONSE');
+ expect(send).toHaveBeenCalledTimes(3);expect(verify).toHaveBeenCalledTimes(3);expect(probe.receipts.every(r=>r.dropped&&r.status===200)).toBe(true);
+ for(const changed of [request('other'),request('fixed-key','{}'),request('fixed-key','{"reason":"private reason"}','approval_b')])await expect(probe.dispatch(changed,send,verify)).rejects.toThrow('FIXTURE_INTENT_DRIFT');
+ expect(send).toHaveBeenCalledTimes(3);expect(probe.receipts).toHaveLength(3);
+ probe.resumeDecisions();expect((await probe.dispatch(request(),send,verify)).status).toBe(200);expect(send).toHaveBeenCalledTimes(4);expect(probe.receipts.map(r=>r.dropped)).toEqual([true,true,true,false]);
+ expect(new Set(probe.receipts.map(r=>r.keySha256+':'+r.bodySha256)).size).toBe(1);expect(JSON.stringify(probe.receipts)).not.toContain('private reason');expect(JSON.stringify(probe.receipts)).not.toContain('fixed-key');
+});
+it('bounds decision outage dispatches and does not resume or dispatch stale generations',async()=>{
+ const probe=new DecisionBrowserProbe(),request=()=>new Request('https://hub.fixture.example.invalid/v2/workspaces/ws_example/approvals/a:approve',{method:'POST',body:'{}'}),send=vi.fn(async()=>Response.json({data:{accepted:true}}));
+ expect(()=>probe.resumeDecisions()).toThrow('FIXTURE_NO_COMPLETED_DROP');probe.armDrop();expect(()=>probe.resumeDecisions()).toThrow('FIXTURE_NO_COMPLETED_DROP');
+ for(let i=0;i<32;i++)await expect(probe.dispatch(request(),send,async()=>{})).rejects.toThrow('FIXTURE_DROP_COMMITTED_RESPONSE');
+ await expect(probe.dispatch(request(),send,async()=>{})).rejects.toThrow('FIXTURE_RECEIPT_LIMIT');expect(send).toHaveBeenCalledTimes(32);
+ const old=probe.generation;probe.reset();await expect(probe.dispatch(request(),send,async()=>{},old)).rejects.toThrow('FIXTURE_GENERATION_CHANGED');expect(send).toHaveBeenCalledTimes(32);expect(probe.receipts).toEqual([]);
+});
+it('reserves one attempt and refuses resume across unfinished response verification',async()=>{
+ const probe=new DecisionBrowserProbe();probe.armDrop();let release!:()=>void;const gate=new Promise<void>(r=>{release=r;}),send=vi.fn(async()=>{await gate;return Response.json({ok:true});}),verify=vi.fn(async()=>{});
+ const request=()=>new Request('https://hub.fixture.example.invalid/v2/workspaces/ws_example/approvals/a:approve',{method:'POST',body:'{}'});
+ const first=probe.dispatch(request(),send,verify),failure=expect(first).rejects.toThrow('FIXTURE_DROP_COMMITTED_RESPONSE');
+ await expect(probe.dispatch(request(),send,verify)).rejects.toThrow('FIXTURE_DECISION_IN_FLIGHT');expect(()=>probe.resumeDecisions()).toThrow('FIXTURE_NO_COMPLETED_DROP');release();await failure;
+ expect(send).toHaveBeenCalledOnce();probe.resumeDecisions();expect((await probe.dispatch(request(),async()=>Response.json({ok:true}),verify)).status).toBe(200);
+});
+it('reset during bounded preflight or old verification cannot dispatch or publish completion in a new generation',async()=>{
+ const probe=new DecisionBrowserProbe();probe.armDrop();let finish!:(value:Uint8Array)=>void;
+ const body=new ReadableStream<Uint8Array>({start(c){finish=value=>{c.enqueue(value);c.close();};}});
+ const request=new Request('https://hub.fixture.example.invalid/v2/workspaces/ws_example/approvals/a:approve',{method:'POST',body,...{duplex:'half'}});
+ const send=vi.fn(async()=>Response.json({ok:true})),first=probe.dispatch(request,send,async()=>{}),failure=expect(first).rejects.toThrow('FIXTURE_GENERATION_CHANGED');probe.reset();finish(new TextEncoder().encode('{}'));await failure;expect(send).not.toHaveBeenCalled();expect(probe.receipts).toEqual([]);
+ probe.armDrop();let release!:()=>void,started!:()=>void;const gate=new Promise<void>(r=>{release=r;}),waiting=new Promise<void>(r=>{started=r;});
+ const second=probe.dispatch(new Request(request.url,{method:'POST',body:'{}'}),send,async()=>{started();await gate;}),old=expect(second).rejects.toThrow('FIXTURE_GENERATION_CHANGED');await waiting;expect(()=>probe.resumeDecisions()).toThrow('FIXTURE_NO_COMPLETED_DROP');probe.reset();release();await old;expect(probe.receipts).toEqual([]);expect(()=>probe.resumeDecisions()).toThrow('FIXTURE_NO_COMPLETED_DROP');
+});

@@ -20,3 +20,10 @@ it('confirmation displays the fresh frozen scope checkpoint and reviewer/artifac
  expect(descendants(root,x=>x.getAttribute('aria-label')==='Immutable checkpoint')[0]?.textContent).toBe(JSON.stringify(current.approval.checkpoint,null,2));
  expect(root.textContent).not.toContain('OLD_TARGET');expect(root.textContent).toContain('fresh-human');expect(root.textContent).toContain('artifact version 7');expect(root.textContent).toContain('b'.repeat(64));expect(descendants(root,x=>x.tagName==='SCRIPT')).toHaveLength(0);
 });
+
+import {styles} from '../../src/ui/styles';
+it('contains full decision identifiers and preformatted bindings within the approval panel without clipping',()=>{
+ expect(styles).toContain('[data-testid=approvals-panel]{min-width:0;overflow-wrap:anywhere}');
+ expect(styles).toContain('[data-testid=approvals-panel] pre{max-width:100%;white-space:pre-wrap;overflow-wrap:anywhere}');
+ expect(styles).not.toMatch(/\[data-testid=approvals-panel\][^{]*\{[^}]*overflow(?:-x)?:hidden/);
+});

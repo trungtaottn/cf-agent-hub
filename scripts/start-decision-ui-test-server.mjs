@@ -18,7 +18,7 @@ try{
  const providerSecret=randomBytes(32).toString('base64url'),csrfSecret=randomBytes(32).toString('base64url'),cursorSecret=randomBytes(32).toString('hex'),nativeToken=randomBytes(32).toString('base64url');
  probe=new DecisionBrowserProbe();
  let control=async()=>{throw Error('DECISION_FIXTURE_NOT_READY');};
- https=await startHttpsFixture({fetch:async(input,init)=>{const request=new Request(input,init);if(new URL(request.url).pathname==='/__ui_fixture/control'){try{return Response.json({ok:true,...await control(await parseDecisionFixtureControl(request))});}catch{return new Response(null,{status:400});}}const generation=probe.generation,response=await worker.fetch(input,init);return probe.observe(request,response,async(approvalId,action)=>{const rows=await storage.exec('SELECT status FROM approvals WHERE id=?',approvalId);assert.ok(rows.length===1&&rows[0].status===(action==='approve'?'approved':'rejected'));},generation);}},{clientSecret:providerSecret,subjects:['synthetic-subject','readonly-subject','unassigned-subject']});
+ https=await startHttpsFixture({fetch:async(input,init)=>{const request=new Request(input,init);if(new URL(request.url).pathname==='/__ui_fixture/control'){try{return Response.json({ok:true,...await control(await parseDecisionFixtureControl(request))});}catch{return new Response(null,{status:400});}}const generation=probe.generation;return probe.dispatch(request,()=>worker.fetch(input,init),async(approvalId,action)=>{const rows=await storage.exec('SELECT status FROM approvals WHERE id=?',approvalId);assert.ok(rows.length===1&&rows[0].status===(action==='approve'?'approved':'rejected'));},generation);}},{clientSecret:providerSecret,subjects:['synthetic-subject','readonly-subject','unassigned-subject']});
  globalThis.fetch=https.dispatch;
  const ordinary=JSON.parse(await readFile('wrangler.jsonc','utf8')),test=ordinary.env.test;
  // Exact current non-inherited test bindings. Secrets stay only in this in-memory
@@ -44,6 +44,7 @@ try{
  control=async action=>{
   if(action==='reset'){probe.reset();await reset(builds.privateWorker);return {};}
   if(action==='drop-next-decision'){probe.armDrop();return {};}
+  if(action==='resume-decisions'){probe.resumeDecisions();return {};}
   if(action==='hold-next-content'){probe.armContent();return {};}
   if(action==='release-content'){probe.releaseContent();return {};}
   if(action==='read-state')return {cases:facts.cases,attempts:probe.receipts,tasks:await storage.exec('SELECT id,state,task_version,proposal_version,approval_id,active_run_id FROM tasks ORDER BY id'),approvals:await storage.exec('SELECT id,status,approval_version,proposal_version,task_id,decided_by_json FROM approvals ORDER BY id'),events:await storage.exec("SELECT type,resource_id FROM events WHERE type IN ('task.decision_requested','task.decision_approved','task.decision_rejected') ORDER BY sequence")};
