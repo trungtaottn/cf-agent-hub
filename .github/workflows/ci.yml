@@ -44,6 +44,7 @@ jobs:
           test "$(npm --version)" = '11.19.1'
       - run: npm ci
       - run: npm ci --prefix packages/mcp-stdio --ignore-scripts
+      - run: env -i PATH=/usr/bin:/bin "$(command -v node)" scripts/r3-source-producer.mjs
       - run: node --test test/governance/release-evidence-dispatch.test.mjs
       - run: npm run build:ui
       - run: npm run check

@@ -1,0 +1,5 @@
+/** Fixed local source profile; none of these entries authorize release acceptance. */
+export const R3_SOURCE_CASES=Object.freeze(['request_pause_replay','human_approve_replay_revoked','human_reject_replay','pending_command_history_restore','rejected_command_history_restore','changed_chunk_continuation_denied']);
+export const R3_SOURCE_MISSING=Object.freeze(['execution-transport','consumed-journey-J2','supported-product-action','authenticated-producer-controller-build-origin','live-independent-actors','installed-native-mcp-positive-parity','real-provider-lineage','complete-recovery-rehearsal','prior-round-acceptance','independent-round-review','formal67']);
+export const R3_SOURCE_LIMITS=Object.freeze({envelope:65536,context:65536,observation:262144,observationsTotal:1572864,sourceCount:256,referenceCount:17,sourceFile:16777216,sourceTotal:33554432});
+export const R3_SOURCE_BINDINGS=Object.freeze({lock:'package-lock.json',fixture:'test/helpers/r3-journey-fixture.ts',predicate:'test/helpers/r3-journey-observation.ts',test:'test/acceptance/r3-request-journey.test.ts'});

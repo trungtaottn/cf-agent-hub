@@ -1,0 +1,630 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cf-agent-hub:r3-source-observation:v1",
+  "$defs": {
+    "root": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format_version",
+        "round",
+        "mode",
+        "profile",
+        "run_id",
+        "source",
+        "environment",
+        "sources",
+        "observations"
+      ],
+      "properties": {
+        "format_version": {
+          "const": 1
+        },
+        "round": {
+          "const": "R3"
+        },
+        "mode": {
+          "const": "source-fixture"
+        },
+        "profile": {
+          "const": "r3-j1-source-v1"
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "revision",
+            "git_tree",
+            "producer_revision",
+            "inventory_sha256",
+            "lock_sha256",
+            "toolchain",
+            "bindings",
+            "build"
+          ],
+          "properties": {
+            "revision": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{40}$"
+            },
+            "git_tree": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{40}$"
+            },
+            "producer_revision": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{40}$"
+            },
+            "inventory_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "lock_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "toolchain": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "node",
+                "npm",
+                "vitest",
+                "workers_plugin"
+              ],
+              "properties": {
+                "node": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9_.@:/+-]+$"
+                },
+                "npm": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9_.@:/+-]+$"
+                },
+                "vitest": {
+                  "const": "4.1.12"
+                },
+                "workers_plugin": {
+                  "const": "1.4.7"
+                }
+              }
+            },
+            "bindings": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "lock",
+                "fixture",
+                "predicate",
+                "test"
+              ],
+              "properties": {
+                "lock": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                },
+                "fixture": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                },
+                "predicate": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                },
+                "test": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                }
+              }
+            },
+            "build": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "path",
+                    "sha256",
+                    "byte_size"
+                  ],
+                  "properties": {
+                    "path": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 256
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "byte_size": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 16777216
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "environment": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "class",
+            "local_sqlite",
+            "emulated_artifact_store",
+            "synthetic_human_session"
+          ],
+          "properties": {
+            "class": {
+              "const": "local-workers-synthetic-fixture"
+            },
+            "local_sqlite": {
+              "const": true
+            },
+            "emulated_artifact_store": {
+              "const": true
+            },
+            "synthetic_human_session": {
+              "const": true
+            }
+          }
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "sha256",
+              "byte_size"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "byte_size": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 16777216
+              }
+            }
+          },
+          "minItems": 4,
+          "maxItems": 256
+        },
+        "observations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "case_id",
+              "artifact"
+            ],
+            "properties": {
+              "case_id": {
+                "enum": [
+                  "request_pause_replay",
+                  "human_approve_replay_revoked",
+                  "human_reject_replay",
+                  "pending_command_history_restore",
+                  "rejected_command_history_restore",
+                  "changed_chunk_continuation_denied"
+                ]
+              },
+              "artifact": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "path",
+                  "sha256",
+                  "byte_size"
+                ],
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "byte_size": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 16777216
+                  }
+                }
+              }
+            }
+          },
+          "minItems": 6,
+          "maxItems": 6
+        }
+      }
+    },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format_version",
+        "profile",
+        "run_id",
+        "source",
+        "environment",
+        "cases"
+      ],
+      "properties": {
+        "format_version": {
+          "const": 1
+        },
+        "profile": {
+          "const": "r3-j1-source-v1"
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "revision",
+            "git_tree",
+            "producer_revision",
+            "inventory_sha256",
+            "lock_sha256",
+            "toolchain",
+            "bindings",
+            "build"
+          ],
+          "properties": {
+            "revision": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{40}$"
+            },
+            "git_tree": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{40}$"
+            },
+            "producer_revision": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{40}$"
+            },
+            "inventory_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "lock_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "toolchain": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "node",
+                "npm",
+                "vitest",
+                "workers_plugin"
+              ],
+              "properties": {
+                "node": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9_.@:/+-]+$"
+                },
+                "npm": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9_.@:/+-]+$"
+                },
+                "vitest": {
+                  "const": "4.1.12"
+                },
+                "workers_plugin": {
+                  "const": "1.4.7"
+                }
+              }
+            },
+            "bindings": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "lock",
+                "fixture",
+                "predicate",
+                "test"
+              ],
+              "properties": {
+                "lock": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                },
+                "fixture": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                },
+                "predicate": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                },
+                "test": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                }
+              }
+            },
+            "build": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "path",
+                    "sha256",
+                    "byte_size"
+                  ],
+                  "properties": {
+                    "path": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 256
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "byte_size": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 16777216
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "environment": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "class",
+            "local_sqlite",
+            "emulated_artifact_store",
+            "synthetic_human_session"
+          ],
+          "properties": {
+            "class": {
+              "const": "local-workers-synthetic-fixture"
+            },
+            "local_sqlite": {
+              "const": true
+            },
+            "emulated_artifact_store": {
+              "const": true
+            },
+            "synthetic_human_session": {
+              "const": true
+            }
+          }
+        },
+        "cases": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "case_id",
+              "workspace_id",
+              "source_id",
+              "target_id",
+              "descriptor",
+              "policy",
+              "principals",
+              "reviewer_ids"
+            ],
+            "properties": {
+              "case_id": {
+                "enum": [
+                  "request_pause_replay",
+                  "human_approve_replay_revoked",
+                  "human_reject_replay",
+                  "pending_command_history_restore",
+                  "rejected_command_history_restore",
+                  "changed_chunk_continuation_denied"
+                ]
+              },
+              "workspace_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9_.@:/+-]+$"
+              },
+              "source_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9_.@:/+-]+$"
+              },
+              "target_id": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9_.@:/+-]+$"
+                  }
+                ]
+              },
+              "descriptor": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "action_id",
+                  "schema_version",
+                  "schema_sha256",
+                  "semantic_revision"
+                ],
+                "properties": {
+                  "action_id": {
+                    "const": "synthetic.task-review"
+                  },
+                  "schema_version": {
+                    "const": 1
+                  },
+                  "schema_sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "semantic_revision": {
+                    "const": "synthetic-task-review@2"
+                  }
+                }
+              },
+              "policy": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "version",
+                  "sha256",
+                  "config_epoch",
+                  "installation_sha256"
+                ],
+                "properties": {
+                  "version": {
+                    "const": 3
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "config_epoch": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9007199254740991
+                  },
+                  "installation_sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                }
+              },
+              "principals": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "requester",
+                  "human"
+                ],
+                "properties": {
+                  "requester": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "kind",
+                      "principal_id"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "const": "agent"
+                      },
+                      "principal_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128,
+                        "pattern": "^[A-Za-z0-9_.@:/+-]+$"
+                      }
+                    }
+                  },
+                  "human": {
+                    "anyOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "kind",
+                          "principal_id"
+                        ],
+                        "properties": {
+                          "kind": {
+                            "const": "human"
+                          },
+                          "principal_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9_.@:/+-]+$"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              "reviewer_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9_.@:/+-]+$"
+                },
+                "minItems": 2,
+                "maxItems": 2
+              }
+            }
+          },
+          "minItems": 6,
+          "maxItems": 6
+        }
+      }
+    }
+  }
+}
