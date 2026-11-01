@@ -31,7 +31,7 @@ All body-bearing commands require `--input FILE`: a regular, non-symlink, at mos
 | Area | Commands | Notes |
 | --- | --- | --- |
 | Workspace | `workspace show`, `workspace configuration`, `workspace profile` | Current workspace and configuration reads |
-| Tasks | `tasks list`, `tasks show ID`, `tasks results ID` | Bounded page reads |
+| Tasks | `tasks list`, `tasks show ID`, `tasks results ID`, `tasks observations ID` | Bounded page reads; observations additionally require current events/task and captured-project visibility, and return reported—not verified—activity |
 | Task changes | `tasks create`, `tasks update ID`, `tasks ready ID`, `tasks claim ID`, `tasks submit-result ID`, `tasks accept-result ID`, `tasks fail ID`, `tasks cancel ID`, `tasks requeue ID` | Explicit JSON body, original key, current versions |
 | Runs | `runs show ID`, `runs heartbeat ID` | Heartbeat does not bypass lease/fence checks |
 | Agents | `agents list`, `agents show ID` | Durable identity, not a trusted display label |
@@ -118,3 +118,7 @@ The dedicated test runner also offers `npm run test:native:r2 -- --local-sandbox
 for [synthetic local backend checks](local-native-sandbox.md). This is not a
 `cf-agent-hub` product command or native conformance pass. It accepts no target,
 credentials or protected-config option and does not change CLI transport trust.
+
+## Diagnostic observation read
+
+`tasks observations ID` is a read-only projection of the optional diagnostic service. It accepts `--limit`, `--cursor` and `--expected-session-id`; continuation with a cursor requires the exact expected observation session. An unavailable or empty retained page is not proof that no external activity occurred. No observation establish/append/replace/owner-status commands are exposed through this CLI; reporter support and live activation are separate. Existing current native authentication and resource checks remain mandatory.

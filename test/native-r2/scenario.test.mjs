@@ -2,10 +2,20 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {getNativeScenario,buildNativeInvocation} from '../../scripts/lib/native-r2-scenario.mjs';
+import {CASE_OPERATIONS} from '../../scripts/lib/r2-case-policy.mjs';
 const root=new URL('../../',import.meta.url);
 const source=readFileSync(new URL('packages/cli/src/commands.ts',root),'utf8');
-const nativeMap=Object.fromEntries([...source.slice(source.indexOf('export const nativeCommandMap'),source.indexOf('const locals:')).matchAll(/(?:'([^']+)'|\b(search)):\{operation:'([^']+)'/g)].map(m=>[m[3],m[1]??m[2]]));
-test('source planner covers exactly33 native operations and37 frozen47native cases',()=>{const s=getNativeScenario();assert.equal(Object.keys(nativeMap).length,33);assert.equal(s.caseIds.length,37);assert.deepEqual(s.steps.filter(x=>x.caseId?.endsWith('/success')).map(x=>x.operation).sort(),Object.keys(nativeMap).sort());});
+const cliEntries=[...source.slice(source.indexOf('export const nativeCommandMap'),source.indexOf('const locals:')).matchAll(/(?:'([^']+)'|\b(search)):\{operation:'([^']+)'/g)].map(m=>[m[3],m[1]??m[2]]);
+const nativeMap=Object.fromEntries(cliEntries.filter(([op])=>Object.hasOwn(CASE_OPERATIONS,op)&&CASE_OPERATIONS[op].native));
+test('source planner covers exactly33 frozen native operations and37 frozen47native cases',()=>{
+ const s=getNativeScenario(),frozen=Object.keys(CASE_OPERATIONS).filter(op=>CASE_OPERATIONS[op].native).sort();
+ assert.equal(new Set(cliEntries.map(([op])=>op)).size,cliEntries.length);assert.equal(Object.keys(nativeMap).length,33);assert.deepEqual(Object.keys(nativeMap).sort(),frozen);assert.equal(s.caseIds.length,37);assert.deepEqual(s.steps.filter(x=>x.caseId?.endsWith('/success')).map(x=>x.operation).sort(),frozen);
+ assert.deepEqual(cliEntries.filter(([op])=>!frozen.includes(op)),[['listTaskObservations','tasks observations']]);
+});
+test('additive observation command stays outside frozen R2 scenario and invocation authority',()=>{
+ const s=getNativeScenario();assert.equal(s.steps.some(step=>step.operation==='listTaskObservations'),false);assert.equal(s.caseIds.includes('native/listTaskObservations/success'),false);
+ assert.throws(()=>buildNativeInvocation('success/listTaskObservations',{}),/NATIVE_SCENARIO_REJECTED/);
+});
 test('planner snapshots are detached and deeply immutable',()=>{const a=getNativeScenario(),b=getNativeScenario();assert.notEqual(a,b);assert.ok(Object.isFrozen(a.steps));assert.throws(()=>a.steps.push({}));});
 test('unknown steps cannot construct arbitrary invocations',()=>{assert.throws(()=>buildNativeInvocation('credential import',{command:'sh',token:'forbidden'}),/NATIVE_SCENARIO_REJECTED/);});
 const snapshot=()=>getNativeScenario();

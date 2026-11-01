@@ -75,3 +75,13 @@ test('schema17 summary remains bound to exact policy and issued scan profile',()
  const mixed=structuredClone(f);mixed.scan.payload.profile='native-r2-required-prepared-v1';mixed.scan.reference.sha256=sha(mixed.scan.payload);mixed.scan.reference.byte_size=Buffer.byteLength(canonical(mixed.scan.payload));assert.throws(()=>composeCompleteProcessSummary(mixed));
  const wrong=structuredClone(f);wrong.policy.family_ledger_sha256=selectCompleteProfile('native-r2-required-prepared-v1').commitments.family_ledger_sha256;wrong.terminal.policy_sha256=sha(wrong.policy);assert.throws(()=>composeCompleteProcessSummary(wrong));
 });
+
+test('schema18 summary remains bound to exact policy and issued scan profile',()=>{
+ const f=fixture(),selected=selectCompleteProfile('native-r2-required-schema18-v1');
+ f.policy.profile=selected.profile.profile;f.policy.family_ledger_sha256=selected.commitments.family_ledger_sha256;
+ f.terminal.profile=f.policy.profile;f.terminal.policy_sha256=sha(f.policy);
+ f.scan.payload.profile=f.policy.profile;f.scan.reference.sha256=sha(f.scan.payload);f.scan.reference.byte_size=Buffer.byteLength(canonical(f.scan.payload));
+ assert.equal(composeCompleteProcessSummary(f).payload.profile,f.policy.profile);
+ const mixed=structuredClone(f);mixed.scan.payload.profile='native-r2-required-prepared-v1';mixed.scan.reference.sha256=sha(mixed.scan.payload);mixed.scan.reference.byte_size=Buffer.byteLength(canonical(mixed.scan.payload));assert.throws(()=>composeCompleteProcessSummary(mixed));
+ const wrong=structuredClone(f);wrong.policy.family_ledger_sha256=selectCompleteProfile('native-r2-required-prepared-v1').commitments.family_ledger_sha256;wrong.terminal.policy_sha256=sha(wrong.policy);assert.throws(()=>composeCompleteProcessSummary(wrong));
+});

@@ -34,3 +34,8 @@ test('current17 output preflight preserves exact491/16MiB limits and rejects his
  const v=values('/private/output','native-r2-required-schema17-v1');assert.equal(preflightCompleteOutput({config:v.config,runId,result:v.result}).originalCount,491);
  v.report.profile='native-r2-required-prepared-v1';assert.throws(()=>preflightCompleteOutput({config:v.config,runId,result:v.result}));
 });
+
+test('current18 output preflight preserves exact491/16MiB limits and rejects historical report identity',()=>{
+ const v=values('/private/output','native-r2-required-schema18-v1');assert.equal(preflightCompleteOutput({config:v.config,runId,result:v.result}).originalCount,491);
+ v.report.profile='native-r2-required-prepared-v1';assert.throws(()=>preflightCompleteOutput({config:v.config,runId,result:v.result}));
+});

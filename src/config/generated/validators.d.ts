@@ -73,6 +73,17 @@ export type DeploymentConfig = {
 "resource_kinds": Array<string>;
 }>;
 };
+"observation_pilot"?: {
+"enabled": boolean;
+"repository_id": string;
+"adapter_id": string;
+"adapter_version": string;
+"supported_events": Array<"read-observed" | "write-observed" | "test-started" | "test-finished">;
+"slots": Array<{
+"agent_id": string;
+"checkout_slot_id": string;
+}>;
+};
 }>;
 };
 export type VerificationBundle = {

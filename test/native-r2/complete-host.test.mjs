@@ -121,3 +121,8 @@ test('current17 signed source host core plans exact current roster and closes wi
  const {result,state,events}=await partialSource([],({input,owners})=>{const derive=owners.derivePolicy;owners.derivePolicy=runId=>{const out=derive(runId);assert.equal(out.policy.profile,'native-r2-required-schema17-v1');return out;};},'native-r2-required-schema17-v1');
  assert.equal(state.planned,true);assert.equal(result.status,'incomplete');assert.equal(result.reportReady,false);assert.equal(result.native_conformance,false);assert.equal(events.filter(x=>x==='close-run').length,1);assert.equal(events.filter(x=>x==='local-close').length,1);
 });
+
+test('current18 signed source host core plans exact current roster and closes without promoting incomplete work',async()=>{
+ const {result,state,events}=await partialSource([],({input,owners})=>{const derive=owners.derivePolicy;owners.derivePolicy=runId=>{const out=derive(runId);assert.equal(out.policy.profile,'native-r2-required-schema18-v1');return out;};},'native-r2-required-schema18-v1');
+ assert.equal(state.planned,true);assert.equal(result.status,'incomplete');assert.equal(result.reportReady,false);assert.equal(result.native_conformance,false);assert.equal(events.filter(x=>x==='close-run').length,1);assert.equal(events.filter(x=>x==='local-close').length,1);
+});

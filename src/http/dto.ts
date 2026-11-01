@@ -46,6 +46,14 @@ export type ArtifactCommitRequest = {"expected_artifact_version":number};
 export type CredentialCreateRequest = {"agent_id":string;"label":string;"scopes":Array<Scope>;"project_ids":Array<string> | null;"expires_at":string};
 export type CredentialRevokeRequest = {"expected_credential_version":number;"reason":string};
 export type ImportEnvelope = {"source_namespace":string;"source_revision":string;"rows":Array<unknown>};
+export type Id = string;
+export type ObservationEstablishRequest = {"run_id":Id;"fence":number;"adapter_id":Id;"adapter_version":Id};
+export type ObservationTimestamp = string;
+export type ObservationActivity = "read-observed" | "write-observed" | "test-started" | "test-finished";
+export type ObservationRecord = {"observed_at":ObservationTimestamp;"relative_path":string;"activity":ObservationActivity;"source_oid":string | null;"label"?:string};
+export type ObservationBatchRequest = {"run_id":Id;"fence":number;"first_sequence":number;"records":Array<ObservationRecord>};
+export type ObservationSessionId = string;
+export type ObservationReplaceRequest = {"run_id":Id;"fence":number;"expected_session_id":ObservationSessionId;"expected_high_water":number;"replacement_request_id":string;"reason":"coverage_loss"};
 export type AuthStartData = {"authorization_url":string};
 export type AuthStartDataResponse = {"data":AuthStartData;"request_id":string};
 export type AuthSession = {"actor":{"kind":"human";"principal_id":string;"agent_id":null};"csrf_token":string;"expires_at":string};
@@ -55,7 +63,6 @@ export type AuthLogoutDataResponse = {"data":AuthLogoutData;"request_id":string}
 export type Error = {"error":{"code":"INVALID_REQUEST" | "UNAUTHENTICATED" | "FORBIDDEN" | "NOT_FOUND" | "VERSION_CONFLICT" | "IDEMPOTENCY_CONFLICT" | "INVALID_STATE" | "STALE_RUN" | "APPROVAL_EXPIRED" | "CURSOR_EXPIRED" | "LIMIT_EXCEEDED" | "RATE_LIMITED" | "DEPENDENCY_UNAVAILABLE" | "INTERNAL_ERROR";"message":string;"retryable":boolean;"request_id":string;"details"?:{"field"?:string;"current_version"?:number;"current_proposal_version"?:number;"resource_id"?:string;"retry_after_seconds"?:number;"reason"?:string;"feature"?:"artifacts" | "tasks";"current_revision"?:number}}};
 export type Event = {"id":string;"workspace_id":string;"sequence":number;"type":string;"actor":Actor;"resource_type":"task" | "run" | "approval" | "agent" | "runtime" | "message" | "artifact" | "credential" | "configuration" | "profile" | "preferences" | "import";"resource_id":string;"task_version":number | null;"run_id":string | null;"fence":number | null;"occurred_at":string;"summary":string;"request_id":string;"resource_version":number | null;"thread_id":string | null};
 export type Message = {"id":string;"workspace_id":string;"thread_id":string;"sender":Actor;"recipient_agent_ids":Array<string>;"body":string;"refs":Array<MessageReference>;"artifact_ids":Array<string>;"created_at":string;"acknowledged_at":string | null};
-export type Id = string;
 export type MessageNotification = {"payload_version":1;"type":"message.accepted";"delivery_id":Id;"workspace_id":Id;"recipient_agent_id":Id;"message_id":Id;"thread_id":Id;"event_id":Id;"occurred_at":string};
 export type Configuration = {"config_epoch":number;"profile_revision":number;"preferences_revision":number | null;"allowed_user_overrides":Array<"theme" | "density" | "default_view">;"enabled_features":Array<"workspace" | "messages" | "events" | "profile" | "preferences" | "operations">};
 export type ProfileData = {"profile_revision":number;"profile":WorkspaceProfile};
@@ -112,6 +119,21 @@ export type AgentListResponse = {"data":Array<Agent>;"page":Page;"request_id":st
 export type ArtifactListResponse = {"data":Array<Artifact>;"page":Page;"request_id":string};
 export type CredentialListResponse = {"data":Array<Credential>;"page":Page;"request_id":string};
 export type SearchHitListResponse = {"data":Array<SearchHit>;"page":Page;"request_id":string};
+export type ObservationDigest = string;
+export type ObservationCoverage = {"configured_events":Array<ObservationActivity>;"completeness":"unknown";"reported_loss":boolean};
+export type ObservationBatchReceipt = {"kind":"batch_receipt";"session_id":ObservationSessionId;"first_sequence":number;"last_sequence":number;"record_count":number;"accepted_at":ObservationTimestamp;"request_fingerprint":ObservationDigest};
+export type ObservationReplacementReceipt = {"kind":"replacement_receipt";"old_session_id":ObservationSessionId;"new_session_id":ObservationSessionId;"new_epoch":number;"replacement_request_id":string;"accepted_at":ObservationTimestamp;"request_fingerprint":ObservationDigest};
+export type ObservationCurrentBinding = {"kind":"current_binding";"session_id":ObservationSessionId;"session_epoch":number;"run_id":Id;"fence":number;"established_at":ObservationTimestamp;"coverage":ObservationCoverage};
+export type ObservationOwnerStatus = {"kind":"current_owner_status";"session_id":ObservationSessionId;"session_epoch":number;"high_water":number;"latest_batch_receipt":ObservationBatchReceipt | null;"latest_replacement_receipt":ObservationReplacementReceipt | null};
+export type ObservationPublicBinding = {"task_id":Id;"run_id":Id;"agent_id":Id;"runtime_instance_id":Id;"repository_id":Id;"checkout_slot_id":Id;"fence":number;"session_id":ObservationSessionId;"session_epoch":number};
+export type ObservationPublicRecord = {"sequence":number;"server_received_at":ObservationTimestamp;"reported":ObservationRecord};
+export type ObservationView = {"status":"retained" | "no_retained_data";"binding":ObservationPublicBinding | null;"coverage":ObservationCoverage | null;"retained_range":{"first_sequence":number;"last_sequence":number} | null;"truncated":boolean;"records":Array<ObservationPublicRecord>;"read_at":ObservationTimestamp};
+export type ObservationEstablishResponse = {"data":ObservationCurrentBinding;"request_id":Id};
+export type ObservationBatchResponse = {"data":ObservationBatchReceipt;"request_id":Id};
+export type ObservationReplaceResponse = {"data":ObservationReplacementReceipt;"request_id":Id};
+export type ObservationOwnerStatusResponse = {"data":ObservationOwnerStatus;"request_id":Id};
+export type ObservationResponse = {"data":ObservationView;"page":Page;"request_id":Id};
+export type ObservationReadQuery = {"limit"?:number;"cursor"?:string;"expected_session_id"?:ObservationSessionId};
 export type MessageResponse = {"data":Message;"request_id":string};
 export type MessageListResponse = {"data":Array<Message>;"page":Page;"request_id":string};
 export type AckResultResponse = {"data":AckResult;"request_id":string};
@@ -179,6 +201,7 @@ export interface HttpOperationRequests {
 "reconcileTaskCreation":{"body":TaskCreateRequest};
 "prepareMessageCreation":{"body":MessageCreateRequest};
 "prepareTaskCreation":{"body":TaskCreateRequest};
+"listTaskObservations":{"path":{"task_id":Id};"query"?:ObservationReadQuery};
 }
 export interface HttpOperationData {
 "getWorkspace":Workspace;
@@ -239,6 +262,7 @@ export interface HttpOperationData {
 "reconcileTaskCreation":TaskCreationReconciliation;
 "prepareMessageCreation":CreationPreparation;
 "prepareTaskCreation":CreationPreparation;
+"listTaskObservations":ObservationView;
 }
 export interface HttpDTOMap {
 "Workspace":Workspace;
@@ -288,6 +312,14 @@ export interface HttpDTOMap {
 "CredentialCreateRequest":CredentialCreateRequest;
 "CredentialRevokeRequest":CredentialRevokeRequest;
 "ImportEnvelope":ImportEnvelope;
+"ObservationEstablishRequest":ObservationEstablishRequest;
+"Id":Id;
+"ObservationBatchRequest":ObservationBatchRequest;
+"ObservationRecord":ObservationRecord;
+"ObservationTimestamp":ObservationTimestamp;
+"ObservationActivity":ObservationActivity;
+"ObservationReplaceRequest":ObservationReplaceRequest;
+"ObservationSessionId":ObservationSessionId;
 "AuthStartDataResponse":AuthStartDataResponse;
 "AuthStartData":AuthStartData;
 "AuthSessionResponse":AuthSessionResponse;
@@ -298,7 +330,6 @@ export interface HttpDTOMap {
 "Event":Event;
 "Message":Message;
 "MessageNotification":MessageNotification;
-"Id":Id;
 "Configuration":Configuration;
 "ProfileData":ProfileData;
 "ProfilePreview":ProfilePreview;
@@ -354,6 +385,21 @@ export interface HttpDTOMap {
 "ArtifactListResponse":ArtifactListResponse;
 "CredentialListResponse":CredentialListResponse;
 "SearchHitListResponse":SearchHitListResponse;
+"ObservationDigest":ObservationDigest;
+"ObservationCoverage":ObservationCoverage;
+"ObservationBatchReceipt":ObservationBatchReceipt;
+"ObservationReplacementReceipt":ObservationReplacementReceipt;
+"ObservationCurrentBinding":ObservationCurrentBinding;
+"ObservationOwnerStatus":ObservationOwnerStatus;
+"ObservationPublicBinding":ObservationPublicBinding;
+"ObservationPublicRecord":ObservationPublicRecord;
+"ObservationView":ObservationView;
+"ObservationEstablishResponse":ObservationEstablishResponse;
+"ObservationBatchResponse":ObservationBatchResponse;
+"ObservationReplaceResponse":ObservationReplaceResponse;
+"ObservationOwnerStatusResponse":ObservationOwnerStatusResponse;
+"ObservationResponse":ObservationResponse;
+"ObservationReadQuery":ObservationReadQuery;
 "MessageResponse":MessageResponse;
 "MessageListResponse":MessageListResponse;
 "AckResultResponse":AckResultResponse;

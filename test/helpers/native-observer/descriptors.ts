@@ -2,6 +2,7 @@
  * Inputs are actual private SQLite rows, not an adversarial object-execution boundary. */
 import data from './descriptors.json' with {type:'json'};
 import currentData from './descriptors-schema17.json' with {type:'json'};
+import schema18Data from './descriptors-schema18.json' with {type:'json'};
 type Primitive=string|number|null;
 interface Field {name:string;type:string;}
 interface Bound {rawScalarRowBytes:number;jsonRowBytes:number;rawScalarBytes:number;jsonArrayBytes:number;rows:number;}
@@ -9,7 +10,7 @@ export interface PreflightDescriptor {sql:string;sqlSha256:string;parameters:rea
 export interface ProductDescriptor {sql:string;sqlSha256:string;fields:readonly Readonly<Field>[];parameters:readonly string[];bound:Readonly<Bound>;}
 export interface ObservationLedger {authenticationCalls:number;finalCalls:number;preflightCalls:number;totalCalls:number;productCallCounts:Readonly<Record<string,number>>;productRawScalarBytes:number;productJsonArrayBytes:number;}
 export interface ValidatedRows {rows:readonly Readonly<Record<string,Primitive>>[];canonical:string;byteSize:number;}
-function descriptorProfile(data:typeof currentData|typeof import('./descriptors.json')) {
+function descriptorProfile(data:typeof schema18Data|typeof currentData|typeof import('./descriptors.json')) {
 const fail=():never=>{throw Error('NATIVE_OBSERVER_ROWS_REJECTED');};
 function requireValue(value:unknown):asserts value{if(!value)fail();}
 function frozen<T>(value:T):T{if(value&&typeof value==='object'){for(const child of Object.values(value))frozen(child);Object.freeze(value);}return value;}
@@ -37,3 +38,5 @@ return Object.freeze({PREFLIGHT_ORDER,getPreflightDescriptor,getProductQueryDesc
 }
 export const {PREFLIGHT_ORDER,getPreflightDescriptor,getProductQueryDescriptor,getObservationLedger,validatePreflightRows,validateProductRows}=descriptorProfile(data);
 export const currentObserverDescriptors=descriptorProfile(currentData);
+
+export const schema18ObserverDescriptors=descriptorProfile(schema18Data);

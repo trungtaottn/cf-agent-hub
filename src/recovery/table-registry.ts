@@ -3753,22 +3753,38 @@ export const SCHEMA16_TABLE_REGISTRY = [
  }
 ] as const satisfies readonly RegistryTable[];
 /** Schema15/16 have identical SQL columns. Their immutable registry excludes schema17 additions. */
-export const TABLE_REGISTRY = [...SCHEMA16_TABLE_REGISTRY.map(table=>table.name==='events'?{...table,columns:[...table.columns,{name:'creation_binding',type:'TEXT',notNull:false,defaultValue:null,pk:0}]}:table),{
+export const SCHEMA17_TABLE_REGISTRY = [...SCHEMA16_TABLE_REGISTRY.map(table=>table.name==='events'?{...table,columns:[...table.columns,{name:'creation_binding',type:'TEXT',notNull:false,defaultValue:null,pk:0}]}:table),{
  name:'creation_admissions',mode:'invalidate',columns:[
   {name:'id',type:'TEXT',notNull:true,defaultValue:null,pk:1},
   ...['workspace_id','principal_id','operation','target','key_hash','fingerprint'].map(name=>({name,type:'TEXT',notNull:true,defaultValue:null,pk:0})),
   ...['created_at','expires_at'].map(name=>({name,type:'INTEGER',notNull:true,defaultValue:null,pk:0})),
  ],primaryKey:['id'],foreignKeys:[],
 } as const] as const satisfies readonly RegistryTable[];
-export function registryForSchema(version:15|16|17){return version===17?TABLE_REGISTRY:SCHEMA16_TABLE_REGISTRY;}
+/** Additive18 diagnostics are authenticated source data, deliberately invalidated on restore. */
+export const TABLE_REGISTRY = [...SCHEMA17_TABLE_REGISTRY,{
+ name:'observation_slots',mode:'invalidate',columns:[
+  {name:'slot',type:'INTEGER',notNull:true,defaultValue:null,pk:1},
+  ...['workspace_id','task_id','project_id','run_id','agent_id','runtime_instance_id','credential_id'].map(name=>({name,type:'TEXT',notNull:name!=='project_id',defaultValue:null,pk:0})),
+  ...['authority_epoch','maintenance_generation'].map(name=>({name,type:'INTEGER',notNull:true,defaultValue:null,pk:0})),
+  ...['mapping_digest','session_id'].map(name=>({name,type:'TEXT',notNull:true,defaultValue:null,pk:0})),
+  ...['session_epoch','high_water','created_at'].map(name=>({name,type:'INTEGER',notNull:true,defaultValue:null,pk:0})),
+  {name:'metadata_json',type:'TEXT',notNull:true,defaultValue:null,pk:0},{name:'metadata_bytes',type:'INTEGER',notNull:true,defaultValue:null,pk:0},
+ ],primaryKey:['slot'],foreignKeys:[],
+},{name:'observation_records',mode:'invalidate',columns:[
+  {name:'session_id',type:'TEXT',notNull:true,defaultValue:null,pk:1},{name:'sequence',type:'INTEGER',notNull:true,defaultValue:null,pk:2},
+  ...['ingest_order','received_at'].map(name=>({name,type:'INTEGER',notNull:true,defaultValue:null,pk:0})),
+  {name:'record_json',type:'TEXT',notNull:true,defaultValue:null,pk:0},{name:'record_bytes',type:'INTEGER',notNull:true,defaultValue:null,pk:0},
+ ],primaryKey:['session_id','sequence'],foreignKeys:[],
+}] as const satisfies readonly RegistryTable[];
+export function registryForSchema(version:15|16|17|18){return version===18?TABLE_REGISTRY:version===17?SCHEMA17_TABLE_REGISTRY:SCHEMA16_TABLE_REGISTRY;}
 export type RecoveryTableName=(typeof TABLE_REGISTRY)[number]['name'];
 export const ENGINE_TABLES=['sqlite_sequence'] as const;
-export function tableDefinition(name:string,schemaVersion:15|16|17=CURRENT_SCHEMA_VERSION):RegistryTable {
+export function tableDefinition(name:string,schemaVersion:15|16|17|18=CURRENT_SCHEMA_VERSION):RegistryTable {
  const table=registryForSchema(schemaVersion).find(x=>x.name===name);if(!table)throw Error('UNKNOWN_RECOVERY_TABLE');return table;
 }
 interface ColumnInfo {cid:number;name:string;type:string;notnull:number;dflt_value:string|null;pk:number;}
 /** No prefix exclusion: only the exact reviewed optional schema16 alarm table is engine-owned. */
-export function inspectRegistry(tx:WorkspaceTransaction,schemaVersion:15|16|17=CURRENT_SCHEMA_VERSION):{schemaVersion:15|16|17;eventSequence:number;tables:number} {
+export function inspectRegistry(tx:WorkspaceTransaction,schemaVersion:15|16|17|18=CURRENT_SCHEMA_VERSION):{schemaVersion:15|16|17|18;eventSequence:number;tables:number} {
  const actual=tx.all<{name:string}>("SELECT name FROM sqlite_schema WHERE type='table' ORDER BY name").map(x=>x.name);
  const alarmMetadata=inspectAlarmMetadata(tx,schemaVersion);
  if(schemaVersion>=16&&actual.some(name=>name.toLowerCase().startsWith('_cf_')&&!(alarmMetadata&&name==='_cf_METADATA')))throw Error('RECOVERY_ENGINE_SCHEMA_INCOMPATIBLE');

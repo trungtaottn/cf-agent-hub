@@ -1,4 +1,4 @@
-import currentCommitments from '../../workers/native-fixture/required-schema17-commitments.json';
+import currentCommitments from '../../workers/native-fixture/required-schema18-commitments.json';
 import {it,expect} from 'vitest';
 import {env} from 'cloudflare:workers';
 import {runInDurableObject,evictDurableObject} from 'cloudflare:test';

@@ -29,6 +29,7 @@ export function insertRow(tx:WorkspaceTransaction,tableName:string,row:SourceRow
 export function updateRow(tx:WorkspaceTransaction,tableName:string,row:SourceRow):void {const table=tableDefinition(tableName,physicalRecoverySchema(tx)),cols=table.columns.filter(c=>!table.primaryKey.includes(c.name));if(!cols.length)return;tx.exec('UPDATE "'+table.name+'" SET '+cols.map(c=>'"'+c.name+'"=?').join(',')+' WHERE '+table.primaryKey.map(c=>'"'+c+'"=?').join(' AND '),[...cols.map(c=>row[c.name]),...table.primaryKey.map(c=>row[c])]);}
 function actualRow(tx:WorkspaceTransaction,tableName:string,row:SourceRow):SourceRow|null {const table=tableDefinition(tableName,physicalRecoverySchema(tx));return tx.one<SourceRow>('SELECT * FROM "'+table.name+'" WHERE '+table.primaryKey.map(c=>'"'+c+'"=?').join(' AND '),table.primaryKey.map(c=>row[c]));}
 export function insertSourceChunk(tx:WorkspaceTransaction,chunk:CurrentRecoveryChunk,job:CurrentRestoreJob):void {
+ if(chunk.table.startsWith('observation_')&&(!tx.one("SELECT id FROM workspace_metadata WHERE id=1 AND admission_state='maintenance'")||!tx.one("SELECT id FROM maintenance_state WHERE id=1 AND state='restoring'")))throw Error('ADMISSION_CLOSED');
  for(const cells of chunk.rows){const raw=sourceRow(chunk,cells);validateSource(chunk.table,raw,job);
   if(chunk.table==='workspace_metadata')job.details.sourceMetadata=cells;if(chunk.table==='maintenance_state')job.details.sourceMaintenance=cells;
   stageSourceAuditEvidence(tx,chunk.table,raw,job);
@@ -52,7 +53,7 @@ export function verifySourceChunk(tx:WorkspaceTransaction,chunk:CurrentRecoveryC
   if(chunk.table==='recovery_chunks')exists(tx,"SELECT 1 FROM idempotency_outcomes WHERE principal_id='system_recovery' AND operation='operator.recovery.history' AND target=? AND key=?",[job.id,raw.job_id]);
   validateAndImportSourceAudit(tx,chunk.table,raw,job);
   if(evidence(chunk.table,raw))continue;
-  const actual=actualRow(tx,chunk.table,raw);if(chunk.schema_version===16&&physicalRecoverySchema(tx)===17&&chunk.table==='events'&&actual?.creation_binding!==null)throw Error('RECOVERY_RESTORED_ROW_MISMATCH');if(!actual||canonicalJson(table.columns.map(c=>sqlCell(actual[c.name])))!==canonicalJson(cells))throw Error('RECOVERY_RESTORED_ROW_MISMATCH');
+  const actual=actualRow(tx,chunk.table,raw);if(chunk.schema_version===16&&physicalRecoverySchema(tx)>=17&&chunk.table==='events'&&actual?.creation_binding!==null)throw Error('RECOVERY_RESTORED_ROW_MISMATCH');if(!actual||canonicalJson(table.columns.map(c=>sqlCell(actual[c.name])))!==canonicalJson(cells))throw Error('RECOVERY_RESTORED_ROW_MISMATCH');
   // Composite references must be checked as a single tuple, never independent columns.
   const groups=new Map<number,(readonly(string|number)[])[]>();for(const fk of table.foreignKeys){const id=Number(fk[0]);groups.set(id,[...(groups.get(id)??[]),fk]);}
   for(const parts of groups.values()){if(parts.some(p=>raw[String(p[3])]===null))continue;exists(tx,'SELECT 1 FROM "'+parts[0][2]+'" WHERE '+parts.map(p=>'"'+p[4]+'"=?').join(' AND '),parts.map(p=>raw[String(p[3])]));}

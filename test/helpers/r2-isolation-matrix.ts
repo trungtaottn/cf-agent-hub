@@ -35,14 +35,17 @@ export const isolationOperations:IsolationOperation[]=[
 ];
 // These four R3 browser-only preparation/reconciliation operations have executable
 // isolation coverage in creation-admissions and creation-reconciliation tests. They must not expand frozen R2
-// acceptance receipts. Any other new operation still fails this exact split.
+// acceptance receipts. The separately tested diagnostic observation read also stays outside frozen R2.
+// Any other new enabled operation still fails this exact split.
 const r3RecoveryOperations=group(['reconcileMessageCreation','reconcileTaskCreation','prepareMessageCreation','prepareTaskCreation'],['human'],'current creation authority; preparation is not domain admission; recovery requires exact evidence');
+const observationOperations=group(['listTaskObservations'],['human','native'],'tasks:read + events:read + current task and captured-project visibility; diagnostic only');
 export function assertIsolationCoverage(cases:readonly IsolationOperation[]):void{
  for(const row of r3RecoveryOperations){const operation=clientOperations[row.operation];if(!operation||operation.native||operation.runtimeProof||operation.method!=='POST'||operation.status!==200)throw Error('R3 recovery operation boundary mismatch: '+row.operation);}
- const expected=Object.keys(clientOperations).filter(name=>!r3RecoveryOperations.some(row=>row.operation===name)).sort(),actual=cases.map(x=>x.operation).sort();
+ for(const row of observationOperations){const operation=clientOperations[row.operation];if(!operation||!operation.native||operation.runtimeProof||operation.method!=='GET'||operation.status!==200||!operation.page)throw Error('Observation read operation boundary mismatch: '+row.operation);}
+ const expected=Object.keys(clientOperations).filter(name=>![...r3RecoveryOperations,...observationOperations].some(row=>row.operation===name)).sort(),actual=cases.map(x=>x.operation).sort();
  if(new Set(actual).size!==actual.length||JSON.stringify(expected)!==JSON.stringify(actual))throw Error('Isolation operation coverage mismatch: missing '+expected.filter(x=>!actual.includes(x as EnabledOperationId)).join(',')+' extra '+actual.filter(x=>!expected.includes(x)).join(','));
  const canonical=new Map(Object.values(spec.paths).flatMap(item=>Object.values(item).filter(value=>value&&typeof value==='object'&&'operationId' in value).map(value=>{const op=value as {operationId:string;security?:Record<string,unknown>[]};return [op.operationId,op.security??[]] as const;})));
- for(const row of [...cases,...r3RecoveryOperations]){const security=canonical.get(row.operation)!;const lanes: IsolationLane[]=security.length===0?['public']:[...(security.some(x=>'HumanSession'in x)?['human' as const]:[]),...(security.some(x=>'NativeBearer'in x)?['native' as const]:[])];if(JSON.stringify([...row.lanes].sort())!==JSON.stringify(lanes.sort()))throw Error('Isolation lane coverage mismatch: '+row.operation);if(!row.lanes.length||new Set(row.lanes).size!==row.lanes.length||!row.authority)throw Error('Isolation lane coverage missing: '+row.operation);if(clientOperations[row.operation].native!==row.lanes.includes('native'))throw Error('Native lane mismatch: '+row.operation);}
+ for(const row of [...cases,...r3RecoveryOperations,...observationOperations]){const security=canonical.get(row.operation)!;const lanes: IsolationLane[]=security.length===0?['public']:[...(security.some(x=>'HumanSession'in x)?['human' as const]:[]),...(security.some(x=>'NativeBearer'in x)?['native' as const]:[])];if(JSON.stringify([...row.lanes].sort())!==JSON.stringify(lanes.sort()))throw Error('Isolation lane coverage mismatch: '+row.operation);if(!row.lanes.length||new Set(row.lanes).size!==row.lanes.length||!row.authority)throw Error('Isolation lane coverage missing: '+row.operation);if(clientOperations[row.operation].native!==row.lanes.includes('native'))throw Error('Native lane mismatch: '+row.operation);}
 }
 export const isolationCells=()=>isolationOperations.flatMap(row=>row.lanes.map(lane=>({...row,lane})));
 /** Receipts are written only after real assertions finish; metadata/collection alone never counts. */

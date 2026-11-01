@@ -3,7 +3,7 @@ import {env} from 'cloudflare:workers';
 import {runInDurableObject} from 'cloudflare:test';
 import {fixture,operator} from '../helpers/environment';
 import {prepareBootstrap,sha256,canonicalJson} from '../../src/config/bootstrap';
-import {createCurrentCompleteSelectedState as createCompleteSelectedState,decodeCompleteRows,currentCompletePhaseReservation as completePhaseReservation,decodeCurrentCompleteRows} from '../../workers/native-fixture/selected-state';
+import {createSchema18CompleteSelectedState as createCompleteSelectedState,decodeCompleteRows,schema18CompletePhaseReservation as completePhaseReservation,decodeCurrentCompleteRows} from '../../workers/native-fixture/selected-state';
 const bindings={W:'ws_example',C:'cred_research',human:'human_owner',principal:'agent_research',operation:'domain.tasks:create',target:'tasks:create',key:'r2_'+ '1'.repeat(32)};
 async function workspace(name:string){
  const {config,bundle}=await fixture(name);
@@ -19,7 +19,7 @@ it('captures actual source SQLite phase within its atomic reservation, without a
   const reader=createCompleteSelectedState(state.storage,bindings);
   const result=reader.readPhase({stepId:'success/getWorkspace',phase:'before'});
   expect(result.scope).toBe('private-selected-state');expect(result.installedAuthority).toBe(false);
-  expect(result.originals.find(x=>x.selector==='S')?.canonical).toBe(JSON.stringify(Array.from({length:17},(_,i)=>({version:i+1}))));
+  expect(result.originals.find(x=>x.selector==='S')?.canonical).toBe(JSON.stringify(Array.from({length:18},(_,i)=>({version:i+1}))));
   expect(result.originals.find(x=>x.selector==='M')?.canonical).toContain('ws_example');
   const budget=completePhaseReservation('success/getWorkspace','before');
   expect(reader.snapshot().reserved).toEqual(budget);expect(reader.snapshot().actualQueries).toBe(result.originals.length);
@@ -72,7 +72,7 @@ it('runs the complete literal inventory and keyed effect selectors against real 
 it('actual SQLite lookahead overflow poisons the reader and keeps its reservation spent',async()=>{
  const stub=await workspace('complete-selected-overflow');
  await runInDurableObject(stub,(_instance,state)=>{
-  state.storage.sql.exec('INSERT INTO schema_migrations(version,applied_at) VALUES (?,?)',18,1);
+  state.storage.sql.exec('INSERT INTO schema_migrations(version,applied_at) VALUES (?,?)',19,1);
   const reader=createCompleteSelectedState(state.storage,bindings);
   expect(()=>reader.readPhase({stepId:'success/getWorkspace',phase:'before'})).toThrow();
   expect(reader.snapshot().reserved).toEqual(completePhaseReservation('success/getWorkspace','before'));
@@ -156,4 +156,23 @@ it('current profile rejects historical, missing, reordered and lookahead migrati
  expect(decodeCurrentCompleteRows('S',rows).byteSize).toBe(247);
  for(const bad of [rows.slice(0,16),[...rows,{__valid:1,version:18}],[...rows.slice(0,16),{__valid:1,version:18}],[...rows].reverse()])expect(()=>decodeCurrentCompleteRows('S',bad)).toThrow();
  expect(()=>decodeCompleteRows('S',rows)).toThrow();
+});
+
+it('schema17 reader fails closed against actual physical18 without rewriting migration rows',async()=>{
+ const stub=await workspace('complete-selected-schema17-rejected-on18');
+ await runInDurableObject(stub,async(_instance,state)=>{
+  const {createCurrentCompleteSelectedState}=await import('../../workers/native-fixture/selected-state');
+  const before=state.storage.sql.exec('SELECT version FROM schema_migrations ORDER BY version').toArray();
+  expect(before).toHaveLength(18);
+  const reader=createCurrentCompleteSelectedState(state.storage,bindings);
+  expect(()=>reader.readPhase({stepId:'success/getWorkspace',phase:'before'})).toThrow('COMPLETE_SELECTED_STATE_REJECTED');
+  expect(state.storage.sql.exec('SELECT version FROM schema_migrations ORDER BY version').toArray()).toEqual(before);
+ });
+});
+
+it('schema18 decoder admits only exact ordered1..18, never historical17 or lookahead19',async()=>{
+ const {decodeSchema18CompleteRows}=await import('../../workers/native-fixture/selected-state');
+ const rows=Array.from({length:18},(_,i)=>({__valid:1,version:i+1}));
+ expect(decodeSchema18CompleteRows('S',rows).byteSize).toBe(262);
+ for(const bad of [rows.slice(0,17),[...rows,{__valid:1,version:19}],[...rows.slice(0,17),{__valid:1,version:19}],[...rows].reverse()])expect(()=>decodeSchema18CompleteRows('S',bad)).toThrow();
 });

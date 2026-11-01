@@ -479,6 +479,79 @@
           "decision_policy": {
             "$ref": "urn:cf-agent-hub:decision-policy:1",
             "description": "Optional structural selection only; source-owned descriptors decide availability. No default or enabled product actions."
+          },
+          "observation_pilot": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "repository_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+                "description": "Opaque public token, never a filesystem root, path or URL; grants no authority."
+              },
+              "adapter_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "adapter_version": {
+                "type": "string",
+                "minLength": 1
+              },
+              "supported_events": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 4,
+                "uniqueItems": true,
+                "items": {
+                  "enum": [
+                    "read-observed",
+                    "write-observed",
+                    "test-started",
+                    "test-finished"
+                  ]
+                }
+              },
+              "slots": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "agent_id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "checkout_slot_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128,
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+                      "description": "Opaque public token, never a filesystem root, path or URL; grants no authority."
+                    }
+                  },
+                  "required": [
+                    "agent_id",
+                    "checkout_slot_id"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "enabled",
+              "repository_id",
+              "adapter_id",
+              "adapter_version",
+              "supported_events",
+              "slots"
+            ],
+            "description": "Optional operator-owned bounded diagnostic mapping. Omitted or disabled is unavailable; no grants, native installation or host hook activation."
           }
         },
         "required": [

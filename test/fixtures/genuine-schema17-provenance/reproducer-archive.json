@@ -1,0 +1,6 @@
+{
+  "archive": "reproducer.tar.gz",
+  "sha256": "cebb4e0579ed60db91b5dec3cdc8310cf84c6d5f6bcf40f74a22871704218ae2",
+  "contents_manifest": "reproducer-sha256.json",
+  "format": "deterministic POSIX pax tar; gzip mtime=0; exact original producer source bytes"
+}

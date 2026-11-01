@@ -1,0 +1,43 @@
+{
+  "scope": "local synthetic schema17 recovery fixture capture only",
+  "capture_producer": {
+    "exit_code": 0,
+    "files": 1,
+    "passed": 1,
+    "duration_seconds": 11.16
+  },
+  "frozen_only": {
+    "exit_code": 0,
+    "files": 1,
+    "passed": 5,
+    "duration_seconds": 13.89
+  },
+  "final_combined": {
+    "exit_code": 0,
+    "files": 7,
+    "passed": 33,
+    "duration_seconds": 95.62
+  },
+  "production_types_exit_code": 0,
+  "configured_tests_types_exit_code": 0,
+  "all_original_tracked_files_unchanged": 1338,
+  "git_diff_exit_code": 0,
+  "git_cached_diff_exit_code": 0,
+  "git_diff_check_exit_code": 0,
+  "fixture_hashes_still_match": true,
+  "embedded_url_hosts_reserved_example_invalid": true,
+  "embedded_urls": [
+    "https://hub.example.invalid",
+    "https://hub.example.invalid/v2/workspaces/ws_example/auth/callback",
+    "https://identity.example.invalid",
+    "https://identity.example.invalid/authorize",
+    "https://identity.example.invalid/jwks",
+    "https://identity.example.invalid/token",
+    "https://receiver.example.invalid/cfhub",
+    "https://source.example.invalid/item"
+  ],
+  "credential_pattern_scan_findings": [],
+  "new_source_migrations": false,
+  "real_operator_actions": false,
+  "staged_committed_or_published": false
+}
