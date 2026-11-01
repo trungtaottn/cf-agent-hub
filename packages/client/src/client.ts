@@ -257,7 +257,10 @@ export class HubClient {
    if(response.status===401||response.status===403)this.#csrfToken=null;
    if(!response.ok){const result=await this.#transport.json<never>(response,{maxBytes:1048576,deadline});if(result.ok)throw new ClientFault('INVALID_RESPONSE');return result;}
    const media=artifact.media_type,safeMedia=/^[A-Za-z0-9!#$&^_.+\-]+\/[A-Za-z0-9!#$&^_.+\-]+(?:;[ \x21-\x7e]*)?$/.test(media)&&media.length<=1024?media:'application/octet-stream';
-   if(response.status!==200||!response.body||response.headers.get('content-length')!==String(artifact.byte_size)||response.headers.get('content-type')!==safeMedia.trim()||!/^attachment(?:;|$)/i.test(response.headers.get('content-disposition')??'')){void response.body?.cancel().catch(()=>{});throw new ClientFault('INVALID_RESPONSE');}
+   // Browser transfer decoding may legitimately omit length. A present header
+   // remains exact; the bounded stream still requires the declared decoded size and EOF.
+   const length=response.headers.get('content-length');
+   if(response.status!==200||!response.body||length!==null&&length!==String(artifact.byte_size)||response.headers.get('content-type')!==safeMedia.trim()||!/^attachment(?:;|$)/i.test(response.headers.get('content-disposition')??'')){void response.body?.cancel().catch(()=>{});throw new ClientFault('INVALID_RESPONSE');}
    const transfer=boundedStream(response.body,artifact.byte_size,deadline,()=>deadline.check(),()=>deadline.dispose());handedOff=true;
    return {ok:true,status:200,data:{body:transfer.body,completion:transfer.completion,artifact:Object.freeze(artifact)},requestId:null};
   }catch(error){return faultResult(error) as Extract<ArtifactDownloadResult,{ok:false}>;}finally{if(!handedOff)deadline.dispose();}

@@ -1,3 +1,5 @@
+import {DecisionActions} from './approvals/decision-actions';
+import {renderDecisionActions} from './approvals/decision-action-view';
 import {DecisionReads,renderDecisionList} from './approvals/decision-list';
 import {renderDecisionDetail} from './approvals/decision-detail';
 import {isApprovalPanel,approvalPanelHref,decisionCallbackCurrent,type DecisionCallbackBinding} from './approvals/panel';
@@ -32,7 +34,7 @@ const models={
 };
 let connectionGeneration=0;
 let client:HubClient,authority=0,session:AuthSession|null=null,denied=false,currentView=isApprovalPanel(location.pathname,location.search)?'approvals':location.pathname.slice(1)||'overview',threadId:string|null=null,eventCursor:string|null=null,threadCursor:string|null=null;
-let approvalsAvailable=false,approvalViewGeneration=0,approvalRenderGeneration=0;
+let approvalsAvailable=false,approvalDecisionsAvailable=false,approvalDisposing=false,approvalViewGeneration=0,approvalRenderGeneration=0,lastDecisionStatus='idle';
 let factoryMode=false,factoryProjectId:string|null=null,factoryWorkRoleId:string|null=null;
 let factoryObservationRender=0;
 let factoryAuthority:{authority:number;connection:number;principalId:string}|null=null;
@@ -120,26 +122,57 @@ const readTaskProjection:BrowserReadRequest=(async(operation,input,options)=>{
 }) as BrowserReadRequest;
 const taskReads=new TaskReads({workspaceId:workspace,request:readTaskProjection,changed:()=>render()});
 function decisionContext():DecisionCallbackBinding{return {authority,connection:connectionGeneration,principalId:session?.actor.kind==='human'?session.actor.principal_id:null,view:approvalViewGeneration,render:approvalRenderGeneration,active:currentView==='approvals'&&!denied&&approvalsAvailable,online:navigator.onLine};}
-function disposeDecisions():void{++approvalViewGeneration;++approvalRenderGeneration;decisionReads.invalidate();}
-const decisionReads=new DecisionReads({workspaceId:workspace,currentBinding:()=>{
- const context=decisionContext();return context.active&&context.principalId?{principalId:context.principalId,generation:context.connection,renderGeneration:context.view,online:context.online}:null;
-},reader:createDecisionReader({workspaceId:workspace,client:()=>client,currentContext:decisionContext,onAuthDenied:invalidateAll,
+function disposeDecisions():void{
+ ++approvalViewGeneration;++approvalRenderGeneration;approvalDisposing=true;
+ try{decisionActions.invalidateAuthority();decisionReads.invalidate();}finally{approvalDisposing=false;}
+ if(currentView==='approvals')render();
+}
+function decisionReader(invocationCurrent:()=>boolean=()=>true){
+ return createDecisionReader({workspaceId:workspace,client:()=>client,currentContext:decisionContext,invocationCurrent,onAuthDenied:invalidateAll,
  onAccess:async(data,requestId,current)=>{await models.workspace.refresh(async()=>({ok:true,status:200,data,requestId}));if(!current())return;
   const capabilities=applyDecisionReadCapabilities(data,requestId,{tasks:taskReads,events:models.events,eventsEnabled:Boolean(models.configuration.state.data?.enabled_features.includes('events')),clearEventCursor:()=>{eventCursor=null;},current});if(!capabilities||!current())return;
   tasksAvailable=capabilities.tasks;eventsAvailable=capabilities.events;approvalsAvailable=capabilities.approvals;
+  approvalDecisionsAvailable=approvalsAvailable&&data.effective_scopes.includes('approvals:decide')&&data.effective_scopes.includes('artifacts:read');
   if(!data.effective_scopes.includes('operations:read')){operationsAvailable=false;models.operations.unavailable('CURRENT_SCOPE_REQUIRED',requestId);}
   if(!tasksAvailable){taskActions.invalidateAuthority();taskActionPanel.navigation();}
-  if(!approvalsAvailable)disposeDecisions();render();},
- onTaskDenied:(id,code,requestId)=>{eventCursor=null;models.events.unavailable('TASK_ACCESS_CHANGED',requestId);taskReads.forgetTask(id,requestId,code);render();}
-}),changed:()=>{if(currentView==='approvals')render();}});
+  if(!approvalsAvailable)disposeDecisions();else if(!approvalDecisionsAvailable)decisionActions.invalidateAuthority();render();},
+ onTaskDenied:(id,code,requestId)=>{eventCursor=null;models.events.unavailable('TASK_ACCESS_CHANGED',requestId);taskReads.forgetTask(id,requestId,code);decisionActions.invalidateAuthority();render();}
+ });
+}
+function decisionBinding(){
+ const context=decisionContext();return context.active&&context.principalId?{principalId:context.principalId,generation:context.connection,renderGeneration:context.view,online:context.online}:null;
+}
+const decisionReads=new DecisionReads({workspaceId:workspace,currentBinding:decisionBinding,reader:decisionReader(),readerFor:decisionReader,changed:()=>{if(!approvalDisposing&&currentView==='approvals')render();}});
+const decisionActions=new DecisionActions({workspaceId:workspace,currentBinding:decisionBinding,currentObservationRevision:()=>decisionReads.displayRevision,
+ observe:(id,mode,current)=>decisionReads.observeForDecision(id,mode,current),readAccess:current=>decisionReader(current).readAccess(),command:(...args)=>client.decision(...args),
+ changed:()=>{const status=decisionActions.state.status,refresh=status==='succeeded'&&lastDecisionStatus!=='succeeded';lastDecisionStatus=status;
+  if(!approvalDisposing&&currentView==='approvals')render();
+  if(refresh&&!approvalDisposing){void decisionActions.refreshOutcome();void decisionReads.refreshList();}
+ }
+});
 function renderApprovals():HTMLElement{
  const shell=el('div',undefined,{'data-testid':'approvals-panel'});
  if(!approvalsAvailable||denied||session?.actor.kind!=='human'){shell.append(el('p','Approvals unavailable: current human approvals:read and tasks:read are required.'));return shell;}
  if(!navigator.onLine||models.workspace.state.status!=='ready'){shell.append(el('p','Approvals disconnected or stale. Refresh current authority before inspecting private inputs.'));return shell;}
- const captured=decisionContext(),current=()=>decisionCallbackCurrent(captured,decisionContext());
- shell.append(el('p','Source: '+source+'/approvals',{class:'evidence'}),el('p','Read-only decision inspection. No product action is enabled by this view; the server checks current policy and availability.'),button('Refresh approvals',()=>{if(current())void decisionReads.refreshList();},{'data-focus-key':'approvals-refresh'}),renderDecisionList(decisionReads.list.state,id=>{if(current())void decisionReads.select(id);}));
- if(decisionReads.page?.has_more)shell.append(button('Next approvals page',()=>{if(current())void decisionReads.next();},{'data-focus-key':'approvals-next'}));
- if(decisionReads.selectedId){shell.append(button('Close decision detail',()=>{if(current())void decisionReads.select(null);},{'data-focus-key':'approval-close'}),button('Refresh decision detail',()=>{if(current())void decisionReads.refreshDetail();},{'data-focus-key':'approval-detail-refresh'}),renderDecisionDetail(decisionReads.detail.state));}
+ const captured=decisionContext(),current=()=>decisionCallbackCurrent(captured,decisionContext()),state=decisionActions.state,locked=state.status==='pending'||state.status==='uncertain';
+ const control=(label:string,action:()=>void,key:string)=>{const node=button(label,()=>{if(current()&&!locked)action();},{'data-focus-key':key});if(locked)node.setAttribute('disabled','');return node;};
+ shell.append(el('p','Source: '+source+'/approvals',{class:'evidence'}),el('p',approvalDecisionsAvailable?'Generic decision requests only. No product action is enabled by this view; the server checks current policy and availability.':'Read-only decision inspection. No product action is enabled by this view; the server checks current policy and availability.'),control('Refresh approvals',()=>{void decisionReads.refreshList();},'approvals-refresh'),renderDecisionList(decisionReads.list.state,id=>{if(current()&&!locked){decisionActions.invalidateAuthority();void decisionReads.select(id);}},locked));
+ if(decisionReads.page?.has_more)shell.append(control('Next approvals page',()=>{void decisionReads.next();},'approvals-next'));
+ // Choose the action branch BEFORE any awaited observation starts. Never render
+ // retained read-detail bytes under a preparing/changed action observation.
+ if(state.operation!==null||state.status==='unresolved'){
+  shell.append(renderDecisionActions(state,{onReason:reason=>{if(current())decisionActions.setReason(reason);},onConfirm:()=>{if(current())decisionActions.confirmReview();},onSubmit:()=>{if(current())void decisionActions.submit();},onReplay:()=>{if(current())void decisionActions.replay();},onRefresh:()=>{if(current())void decisionActions.refreshOutcome();},onPrepare:()=>{if(current()&&state.approvalId&&state.operation)void decisionActions.prepare(state.approvalId,state.operation);}}));
+  if(!locked)shell.append(control('Return to decision inspection',()=>{decisionActions.invalidateAuthority();void decisionReads.refreshDetail();},'decision-return'));
+  return shell;
+ }
+ if(decisionReads.selectedId){
+  shell.append(control('Close decision detail',()=>{decisionActions.invalidateAuthority();void decisionReads.select(null);},'approval-close'),control('Refresh decision detail',()=>{decisionActions.invalidatePreparation();void decisionReads.refreshDetail();},'approval-detail-refresh'),renderDecisionDetail(decisionReads.detail.state));
+  if(approvalDecisionsAvailable){
+   const selected=decisionReads.list.state.data?.find(a=>a.id===decisionReads.selectedId),canPrepare=selected?.status==='pending'&&selected.assigned_human_principal_ids.includes(session.actor.principal_id)&&Date.parse(selected.expires_at)>Date.now();
+   for(const [operation,label] of [['approveApproval','Prepare approval request'],['rejectApproval','Prepare rejection request']] as const){const node=control(label,()=>{if(decisionReads.selectedId)void decisionActions.prepare(decisionReads.selectedId,operation);},'decision-prepare:'+operation);if(!canPrepare)node.setAttribute('disabled','');shell.append(node);}
+   if(!canPrepare)shell.append(el('p','Current pending assignment and original unexpired deadline are required before preparing a request.'));
+  }
+ }
  return shell;
 }
 async function readTaskCommandAccess():Promise<ApiResult<Workspace>>{
@@ -257,7 +290,7 @@ const settings=new SettingsPanel({
 function invalidateAll(status:401|403,id:string|null):void{
  resetFactoryView();
  eraseComposition();
- ++authority;++connectionGeneration;approvalsAvailable=false;disposeDecisions();denied=true;session=null;client?.setCsrfToken(null);eventCursor=null;threadCursor=null;threadId=null;
+ ++authority;++connectionGeneration;approvalsAvailable=false;approvalDecisionsAvailable=false;disposeDecisions();denied=true;session=null;client?.setCsrfToken(null);eventCursor=null;threadCursor=null;threadId=null;
  for(const model of Object.values(models))model.invalidate(status===401?'UNAUTHENTICATED':'FORBIDDEN',id);
  taskReads.invalidate(status===401?'UNAUTHENTICATED':'FORBIDDEN',id);tasksAvailable=false;
  taskActions.invalidateAuthority();taskActionPanel.navigation();
@@ -429,7 +462,7 @@ function render():void{
  heading.textContent=currentView==='approvals'?'Workspace approvals':currentView==='tasks'?(factoryMode?'Factory evidence explorer':taskReads.selectedId?'Task detail':'Workspace tasks'):threadId?'Thread history':currentView==='activity'?'Workspace activity':currentView==='settings'?'Workspace settings':currentView==='inbox'?'Agent inbox':'Workspace overview';
  const active=currentView==='approvals'?(decisionReads.selectedId?[decisionReads.list.state,decisionReads.detail.state]:[decisionReads.list.state]):currentView==='tasks'?(taskReads.selectedId?[taskReads.task.state,taskReads.run.state,taskReads.results.read.state,taskReads.events.read.state,taskReads.artifacts.state]:Object.values(taskReads.columns).map(page=>page.read.state)):currentView==='inbox'?[]:threadId?[models.thread.state]:currentView==='settings'?[models.workspace.state,models.profile.state,models.preferences.state]:[models.configuration.state,...(eventsAvailable||denied?[models.events.state]:[]),...(operationsAvailable?[models.operations.state]:[])];
  byId('page-status').textContent=denied?'forbidden — current authority required':currentView==='inbox'?'Unavailable for human sessions':'Read status: '+summarizeReadStates(active);
- if(currentView==='approvals'){replacePreservingFocus(view,renderApprovals(),byId('main'));return;}
+ if(currentView==='approvals'){const active=document.activeElement,selection=active instanceof HTMLTextAreaElement&&active.id==='decision-reason'?{start:active.selectionStart,end:active.selectionEnd,direction:active.selectionDirection}:null;replacePreservingFocus(view,renderApprovals(),byId('main'));const next=document.activeElement;if(selection&&next instanceof HTMLTextAreaElement&&next.id==='decision-reason')next.setSelectionRange(selection.start,selection.end,selection.direction);return;}
  if(currentView==='tasks'){
   const shell=el('div'),modes=el('div',undefined,{role:'group','aria-label':'Task presentation'});
   modes.append(button('Task board',()=>setFactoryMode(false),{'aria-pressed':String(!factoryMode),'data-focus-key':'task-mode-board',class:'secondary'}),button('Factory evidence',()=>setFactoryMode(true),{'aria-pressed':String(factoryMode),'data-focus-key':'task-mode-factory',class:'secondary',...(!tasksAvailable||denied?{disabled:''}:{})}));shell.append(modes);
@@ -481,6 +514,7 @@ async function refreshThread(id:string,more=false):Promise<void>{
 async function refreshReads():Promise<void>{
  if(!session||denied)return;
  taskActions.invalidatePreparation();
+ if(['preparing','review','ready','confirming'].includes(decisionActions.state.status))decisionActions.invalidatePreparation();
  const generation=authority;
  await refreshModel(models.configuration,()=>request<Configuration>('getConfiguration',{}));
  if(denied||generation!==authority)return;
@@ -497,9 +531,9 @@ async function refreshReads():Promise<void>{
   const observed=models.workspace.state;
   if(observed.status==='ready'&&observed.data){
    const scopes=observed.data.effective_scopes;tasksAvailable=scopes.includes('tasks:read');
-   approvalsAvailable=session?.actor.kind==='human'&&scopes.includes('approvals:read')&&scopes.includes('tasks:read');if(!approvalsAvailable)disposeDecisions();
+   approvalsAvailable=session?.actor.kind==='human'&&scopes.includes('approvals:read')&&scopes.includes('tasks:read');approvalDecisionsAvailable=approvalsAvailable&&scopes.includes('approvals:decide')&&scopes.includes('artifacts:read');if(!approvalsAvailable)disposeDecisions();else if(!approvalDecisionsAvailable)decisionActions.invalidateAuthority();
    taskReads.setCapabilities({tasks:tasksAvailable,events:eventsAvailable&&scopes.includes('events:read'),artifacts:scopes.includes('artifacts:read')});
-   if(currentView==='approvals'&&approvalsAvailable){await decisionReads.refreshList();if(decisionReads.selectedId)await decisionReads.refreshDetail();}
+   if(currentView==='approvals'&&approvalsAvailable){await decisionReads.refreshList();if(decisionActions.state.operation!==null||decisionActions.state.status==='unresolved'){if(['uncertain','conflict','succeeded','rejected'].includes(decisionActions.state.status))await decisionActions.refreshOutcome();}else if(decisionReads.selectedId)await decisionReads.refreshDetail();}
    if(currentView==='tasks'&&tasksAvailable)await Promise.all([taskReads.refreshBoard(),taskReads.selectedId?taskReads.refreshTask():Promise.resolve()]);
   }else taskReads.disconnect();
  }
@@ -524,7 +558,7 @@ async function boot():Promise<void>{
 addEventListener('popstate',()=>{disposeDecisions();resetFactoryView();hideComposition();taskActions.invalidatePreparation();taskActionPanel.navigation();currentView=isApprovalPanel(location.pathname,location.search)?'approvals':location.pathname.slice(1)||'overview';selectThread(new URL(location.href).searchParams.get('thread'));render();if(currentView==='approvals'&&approvalsAvailable)void decisionReads.refreshList();if(threadId)void refreshThread(threadId);if(currentView==='tasks'){void taskReads.select(new URL(location.href).searchParams.get('task'));void taskReads.refreshBoard();}});
 addEventListener('offline',()=>{hideComposition();++connectionGeneration;disposeDecisions();taskActions.invalidatePreparation();for(const model of Object.values(models))model.disconnect();taskReads.disconnect();factoryAuthority=null;factoryObservations.disconnect();render();});
 addEventListener('online',()=>{hideComposition();++connectionGeneration;disposeDecisions();taskActions.invalidatePreparation();void refreshReads();});
-setInterval(()=>{decisionReads.markStale(Date.now(),60_000);taskReads.markStale(Date.now(),60_000);for(const model of Object.values(models))model.markStale(Date.now(),60_000);if(models.workspace.state.status!=='ready'&&taskActions.state.status==='ready')taskActions.invalidatePreparation();render();},15_000);
+setInterval(()=>{decisionReads.markStale(Date.now(),60_000);taskReads.markStale(Date.now(),60_000);for(const model of Object.values(models))model.markStale(Date.now(),60_000);if(models.workspace.state.status!=='ready'&&taskActions.state.status==='ready')taskActions.invalidatePreparation();if(models.workspace.state.status!=='ready'&&['review','ready','confirming'].includes(decisionActions.state.status))decisionActions.invalidatePreparation();render();},15_000);
 void boot();
 
 document.addEventListener('visibilitychange',()=>{syncFactoryObservationState();});
