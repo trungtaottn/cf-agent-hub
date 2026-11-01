@@ -4,12 +4,15 @@ Status: Partial local source evidence; independent source review pending; no ful
 
 ## Scope
 
-The action-independent adapter discovers **16** executable tools. The closed
-[manifest](mcp-stdio-tools.json) retains the seventeenth design slot,
-`hub_task_request_decision`, as unavailable because the native enabled-operation
-inventory lacks `requestTaskDecision`. It is omitted from discovery; direct calls
-receive a protocol unknown-tool error. This is not completion of issues62–64,
-and does not enable decisions, approval/acceptance/admin/upload/enrollment tools.
+The adapter discovers **17** native transport mappings. The closed
+[manifest](mcp-stdio-tools.json) includes `hub_task_request_decision` through the
+existing protected native client and retained mutation journal. The production
+action registry remains empty, so a fresh otherwise-authorized decision request
+returns the actual server's unavailable outcome; discovery is not action
+activation or positive decision parity. This is not completion of issues62–64,
+and does not expose approval/admin/upload/enrollment tools. The seventeenth tool
+uses `NativeClient.call`; it does not add a CLI command or expand frozen R2
+CLI33/native37-case or54-operation isolation receipts.
 The [design amendment](../superpowers/specs/2026-11-01-mcp-source-design.md)
 records why a separate nonprunable local replay profile is necessary.
 
@@ -102,16 +105,24 @@ execution handoff.
 | Evidence | Observation / limit |
 | --- | --- |
 | Protocol/client/runtime | SDK1.32.2, protocol2025-11-25, Node24.22.1/npm11.19.1 on Linux |
-| Closed contract | All16 mappings validated through existing native request validators; input/output schemas compiled, reserved slot/unknown fields/wrong workspace denied |
-| Process canary | Actual built child process initializes, discovers16, calls native-client fixtures; pinned SDK client exercises structured success/domain denial and text-only uncertain errors |
+| Closed contract | All17 mappings validated through existing native request validators; input/output schemas compiled, unknown fields/wrong workspace denied; decision native envelope/body schema reused |
+| Process canary | Actual built child process initializes, discovers17, calls native-client fixtures; pinned SDK client exercises structured success/domain denial and text-only uncertain errors |
 | Production entry | Actual built main starts with existing protected state and calls a loopback HTTPS fixture with an ephemeral explicitly trusted CA; no TLS validation bypass |
+| Local decision chain | Actual SDK → built production STDIO → protected provider/journal → trusted-CA HTTPS proxy → exported Worker entry/SQLite DO; real enrollment and claim precede matching native/MCP503 and current-revocation401. Exact body/key/proof and Worker request correlation retained; domain/outbox/ledger unchanged. Ambiguous heartbeat blocks the next SDK owner request before send across process restart |
 | Custody/replay | Real protected provider/client/coordinator fixtures; two-process atomic reuse, crash during transaction, restart/expiry, changed binding, old-reader refusal and bounded-cap denial |
 | Streams | Stopped-reader output flood, oversized aggregate input, near1MiB native-sized output, late EPIPE, input loss during pending work and secret canaries |
 | Dependencies | Package-local full audit observed zero vulnerabilities; this is not security signoff |
 | Native host regression | Shared journal change builds/imports under unchanged4MiB cap; executor is not invoked by that check |
 
+The local HTTPS fixture maps only its ephemeral loopback upstream URL origin to
+configured `https://hub.example.invalid`; method/path/query/body and auth/proof/key
+headers are preserved. It does not rewrite an Origin header to bypass policy,
+fabricate a domain response, bypass TLS validation, or relax deployment-origin
+rules. This is local reverse-proxy test composition, not deployed hostname/proxy
+certification or a live credential run.
+
 Missing: allowed/denied comparisons against the actual native domain for every
-tool, seventeenth-tool activation/parity, full two-workspace persistent-effect
+tool, positive decision action activation/parity, full two-workspace persistent-effect
 matrix, live current-authority/fence races, external advertised desktop clients,
 deployed credentials, independent security acceptance and release evidence.
 Synthetic fixtures do not satisfy those gates. No arbitrary client configuration

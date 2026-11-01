@@ -149,3 +149,9 @@ The [bounded local observation adapter](observation-adapter.md) is independent s
 ## Factory reported-observation source candidate
 
 The [bounded Factory projection design](superpowers/specs/2026-11-01-factory-observation-projection.md) and [implementation/check plan](superpowers/plans/2026-11-01-factory-observation-projection.md) describe a local read-only UI extension to F09/F16. It displays at most two explicitly selected tasks and one retained observation session/page per task; reported paths and advisory overlaps are not presence, filesystem locks or verified execution. Existing service authorization remains authoritative. Local controller/DOM/app-body and isolated service-fixture evidence do not promote this candidate to Verified or Released. Actual browser execution, visual inspection and separately authorized live-pilot acceptance remain pending.
+
+## Generic decision and MCP source checkpoint
+
+The [decision source contract](contracts/r3-decisions.md) records bounded request/read persistence, assigned-human approve/reject, expiry and authenticated recovery cancellation. The read-only Approvals panel inspects current, exact committed input bytes; mutation controls and fresh approved execution claims remain separate work. The [MCP contract](mcp-api.md) maps all 17 planned tool names through the native client, including a decision request that still fails closed when no supported production action is installed. Mapping and synthetic negative-authority tests are not positive 17-operation acceptance.
+
+The production action registry remains empty. These reviewed partial source units do not establish a supported product action, genuine no-effect reuse, full R3 journey/verifier acceptance, live activation or release; F32/F33/F35 and all Verified/Released statuses are unchanged. Exact-head integrated CI/browser results must be evaluated separately from scoped review and local synthetic tests.

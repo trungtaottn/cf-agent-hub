@@ -1,7 +1,7 @@
 import type {WorkspaceTransaction} from '../storage/transaction';
 import type {ActorContext} from '../workspace/context';
 import type {Approval,TaskState} from '../http/dto';
-import {parseDecisionActor,parseReviewerIds,parseSemanticAnchor} from './stored-validation';
+import {parseDecisionActor,parseReviewerIds,parseSemanticAnchor,validDecisionTransition} from './stored-validation';
 export type {PersistedDecisionBinding} from './stored-validation';
 import {canonicalJson} from '../config/bootstrap';
 import {validateApproval} from '../http/generated/decision-validators.js';
@@ -36,11 +36,12 @@ export function assertApprovalOutcomeVisible(tx:WorkspaceTransaction,actor:Actor
 }
 export interface LifecycleHead {workspace_id:string;approval_id:string;task_id:string;task_version:number;task_state:TaskState;transition_count:number;last_transition_id:string;}
 /** Constant indexed head/last transition validation; no full history scan or count cap. */
-export function assertDecisionHead(tx:WorkspaceTransaction,row:TaskRow,approval:ApprovalRow):LifecycleHead {
+export function assertDecisionHead(tx:WorkspaceTransaction,row:TaskRow,approval:ApprovalRow,nowMs:number):LifecycleHead {
  const head=tx.one<LifecycleHead>('SELECT * FROM decision_lifecycle_heads WHERE workspace_id=? AND approval_id=?',[row.workspace_id,approval.id]);
  const proposal=tx.one<{semantic_anchor_json:string}>('SELECT semantic_anchor_json FROM decision_proposals WHERE workspace_id=? AND id=?',[row.workspace_id,approval.proposal_id]);
  if(proposal)parseSemanticAnchor(proposal.semantic_anchor_json);
- const last=head?tx.one<{sequence:number;after_version:number;after_state:string}>('SELECT sequence,after_version,after_state FROM decision_lifecycle_transitions WHERE workspace_id=? AND approval_id=? AND id=?',[row.workspace_id,approval.id,head.last_transition_id]):null;
- if(!head||!proposal||!last||row.approval_id!==approval.id||head.task_id!==row.id||head.task_version!==row.task_version||head.task_state!==row.state||last.sequence!==head.transition_count||last.after_version!==head.task_version||last.after_state!==head.task_state||proposal.semantic_anchor_json!==semanticAnchor(row))throw new HttpError('DEPENDENCY_UNAVAILABLE',503);
+ const last=head?tx.one<{sequence:number;task_id:string;kind:string;before_version:number;before_state:string;after_version:number;after_state:string;run_id:string|null;created_at:number}>('SELECT sequence,task_id,kind,before_version,before_state,after_version,after_state,run_id,created_at FROM decision_lifecycle_transitions WHERE workspace_id=? AND approval_id=? AND id=?',[row.workspace_id,approval.id,head.last_transition_id]):null;
+ if(!Number.isSafeInteger(nowMs)||nowMs<0||!head||!proposal||!last||last.created_at>nowMs||![head.task_version,head.transition_count,last.sequence,last.before_version,last.after_version].every(n=>Number.isSafeInteger(n)&&n>0)||!Number.isSafeInteger(last.created_at)||last.created_at<approval.created_at||last.task_id!==row.id||last.before_version+1!==last.after_version||!validDecisionTransition(last.kind,last.before_state,last.after_state)||(last.sequence===1)!==(last.kind==='request')||last.sequence===1&&(last.before_version!==approval.task_version_at_request||last.before_state!=='doing'||last.after_state!=='waiting'||last.run_id!==approval.run_id||last.created_at!==approval.created_at)||row.approval_id!==approval.id||head.task_id!==row.id||head.task_version!==row.task_version||head.task_state!==row.state||last.sequence!==head.transition_count||last.after_version!==head.task_version||last.after_state!==head.task_state||proposal.semantic_anchor_json!==semanticAnchor(row))throw new HttpError('DEPENDENCY_UNAVAILABLE',503);
+ if(tx.one('SELECT 1 FROM decision_lifecycle_transitions WHERE workspace_id=? AND approval_id=? AND sequence>? LIMIT 1',[row.workspace_id,approval.id,head.transition_count]))throw new HttpError('DEPENDENCY_UNAVAILABLE',503);
  return head;
 }

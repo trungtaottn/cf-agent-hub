@@ -33,7 +33,7 @@ describe('native context and canonical shared transport',()=>{
   const headers=new Headers(init!.headers);expect(headers.get('authorization')).toBe('Bearer '+secret);expect(headers.has('cookie')).toBe(false);expect(headers.has('x-csrf-token')).toBe(false);expect(headers.has('x-runtime-token')).toBe(false);
   expect(f.releases).toHaveBeenCalledTimes(1);
  });
- it.each([...Object.entries(clientOperations).filter(([,c])=>!c.native).map(([id])=>id),'requestTaskDecision','listApprovals','getApproval','approveApproval','rejectApproval','callbackAuth','getLiveness','toString','__proto__','https://evil.example'])('rejects %s without acquiring or fetching',async operation=>{
+ it.each([...Object.entries(clientOperations).filter(([,c])=>!c.native).map(([id])=>id),'listApprovals','getApproval','approveApproval','rejectApproval','callbackAuth','getLiveness','toString','__proto__','https://evil.example'])('rejects %s without acquiring or fetching',async operation=>{
   const f=nativeFixture();expect(await f.client.call(operation as EnabledOperationId,{} as never)).toMatchObject({ok:false,error:{code:'OPERATION_UNAVAILABLE'}});expect(f.acquire).not.toHaveBeenCalled();expect(f.fetch).not.toHaveBeenCalled();
  });
  it('requires explicit enrollment mode without any network',async()=>{const f=nativeFixture();expect(await f.client.call('createRuntime',{body:{label:'runtime'}},{idempotencyKey:'key'})).toMatchObject({ok:false,error:{code:'ENROLLMENT_REQUIRED'}});expect(f.acquire).not.toHaveBeenCalled();});

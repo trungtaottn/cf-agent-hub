@@ -2,7 +2,7 @@
 
 Status: Partial action-independent STDIO source · Contract revision 0.1 · Full native parity and acceptance pending.
 
-The planned MCP adapter lets an externally running assistant discover and invoke CF Agent Hub coordination tools. It translates validated inputs to the native HTTP contract; it does not host a model, execute a task by itself or create a second state machine. The initial release gate is R3 and remains pending. Local STDIO source now exposes 16 existing native operations; the seventeenth decision tool remains unavailable. The [source evidence and launch boundary](contracts/mcp-client-evidence.md) records the exact limitations. No remote endpoint, full 17-tool parity, external-client certification or F35 Verified/Released status is established.
+The planned MCP adapter lets an externally running assistant discover and invoke CF Agent Hub coordination tools. It translates validated inputs to the native HTTP contract; it does not host a model, execute a task by itself or create a second state machine. The initial release gate is R3 and remains pending. Local STDIO source maps 17 native operations, including request-decision through the same protected client and durable journal. The production decision action registry remains empty: mapping is not successful action activation. The [source evidence and launch boundary](contracts/mcp-client-evidence.md) records the exact limitations. No remote endpoint, full 17-tool parity, external-client certification or F35 Verified/Released status is established.
 
 ## Protocol and transport boundary
 

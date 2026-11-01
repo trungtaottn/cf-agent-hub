@@ -40,6 +40,9 @@ const definitions={
  'task.result_accepted':{resource:'task',summary:'Task result independently accepted.'},
  'task.failed':{resource:'task',summary:'Task attempt failed.'},
  'task.expired':{resource:'task',summary:'Task execution lease expired.'},
+ 'task.decision_expired':{resource:'task',summary:'Task proposal authorization expired.'},
+ 'task.decision_approved':{resource:'task',summary:'Human approved the immutable task proposal.'},
+ 'task.decision_rejected':{resource:'task',summary:'Human rejected the immutable task proposal.'},
  'task.decision_requested':{resource:'task',summary:'Task paused for a human decision.'},
  'task.claimed':{resource:'task',summary:'Task claimed.'},
  'artifact.staged':{resource:'artifact',summary:'Artifact staged.'},
@@ -54,7 +57,7 @@ function projection(row:EventRow):Event{
 /** Handler supplies stable resource fields only. The wrapper supplies actor, ID, time and request correlation. */
 export function appendEvent(tx:WorkspaceTransaction,event:RedactedEventInput):{id:string;sequence:number}{
  const definition=definitions[event.type];
- if(!definition||(event.type as string)==='task.expired'||!['human','agent'].includes(event.actor.kind)||event.resourceType!==definition.resource||event.workspaceId!==event.actor.workspaceId||
+ if(!definition||((event.type as string)==='task.expired'||(event.type as string)==='task.decision_expired')||!['human','agent'].includes(event.actor.kind)||event.resourceType!==definition.resource||event.workspaceId!==event.actor.workspaceId||
   (event.resourceType==='profile'||event.resourceType==='preferences'||event.resourceType==='agent'||event.resourceType==='credential')&&event.actor.kind!=='human'||
   event.resourceType==='profile'&&event.resourceId!==event.workspaceId)throw new HttpError('INTERNAL_ERROR',500);
  if(event.type==='import.previewed'||event.type==='import.applied'){
@@ -97,6 +100,11 @@ export function appendEvent(tx:WorkspaceTransaction,event:RedactedEventInput):{i
   }
   row.run_id=result.run_id;row.fence=run.fence;
  }
+ if(event.type==='task.decision_approved'||event.type==='task.decision_rejected'){
+  const task=taskRecord(tx,event.workspaceId,event.resourceId),approval=tx.one<{status:string;decided_at:number;decided_by_json:string;decision_reason:string}>('SELECT status,decided_at,decided_by_json,decision_reason FROM approvals WHERE workspace_id=? AND task_id=? AND id=?',[event.workspaceId,task.id,task.approval_id]);
+  const approved=event.type==='task.decision_approved';
+  if(event.actor.kind!=='human'||!approval||approval.status!==(approved?'approved':'rejected')||task.state!==(approved?'ready':'backlog')||task.active_run_id!==null||approval.decided_at!==event.nowMs||approval.decided_by_json!==row.actor_json||approval.decision_reason!==event.historyReason)throw new HttpError('INTERNAL_ERROR',500);
+ }
  if(event.type==='task.cancelled'||event.type==='task.requeued'){
   if(!validateTaskReasonRequest({expected_version:1,reason:event.historyReason})||new TextEncoder().encode(JSON.stringify({expected_version:1,reason:event.historyReason})).byteLength>65536)throw new HttpError('INTERNAL_ERROR',500);
   const task=taskRecord(tx,event.workspaceId,event.resourceId);
@@ -105,7 +113,7 @@ export function appendEvent(tx:WorkspaceTransaction,event:RedactedEventInput):{i
    const run=tx.one<{id:string;fence:number;status:string;ended_at:number}>('SELECT id,fence,status,ended_at FROM runs WHERE workspace_id=? AND task_id=? AND id=?',[event.workspaceId,task.id,task.latest_run_id]);
    if(run?.status==='cancelled'&&run.ended_at===event.nowMs){row.run_id=run.id;row.fence=run.fence;}
   }
- }else if(event.type==='task.result_accepted'){
+ }else if(event.type==='task.result_accepted'||event.type==='task.decision_approved'||event.type==='task.decision_rejected'){
   if(!validateTaskReasonRequest({expected_version:1,reason:event.historyReason})||new TextEncoder().encode(JSON.stringify({expected_version:1,reason:event.historyReason})).byteLength>65536)throw new HttpError('INTERNAL_ERROR',500);
  }else if(event.historyReason!==undefined)throw new HttpError('INTERNAL_ERROR',500);
  return persistEvent(tx,row,historyTaskId,event.historyReason??null);
@@ -130,6 +138,15 @@ export function appendRunExpiryEvent(tx:WorkspaceTransaction,runId:string,nowMs:
  if(task.active_run_id!==null||task.latest_run_id!==runId)throw new HttpError('INTERNAL_ERROR',500);
  const id='event_'+crypto.randomUUID();
  return persistEvent(tx,{id,workspace_id:workspaceId,sequence:1,type:'task.expired',actor_json:canonicalJson({kind:'system',principal_id:'system:lease-expiry',agent_id:null}),resource_type:'task',resource_id:task.id,resource_version:null,thread_id:null,request_id:crypto.randomUUID(),occurred_at:nowMs,summary:definitions['task.expired'].summary,task_version:task.task_version,run_id:runId,fence:run.fence},task.id);
+}
+/** Trusted decision expiry producer; never proves that external work stopped or had no effects. */
+export function appendDecisionExpiryEvent(tx:WorkspaceTransaction,approvalId:string,id:string,nowMs:number):{id:string;sequence:number}{
+ assertAdmissionOpen(tx);const workspaceId=tx.one<{workspace_id:string}>('SELECT workspace_id FROM workspace_metadata WHERE id=1')!.workspace_id;
+ const approval=tx.one<{task_id:string;expires_at:number;consumed_run_id:string|null;expiry_hold_code:string|null}>("SELECT task_id,expires_at,consumed_run_id,expiry_hold_code FROM approvals WHERE workspace_id=? AND id=? AND status='expired'",[workspaceId,approvalId]);
+ if(!approval||approval.expires_at>nowMs||approval.consumed_run_id!==null||approval.expiry_hold_code!==null)throw new HttpError('INTERNAL_ERROR',500);
+ const task=taskRecord(tx,workspaceId,approval.task_id),head=tx.one<{last_transition_id:string;task_version:number}>('SELECT last_transition_id,task_version FROM decision_lifecycle_heads WHERE workspace_id=? AND approval_id=?',[workspaceId,approvalId]);
+ if(task.approval_id!==approvalId||task.state!=='waiting'||task.active_run_id!==null||head?.last_transition_id!==id||head.task_version!==task.task_version)throw new HttpError('INTERNAL_ERROR',500);
+ return persistEvent(tx,{id,workspace_id:workspaceId,sequence:1,type:'task.decision_expired',actor_json:canonicalJson({kind:'system',principal_id:'system:decision-expiry',agent_id:null}),resource_type:'task',resource_id:task.id,resource_version:null,thread_id:null,request_id:id,occurred_at:nowMs,summary:definitions['task.decision_expired'].summary,task_version:task.task_version,run_id:null,fence:null},task.id);
 }
 /** Trusted artifact expiry producer; no caller-controlled actor or raw cleanup detail. */
 export function appendArtifactExpiryEvent(tx:WorkspaceTransaction,artifactId:string,nowMs:number):{id:string;sequence:number}{

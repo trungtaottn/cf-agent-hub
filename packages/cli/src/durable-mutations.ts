@@ -14,7 +14,7 @@ export interface IntentHandle {id:string;key:string|null;operation:string;origin
 function rejected():never {throw Error('CLI_INTENT_REJECTED');}
 const handle=(entry:JournalEntry):IntentHandle=>({id:entry.id,key:entry.key,operation:entry.request.operation,origin:entry.request.origin,workspaceId:entry.request.workspaceId});
 const sameBinding=(a:Readonly<VerifiedPrincipalBinding>,b:Readonly<VerifiedPrincipalBinding>)=>(['origin','workspaceId','principalId','slotId','slotGeneration','provenanceId'] as const).every(key=>a[key]===b[key]);
-const ownerOperations=new Set(['claimTask','submitTaskResult','failTask','heartbeatRuntime','heartbeatRun','stageArtifact','uploadArtifactContent','commitArtifact']);
+const ownerOperations=new Set(['claimTask','requestTaskDecision','submitTaskResult','failTask','heartbeatRuntime','heartbeatRun','stageArtifact','uploadArtifactContent','commitArtifact']);
 const escaped=(text:string)=>text.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
 /** Reconstruct only the exact stored semantic request, then round-trip the one map.
  * Raw upload bytes require issue44's explicit retained-file identity and are closed here. */

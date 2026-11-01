@@ -1,3 +1,8 @@
+import {prepareBrowserDecision} from './browser-decisions';
+import {boundedStream} from './streams';
+import {validateApprovalResponse,validateApprovalListResponse,validateTaskCommandResultResponse as validateDecisionResponse} from '../../../src/http/generated/decision-validators.js';
+import type {BrowserApprovalReadOperation,BrowserApprovalReadInput,BrowserApprovalReadData,BrowserDecisionOperation,BrowserDecisionInput,ArtifactDownloadResult} from './types';
+import type {Artifact,TaskCommandResult} from '../../../src/http/dto';
 import {clientOperations,artifactClientMaxBytes} from '../../../src/http/generated/client-operations';
 import {prepareNativeOperation,snapshot} from './native-request';
 import type {HttpOperationData} from '../../../src/http/dto';
@@ -214,6 +219,48 @@ export class HubClient {
    if(response.status===401||response.status===403)this.#csrfToken=null;
    return await this.#transport.json<HttpOperationData[K]>(response,{status:contract.status,validateEnvelope:contract.validateResponse,maxBytes:1048576,deadline});
   }catch(error){return faultResult(error);}finally{deadline.dispose();}
+ }
+ /** Closed approval reads do not broaden native operation support. */
+ async approvalRead<K extends BrowserApprovalReadOperation>(operation:K,input:BrowserApprovalReadInput<K>,options:Pick<RequestOptions,'signal'>={}):Promise<ApiResult<BrowserApprovalReadData<K>>>{
+  if(operation!=='listApprovals'&&operation!=='getApproval')return failure('OPERATION_UNAVAILABLE','Operation unavailable');
+  let prepared:ReturnType<typeof prepareBrowserDecision>;
+  try{if(!record(options)||Object.keys(options).some(k=>k!=='signal')||options.signal!==undefined&&!(options.signal instanceof AbortSignal))throw new ClientFault('INVALID_REQUEST');prepared=prepareBrowserDecision(this.#workspaceId,operation,input);}catch{return failure('INVALID_REQUEST','Invalid request');}
+  const deadline=new Deadline(30_000,options.signal);
+  try{const response=await this.#transport.open(prepared.path,{method:'GET',headers:{accept:'application/json'},credentials:'same-origin',mode:'same-origin',redirect:'error',cache:'no-store',signal:deadline.signal},deadline);
+   if(response.status===401||response.status===403)this.#csrfToken=null;
+   return await this.#transport.json<BrowserApprovalReadData<K>>(response,{page:operation==='listApprovals',status:200,validateEnvelope:operation==='listApprovals'?validateApprovalListResponse:validateApprovalResponse,maxBytes:1048576,deadline});
+  }catch(error){return faultResult(error);}finally{deadline.dispose();}
+ }
+ /** Current session/CSRF only. Intent and explicit replay are owned by the UI. */
+ async decision(operation:BrowserDecisionOperation,input:BrowserDecisionInput,options:{idempotencyKey:string;signal?:AbortSignal}):Promise<ApiResult<TaskCommandResult>>{
+  if(operation!=='approveApproval'&&operation!=='rejectApproval')return failure('OPERATION_UNAVAILABLE','Operation unavailable');
+  let prepared:ReturnType<typeof prepareBrowserDecision>,headers:Headers;
+  try{if(!record(options)||Object.keys(options).some(k=>k!=='signal'&&k!=='idempotencyKey')||!nonempty(options.idempotencyKey)||options.idempotencyKey.trim()!==options.idempotencyKey||/[\r\n]/.test(options.idempotencyKey)||options.signal!==undefined&&!(options.signal instanceof AbortSignal))throw new ClientFault('INVALID_REQUEST');
+   prepared=prepareBrowserDecision(this.#workspaceId,operation,input);if(!this.#csrfToken)return failure('CSRF_REQUIRED','Session CSRF token required');
+   headers=new Headers({accept:'application/json','content-type':'application/json','idempotency-key':options.idempotencyKey,'x-csrf-token':this.#csrfToken});
+  }catch{return failure('INVALID_REQUEST','Invalid request');}
+  const deadline=new Deadline(30_000,options.signal);
+  try{const response=await this.#transport.open(prepared.path,{method:'POST',headers,body:prepared.body,credentials:'same-origin',mode:'same-origin',redirect:'error',cache:'no-store',signal:deadline.signal},deadline);
+   if(response.status===401||response.status===403)this.#csrfToken=null;
+   return await this.#transport.json<TaskCommandResult>(response,{status:200,validateEnvelope:validateDecisionResponse,maxBytes:1048576,deadline});
+  }catch(error){return faultResult(error);}finally{deadline.dispose();}
+ }
+ /** Authorized binary lane. Completion proves byte count/EOF, not policy or digest. */
+ async downloadArtifact(input:RequestFor<'downloadArtifactContent'>,metadata:Artifact,options:Pick<RequestOptions,'signal'>={}):Promise<ArtifactDownloadResult>{
+  let prepared:ReturnType<typeof prepareNativeOperation>,artifact:Artifact;
+  try{if(!record(options)||Object.keys(options).some(k=>k!=='signal')||options.signal!==undefined&&!(options.signal instanceof AbortSignal))throw new ClientFault('INVALID_REQUEST');
+   prepared=prepareNativeOperation('https://browser.invalid',this.#workspaceId,'downloadArtifactContent',input);artifact=snapshot(metadata);
+   if(!validateArtifact(artifact)||artifact.workspace_id!==this.#workspaceId||artifact.id!==(prepared.request.path as Record<string,unknown>).artifact_id||artifact.status!=='committed'||!Number.isSafeInteger(artifact.byte_size)||artifact.byte_size<0||artifact.byte_size>artifactClientMaxBytes)throw new ClientFault('INVALID_REQUEST');
+  }catch{return failure('INVALID_REQUEST','Invalid request') as Extract<ArtifactDownloadResult,{ok:false}>;}
+  const deadline=new Deadline(30_000,options.signal);let handedOff=false;
+  try{const response=await this.#transport.open(prepared.path,{method:'GET',headers:{accept:'*/*'},credentials:'same-origin',mode:'same-origin',redirect:'error',cache:'no-store',signal:deadline.signal},deadline);
+   if(response.status===401||response.status===403)this.#csrfToken=null;
+   if(!response.ok){const result=await this.#transport.json<never>(response,{maxBytes:1048576,deadline});if(result.ok)throw new ClientFault('INVALID_RESPONSE');return result;}
+   const media=artifact.media_type,safeMedia=/^[A-Za-z0-9!#$&^_.+\-]+\/[A-Za-z0-9!#$&^_.+\-]+(?:;[ \x21-\x7e]*)?$/.test(media)&&media.length<=1024?media:'application/octet-stream';
+   if(response.status!==200||!response.body||response.headers.get('content-length')!==String(artifact.byte_size)||response.headers.get('content-type')!==safeMedia.trim()||!/^attachment(?:;|$)/i.test(response.headers.get('content-disposition')??'')){void response.body?.cancel().catch(()=>{});throw new ClientFault('INVALID_RESPONSE');}
+   const transfer=boundedStream(response.body,artifact.byte_size,deadline,()=>deadline.check(),()=>deadline.dispose());handedOff=true;
+   return {ok:true,status:200,data:{body:transfer.body,completion:transfer.completion,artifact:Object.freeze(artifact)},requestId:null};
+  }catch(error){return faultResult(error) as Extract<ArtifactDownloadResult,{ok:false}>;}finally{if(!handedOff)deadline.dispose();}
  }
  /** Session-bound token stays in this object only; callers supply the /auth/session token. */
  setCsrfToken(token:string|null):void{

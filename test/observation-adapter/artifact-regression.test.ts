@@ -31,11 +31,11 @@ it('built_trusted_API_lazily_reopens_real_protected_store_and_is_silent',async()
 });
 // Historical B1/adapter-only baseline: 4,170,954 bytes, SHA256
 // 0362f94729789325c39c7c45d52ef039dafae164a1a2a40130268ee5bfb67cfa.
-// Current schema19 + reviewed MCP journal profile has a distinct exact identity.
-it('native_complete_host_matches_reviewed_schema19_mcp_identity_and_unchanged_cap',()=>{
+// Current schema19 + reviewed MCP17 mapping has a distinct exact identity.
+it('native_complete_host_matches_reviewed_schema19_mcp17_identity_and_unchanged_cap',()=>{
  const result=spawnSync(process.execPath,['scripts/build-native-host.mjs'],{encoding:'utf8',timeout:30000});expect(result.status).toBe(0);
- const bytes=readFileSync('dist/native-host/host-v2.mjs');expect(bytes.length).toBe(4185143);expect(bytes.length).toBeLessThanOrEqual(4194304);expect(createHash('sha256').update(bytes).digest('hex')).toBe('8e6a37331013d5309a3613e7f79c55504c9a9f97f1aa413ecbd3ace9b4cdb1b3');
- const manifest=readFileSync('dist/native-host/host-v2.manifest.json');expect(createHash('sha256').update(manifest).digest('hex')).toBe('a6d3ab4b1187a2f492b18949912986e00fec115a945d4b4e47c29be3db528b11');
+ const bytes=readFileSync('dist/native-host/host-v2.mjs');expect(bytes.length).toBe(4188076);expect(bytes.length).toBeLessThanOrEqual(4194304);expect(createHash('sha256').update(bytes).digest('hex')).toBe('d63c8574ea26e2d290abf1e19417ae522e4d89e7be4e063653172bbceb97c66f');
+ const manifest=readFileSync('dist/native-host/host-v2.manifest.json');expect(createHash('sha256').update(manifest).digest('hex')).toBe('a92cd8b51fc022306b192e0e8c087b6c4f736320535e72b9322c6021c5b6e8dd');
 },30000);
 it('built_entry_budget_includes_trusted_preparation_and_stalled_stdin',()=>{
  const source=`import {runTrustedHook} from './${artifact}';const start=performance.now(),binding=${JSON.stringify(binding)};await runTrustedHook(()=>{Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,1500);return {binding,root:'/private/checkout',profile:'claude-posttooluse-path-docs-20261101-v1',observedAt:'2026-11-01T00:00:00.000Z',state:{flock:{}},credentialDirectory:'/missing',currentBinding:()=>binding}},new ReadableStream({pull(){return new Promise(()=>{})}}),start);if(performance.now()-start<1800||performance.now()-start>2500)process.exitCode=1;`;

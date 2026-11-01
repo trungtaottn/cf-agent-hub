@@ -42,7 +42,7 @@ describe('thin bridge over actual native transport',()=>{
   const [,init]=f.fetch.mock.calls[1]!;expect(init!.body).toBe('{"title":"Original intent","description":""}');
   expect(new Headers(init!.headers).get('idempotency-key')).toBe('original-intent-key');
  });
- it.each(['requestTaskDecision','listApprovals','getApproval','approveApproval','rejectApproval'])('does not activate %s or acquire credentials',async operation=>{
+ it.each(['listApprovals','getApproval','approveApproval','rejectApproval'])('does not activate %s or acquire credentials',async operation=>{
   const f=nativeFixture();expect(await createNativeInvoker(f.client).invoke(operation as EnabledOperationId,{} as never)).toMatchObject({ok:false,error:{code:'OPERATION_UNAVAILABLE'}});
   expect(f.acquire).not.toHaveBeenCalled();expect(f.fetch).not.toHaveBeenCalled();
  });

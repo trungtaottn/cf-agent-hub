@@ -1,3 +1,4 @@
+import {expireDueApprovals,nextApprovalDue,decisionExpiryBatchLimit} from '../approvals/expiry';
 import {expireArtifactIntents,cleanupArtifactGenerations,reconcileArtifactObjects,nextArtifactDue,ensureArtifactInventory} from '../artifacts/reconcile';
 import {expireDueRuns,nextRunDue} from '../tasks/failure';
 import type {AuthWorkspace} from '../auth/context';
@@ -10,7 +11,7 @@ import {DeliveryDispatcher} from './dispatcher';
 export interface ScheduleReceipt{armed:boolean;nextDueAt:number|null;generation:number;dirty:boolean;}
 export interface AlarmPort{setAlarm(time:number):Promise<void>;deleteAlarm():Promise<void>;}
 function nextDue(tx:WorkspaceTransaction,artifacts=false):number|null{
- const values=[nextOutboxDue(tx),nextRunDue(tx),artifacts?nextArtifactDue(tx):null].filter((value):value is number=>value!==null);return values.length?Math.min(...values):null;
+ const values=[nextOutboxDue(tx),nextRunDue(tx),decisionExpiryBatchLimit(tx)===null?null:nextApprovalDue(tx),artifacts?nextArtifactDue(tx):null].filter((value):value is number=>value!==null);return values.length?Math.min(...values):null;
 }
 export class OutboxScheduler{
  private readonly alarms:AlarmPort;
@@ -102,6 +103,15 @@ export class OutboxScheduler{
      if(processed===0)break;
     }catch{failed=true;break;}
    }
+   // Independent finite configured decision budget. A held poison row cannot pin
+   // the next alarm or prevent notifications/leases and later valid due decisions.
+   try{
+    const limit=withTransaction(this.workspace.storage,tx=>{assertAdmissionOpen(tx,fence!);return decisionExpiryBatchLimit(tx);});
+    for(let unit=0;limit!==null&&unit<limit;unit++){
+     const result=withTransaction(this.workspace.storage,tx=>{assertAdmissionOpen(tx,fence!);return expireDueApprovals(tx,this.workspace.clock.nowMs(),1);});
+     if(result.processed+result.held===0)break;
+    }
+   }catch{failed=true;}
    if(!withTransaction(this.workspace.storage,tx=>admissionOpen(tx,fence!)))return;
    const notifications=Promise.allSettled(attempts.map(async attempt=>{
     const result=await this.dispatcher.dispatchAttempt(attempt);

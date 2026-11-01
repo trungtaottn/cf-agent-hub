@@ -2,17 +2,17 @@ import {readFileSync} from 'node:fs';
 import {describe,it,expect} from 'vitest';
 const spec=JSON.parse(readFileSync('spec/openapi.json','utf8'));
 const operations=Object.entries(spec.paths).flatMap(([path,item]:[string,any])=>Object.entries(item).filter(([,op]:[string,any])=>op.operationId).map(([method,op]:[string,any])=>({path,method,...op})));
-const disabled=['requestTaskDecision','listApprovals','getApproval','approveApproval','rejectApproval'];
+const disabled=['listApprovals','getApproval','approveApproval','rejectApproval'];
 describe('generated workspace operation contract',()=>{
  it('has one reviewed inventory, covering every OpenAPI operation explicitly',async()=>{
   const inventory=JSON.parse(readFileSync('src/contracts/client-operations.json','utf8'));
   expect([...inventory.supported,...Object.keys(inventory.excluded)].sort()).toEqual(operations.map(o=>o.operationId).sort());
-  expect(inventory.supported).toHaveLength(59);
+  expect(inventory.supported).toHaveLength(60);
   for(const id of disabled)expect(inventory.excluded[id]).toBe('R3 unavailable');
  });
  it('derives every supported method, path, native lane and proof exactly from OpenAPI',async()=>{
   const {clientOperations}=await import('../../src/http/generated/client-operations');
-  expect(Object.keys(clientOperations)).toHaveLength(59);
+  expect(Object.keys(clientOperations)).toHaveLength(60);
   let native=0,proof=0;
   for(const [id,contract] of Object.entries(clientOperations)){
    const op=operations.find(o=>o.operationId===id)!;
@@ -21,7 +21,7 @@ describe('generated workspace operation contract',()=>{
    expect(contract.native).toBe(Boolean(scheme));expect(contract.runtimeProof).toBe(Boolean(scheme&&Object.hasOwn(scheme,'RuntimeProof')));
    native+=Number(contract.native);proof+=Number(contract.runtimeProof);
   }
-  expect(native).toBe(34);expect(proof).toBe(8);
+  expect(native).toBe(35);expect(proof).toBe(9);
   for(const id of ['reconcileMessageCreation','reconcileTaskCreation','prepareMessageCreation','prepareTaskCreation'] as const)expect(clientOperations[id]).toMatchObject({native:false,runtimeProof:false,method:'POST',status:200});
   expect(clientOperations.listTaskObservations).toMatchObject({native:true,runtimeProof:false,method:'GET',status:200,page:true});
   for(const id of ['establishObservationSession','appendObservationBatch','replaceObservationSession','getObservationOwnerStatus',...disabled])expect(Object.hasOwn(clientOperations,id)).toBe(false);

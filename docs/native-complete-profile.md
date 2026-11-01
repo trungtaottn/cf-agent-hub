@@ -463,3 +463,5 @@ activate the production decision registry, an installer, enrollment, provider or
 outbox delivery. The final combined native19/MCP source build measured
 4,185,143 bytes against the unchanged 4,194,304-byte executable cap. Core decision
 and recovery acceptance remain separate gates.
+
+The subsequent statically mapped seventeenth MCP request wrapper rebuilds the combined schema19 native host to 4,188,076 bytes (SHA-256 `d63c8574ea26e2d290abf1e19417ae522e4d89e7be4e063653172bbceb97c66f`). The unchanged 4,194,304-byte cap, frozen historical profiles and closed native inventory remain enforced. This is a separate current source identity, not a rewrite of the preceding 4,185,143-byte checkpoint or an installed execution receipt.

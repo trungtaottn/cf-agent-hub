@@ -133,9 +133,10 @@ try {
   if(action==='r2-advance-backlog'){if(!r2Fixture)throw Error('R2_FIXTURE_NOT_READY');await r2Fixture.advanceBacklog();return;}
   if(action==='r2-revoke-human'){if(!r2Fixture)throw Error('R2_FIXTURE_NOT_READY');await r2Fixture.revokeHumans();return;}
   if(action.startsWith('factory-observations-')){if(!r2Fixture)throw Error('R2_FIXTURE_NOT_READY');return r2Fixture.observationControl(action);}
-  if(action==='fresh'||action==='r2-board'||action==='factory-observations'){
+  if(action==='fresh'||action==='r2-board'||action==='factory-observations'||action==='r3-decision-reads'){
    input.config=structuredClone(baselineConfig);input.bundle.credentials=structuredClone(baselineCredentials);input.bundle.config_epoch=1;dropPreferencesResponse=false;r2Fixture=null;compositionProbe.reset();taskCompositionProbe.reset();
-   if(action!=='fresh')configureR2UiFixture(input.config,action==='factory-observations');
+   if(action!=='fresh'&&action!=='r3-decision-reads')configureR2UiFixture(input.config,action==='factory-observations');
+   if(action==='r3-decision-reads')input.config.human_grants[0].scopes=[...new Set([...input.config.human_grants[0].scopes,'tasks:read','approvals:read','artifacts:read'])];
    if(action==='factory-observations')input.bundle.credentials.push({workspace_id:'ws_example',credential_id:'credential_factory_second',token_sha256:await sha256(fixtureSecondNativeToken)});
    currentName='ui-fixture-'+randomBytes(8).toString('hex');
    input.config.workspace_catalog[0].object_name=currentName;
@@ -145,7 +146,7 @@ try {
    const response=await harness.getWorker('cf-agent-hub-control-fixture').fetch('http://fixture-control/install',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:currentName,operator:operator(),input:next})});
    if(response.status!==200){await response.arrayBuffer();throw Error('FIXTURE_INSTALL_FAILED');}
    await response.arrayBuffer();
-   if(action!=='fresh')r2Fixture=await seedR2UiFixture({worker,storage:await worker.getDurableObjectStorage('WORKSPACE',{name:currentName}),origin:APP_ORIGIN,issuer:ISSUER_ORIGIN,csrfSecret,nativeToken:fixtureNativeToken,...(action==='factory-observations'?{secondNativeToken:fixtureSecondNativeToken}:{})});
+   if(action!=='fresh'&&action!=='r3-decision-reads')r2Fixture=await seedR2UiFixture({worker,storage:await worker.getDurableObjectStorage('WORKSPACE',{name:currentName}),origin:APP_ORIGIN,issuer:ISSUER_ORIGIN,csrfSecret,nativeToken:fixtureNativeToken,...(action==='factory-observations'?{secondNativeToken:fixtureSecondNativeToken}:{})});
    return;
   }
   if(action==='restrict-overrides'){
@@ -165,7 +166,7 @@ try {
   preview=await startReadOnlyPreview({read:(path,options)=>r2Fixture.readForPreview(path,options)});
   console.log('CFHUB_LOCAL_PREVIEW_READY '+preview.origin+' synthetic_read_only');
  }
- if(process.argv.includes('--self-check')||process.argv.includes('--self-check-r2')||process.argv.includes('--self-check-observations')) {
+ if(process.argv.includes('--self-check')||process.argv.includes('--self-check-r2')||process.argv.includes('--self-check-observations')||process.argv.includes('--self-check-decision-reads')) {
   await control('fresh');
   const authProbe=await worker.fetch(APP_ORIGIN+'/v2/workspaces/ws_example/auth/start',{method:'POST',headers:{origin:APP_ORIGIN,'content-type':'application/json'},body:JSON.stringify({return_path:'/overview'})});
   if(authProbe.status!==200){const value=await authProbe.json();throw Error('FIXTURE_FRESH_AUTH_FAILED_'+authProbe.status+'_'+value.error?.code);}
@@ -180,6 +181,13 @@ try {
    assert.equal(input.config.human_grants[0].scopes.includes('tasks:read'),false);assert.equal(input.config.human_grants.length,2);
    const resetStorage=await worker.getDurableObjectStorage('WORKSPACE',{name:currentName});assert.equal((await resetStorage.exec('SELECT COUNT(*) AS count FROM tasks'))[0].count,0);
   }
+  if(process.argv.includes('--self-check-decision-reads')){
+   await control('r3-decision-reads');await fixture.selfCheckApp('/tasks?workspace=ws_example&panel=approvals');
+   assert.equal(input.config.human_grants[0].scopes.includes('approvals:read'),true);assert.equal(input.config.human_grants[0].scopes.includes('approvals:decide'),false);assert.equal(input.config.workspace_policies[0].decision_policy,undefined);
+   const unauthenticated=await worker.fetch(APP_ORIGIN+'/v2/workspaces/ws_example/approvals?limit=25');assert.equal(unauthenticated.status,401);await unauthenticated.arrayBuffer();
+   const decisionStorage=await worker.getDurableObjectStorage('WORKSPACE',{name:currentName});assert.equal((await decisionStorage.exec('SELECT COUNT(*) AS count FROM approvals'))[0].count,0);
+   await control('fresh');assert.equal(input.config.human_grants[0].scopes.includes('approvals:read'),false);
+  }
   if(process.argv.includes('--self-check-observations')){await control('factory-observations');await r2Fixture.assertObservations();await control('restart');await r2Fixture.assertObservations();await control('factory-observations-replace');await r2Fixture.assertReplacement();await control('factory-observations');await control('factory-observations-truncate');await control('factory-observations-end-run');await control('factory-observations');await control('factory-observations-clear');await control('factory-observations-successor');await control('factory-observations-hide-captured');await control('r2-board');assert.equal(input.config.workspace_policies[0].observation_pilot,undefined);assert.equal(input.bundle.credentials.length,1);}
   await control('restart');
   await fixture.selfCheckApp();
@@ -187,7 +195,7 @@ try {
   await dispose();
   const {connect}=await import('node:net');
   for(const port of [proxy,negativeProxy])await new Promise((resolve,reject)=>{const socket=connect({host:'127.0.0.1',port});socket.once('connect',()=>{socket.destroy();reject(Error('LISTENER_SURVIVED_TEARDOWN'));});socket.once('error',()=>resolve());});
-  console.log('CFHUB_FIXTURE_SELF_CHECK_PASS provider_signature basic_auth pkce one_use_code exact_egress worker_sql_authority teardown'+(process.argv.includes('--self-check-r2')?' r2_real_commands retained_results committed_artifact bounded_pages do_eviction':'')+(process.argv.includes('--self-check-observations')?' observation_real_ingress two_agents two_checkouts bound_pages replacement_restart append_eviction historical_read captured_project_filter simulated_empty_continuity reset':''));
+  console.log('CFHUB_FIXTURE_SELF_CHECK_PASS provider_signature basic_auth pkce one_use_code exact_egress worker_sql_authority teardown'+(process.argv.includes('--self-check-r2')?' r2_real_commands retained_results committed_artifact bounded_pages do_eviction':'')+(process.argv.includes('--self-check-observations')?' observation_real_ingress two_agents two_checkouts bound_pages replacement_restart append_eviction historical_read captured_project_filter simulated_empty_continuity reset':'')+(process.argv.includes('--self-check-decision-reads')?' decision_read_fixture shell unauthenticated_denial empty_state no_action_policy reset':''));
  } else {
   console.log('CFHUB_FIXTURE_READY proxy='+fixture.proxyPort+' negative_proxy='+fixture.negativeProxyPort+' app_port='+fixture.appPort+' app_pin='+fixture.pins[0]+' issuer_pin='+fixture.pins[1]+' app_certificate='+Buffer.from(fixture.appCertificate).toString('base64'));
  }

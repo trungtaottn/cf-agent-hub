@@ -1,3 +1,4 @@
+import {isRestoreDecisionCancellationGap} from './decision-provenance';
 import {decisionExpiry} from '../approvals/contracts';
 import {isStagedRestoreExpiryEvent} from './restore-audit-history';
 import type {CurrentRestoreJob} from './restore-job';
@@ -80,6 +81,6 @@ export function verifyDecisionSourceRow(tx:WorkspaceTransaction,table:string,row
   }
   if(!Number.isSafeInteger(row.sequence)||Number(row.sequence)<1||!Number.isSafeInteger(row.before_version)||!Number.isSafeInteger(row.after_version)||Number(row.after_version)!==Number(row.before_version)+1||!validDecisionTransition(String(row.kind),String(row.before_state),String(row.after_state)))bad();
   if(row.sequence===1){if(row.kind!=='request'||row.before_state!=='doing'||row.after_state!=='waiting'||row.before_version!==a.task_version_at_request||row.run_id!==a.run_id||row.created_at!==a.created_at)bad();}
-  else{const previous=one(tx,'SELECT * FROM decision_lifecycle_transitions WHERE workspace_id=? AND approval_id=? AND sequence=?',[row.workspace_id,row.approval_id,Number(row.sequence)-1]);if(previous.task_id!==row.task_id||previous.after_version!==row.before_version||previous.after_state!==row.before_state||Number(previous.created_at)>Number(row.created_at))bad();}
+  else{const previous=one(tx,'SELECT * FROM decision_lifecycle_transitions WHERE workspace_id=? AND approval_id=? AND sequence=?',[row.workspace_id,row.approval_id,Number(row.sequence)-1]);if(previous.task_id!==row.task_id||Number(previous.created_at)>Number(row.created_at))bad();if((previous.after_version!==row.before_version||previous.after_state!==row.before_state)&&!isRestoreDecisionCancellationGap(tx,a,previous,row,job))bad();}
  }catch{bad();}
 }

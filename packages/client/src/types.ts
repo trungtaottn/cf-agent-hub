@@ -150,3 +150,12 @@ export type BrowserComposePrepareRequest=<K extends BrowserComposeOperation>(ope
 export type BrowserArtifactOperation='stageArtifact'|'uploadArtifactContent'|'commitArtifact';
 export type BrowserArtifactOptions<K extends BrowserArtifactOperation>={idempotencyKey:string;signal?:AbortSignal}&(K extends 'uploadArtifactContent'?{blob:Blob;artifact:DTO.Artifact}:{blob?:never;artifact?:never});
 export type BrowserArtifactRequest=<K extends BrowserArtifactOperation>(operation:K,input:RequestFor<K>,options:BrowserArtifactOptions<K>)=>Promise<ApiResult<DTO.HttpOperationData[K]>>;
+
+/** Closed human-cookie approval surface, deliberately outside the native inventory. */
+export type BrowserApprovalReadOperation='listApprovals'|'getApproval';
+export type BrowserDecisionOperation='approveApproval'|'rejectApproval';
+export type BrowserApprovalReadInput<K extends BrowserApprovalReadOperation>=K extends 'listApprovals'?{query?:{cursor?:string;limit?:number}}:{path:{approval_id:string}};
+export type BrowserApprovalReadData<K extends BrowserApprovalReadOperation>=K extends 'listApprovals'?DTO.Approval[]:DTO.Approval;
+export type BrowserApprovalReadRequest=<K extends BrowserApprovalReadOperation>(operation:K,input:BrowserApprovalReadInput<K>,options?:Pick<RequestOptions,'signal'>)=>Promise<ApiResult<BrowserApprovalReadData<K>>>;
+export type BrowserDecisionInput={path:{approval_id:string};body:DTO.ApprovalDecisionRequest};
+export type BrowserDecisionRequest=(operation:BrowserDecisionOperation,input:BrowserDecisionInput,options:{idempotencyKey:string;signal?:AbortSignal})=>Promise<ApiResult<DTO.TaskCommandResult>>;

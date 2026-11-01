@@ -6,9 +6,9 @@ import {sha256} from '../../src/config/bootstrap';
 import {decisionPath,decisionRoutes} from '../../src/http/decision-routes';
 import {parseDecisionQuery} from '../../src/http/decision-read-routes';
 const origin='https://hub.example.invalid',base=origin+'/v2/workspaces/ws_example/';
-it('decision route shell admits only generic request and approval reads',()=>{
- for(const path of ['tasks/task_a:request-decision','approvals','approvals/approval_a'])expect(decisionPath.test(new URL(base+path).pathname)).toBe(true);
- for(const path of ['approvals/a:approve','approvals/a:reject','tasks/a:claim','approvals/a/content','approvals/'])expect(decisionPath.test(new URL(base+path).pathname)).toBe(false);
+it('decision route shell admits exact generic request read and human decision paths',()=>{
+ for(const path of ['tasks/task_a:request-decision','approvals','approvals/approval_a','approvals/a:approve','approvals/a:reject'])expect(decisionPath.test(new URL(base+path).pathname)).toBe(true);
+ for(const path of ['approvals/a:unknown','tasks/a:claim','approvals/a/content','approvals/'])expect(decisionPath.test(new URL(base+path).pathname)).toBe(false);
 });
 it('decision read query is closed, singleton and bounded',()=>{
  expect(parseDecisionQuery(new URLSearchParams(),'approvals')).toEqual({limit:50,token:null});

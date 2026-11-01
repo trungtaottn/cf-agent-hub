@@ -9,7 +9,7 @@ import {claimContext,PROOF_A} from '../helpers/claims';
 import {claimTaskCommand} from '../../src/tasks/claim';
 import {executeCommand} from '../../src/workspace/commands';
 const origin='https://hub.example.invalid',base=origin+'/v2/workspaces/ws_example/';
-it('actual WorkspaceDO dispatch authenticates approval reads and keeps write successors unavailable',async()=>{
+it('actual WorkspaceDO dispatch authenticates approval reads and keeps unsupported methods unavailable',async()=>{
  const f=await decisionFixture('decision_do_reads'),token='A'.repeat(43);
  await runInDurableObject(f.stub,async(_o,s)=>{human(s.storage);s.storage.sql.exec('UPDATE sessions SET token_digest=?',await sha256(token));});
  expect((await f.stub.fetch(new Request(base+'approvals/missing'))).status).toBe(401);
@@ -17,7 +17,7 @@ it('actual WorkspaceDO dispatch authenticates approval reads and keeps write suc
  expect((await f.stub.fetch(new Request(base+'approvals/missing',{headers}))).status).toBe(404);
  expect((await f.stub.fetch(new Request(base+'approvals',{method:'OPTIONS',headers:{origin,'access-control-request-method':'GET'}}))).status).toBe(204);
  expect((await f.stub.fetch(new Request(base.replace('ws_example','foreign')+'approvals/missing',{headers}))).status).toBe(401);
- expect((await f.stub.fetch(new Request(base+'approvals/missing:approve',{method:'POST',headers}))).status).toBe(404);
+ expect((await f.stub.fetch(new Request(base+'approvals/missing:approve',{headers}))).status).toBe(404);
 });
 it('actual WorkspaceDO request route retains empty production registry and unchanged SQL',async()=>{
  const f=await decisionFixture('decision_do_request'),token='B'.repeat(42)+'A',proof='C'.repeat(42)+'A';
@@ -38,5 +38,5 @@ it('public Worker entry forwards only configured decision routes to their bound 
  expect((await worker.fetch(new Request(base+'approvals'),configured)).status).toBe(401);
  expect((await worker.fetch(new Request(base+'tasks/task_a:request-decision',{method:'POST',headers:{'content-type':'application/json','idempotency-key':'public-entry'},body:JSON.stringify({expected_version:3,run_id:'run_a',fence:1,checkpoint:{summary:'Synthetic',artifact_ids:[]},proposal:proposal('a'.repeat(64))})}),configured)).status).toBe(401);
  expect((await worker.fetch(new Request(base.replace('ws_example','foreign')+'approvals'),configured)).status).toBe(401);
- expect((await worker.fetch(new Request(base+'approvals/missing:approve',{method:'POST'}),configured)).status).toBe(404);
+ expect((await worker.fetch(new Request(base+'approvals/missing:approve'),configured)).status).toBe(404);
 });
