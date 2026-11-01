@@ -51,6 +51,7 @@ test('revocation_clears_factory_and_late_private_result_cannot_return',async({pa
 });
 test('keyboard_narrow_reducedmotion_surfaces_are_not_graph_only',async({page})=>{
  await page.setViewportSize({width:360,height:760});await page.emulateMedia({reducedMotion:'reduce'});await login(page,'/tasks');
+ await expect(page.getByRole('button',{name:'Factory evidence',exact:true})).toBeEnabled();
  const toggle=page.getByRole('button',{name:'Task board',exact:true});await toggle.focus();await page.keyboard.press('Tab');await expect(page.getByRole('button',{name:'Factory evidence',exact:true})).toBeFocused();await page.keyboard.press('Enter');
  await expect(page.getByTestId('factory-overview')).toBeVisible();await page.keyboard.press('Tab');await expect(page.getByLabel('Project filter',{exact:true})).toBeFocused();await page.keyboard.press('Tab');await expect(page.getByLabel('Work role filter',{exact:true})).toBeFocused();await page.keyboard.press('Shift+Tab');await expect(page.getByLabel('Project filter',{exact:true})).toBeFocused();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
