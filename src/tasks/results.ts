@@ -1,3 +1,5 @@
+import {assertBoundDecisionRun} from '../approvals/settlement';
+import {appendDecisionTransition} from '../approvals/lifecycle';
 import {assertResourceReferences,actorResourceGrant} from '../auth/resource-visibility';
 import type {WorkspaceTransaction} from '../storage/transaction';
 import type {ActorContext} from '../workspace/context';
@@ -59,7 +61,7 @@ function resultBody<T extends {expected_version:number}>(input:T,validate:(input
 function currentVersion(actual:number,expected:number):void {if(actual!==expected)throw new HttpError('VERSION_CONFLICT',409,{current_version:actual});}
 function serverId(id:string|undefined):string {if(!id||!/^[A-Za-z0-9_-]{1,128}$/.test(id))throw new HttpError('INTERNAL_ERROR',500);return id;}
 /** First execution only; original response replay must not reapply ended-run preconditions. */
-export function submitTaskResult(tx:WorkspaceTransaction,ctx:CommandContext&{resultId?:string},taskId:string,input:TaskSubmitResultRequest,verified:VerifiedRuntime):TaskCommandResult {
+export function submitTaskResult(tx:WorkspaceTransaction,ctx:CommandContext&{resultId?:string;decisionEventId?:string},taskId:string,input:TaskSubmitResultRequest,verified:VerifiedRuntime):TaskCommandResult {
  resultBody(input,validateTaskSubmitResultRequest);const actor=executionActor(tx,ctx,'tasks:execute',verified);
  assertActiveRun(tx,{...ctx,actor},taskId,input.run_id,input.fence,verified);
  const row=taskRecord(tx,actor.workspaceId,taskId);currentVersion(row.task_version,input.expected_version);
@@ -67,6 +69,7 @@ export function submitTaskResult(tx:WorkspaceTransaction,ctx:CommandContext&{res
  const artifacts=assertCommittedArtifacts(tx,{actor,nowMs:ctx.nowMs},input.result.artifact_ids);
  if(artifacts.some(a=>a.task_id!==null&&a.task_id!==taskId||a.run_id!==null&&a.run_id!==input.run_id))throw new HttpError('NOT_FOUND',404);
  if(artifacts.some(a=>a.byte_size>ARTIFACT_MAX_BYTES))throw new HttpError('LIMIT_EXCEEDED',413);
+ const head=assertBoundDecisionRun(tx,row,runRecord(tx,actor.workspaceId,input.run_id),ctx.nowMs);if(head&&!ctx.decisionEventId)throw new HttpError('DEPENDENCY_UNAVAILABLE',503);
  const id=serverId(ctx.resultId),taskVersion=nextRunVersion(row.task_version),sequence=nextRunVersion(row.next_result_sequence),run=runRecord(tx,actor.workspaceId,input.run_id);
  tx.exec('INSERT INTO task_results(id,workspace_id,task_id,run_id,submission_sequence,submitted_kind,submitted_principal_id,submitted_agent_id,summary,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)',[id,actor.workspaceId,taskId,input.run_id,row.next_result_sequence,actor.kind,actor.principalId,actor.agentId,input.result.summary,ctx.nowMs]);
  for(const [ordinal,a] of artifacts.entries()){
@@ -75,6 +78,7 @@ export function submitTaskResult(tx:WorkspaceTransaction,ctx:CommandContext&{res
  }
  tx.exec("UPDATE runs SET status='submitted',run_version=?,ended_at=? WHERE workspace_id=? AND task_id=? AND id=?",[nextRunVersion(run.run_version),ctx.nowMs,actor.workspaceId,taskId,input.run_id]);
  tx.exec("UPDATE tasks SET state='review',task_version=?,current_result_id=?,next_result_sequence=?,active_run_id=NULL,updated_at=? WHERE workspace_id=? AND id=?",[taskVersion,id,sequence,ctx.nowMs,actor.workspaceId,taskId]);
+ if(head)appendDecisionTransition(tx,head,ctx.decisionEventId!,'submit','review',taskVersion,input.run_id,ctx.nowMs);
  markSchedulerDirty(tx);
  // Reproject after association writes: newly added edges must not create an unreadable outcome.
  const task=taskView(tx,actor,taskRecord(tx,actor.workspaceId,taskId),ctx.nowMs);
@@ -83,18 +87,20 @@ export function submitTaskResult(tx:WorkspaceTransaction,ctx:CommandContext&{res
  const data={task,run:runView(runRecord(tx,actor.workspaceId,input.run_id)),approval:null};assertTaskItemFits(data);return data;
 }
 /** Immutable submitter attribution is compared directly; current submitter credentials are irrelevant. */
-export function acceptTaskResult(tx:WorkspaceTransaction,ctx:CommandContext&{acceptanceId?:string},taskId:string,input:TaskReasonRequest):TaskCommandResult {
+export function acceptTaskResult(tx:WorkspaceTransaction,ctx:CommandContext&{acceptanceId?:string;decisionEventId?:string},taskId:string,input:TaskReasonRequest):TaskCommandResult {
  resultBody(input,validateTaskReasonRequest);const actor=taskAccess(tx,ctx.actor,'tasks:review',taskId,ctx.nowMs),row=taskRecord(tx,actor.workspaceId,taskId),task=taskView(tx,actor,row,ctx.nowMs);
  currentVersion(row.task_version,input.expected_version);
- if(row.state!=='review'||row.current_result_id===null||row.active_run_id!==null||row.approval_id!==null||task.flags.some(flag=>flag==='outcome_unknown'||flag==='retry_exhausted'))throw new HttpError('INVALID_STATE',409);
+ if(row.state!=='review'||row.current_result_id===null||row.active_run_id!==null||task.flags.some(flag=>flag==='outcome_unknown'||flag==='retry_exhausted'))throw new HttpError('INVALID_STATE',409);
  const result=tx.one<TaskResultRow>('SELECT * FROM task_results WHERE workspace_id=? AND task_id=? AND id=?',[actor.workspaceId,taskId,row.current_result_id]);
  if(!result||result.run_id!==row.latest_run_id)throw new HttpError('INVALID_STATE',409);
  const run=runRecord(tx,actor.workspaceId,result.run_id);
  if(run.task_id!==taskId||run.status!=='submitted'||run.ended_at===null||result.submitted_kind!=='agent'||result.submitted_agent_id!==run.agent_id)throw new HttpError('INVALID_STATE',409);
  if(actor.principalId===result.submitted_principal_id||actor.agentId!==null&&actor.agentId===result.submitted_agent_id)throw new HttpError('FORBIDDEN',403);
+ const head=assertBoundDecisionRun(tx,row,run,ctx.nowMs);if(head&&!ctx.decisionEventId)throw new HttpError('DEPENDENCY_UNAVAILABLE',503);
  const id=serverId(ctx.acceptanceId),version=nextRunVersion(row.task_version);
  tx.exec('INSERT INTO task_acceptances(id,workspace_id,task_id,result_id,run_id,task_version,reviewer_principal_id,reviewer_agent_id,reason,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)',[id,actor.workspaceId,taskId,result.id,result.run_id,version,actor.principalId,actor.agentId,input.reason,ctx.nowMs]);
  tx.exec("UPDATE tasks SET state='done',task_version=?,updated_at=? WHERE workspace_id=? AND id=?",[version,ctx.nowMs,actor.workspaceId,taskId]);
+ if(head)appendDecisionTransition(tx,head,ctx.decisionEventId!,'accept','done',version,run.id,ctx.nowMs);
  const data={task:taskView(tx,actor,taskRecord(tx,actor.workspaceId,taskId),ctx.nowMs),run:null,approval:null};assertTaskItemFits(data);return data;
 }
 export function submitTaskResultCommand(id:string,proofHash:string):CommandDescriptor<TaskSubmitResultRequest,TaskCommandResult> {
@@ -109,7 +115,7 @@ export function submitTaskResultCommand(id:string,proofHash:string):CommandDescr
  return {operation:'tasks:execute',target:'tasks:'+id+':submit-result',
   resource(tx,ctx,input){access(tx,ctx,input);return {kind:'task',id,projectId:taskRecord(tx,ctx.actor.workspaceId,id).project_id};},checkAccess:access,
   checkReplay(tx,ctx,input,outcome){if(!validateTaskCommandResult(outcome.data)||outcome.data.task.id!==id||outcome.data.run?.id!==input.run_id||outcome.data.run.status!=='submitted'||outcome.data.task.result?.run_id!==input.run_id||outcome.data.approval!==null)throw new HttpError('INTERNAL_ERROR',500);assertTaskOutcomeVisible(tx,ctx.actor,outcome.data.task,ctx.nowMs);assertRunOutcomeVisible(tx,ctx,outcome.data.run,proof(tx,ctx,input),'tasks:execute');assertTaskItemFits(outcome.data);},
-  execute(tx,ctx,input,eventId){const data=submitTaskResult(tx,{...ctx,resultId:'result_'+eventId.slice(6)},id,input,proof(tx,ctx,input));return {outcome:{status:200,data},event:{type:'task.result_submitted',resourceType:'task',resourceId:id,resourceVersion:null,threadId:null}};}
+  execute(tx,ctx,input,eventId){const data=submitTaskResult(tx,{...ctx,resultId:'result_'+eventId.slice(6),decisionEventId:eventId},id,input,proof(tx,ctx,input));return {outcome:{status:200,data},event:{type:'task.result_submitted',resourceType:'task',resourceId:id,resourceVersion:null,threadId:null}};}
  };
 }
 export function acceptTaskResultCommand(id:string):CommandDescriptor<TaskReasonRequest,TaskCommandResult> {
@@ -117,6 +123,6 @@ export function acceptTaskResultCommand(id:string):CommandDescriptor<TaskReasonR
   resource(tx,ctx,input){resultBody(input,validateTaskReasonRequest);taskAccess(tx,ctx.actor,'tasks:review',null,ctx.nowMs);return {kind:'task',id,projectId:taskRecord(tx,ctx.actor.workspaceId,id).project_id};},
   checkAccess(tx,ctx){const actor=taskAccess(tx,ctx.actor,'tasks:review',id,ctx.nowMs);taskView(tx,actor,taskRecord(tx,actor.workspaceId,id),ctx.nowMs);},
   checkReplay(tx,ctx,_input,outcome){const actor=taskAccess(tx,ctx.actor,'tasks:review',id,ctx.nowMs);if(!validateTaskCommandResult(outcome.data)||outcome.data.task.id!==id||outcome.data.task.state!=='done'||outcome.data.task.result===null||outcome.data.run!==null||outcome.data.approval!==null)throw new HttpError('INTERNAL_ERROR',500);assertTaskOutcomeVisible(tx,actor,outcome.data.task,ctx.nowMs);assertTaskItemFits(outcome.data);},
-  execute(tx,ctx,input,eventId){const data=acceptTaskResult(tx,{...ctx,acceptanceId:'acceptance_'+eventId.slice(6)},id,input);return {outcome:{status:200,data},event:{type:'task.result_accepted',resourceType:'task',resourceId:id,resourceVersion:null,threadId:null,historyReason:input.reason}};}
+  execute(tx,ctx,input,eventId){const data=acceptTaskResult(tx,{...ctx,acceptanceId:'acceptance_'+eventId.slice(6),decisionEventId:eventId},id,input);return {outcome:{status:200,data},event:{type:'task.result_accepted',resourceType:'task',resourceId:id,resourceVersion:null,threadId:null,historyReason:input.reason}};}
  };
 }

@@ -3,7 +3,8 @@ import {withTransaction} from '../storage/transaction';
 import {dispatchCommand} from './router';
 import {dispatchTaskRead} from './task-read-routes';
 import {createTaskCommand,patchTaskCommand,readyTaskCommand,cancelTaskCommand,requeueTaskCommand} from '../tasks/commands';
-import {claimTaskCommand} from '../tasks/claim';
+import {prepareClaimTaskCommand} from '../tasks/claim';
+import type {TaskClaimRequest} from './dto';
 import {submitTaskResultCommand,acceptTaskResultCommand} from '../tasks/results';
 import {failTaskCommand} from '../tasks/failure';
 import {heartbeatRunCommand} from '../tasks/lease';
@@ -13,8 +14,9 @@ import {HttpError,toHttpError,securityHeaders} from './envelopes';
 export const taskPath=/^\/v2\/workspaces\/([a-zA-Z0-9_-]{1,128})\/(tasks(?:\/[^/:]+(?::ready|:claim|:fail|:cancel|:requeue|:submit-result|:accept-result|\/results)?)?|runs\/[^/:]+(?::heartbeat)?)$/;
 function opaqueId(workspace:AuthWorkspace,prefix:string):string{const bytes=workspace.entropy.bytes(24);if(bytes.length!==24)throw new HttpError('INTERNAL_ERROR',500);return prefix+Array.from(bytes,x=>x.toString(16).padStart(2,'0')).join('');}
 function noQuery(params:URLSearchParams):Record<string,never>{if(params.size)throw new HttpError('INVALID_REQUEST',400);return {};}
-export async function taskRoutes(request:Request,workspace?:AuthWorkspace):Promise<Response>{
+export async function taskRoutes(request:Request,workspace?:AuthWorkspace,bucket?:R2Bucket):Promise<Response>{
  try{
+  const runtimeProof=request.headers.get('x-runtime-token');
   const url=new URL(request.url),match=taskPath.exec(url.pathname);
   if(!workspace||!match||match[1]!==workspace.workspaceId)throw new HttpError('NOT_FOUND',404);
   const path=match[2],collection=path==='tasks',action=path.includes(':')?path.slice(path.lastIndexOf(':')+1):null,run=path.startsWith('runs/'),results=/^tasks\/[^/]+\/results$/.test(path);
@@ -34,7 +36,10 @@ export async function taskRoutes(request:Request,workspace?:AuthWorkspace):Promi
   if(collection){const bytes=workspace.entropy.bytes(24);if(bytes.length!==24)throw new HttpError('INTERNAL_ERROR',500);const taskId='task_'+Array.from(bytes,x=>x.toString(16).padStart(2,'0')).join('');return dispatchCommand(request,workspace,{...common,schema:'TaskCreateRequest',command:createTaskCommand(taskId)});}
   if(action==='ready')return dispatchCommand(request,workspace,{...common,schema:'TaskVersionRequest',command:readyTaskCommand(id!)});
   if(action==='cancel'||action==='requeue')return dispatchCommand(request,workspace,{...common,schema:'TaskReasonRequest',command:action==='cancel'?cancelTaskCommand(id!):requeueTaskCommand(id!)});
-  if(action==='claim')return dispatchCommand(request,workspace,{...common,schema:'TaskClaimRequest',command:async()=>({command:claimTaskCommand(id!,opaqueId(workspace,'run_'),await hashRuntimeProof(request.headers.get('x-runtime-token')))})});
+  if(action==='claim'){
+   const ownedWorkspace:AuthWorkspace={...workspace,secrets:{...workspace.secrets},clock:{nowMs:workspace.clock.nowMs.bind(workspace.clock)},entropy:{bytes:workspace.entropy.bytes.bind(workspace.entropy)}};
+   return dispatchCommand(request,ownedWorkspace,{...common,schema:'TaskClaimRequest',command:async(body:TaskClaimRequest,ctx)=>({command:await prepareClaimTaskCommand({workspace:ownedWorkspace,identity:ctx.identity,admission:ctx.fence,idempotencyKey:ctx.idempotencyKey,bucket,requestId:crypto.randomUUID(),signal:request.signal},id!,opaqueId(ownedWorkspace,'run_'),await hashRuntimeProof(runtimeProof),body)})});
+  }
   if(action==='accept-result')return dispatchCommand(request,workspace,{...common,schema:'TaskReasonRequest',command:acceptTaskResultCommand(id!)});
   if(action==='submit-result')return dispatchCommand(request,workspace,{...common,schema:'TaskSubmitResultRequest',command:async()=>({command:submitTaskResultCommand(id!,await hashRuntimeProof(request.headers.get('x-runtime-token')))})});
   if(action==='fail')return dispatchCommand(request,workspace,{...common,schema:'TaskFailRequest',command:async()=>({command:failTaskCommand(id!,await hashRuntimeProof(request.headers.get('x-runtime-token')))})});
