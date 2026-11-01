@@ -46,6 +46,11 @@
     "src/ui/approvals/input-viewer.ts",
     "src/ui/approvals/panel.ts",
     "src/ui/approvals/host.ts",
-    "test/ui/decision.test.ts"
+    "test/ui/decision.test.ts",
+    "src/ui/approvals/decision-actions.ts",
+    "test/ui/decision-actions.test.ts",
+    "src/ui/approvals/decision-action-view.ts",
+    "test/ui/decision-action-view.test.ts",
+    "test/ui/decision-app-host.test.ts"
   ]
 }
