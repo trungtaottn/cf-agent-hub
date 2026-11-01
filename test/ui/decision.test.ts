@@ -105,3 +105,22 @@ it('actual list host hooks fence old session401 after a newer successful list, b
  release(Response.json({error:{code:'UNAUTHENTICATED',message:'Old',retryable:false,request_id:'old'}},{status:401}));await old;expect(denied).not.toHaveBeenCalled();expect(model.list.state.status).toBe('empty');
  currentDenial=true;await model.refreshList();expect(denied).toHaveBeenCalledOnce();expect(model.list.state.data).toBeNull();
 });
+
+it.each([true,false])('feeds actual HubClient binary bytes into the inspector with length header=%s',async declared=>{
+ const artifact=await metadata(),approval=proposal(artifact),abort=new AbortController();
+ const client=new HubClient('ws',{fetch:async()=>new Response(bytes,{headers:{'content-type':'application/json',...(declared?{'content-length':String(bytes.length)}:{}),'content-disposition':'attachment; filename="input.json"'}})});
+ const response=await client.downloadArtifact({path:{artifact_id:artifact.id}},artifact,{signal:abort.signal});expect(response.ok).toBe(true);
+ expect(await new InputInspector().inspect(approval,artifact,response,abort.signal)).toEqual({text:new TextDecoder().decode(bytes),sha256:artifact.sha256,byteSize:bytes.length});
+});
+
+it.each(['','0','-1','01','1e2','bad',String(bytes.length+1)])('still rejects present nonexact Content-Length %s before input display',async length=>{
+ const artifact=await metadata(),cancel=vi.fn(),client=new HubClient('ws',{fetch:async()=>new Response(new ReadableStream({cancel}),{headers:{'content-type':'application/json','content-length':length,'content-disposition':'attachment'}})});
+ expect(await client.downloadArtifact({path:{artifact_id:artifact.id}},artifact)).toMatchObject({ok:false,error:{code:'INVALID_RESPONSE'}});expect(cancel).toHaveBeenCalledOnce();
+});
+it.each(['short','long','changed','duplicate-json'] as const)('absent Content-Length never publishes %s bytes',async mode=>{
+ const content=mode==='short'?bytes.slice(0,-1):mode==='long'?new Uint8Array([...bytes,32]):mode==='changed'?new TextEncoder().encode(new TextDecoder().decode(bytes).replace('hostile','hostilf')):new TextEncoder().encode('{"x":1,"x":2}');
+ const artifact=await metadata(mode==='duplicate-json'?content:bytes),client=new HubClient('ws',{fetch:async()=>new Response(content,{headers:{'content-type':'application/json','content-disposition':'attachment'}})});
+ const response=await client.downloadArtifact({path:{artifact_id:artifact.id}},artifact);expect(response.ok).toBe(true);
+ await expect(new InputInspector().inspect(proposal(artifact),artifact,response,new AbortController().signal)).rejects.toThrow('INPUT_UNAVAILABLE');
+ if(response.ok&&['short','long'].includes(mode))expect(await response.data.completion).toMatchObject({ok:false,error:{code:'STREAM_INVALID'}});
+});

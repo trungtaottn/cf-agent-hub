@@ -1,4 +1,5 @@
 /** Node-only isolated fixture. No production imports this module. */
+import {HubClient} from '../../packages/client/src/client';
 import assert from 'node:assert/strict';
 import {createHash,createHmac,randomBytes} from 'node:crypto';
 import type {DeploymentConfig} from '../../src/config/deployment';
@@ -73,6 +74,12 @@ export async function seedDecisionBrowserFixture(options:{worker:FixtureWorker;s
   assert.equal((await storage.exec('SELECT id FROM decision_checkpoints WHERE id=?',String(anchors[0]!.checkpoint_id))).length,1);assert.equal((await storage.exec('SELECT id FROM decision_proposals WHERE id=?',String(anchors[0]!.proposal_id))).length,1);
   const edges=await storage.exec('SELECT artifact_id,sha256 FROM decision_artifact_edges WHERE approval_id=?',result.task.approval_id);assert.equal(edges.length,2);assert.ok(edges.every(edge=>edge.artifact_id===artifact.id&&edge.sha256===hash));
   assert.equal((await storage.exec("SELECT id FROM task_history WHERE task_id=? AND kind='task.decision_requested'",task.id)).length,1);assert.equal((await storage.exec("SELECT id FROM events WHERE resource_id=? AND type='task.decision_requested'",task.id)).length,1);
+  // Genuine browser framing regression: Miniflare decodes gzip and legitimately
+  // omits Content-Length. No expected metadata is copied into response headers.
+  let wireLength:string|null|undefined,wireEncoding:string|null|undefined;
+  const browserClient=new HubClient('ws_example',{fetch:async(path,init)=>{const headers=new Headers(init?.headers);headers.set('cookie','cfhub_session='+token);headers.set('origin',origin);headers.set('accept-encoding','gzip');const response=await worker.fetch(origin+String(path),{...init,headers});wireLength=response.headers.get('content-length');wireEncoding=response.headers.get('mf-content-encoding');return new Response(response.body,{status:response.status,headers:response.headers});}});
+  const downloaded=await browserClient.downloadArtifact({path:{artifact_id:artifact.id}},artifact);assert.ok(downloaded.ok);assert.equal(wireEncoding,'gzip');assert.equal(wireLength,null);
+  const decoded=await boundedFixtureBytes(downloaded.data.body,1024);assert.deepEqual(await downloaded.data.completion,{ok:true,byteSize:bytes.length});assert.equal(digest(decoded),hash);assert.deepEqual(parseExactJson(decoded,{maxBytes:1024,maxDepth:4,maxNodes:16}),{task_id:task.id,task_version:task.task_version});
   cases[name]={taskId:task.id,approvalId:result.task.approval_id,artifactId:artifact.id,sha256:hash};
  }
  // Setup credentials never reach controls or Playwright state.
