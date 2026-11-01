@@ -5,7 +5,7 @@ const workflow=readFileSync(new URL('../../.github/workflows/ci.yml',import.meta
 const pkg=JSON.parse(readFileSync(new URL('../../package.json',import.meta.url),'utf8'));
 function job(name){const match=workflow.match(new RegExp(`^  ${name}:\\n([\\s\\S]*?)(?=^  [a-z][a-z-]*:|$(?![\\s\\S]))`,'m'));assert.ok(match,`missing ${name} job`);return match[1];}
 test('native source regression has an independent bounded pinned-runtime job',()=>{const body=job('native-source');assert.match(body,/runs-on: ubuntu-24\.04/);assert.match(body,/timeout-minutes: 5/);assert.match(body,/persist-credentials: false/);assert.match(body,/node-version: '24\.22\.1'/);assert.match(body,/npm --version/);assert.match(body,/11\.19\.1/);assert.match(body,/run: npm ci/);assert.match(body,/run: node --test test\/governance\/native-source-ci\.test\.mjs/);assert.match(body,/run: npm run test:native:r2:source/);assert.doesNotMatch(body,/continue-on-error|if:|TMPDIR|chown|chmod|rm -rf|test:native:r2 --|verify:release/);assert.equal(pkg.scripts['test:native:r2:source'],'node --test test/native-r2/*.test.mjs');});
-test('source regression participates in workflow result and release dependency without deployment',()=>{assert.match(job('release-evidence'),/needs: \[source, dependencies, native-source, local-sandbox, native-build, native-service\]/);assert.match(job('source'),/timeout-minutes: 30/);assert.match(workflow,/permissions:\n  contents: read/);assert.match(workflow,/pull_request:/);assert.doesNotMatch(job('native-source'),/permissions:|secrets|environment:|deploy/);});
+test('source regression participates in workflow result and release dependency without deployment',()=>{assert.match(job('release-evidence'),/needs: \[source, dependencies, native-source, local-sandbox, native-build, native-service\]/);assert.match(job('source'),/^    timeout-minutes: 45$/m);assert.match(workflow,/permissions:\n  contents: read/);assert.match(workflow,/pull_request:/);assert.doesNotMatch(job('native-source'),/permissions:|secrets|environment:|deploy/);});
 
 test('local sandbox executes the real bounded command without native acceptance or guard changes',()=>{const body=job('local-sandbox');assert.match(body,/runs-on: ubuntu-24\.04/);assert.match(body,/timeout-minutes: 5/);assert.match(body,/persist-credentials: false/);assert.match(body,/node-version: '24\.22\.1'/);assert.match(body,/11\.19\.1/);assert.match(body,/run: npm ci/);assert.match(body,/run: node scripts\/test-native-r2\.mjs --local-sandbox/);assert.doesNotMatch(body,/continue-on-error|if:|TMPDIR|chown|chmod|permissions:|secrets|environment:|deploy|--config/);});
 
@@ -52,4 +52,26 @@ test('service job includes both dedicated finite Worker regression configs seria
   assert.match(config,/fileParallelism:\s*false/);
   assert.doesNotMatch(config,/test\/native-fixture\/\*|test\/\*\*/);
  }
+});
+
+
+test('source budget covers serial gates without changing safety limits or required checks',()=>{
+ const body=job('source');
+ assert.deepEqual([...body.matchAll(/^    timeout-minutes: (.+)$/gm)].map(m=>m[1]),['45']);
+ const gates=['npm ci','npm run build:ui','npm run check','npm run check:runtime','npx --no-install playwright install --with-deps chromium','npm run test:ui -- --reporter=line'];
+ let previous=-1;
+ for(const gate of gates){const index=body.indexOf('      - run: '+gate+'\n');assert.ok(index>previous,`missing or reordered gate: ${gate}`);previous=index;}
+ assert.ok(body.indexOf('      - name: Documentation contracts\n')>previous);
+ for(const command of ['python -B scripts/validate_docs.py','python -B scripts/validate_plans.py','python -B -m unittest discover -s test/governance -p test_r2_source_status.py -v','python -B -m unittest discover -s test/docs -p test_validate_plans.py -v'])assert.ok(body.includes(command));
+ assert.doesNotMatch(body,/continue-on-error|^\s+if:|^\s+permissions:|--grep|--shard|--timeout/m);
+ assert.match(workflow,/permissions:\n  contents: read\n/);
+ assert.match(workflow,/concurrency:\n  group: r1-checks-\$\{\{ github.workflow \}\}-\$\{\{ github.ref \}\}\n  cancel-in-progress: true/);
+ assert.deepEqual([...workflow.slice(workflow.indexOf('jobs:\n')).matchAll(/^  ([a-z][a-z-]*):$/gm)].map(m=>m[1]),['source','native-source','local-sandbox','native-build','native-service','dependencies','release-evidence']);
+ assert.equal(pkg.scripts['test:ui'],'playwright test');
+ assert.equal((body.match(/--reporter=line/g)??[]).length,1);
+ const browser=readFileSync(new URL('../../playwright.config.ts',import.meta.url),'utf8');
+ assert.match(browser,/timeout:30_000,workers:1,fullyParallel:false/);
+ assert.match(browser,/timeout:60_000,reuseExistingServer:false,gracefulShutdown:\{signal:'SIGTERM',timeout:10_000\}/);
+ const workers=readFileSync(new URL('../../vitest.workers.config.ts',import.meta.url),'utf8');
+ assert.match(workers,/fileParallelism:false/);
 });
