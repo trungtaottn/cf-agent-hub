@@ -93,9 +93,9 @@ export class TaskReads implements TaskReadView{
  #purgeTask(id:string,requestId:string|null):void{
   if(id===this.#selectedId)this.forgetTask(id,requestId);
  }
- /** Confirmed absence from an independently authorized command preparation read. */
- forgetTask(id:string,requestId:string|null):void{
-  if(id===this.#selectedId){++this.#detailGeneration;this.task.unavailable('NOT_FOUND',requestId);this.#clearChildren('NOT_FOUND');}
+ /** Confirmed absence or denial from an independently authorized current read. */
+ forgetTask(id:string,requestId:string|null,code:'NOT_FOUND'|'FORBIDDEN'='NOT_FOUND'):void{
+  if(id===this.#selectedId){++this.#detailGeneration;this.task.unavailable(code,requestId);this.#clearChildren(code);}
   // Invalidate every older page generation; unrelated observations remain stale.
   for(const page of Object.values(this.columns)){page.read.redact(tasks=>tasks.filter(task=>task.id!==id));page.page=null;page.cursor=null;}
   this.#changed();

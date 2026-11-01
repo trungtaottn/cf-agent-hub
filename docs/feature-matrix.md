@@ -145,3 +145,7 @@ The [source evidence ledger](../plans/261101-0434-bounded-observation-service/ev
 ## Local observation adapter source boundary
 
 The [bounded local observation adapter](observation-adapter.md) is independent source-only work: synthetic offline evidence is not hook installation, real pilot activation, supported CI acceptance or release. Generic owner catalogs and frozen native commitments remain unchanged.
+
+## Factory reported-observation source candidate
+
+The [bounded Factory projection design](superpowers/specs/2026-11-01-factory-observation-projection.md) and [implementation/check plan](superpowers/plans/2026-11-01-factory-observation-projection.md) describe a local read-only UI extension to F09/F16. It displays at most two explicitly selected tasks and one retained observation session/page per task; reported paths and advisory overlaps are not presence, filesystem locks or verified execution. Existing service authorization remains authoritative. Local controller/DOM/app-body and isolated service-fixture evidence do not promote this candidate to Verified or Released. Actual browser execution, visual inspection and separately authorized live-pilot acceptance remain pending.
