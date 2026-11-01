@@ -24,7 +24,7 @@ export function TaskDetail({state,workspaceId,onResultsNext,onEventsNext,onBack,
   root.append(button('Back to task board',onBack,{class:'secondary','data-focus-key':'task-back'}));
   const candidate=state.capabilities.tasks?state.task.state.data:null;
   const task=candidate?.id===state.selectedId&&candidate.workspace_id===workspaceId?candidate:null;
-  const taskPath=source+'/tasks/'+encodeURIComponent(state.selectedId??'');
+  const taskPath=source+'/tasks/'+(task?encodeURIComponent(task.id):'{selected-task}');
   const taskRead=state.capabilities.tasks?state.task.state:unavailableTaskRead(state.task.state,'TASKS_READ_UNAVAILABLE');
   const info=taskReadSection('task-detail','Task detail',taskRead,taskPath);
   const events=task&&state.capabilities.events?(state.events.read.state.data??[]).slice(0,taskPageLimit).filter(event=>relevantEvent(event,task,workspaceId)):[];

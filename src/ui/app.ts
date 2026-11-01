@@ -11,7 +11,8 @@ import {el,button,replacePreservingFocus} from './dom';
 import {TaskReads} from './task-reads';
 import {KanbanView} from './kanban';
 import {TaskDetail} from './task-detail';
-import {FactoryExplorer,normalizeFactoryFilters} from './factory/explorer';
+import {FactoryExplorer,normalizeFactoryFilters,factoryComparisonCandidates} from './factory/explorer';
+import {FactoryObservationReads} from './factory/observation-reads';
 import {TaskActions,taskActionEligibility} from './task-actions';
 import {TaskActionPanel,type TaskActionAffordances} from './task-action-view';
 import type {BrowserReadRequest} from '../../packages/client/src/types';
@@ -28,6 +29,8 @@ const models={
 let connectionGeneration=0;
 let client:HubClient,authority=0,session:AuthSession|null=null,denied=false,currentView=location.pathname.slice(1)||'overview',threadId:string|null=null,eventCursor:string|null=null,threadCursor:string|null=null;
 let factoryMode=false,factoryProjectId:string|null=null,factoryWorkRoleId:string|null=null;
+let factoryObservationRender=0;
+let factoryAuthority:{authority:number;connection:number;principalId:string}|null=null;
 let eventsAvailable=false,operationsAvailable=false,profileAvailable=false,preferencesAvailable=false,tasksAvailable=false;
 let messageComposition:MessageComposition|null=null,messageForm:MessageForm|null=null,composeViewGeneration=0;
 let taskComposition:TaskComposition|null=null,taskForm:TaskForm|null=null,lastTaskAdmission:string|null=null;
@@ -41,7 +44,7 @@ function eraseComposition(broadcast=true){
  if(broadcast&&scope)composeChannel?.postMessage({type:'erase',...scope});
  if(scope)void compositionStorage.erase(scope);
 }
-composeChannel?.addEventListener('message',event=>{const value=event.data;if(value&&typeof value==='object'&&value.type==='erase'&&value.workspaceId===workspace&&typeof value.principalId==='string'&&value.principalId===(composeScope?.principalId??session?.actor.principal_id)){eraseComposition(false);++connectionGeneration;notice.textContent='Composition cleared in another tab. Refresh current session before composing.';}});
+composeChannel?.addEventListener('message',event=>{const value=event.data;if(value&&typeof value==='object'&&value.type==='erase'&&value.workspaceId===workspace&&typeof value.principalId==='string'&&value.principalId===(composeScope?.principalId??session?.actor.principal_id)){eraseComposition(false);++connectionGeneration;factoryAuthority=null;factoryObservations.disconnect();render();notice.textContent='Composition cleared in another tab. Refresh current session before composing.';}});
 async function verifyCompositionAuthority(kind:'message'|'task'|'upload'='message'):Promise<boolean>{
  const generation=authority,connection=connectionGeneration,principal=session?.actor.principal_id;
  const auth=await compositionRequest(()=>client.request<AuthSession>('getAuthSession',{}),true);
@@ -123,6 +126,49 @@ async function readTaskCommandAccess():Promise<ApiResult<Workspace>>{
  if(access.data.id!==workspace||access.data.actor.principal_id!==principal){invalidateAll(401,access.requestId);return invalid();}
  client.setCsrfToken(auth.data.csrf_token);
  await models.workspace.refresh(async()=>access);render();return access;
+}
+const readFactoryProjection:BrowserReadRequest=(async(operation,input,options)=>{
+ const started=authority,connection=connectionGeneration,result=await client.read(operation,input,options);
+ if(started!==authority||connection!==connectionGeneration)return {ok:false,status:null,requestId:result.requestId,error:{code:'OBSERVATION_INVALIDATED',message:'Observation no longer current',retryable:false}};
+ // Every resource in this optional projection is independently authorized.
+ // Required auth/workspace checks retain their existing global invalidation.
+ if(!result.ok&&result.status===401)invalidateAll(401,result.requestId);
+ return result;
+}) as BrowserReadRequest;
+async function verifyFactoryAuthority():Promise<boolean>{
+ factoryAuthority=null;
+ const started=authority,connection=connectionGeneration,principal=session?.actor.principal_id;
+ if(!factoryMode||currentView!=='tasks'||denied||!principal)return false;
+ const access=await readTaskCommandAccess();
+ if(!access.ok||started!==authority||connection!==connectionGeneration||principal!==session?.actor.principal_id||!factoryMode||currentView!=='tasks')return false;
+ factoryAuthority={authority:started,connection,principalId:principal};
+ const scopes=access.data.effective_scopes;
+ factoryObservations.setCapabilities({tasks:scopes.includes('tasks:read'),events:eventsAvailable&&scopes.includes('events:read')});
+ return scopes.includes('tasks:read');
+}
+function compareFactoryTask(id:string):void{
+ if(!factoryMode||currentView!=='tasks'||denied||models.workspace.state.status!=='ready'||!factoryComparisonCandidates(taskReads,workspace).some(task=>task.id===id))return;
+ void factoryObservations.compare(id);
+}
+function factoryObservationCallbacks(generation:number){
+ const started=authority,connection=connectionGeneration,principal=session?.actor.principal_id,primary=taskReads.selectedId;
+ const current=()=>generation===factoryObservationRender&&started===authority&&connection===connectionGeneration&&principal===session?.actor.principal_id&&!denied&&factoryMode&&currentView==='tasks'&&primary===taskReads.selectedId&&primary===factoryObservations.slots[0]?.id;
+ return {state:factoryObservations,onCompare:(id:string)=>{if(current())compareFactoryTask(id);},onRemoveComparison:()=>{if(current())factoryObservations.removeComparison();},onNext:(id:string)=>{if(current())void factoryObservations.next(id);},onRefresh:(id:string)=>{if(current())void factoryObservations.refreshCurrent(id);}};
+}
+function forgetFactoryTask(id:string,code:'FORBIDDEN'|'NOT_FOUND',requestId:string|null):void{
+ const binding=factoryAuthority;
+ if(!binding||binding.authority!==authority||binding.connection!==connectionGeneration||binding.principalId!==session?.actor.principal_id||denied||!factoryMode||currentView!=='tasks'||!factoryObservations.slots.some(slot=>slot.id===id))return;
+ // Discard the whole independently cached activity page, including any pending
+ // publication/cursor. Do not emulate project ACLs or touch private threads.
+ eventCursor=null;models.events.unavailable('TASK_ACCESS_CHANGED',requestId);
+ taskReads.forgetTask(id,requestId,code);
+ render();
+}
+const factoryObservations=new FactoryObservationReads({workspaceId:workspace,request:readFactoryProjection,verifyAuthority:verifyFactoryAuthority,onTaskUnavailable:forgetFactoryTask,changed:()=>render()});
+function syncFactoryObservationState():void{
+ const access=models.workspace.state;
+ if(access.status==='ready'&&access.data){const scopes=access.data.effective_scopes;factoryObservations.setCapabilities({tasks:scopes.includes('tasks:read'),events:eventsAvailable&&scopes.includes('events:read')});}
+ factoryObservations.setActive(factoryMode&&currentView==='tasks'&&!denied&&Boolean(session)&&access.status==='ready'&&navigator.onLine&&document.visibilityState==='visible');
 }
 const taskActions=new TaskActions({
  workspaceId:workspace,
@@ -227,11 +273,13 @@ function reconcileFactoryFilters(filters={projectId:factoryProjectId,workRoleId:
  const normalized=normalizeFactoryFilters({state:taskReads,workspaceId:workspace,profile:models.profile.state.data?.profile??null,profileRead:models.profile.state,...filters});
  factoryProjectId=normalized.projectId;factoryWorkRoleId=normalized.workRoleId;
 }
-function resetFactoryView():void{factoryMode=false;factoryProjectId=null;factoryWorkRoleId=null;}
+function resetFactoryView():void{factoryMode=false;factoryProjectId=null;factoryWorkRoleId=null;factoryAuthority=null;factoryObservations.setActive(false);void factoryObservations.selectPrimary(null);}
 function setFactoryMode(enabled:boolean):void{
  if(enabled&&(currentView!=='tasks'||denied||!tasksAvailable))return;
  hideComposition();taskActions.invalidatePreparation();taskActionPanel.navigation();
- factoryMode=enabled;render();
+ factoryMode=enabled;factoryAuthority=null;
+ if(enabled)void factoryObservations.selectPrimary(taskReads.selectedId);else{factoryObservations.setActive(false);void factoryObservations.selectPrimary(null);}
+ render();
 }
 function navigate(name:string,selectedThread:string|null=null):void{
  resetFactoryView();
@@ -248,7 +296,7 @@ function navigateTask(id:string|null):void{
  hideComposition();
  taskActions.invalidatePreparation();taskActionPanel.navigation();
  currentView='tasks';selectThread(null);const query=new URLSearchParams({workspace});if(id)query.set('task',id);
- history.pushState(null,'','/tasks?'+query.toString());void taskReads.select(id);render();byId('main').focus();
+ history.pushState(null,'','/tasks?'+query.toString());void taskReads.select(id);if(factoryMode)void factoryObservations.selectPrimary(id);render();byId('main').focus();
 }
 function renderNavigation():void{
  const visibleViews=models.profile.state.data?.profile.navigation.visible_views;
@@ -342,6 +390,8 @@ function threadSection():HTMLElement{
  return card;
 }
 function render():void{
+ syncFactoryObservationState();
+ const observationRender=++factoryObservationRender;
  renderNavigation();
  const composeButton=byId('compose-message-open') as HTMLButtonElement|null;if(composeButton)composeButton.disabled=!compositionBinding()||models.workspace.state.status!=='ready'||!models.workspace.state.data?.effective_scopes.includes('messages:send')||(!models.workspace.state.data.effective_scopes.includes('messages:read')||!models.workspace.state.data.effective_scopes.includes('agents:read'));
  const taskComposeButton=byId('compose-task-open') as HTMLButtonElement|null;if(taskComposeButton){const eligible=!!compositionBinding()&&models.workspace.state.status==='ready'&&!!models.workspace.state.data?.effective_scopes.includes('tasks:create');taskComposeButton.hidden=!eligible;taskComposeButton.disabled=!eligible;}
@@ -355,6 +405,7 @@ function render():void{
   if(factoryMode){
    reconcileFactoryFilters();
    shell.append(FactoryExplorer({state:taskReads,workspaceId:workspace,profile:models.profile.state.data?.profile??null,profileRead:models.profile.state,projectId:factoryProjectId,workRoleId:factoryWorkRoleId,
+    observations:factoryObservationCallbacks(observationRender),
     onFilter:filters=>{reconcileFactoryFilters(filters);render();},onSelect:navigateTask,onNext:state=>void taskReads.nextColumn(state),onResultsNext:()=>void taskReads.nextResults(),onEventsNext:()=>void taskReads.nextEvents(),onBack:()=>navigateTask(null),onOpenExistingTask:()=>setFactoryMode(false)}));
    replacePreservingFocus(view,shell,byId('main'));return;
   }
@@ -438,10 +489,11 @@ async function boot():Promise<void>{
  }
 }
 addEventListener('popstate',()=>{resetFactoryView();hideComposition();taskActions.invalidatePreparation();taskActionPanel.navigation();currentView=location.pathname.slice(1)||'overview';selectThread(new URL(location.href).searchParams.get('thread'));render();if(threadId)void refreshThread(threadId);if(currentView==='tasks'){void taskReads.select(new URL(location.href).searchParams.get('task'));void taskReads.refreshBoard();}});
-addEventListener('offline',()=>{hideComposition();++connectionGeneration;taskActions.invalidatePreparation();for(const model of Object.values(models))model.disconnect();taskReads.disconnect();render();});
+addEventListener('offline',()=>{hideComposition();++connectionGeneration;taskActions.invalidatePreparation();for(const model of Object.values(models))model.disconnect();taskReads.disconnect();factoryAuthority=null;factoryObservations.disconnect();render();});
 addEventListener('online',()=>{hideComposition();++connectionGeneration;taskActions.invalidatePreparation();void refreshReads();});
 setInterval(()=>{taskReads.markStale(Date.now(),60_000);for(const model of Object.values(models))model.markStale(Date.now(),60_000);if(models.workspace.state.status!=='ready'&&taskActions.state.status==='ready')taskActions.invalidatePreparation();render();},15_000);
 void boot();
 
-addEventListener('pagehide',event=>{hideComposition();if(!(event as PageTransitionEvent).persisted){composeChannel?.close();void compositionStorage.dispose();}});
+document.addEventListener('visibilitychange',()=>{syncFactoryObservationState();});
+addEventListener('pagehide',event=>{factoryObservations.setActive(false);hideComposition();if(!(event as PageTransitionEvent).persisted){factoryObservations.dispose();composeChannel?.close();void compositionStorage.dispose();}});
 addEventListener('pageshow',event=>{if((event as PageTransitionEvent).persisted){hideComposition();++connectionGeneration;void refreshReads();}});

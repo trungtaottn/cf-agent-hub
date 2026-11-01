@@ -2,11 +2,11 @@
 import assert from 'node:assert/strict';
 import {createHash,createHmac,randomBytes} from 'node:crypto';
 import type {DeploymentConfig} from '../../src/config/deployment';
-import type {Task,TaskCommandResult,RuntimeIssue,Artifact,TaskResult} from '../../src/http/dto';
+import type {Task,TaskCommandResult,RuntimeIssue,Artifact,TaskResult,Run,ObservationCurrentBinding,ObservationView} from '../../src/http/dto';
 
 export const r2FixtureTitles={review:'Review evidence <img src=x onerror="window.fixtureInjected=1">',history:'Requeued retained result',doing:'Active execution observation',done:'Independently accepted result',cancelled:'Cancelled retained task'};
 const digest=(value:string|Uint8Array)=>createHash('sha256').update(value).digest('hex');
-export function configureR2UiFixture(config:DeploymentConfig):void{
+export function configureR2UiFixture(config:DeploymentConfig,observations=false):void{
  const owner=config.human_grants[0]!;
  owner.scopes=[...new Set([...owner.scopes,'tasks:read','tasks:create','tasks:edit','tasks:schedule','tasks:cancel','tasks:review','agents:read','artifacts:read','artifacts:write'] as DeploymentConfig['human_grants'][number]['scopes'])];
  config.human_grants.push({...structuredClone(owner),principal_id:'human_tasks_only',subject:'tasks-only-subject',scopes:['workspace:read','tasks:read']});
@@ -14,6 +14,14 @@ export function configureR2UiFixture(config:DeploymentConfig):void{
  const policy=config.workspace_policies[0]!;
  policy.notification_destinations=[];
  policy.execution_policy={policy_version:1,agent_wip_limit:10,task_retry_limit:2,artifact_upload_ttl_seconds:900,eligibility_rules:[{project_id:null,work_role_id:null,eligible_agent_ids:['agent_research']}],replay_safety_rules:[]};
+ if(observations){
+  config.static_credential_refs[0]!.scopes.push('events:read');
+  config.static_participants.push({workspace_id:'ws_example',agent_id:'agent_factory_second',display_name:'Second synthetic observation participant'});
+  config.static_credential_refs.push({...structuredClone(config.static_credential_refs[0]!),credential_id:'credential_factory_second',agent_id:'agent_factory_second'});
+  policy.execution_policy.eligibility_rules[0]!.eligible_agent_ids.push('agent_factory_second');
+  policy.observation_pilot={enabled:true,repository_id:'repository_fixture',adapter_id:'synthetic-adapter',adapter_version:'1',supported_events:['read-observed','write-observed'],slots:[{agent_id:'agent_research',checkout_slot_id:'checkout_first'},{agent_id:'agent_factory_second',checkout_slot_id:'checkout_second'}]};
+ }
+
 }
 interface FixtureStorage {exec(query:string,...bindings:(string|number|null)[]):Promise<Record<string,unknown>[]>;}
 interface FixtureWorker {fetch(url:string,init?:RequestInit):Promise<Response>;}
@@ -21,7 +29,7 @@ interface FixtureWorker {fetch(url:string,init?:RequestInit):Promise<Response>;}
 export function normalizeFixturePreviewResponse(response:Response):Response {
  return new globalThis.Response(response.body,{status:response.status,statusText:response.statusText,headers:response.headers});
 }
-export async function seedR2UiFixture(options:{worker:FixtureWorker;storage:FixtureStorage;origin:string;issuer:string;csrfSecret:string;nativeToken:string}){
+export async function seedR2UiFixture(options:{worker:FixtureWorker;storage:FixtureStorage;origin:string;issuer:string;csrfSecret:string;nativeToken:string;secondNativeToken?:string}){
  const {worker,storage,origin,issuer,csrfSecret,nativeToken}=options,base=origin+'/v2/workspaces/ws_example';
  const now=Date.now(),sessionId='session_r2_fixture_seed',sessionToken=randomBytes(32).toString('base64url'),expires=now+3600000;
  const csrf=createHmac('sha256',csrfSecret).update(JSON.stringify(['cfhub-csrf-v1','ws_example',sessionId,expires])).digest('base64url');
@@ -29,11 +37,11 @@ export async function seedR2UiFixture(options:{worker:FixtureWorker;storage:Fixt
  // came through verified configuration; all task/run/result/artifact state below
  // is produced by the actual public HTTP/domain command path, not DTO-shaped SQL.
  await storage.exec('INSERT INTO sessions(id,workspace_id,principal_id,token_digest,csrf_digest,issuer,subject,created_at,expires_at,auth_epoch) VALUES(?,?,?,?,?,?,?,?,?,1)',sessionId,'ws_example','human_operator',digest(sessionToken),digest(csrf),issuer,'synthetic-subject',now,expires);
- let serial=0,proof:string|undefined;
- async function call<T>(path:string,method='GET',body?:unknown,lane:'human'|'agent'='human',binary=false):Promise<{data:T;page?:{next_cursor:string|null;has_more:boolean}}>{
+ let serial=0,proof:string|undefined,secondProof:string|undefined;
+ async function call<T>(path:string,method='GET',body?:unknown,lane:'human'|'agent'|'second'='human',binary=false):Promise<{data:T;page?:{next_cursor:string|null;has_more:boolean}}>{
   const headers:Record<string,string>={accept:'application/json',origin};
   if(lane==='human'){headers.cookie='cfhub_session='+sessionToken;if(method!=='GET')headers['x-csrf-token']=csrf;}
-  else{headers.authorization='Bearer '+nativeToken;if(proof&&method!=='GET')headers['x-runtime-token']=proof;}
+  else{headers.authorization='Bearer '+(lane==='second'?options.secondNativeToken:nativeToken);const selectedProof=lane==='second'?secondProof:proof;if(selectedProof&&method!=='GET')headers['x-runtime-token']=selectedProof;}
   if(method!=='GET'){headers['idempotency-key']='fixture_r2_'+(++serial);headers['content-type']=binary?'application/octet-stream':'application/json';}
   const response=await worker.fetch(base+path,{method,headers,...(body===undefined?{}:{body:binary?body as BodyInit:JSON.stringify(body)})});
   const value=await response.json() as {data:T;page?:{next_cursor:string|null;has_more:boolean};error?:{code:string}};
@@ -73,8 +81,47 @@ export async function seedR2UiFixture(options:{worker:FixtureWorker;storage:Fixt
   assert.equal((await call<Task[]>('/tasks?state=waiting&limit=20')).data.length,0);
   assert.equal((await call<Task>('/tasks/'+cancelled.id)).data.state,'cancelled');
  }
+ let observationControls:Record<string,()=>Promise<unknown>>={};
+ let assertObservations:()=>Promise<void>=async()=>{throw Error('OBSERVATION_FIXTURE_NOT_CONFIGURED');},assertReplacement=assertObservations;
+ if(options.secondNativeToken){
+  const secondEnrollment=(await call<RuntimeIssue>('/runtimes','POST',{label:'Second synthetic observation runtime'},'second')).data;
+  assert.equal(secondEnrollment.revealed,true);secondProof=secondEnrollment.runtime_token!;
+  let second=await ready(await create('Second reported task'));
+  const secondClaim=(await call<TaskCommandResult>('/tasks/'+second.id+':claim','POST',{expected_version:second.task_version,runtime_instance_id:secondEnrollment.runtime.id},'second')).data;second=secondClaim.task;
+  const firstRun=(await call<Run>('/runs/'+doing.active_run_id)).data,secondRun=secondClaim.run!;
+  const establish=async(target:Task,run:Run,lane:'agent'|'second')=>(await call<ObservationCurrentBinding>('/tasks/'+target.id+'/observations:establish','POST',{run_id:run.id,fence:run.fence,adapter_id:'synthetic-adapter',adapter_version:'1'},lane)).data;
+  let firstBinding=await establish(doing,firstRun,'agent'),firstSequence=0;
+  const secondBinding=await establish(second,secondRun,'second');
+  const append=async(target:Task,run:Run,binding:ObservationCurrentBinding,start:number,count:number,lane:'agent'|'second',replacement=false)=>{
+   const records=Array.from({length:count},(_,index)=>({observed_at:new Date().toISOString(),relative_path:replacement?'src/replacement.ts':(start+index)%16===1?'src/shared.ts':'src/reported-'+(start+index)+'.ts',activity:lane==='second'?'read-observed':'write-observed',source_oid:null,label:'Synthetic reported activity — not test execution'}));
+   await call('/tasks/'+target.id+'/observation-sessions/'+binding.session_id+'/records','POST',{run_id:run.id,fence:run.fence,first_sequence:start,records},lane);
+  };
+  await append(doing,firstRun,firstBinding,1,32,'agent');await append(doing,firstRun,firstBinding,33,32,'agent');firstSequence=64;await append(second,secondRun,secondBinding,1,1,'second');
+  const read=async(target:Task,query='')=>call<ObservationView>('/tasks/'+target.id+'/observations?limit=50'+query);
+  assertObservations=async()=>{
+   const first=await read(doing),other=await read(second);assert.equal(first.data.binding?.agent_id,'agent_research');assert.equal(other.data.binding?.agent_id,'agent_factory_second');assert.equal(first.data.binding?.checkout_slot_id,'checkout_first');assert.equal(other.data.binding?.checkout_slot_id,'checkout_second');assert.equal(first.data.records.length,50);assert.equal(first.page?.has_more,true);assert.equal(first.data.coverage?.completeness,'unknown');
+   const next=await read(doing,'&cursor='+encodeURIComponent(first.page!.next_cursor!)+'&expected_session_id='+encodeURIComponent(first.data.binding!.session_id));assert.equal(next.data.records.length,14);assert.equal(next.data.records[0]!.sequence,51);assert.equal(next.page?.has_more,false);
+  };
+  observationControls={
+   'factory-observations-replace':async()=>{
+    const response=(await call<{new_session_id:string;new_epoch:number}>('/tasks/'+doing.id+'/observation-sessions:replace','POST',{run_id:firstRun.id,fence:firstRun.fence,expected_session_id:firstBinding.session_id,expected_high_water:firstSequence,replacement_request_id:'00000000-0000-4000-8000-000000000001',reason:'coverage_loss'},'agent')).data;
+    firstBinding={...firstBinding,session_id:response.new_session_id,session_epoch:response.new_epoch};firstSequence=1;await append(doing,firstRun,firstBinding,1,1,'agent',true);
+   },
+   'factory-observations-clear':async()=>{await storage.exec('DELETE FROM observation_records WHERE session_id IN (SELECT session_id FROM observation_slots WHERE task_id=?)',doing.id);await storage.exec('DELETE FROM observation_slots WHERE task_id=?',doing.id);const absent=await read(doing,'&expected_session_id='+encodeURIComponent(firstBinding.session_id));assert.equal(absent.data.status,'no_retained_data');},
+   'factory-observations-successor':async()=>{const prior=firstBinding.session_id;firstBinding=await establish(doing,firstRun,'agent');assert.notEqual(firstBinding.session_id,prior);firstSequence=1;await append(doing,firstRun,firstBinding,1,1,'agent',true);},
+   'factory-observations-truncate':async()=>{while(firstSequence<300){const count=Math.min(32,300-firstSequence);await append(doing,firstRun,firstBinding,firstSequence+1,count,'agent');firstSequence+=count;}const retained=await read(doing);assert.equal(retained.data.truncated,true);assert.equal(retained.data.retained_range!.last_sequence-retained.data.retained_range!.first_sequence+1,256);},
+   // Isolated visibility-change fixture, not a production authority mutation route.
+   'factory-observations-hide-captured':async()=>{await storage.exec("UPDATE tasks SET project_id='project_visible' WHERE id=?",doing.id);await storage.exec("UPDATE human_grants SET project_ids_json='[\"project_visible\"]' WHERE principal_id='human_operator'");assert.equal((await call<Task>('/tasks/'+doing.id)).data.project_id,'project_visible');assert.equal((await read(doing,'&expected_session_id='+encodeURIComponent(firstBinding.session_id))).data.status,'no_retained_data');},
+   'factory-observations-deny-task':async()=>{await storage.exec("UPDATE human_grants SET project_ids_json='[]' WHERE principal_id='human_operator'");},
+   'factory-observations-end-run':async()=>{await submitted(doing,firstRun,'Reported work submitted; observations are not execution witnesses');const retained=await read(doing);assert.equal(retained.data.status,'retained');assert.equal((await call<Task>('/tasks/'+doing.id)).data.active_run_id,null);},
+   'factory-observations-snapshot':async()=>({firstTaskId:doing.id,secondTaskId:second.id})
+  };
+  assertReplacement=async()=>{const current=await read(doing);assert.equal(current.data.binding?.session_id,firstBinding.session_id);assert.equal(current.data.records[0]?.reported.relative_path,'src/replacement.ts');assert.equal(current.data.coverage?.reported_loss,true);assert.equal(current.data.truncated,false,'Replacement reports coverage loss separately from current-session retention truncation');};
+  await assertObservations();
+ }
  await assertPersisted();
- return {facts,assertPersisted,seedRetainedWaiting:async()=>{
+ return {observationControl:async(action:string)=>{const run=observationControls[action];if(!run)throw Error('UNKNOWN_OBSERVATION_FIXTURE_CONTROL');return run();},assertObservations,assertReplacement,
+facts,assertPersisted,seedRetainedWaiting:async()=>{
   // Read-only retained-state fixture, NOT an implemented approval transition.
   await storage.exec("UPDATE tasks SET state='waiting',title='Seeded retained Waiting — approval unavailable',task_version=task_version+1 WHERE id=?",backlog.at(-1)!.id);
  },readForPreview:async(path:string,options:{signal:AbortSignal})=>{

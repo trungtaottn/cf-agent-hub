@@ -1,5 +1,8 @@
+import {factoryAppSource} from '../helpers/factory-app-source.mjs';
+import ts from 'typescript';
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
 import {FactoryExplorer,type FactoryExplorerOptions} from '../../src/ui/factory/explorer';
+import {TaskDetail} from '../../src/ui/task-detail';
 import {ReadModel} from '../../src/ui/read-state';
 import {taskStates,type TaskPage,type TaskReadView} from '../../src/ui/task-reads';
 import type {Task,TaskResult,TaskState,Run,Artifact,Event,WorkspaceProfile} from '../../src/http/dto';
@@ -95,4 +98,26 @@ describe('Factory evidence projection (structural DOM, not browser proof)',()=>{
   const value=state(),onFilter=vi.fn(),root=render(value,{onFilter}),select=descendants(root,n=>n.tagName==='SELECT')[0];Object.assign(select,{value:'private_injected'});for(const listener of select.listeners.get('change')??[])listener({preventDefault(){}});expect(onFilter).toHaveBeenLastCalledWith({projectId:null,workRoleId:null});
  });
 
+});
+
+it('cleared denied task detail does not retain its old identifier in provenance after leaving Factory',async()=>{
+ const value={...state(),selectedId:'private_denied_id'};await observe(value.task,{...task(),id:'private_denied_id'});
+ const detail=()=>asFixture(TaskDetail({state:value,workspaceId:'ws_example',onResultsNext:vi.fn(),onEventsNext:vi.fn(),onBack:vi.fn()}));
+ expect(detail().textContent).toContain('/tasks/private_denied_id');value.task.unavailable('FORBIDDEN');value.results.read.unavailable('FORBIDDEN');value.run.unavailable('FORBIDDEN');
+ expect(detail().textContent).not.toContain('private_denied_id');expect(detail().textContent).toContain('/tasks/{selected-task}');
+});
+it('a newly selected canonical task cannot render reports retained for the prior selection',async()=>{
+ const value={...state(),selectedId:'new_task'},old=model<Task>(),report=model<any>();await observe(old,{...task(),id:'old_task',title:'Prior selected title'});await observe(report,{status:'retained',binding:{task_id:'old_task',run_id:'run_old',agent_id:'agent_old',runtime_instance_id:'runtime_old',repository_id:'repo',checkout_slot_id:'checkout',session_id:'obs_'+'a'.repeat(48),session_epoch:1,fence:1},coverage:{configured_events:['read-observed'],completeness:'unknown',reported_loss:false},retained_range:{first_sequence:1,last_sequence:1},truncated:false,records:[{sequence:1,server_received_at:when,reported:{observed_at:when,relative_path:'src/prior-private.ts',activity:'read-observed',source_oid:null}}],read_at:when});
+ const root=render(value,{observations:{state:{slots:[{id:'old_task',task:old,run:model<Run>(),observation:report,page:{has_more:false,next_cursor:null},cursor:null,expectedSessionId:'obs_'+'a'.repeat(48),pageNumber:1,requiresExplicitRefresh:false}]},onCompare:vi.fn(),onRemoveComparison:vi.fn(),onNext:vi.fn(),onRefresh:vi.fn()}});expect(root.textContent).not.toContain('src/prior-private.ts');expect(root.textContent).not.toContain('Prior selected title');expect(root.textContent).not.toContain('old_task');
+});
+
+it('detached observation DOM callbacks cannot act across primary or host lifecycle changes',async()=>{
+ const source=ts.createSourceFile('app.ts',factoryAppSource,ts.ScriptTarget.Latest,true);let expression='';
+ function visit(node:ts.Node){if(ts.isCallExpression(node)&&node.expression.getText(source)==='FactoryExplorer'){const object=node.arguments[0] as ts.ObjectLiteralExpression;expression=(object.properties.find(p=>ts.isPropertyAssignment(p)&&p.name.getText(source)==='observations') as ts.PropertyAssignment).initializer.getText(source);}ts.forEachChild(node,visit);}visit(source);expect(expression).not.toBe('');const renderSource=source.statements.find(s=>ts.isFunctionDeclaration(s)&&s.name?.text==='render')!.getText(source);expect(renderSource.indexOf('++factoryObservationRender')).toBeGreaterThan(renderSource.indexOf('syncFactoryObservationState()'));expect(renderSource.indexOf('++factoryObservationRender')).toBeLessThan(renderSource.indexOf('renderNavigation()'));
+ const helper=source.statements.find(s=>ts.isFunctionDeclaration(s)&&s.name?.text==='factoryObservationCallbacks');const code=ts.transpileModule((helper?.getText(source)??'')+';function capture(){const observationRender=++factoryObservationRender;return '+expression+';}',{compilerOptions:{target:ts.ScriptTarget.ES2023}}).outputText;
+ const calls={compare:vi.fn(),removeComparison:vi.fn(),next:vi.fn(),refreshCurrent:vi.fn()};const controller={slots:[{id:'a'}],...calls};const host=new Function('factoryObservations','compareFactoryTask',`let factoryObservationRender=0,authority=1,connectionGeneration=1,session={actor:{principal_id:'human'}},factoryMode=true,currentView='tasks',denied=false;const taskReads={selectedId:'a'};${code};return {capture,select(id){taskReads.selectedId=id;factoryObservations.slots=[{id}];factoryObservationRender++;},authority(){authority++;},rerender(){factoryObservationRender++;},connection(){connectionGeneration++;},principal(){session.actor.principal_id='other';},leave(){factoryMode=false;factoryObservationRender++;}};`)(controller,calls.compare);
+ const value={...state(),selectedId:'a'};await observe(value.columns.ready.read,[task('ready','a'),task('ready','b'),task('ready','c')]);const a={id:'a',task:model<Task>(),run:model<Run>(),observation:model<any>(),page:null,cursor:null,expectedSessionId:null,pageNumber:1,requiresExplicitRefresh:false};await observe(a.task,task('ready','a'));
+ const live=host.capture();live.onCompare('c');live.onRemoveComparison();live.onNext('a');live.onRefresh('a');for(const call of Object.values(calls)){expect(call).toHaveBeenCalledOnce();call.mockClear();}
+ const old=host.capture();const root=render(value,{observations:{...old,state:{slots:[a]}}});const select=descendants(root,n=>n.tagName==='SELECT'&&n.getAttribute('aria-label')==='Compare reported paths')[0];Object.assign(select,{value:'c'});host.select('b');for(const listener of select.listeners.get('change')??[])listener({preventDefault(){}});expect(calls.compare).not.toHaveBeenCalled();old.onRemoveComparison();old.onNext('a');old.onRefresh('a');for(const call of Object.values(calls))expect(call).not.toHaveBeenCalled();host.select('a');for(const listener of select.listeners.get('change')??[])listener({preventDefault(){}});expect(calls.compare).not.toHaveBeenCalled();
+ for(const invalidate of ['rerender','authority','connection','principal','leave']){const previous=host.capture();host[invalidate]();previous.onCompare('c');previous.onRemoveComparison();previous.onNext('a');previous.onRefresh('a');}for(const call of Object.values(calls))expect(call).not.toHaveBeenCalled();
 });

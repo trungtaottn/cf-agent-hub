@@ -10,9 +10,10 @@ function fixture(){
  const code=ts.transpileModule(selected.map(s=>s.getText(source)).join('\n'),{compilerOptions:{target:ts.ScriptTarget.ES2023}}).outputText;
  const render=vi.fn(),select=vi.fn(),refresh=vi.fn(),invalidate=vi.fn(),hide=vi.fn();
  const app=new Function('render','select','refresh','invalidate','hide',`
- let factoryMode=false,factoryProjectId=null,factoryWorkRoleId=null,currentView='tasks',workspace='ws';
+ let factoryMode=false,factoryProjectId=null,factoryWorkRoleId=null,currentView='tasks',workspace='ws',factoryAuthority=null;
+ const factoryObservations={setActive(){},selectPrimary:async()=>{}};
  let denied=false,tasksAvailable=true;const models={profile:{state:{status:'forbidden',data:null}}};const normalizeFactoryFilters=options=>({projectId:options.projectId==='visible-project'?'visible-project':null,workRoleId:null});
- const hideComposition=hide,taskActions={invalidatePreparation:invalidate},taskActionPanel={navigation(){}},taskReads={select,refreshBoard:refresh};
+ const hideComposition=hide,taskActions={invalidatePreparation:invalidate},taskActionPanel={navigation(){}},taskReads={select,refreshBoard:refresh,selectedId:null};
  const history={pushState(){}},selectThread=()=>{},byId=()=>({focus(){}}),refreshThread=()=>{};
  ${code}
  return {set:setFactoryMode,reset:resetFactoryView,reconcile:reconcileFactoryFilters,navigate,navigateTask,state:()=>({factoryMode,factoryProjectId,factoryWorkRoleId}),filter(){factoryProjectId='private-project';factoryWorkRoleId='private-role';},deny(){denied=true;},unavailable(){tasksAvailable=false;},leave(){currentView='overview';}};`)(render,select,refresh,invalidate,hide);

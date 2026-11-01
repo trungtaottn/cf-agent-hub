@@ -1,6 +1,7 @@
 import type {Task,TaskState,WorkspaceProfile} from '../../http/dto';
 import {taskStates,taskPageLimit,type TaskReadView} from '../task-reads';
 import {taskReadSection,taskStateLabels,unavailableTaskRead} from '../kanban';
+import {FactoryObservationSurfaces,type FactoryObservationOptions} from './observations';
 import {TaskDetail} from '../task-detail';
 import type {ReadState} from '../read-state';
 import {el,button,labeledControl} from '../dom';
@@ -8,6 +9,7 @@ import {el,button,labeledControl} from '../dom';
 export interface FactoryExplorerOptions {
  state:TaskReadView;workspaceId:string;profile:WorkspaceProfile|null;profileRead?:Readonly<ReadState<unknown>>;projectId:string|null;workRoleId:string|null;
  onFilter:(filters:{projectId:string|null;workRoleId:string|null})=>void;onSelect:(id:string)=>void;onNext:(state:TaskState)=>void;
+ observations?:Omit<FactoryObservationOptions,'workspaceId'|'candidates'>;
  onResultsNext:()=>void;onEventsNext:()=>void;onBack:()=>void;onOpenExistingTask:()=>void;nowMs?:number;
 }
 function surface(id:string,title:string):HTMLElement{
@@ -47,12 +49,20 @@ function taskCard(task:Task,options:FactoryExplorerOptions):HTMLElement{
  const link=el('a',task.title,{href:'/tasks?'+query.toString(),'data-focus-key':'factory-task:'+task.id});
  link.addEventListener('click',event=>{event.preventDefault();options.onSelect(task.id);});heading.append(link);item.append(heading);
  const project=options.profile?.projects.find(row=>row.id===task.project_id),role=options.profile?.work_roles.find(row=>row.id===task.work_role_id);
- item.append(el('p','State: '+taskStateLabels[task.state]+' · Task version '+task.task_version),el('p','Project: '+(project?.display_name??task.project_id??'Unspecified')),el('p','Work role: '+(role?.display_name??task.work_role_id??'Unspecified')),el('p','Assigned logical agent: '+(task.assigned_agent_id??'Unassigned')));
+ item.append(el('p','State: '+taskStateLabels[task.state]+' · Task version '+task.task_version),el('p','Declared project: '+(project?.display_name??task.project_id??'Unspecified')),el('p','Declared work role: '+(role?.display_name??task.work_role_id??'Unspecified')),el('p','Assigned logical agent: '+(task.assigned_agent_id??'Unassigned')));
  if(task.active_run_id)item.append(el('p','Observed active run: '+task.active_run_id+' — not runtime presence'));
  if(task.flags.includes('outcome_unknown'))item.append(el('p','External outcome unknown — reconciliation required',{class:'notice'}));
  if(task.flags.includes('retry_exhausted'))item.append(el('p','Retry limit exhausted',{class:'notice'}));
  if(task.flags.includes('approval_expired'))item.append(el('p','Prior approval expired',{class:'notice'}));
  return item;
+}
+/** Only currently successful loaded task pages may offer comparison choices. */
+export function factoryComparisonCandidates(state:TaskReadView,workspaceId:string):Task[]{
+ if(!state.capabilities.tasks)return [];
+ const candidates=new Map<string,Task>();
+ for(const name of taskStates)if(state.columns[name].read.state.status==='ready')for(const row of (state.columns[name].read.state.data??[]).slice(0,taskPageLimit))if(row.workspace_id===workspaceId&&row.state===name)candidates.set(row.id,row);
+ const task=state.task.state.data;if(state.task.state.status==='ready'&&task?.workspace_id===workspaceId&&task.id===state.selectedId)candidates.set(task.id,task);
+ return [...candidates.values()];
 }
 /** Read-only projection: it owns no transport, persistence, authority or mutation callbacks. */
 export function FactoryExplorer(options:FactoryExplorerOptions):HTMLElement{
@@ -83,7 +93,7 @@ export function FactoryExplorer(options:FactoryExplorerOptions):HTMLElement{
  }
  overview.append(columns);root.append(overview);
  const workstation=surface('factory-workstation','Workstation'),evidence=surface('factory-evidence','QC / evidence');
- workstation.append(el('p','Runtime presence: Unavailable — no public runtime presence read. File activity and execution locations are not reported by this view.'));
+ workstation.append(el('p',options.observations?'Runtime presence: Unavailable — no public runtime presence read. Reported paths are bounded claims, not execution locations.':'Runtime presence: Unavailable — no public runtime presence read. File activity and execution locations are not reported by this view.'));
  evidence.append(el('p','Results and artifact metadata are recorded evidence, not independently verified test execution. Artifact bytes and reported content are not automatically fetched.'));
  const candidate=state.capabilities.tasks?state.task.state.data:null,task=candidate?.workspace_id===workspaceId&&candidate.id===state.selectedId?candidate:null;
  if(state.selectedId){
@@ -95,5 +105,10 @@ export function FactoryExplorer(options:FactoryExplorerOptions):HTMLElement{
    const id=section.getAttribute('data-testid');if(id==='task-run')workstation.append(section);else if(id)evidence.append(section);
   }
  }else{workstation.append(el('p','Select a task to inspect its independently authorized run.'));evidence.append(el('p','Select a task to inspect current and historical result evidence.'));}
+ if(options.observations){
+  const reportState=options.observations.state.slots[0]?.id===state.selectedId?options.observations.state:{slots:[]};
+  const reports=FactoryObservationSurfaces({...options.observations,state:reportState,workspaceId,candidates:factoryComparisonCandidates(state,workspaceId)});
+  overview.append(reports.overview);workstation.append(reports.workstation);evidence.append(reports.evidence);
+ }
  root.append(workstation,evidence);return root;
 }

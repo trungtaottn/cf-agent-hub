@@ -33,7 +33,7 @@ async function bootUnopened(failErase=false){
  for(const id of ['view','session','navigation','notice','main','workspace-name','workspace-identity','page-status','read-actions'])nodes.set(id,new Element('DIV'));
  const heading=new Element('H1'),body=new Element('BODY');body.dataset.workspace=scope.workspaceId;
  const descendants=(node:Element):Element[]=>[node,...node.children.flatMap(descendants)];
- vi.stubGlobal('document',{body,documentElement:new Element('HTML'),activeElement:null,createElement:(tag:string)=>new Element(tag.toUpperCase()),getElementById:(id:string)=>nodes.get(id)??[...nodes.values()].flatMap(descendants).find(n=>n.getAttribute('id')===id)??null,querySelector:()=>heading});
+ vi.stubGlobal('document',{addEventListener:vi.fn(),visibilityState:'visible',body,documentElement:new Element('HTML'),activeElement:null,createElement:(tag:string)=>new Element(tag.toUpperCase()),getElementById:(id:string)=>nodes.get(id)??[...nodes.values()].flatMap(descendants).find(n=>n.getAttribute('id')===id)??null,querySelector:()=>heading});
  vi.stubGlobal('location',{pathname:'/overview',origin:'https://hub.example.invalid',href:'https://hub.example.invalid/overview?workspace=ws_example'});
  vi.stubGlobal('navigator',{onLine:true});vi.stubGlobal('addEventListener',vi.fn());vi.stubGlobal('setInterval',vi.fn());
  vi.stubGlobal('BroadcastChannel',class {postMessage(value:unknown){posted.push(value);}addEventListener(){}});

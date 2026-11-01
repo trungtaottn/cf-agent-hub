@@ -89,3 +89,6 @@ it('a command preparation 404 redacts the target from board pages without cleari
  expect(model.columns.ready.read.state.data?.map(row=>row.id)).toEqual(['other']);expect(model.task.state.data?.id).toBe('other');
  model.forgetTask('other','other-request');expect(model.task.state.data).toBeNull();expect(model.columns.ready.read.state.data).toEqual([]);
 });
+it('confirmed Factory task403 preserves its denial reason while redacting pending board/detail data',async()=>{
+ const late=deferred<ApiResult<Task[]>>();let pending=false;const {model}=setup(async(op,input)=>op==='getTask'?ok(task()):op==='listTasks'&&input.query.state==='ready'?(pending?late.promise:ok([task(),task('other')])):ok([]));await model.refreshBoard();await model.select('task_one');pending=true;const refresh=model.refreshBoard();(model.forgetTask as any)('task_one','denied','FORBIDDEN');expect(model.task.state.errorCode).toBe('FORBIDDEN');late.resolve(ok([task()]));await refresh;expect(model.columns.ready.read.state.data?.map(t=>t.id)).toEqual(['other']);expect(model.results.read.state.data).toBeNull();
+});

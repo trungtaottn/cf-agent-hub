@@ -38,6 +38,8 @@
     "src/ui/compose/message-form-view.ts",
     "test/client/message-form-view.test.ts",
     "src/ui/factory/explorer.ts",
-    "test/ui/factory-explorer.test.ts"
+    "test/ui/factory-explorer.test.ts",
+    "src/ui/factory/observations.ts",
+    "test/ui/factory-observations.test.ts"
   ]
 }
