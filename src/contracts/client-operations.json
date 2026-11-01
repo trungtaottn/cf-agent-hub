@@ -8,6 +8,7 @@
     "patchTask",
     "readyTask",
     "claimTask",
+    "lookupTaskClaimOutcome",
     "requestTaskDecision",
     "submitTaskResult",
     "acceptTaskResult",

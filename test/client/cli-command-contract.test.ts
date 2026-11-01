@@ -4,13 +4,14 @@ import {resolveContext} from '../../packages/cli/src/context';
 import {formatResult,classifyResult} from '../../packages/cli/src/output';
 import {clientOperations} from '../../src/http/generated/client-operations';
 describe('CLI command contract',()=>{
- it('partitions the exact native inventory into 34 CLI commands and the explicit MCP-only decision request',()=>{
+ it('partitions the exact native inventory into 34 CLI commands and the explicit decision request / claim lookup complement',()=>{
   const cli:string[]=Object.values(nativeCommandMap).map(x=>x.operation).sort();
   const native=Object.entries(clientOperations).filter(([,v])=>v.native).map(([k])=>k).sort();
   expect(cli).toHaveLength(34);expect(new Set(cli).size).toBe(34);
-  expect(native).toHaveLength(35);
-  expect(native.filter(operation=>!cli.includes(operation))).toEqual(['requestTaskDecision']);
-  expect([...cli,'requestTaskDecision'].sort()).toEqual(native);
+  expect(native).toHaveLength(36);
+  expect(native.filter(operation=>!cli.includes(operation))).toEqual(['lookupTaskClaimOutcome','requestTaskDecision']);
+  expect([...cli,'lookupTaskClaimOutcome','requestTaskDecision'].sort()).toEqual(native);
+  expect(()=>parseCommand(['tasks','claim-outcome','task-example','--input','body.json'])).toThrow('CLI_ARGUMENT_REJECTED');
   expect(()=>parseCommand(['tasks','request-decision','task-example','--input','body.json'])).toThrow('CLI_ARGUMENT_REJECTED');
  });
  it('maps false and exact integer lexemes',()=>{expect(parseCommand(['inbox','list','--acknowledged','false','--limit','20']).input.query).toEqual({acknowledged:false,limit:20});});

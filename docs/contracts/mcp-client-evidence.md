@@ -69,12 +69,15 @@ exhaustion holds new intents rather than evicting replay evidence. There is no
 supported clear/reset/force-replay operation. Manual state deletion retires
 reconciliation evidence and must never be presented as safe replay recovery.
 
-A retained settled intent does not store its complete native DTO. Repeating it
-therefore returns a fixed reconciliation-needed tool error with no fabricated
-historical result. Use authorized native current-state reads and operator
-reconciliation. Unknown outcomes preserve the original identity; no fresh key,
-automatic retry, cancellation or domain completion follows from connection loss.
-An old claim result is never renewed execution authority.
+A retained settled intent does not store its complete native DTO. Other mutations
+return a fixed reconciliation-needed tool error rather than fabricate history.
+Claims use a narrow [current-authorized outcome lookup](claim-outcome-reconciliation.md):
+a previously dispatched claim reads its retained original server DTO through a
+separate lookup-only URL, never a fallback apply. The original key and stamp
+survive restart without relaxing ordinary write-clock refusal. Missing or expired
+retention still requires reconciliation. Unknown outcomes never generate a fresh
+key, automatic retry, cancellation or domain completion. An old claim result is
+never renewed execution authority.
 
 ## Protocol and error bounds
 

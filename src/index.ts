@@ -1,3 +1,4 @@
+import {claimOutcomePath} from './http/claim-outcome-routes';
 import {decisionPath} from './http/decision-routes';
 import {observationPath} from './http/observation-routes';
 import {creationReconciliationPath} from './http/creation-reconciliation-routes';
@@ -34,7 +35,8 @@ export default {
   const imports=importPath.exec(url.pathname),reconciliation=creationReconciliationPath.exec(url.pathname);
   const search=searchPath.exec(url.pathname),observation=observationPath.exec(url.pathname),decision=decisionPath.exec(url.pathname);
   const artifact=productArtifactBucket(env)?artifactPath.exec(url.pathname):null;
-  const selected=match??settings??message??operations??readiness??base??identity??task??catalog??artifact??search??imports??reconciliation??observation??decision;
+  const claimOutcome=claimOutcomePath.exec(url.pathname);
+  const selected=match??settings??message??operations??readiness??base??identity??task??catalog??artifact??search??imports??reconciliation??observation??decision??claimOutcome;
   if(selected) {
    try {
     const raw=(env as unknown as Record<string,unknown>).DEPLOYMENT_CONFIG;

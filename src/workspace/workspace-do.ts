@@ -1,3 +1,4 @@
+import {claimOutcomePath,claimOutcomeRoutes} from '../http/claim-outcome-routes';
 import {decisionPath,decisionRoutes} from '../http/decision-routes';
 import {observationPath,observationRoutes} from '../http/observation-routes';
 import {creationReconciliationPath,creationReconciliationRoutes} from '../http/creation-reconciliation-routes';
@@ -196,18 +197,19 @@ export class WorkspaceDO extends DurableObject<WorkspaceEnvironment> {
   const imports=importPath.exec(path),reconciliation=creationReconciliationPath.exec(path);
   const search=searchPath.exec(path),observation=observationPath.exec(path),decision=decisionPath.exec(path);
   const bucket=productArtifactBucket(this.env),artifact=bucket?artifactPath.exec(path):null;
-  const selected=match??settings??message??operations??readiness??base??identity??task??catalog??artifact??search??imports??reconciliation??observation??decision;
+  const claimOutcome=claimOutcomePath.exec(path);
+  const selected=match??settings??message??operations??readiness??base??identity??task??catalog??artifact??search??imports??reconciliation??observation??decision??claimOutcome;
   if(!selected)return r2Routes(request);
   // Protected diagnostics observe persisted scheduler/probe state. A GET must
   // not repair that state or manufacture a fresh health observation.
   // Identity lifecycle emits only local audit/outcome rows, never outbox work.
   // Do not await unrelated alarm repair after its final authority/secret projection.
-  const diagnostic=Boolean(operations||readiness||identity||task||catalog||artifact||search||imports||reconciliation||observation||decision);
+  const diagnostic=Boolean(operations||readiness||identity||task||catalog||artifact||search||imports||reconciliation||observation||decision||claimOutcome);
   if(!diagnostic)await this.#repairDirty();
   const metadata=withTransaction(this.ctx.storage,tx=>tx.one<{workspace_id:string;object_name:string}>('SELECT workspace_id,object_name FROM workspace_metadata WHERE id=1'));
   if(!metadata||metadata.workspace_id!==selected[1]||this.env.WORKSPACE.idFromName(metadata.object_name).toString()!==this.ctx.id.toString()){const headers=new Headers(securityHeaders);if(match?.[2]==='callback')headers.append('set-cookie',cookieHeader('cfhub_login','',0));return authFailure(new AuthError('UNAUTHENTICATED',401),crypto.randomUUID(),headers);}
   const workspace={storage:this.ctx.storage,workspaceId:metadata.workspace_id,objectName:metadata.object_name,secrets:this.env as unknown as Record<string,unknown>,clock:systemClock,entropy:systemEntropy};
-  const response=await (decision?decisionRoutes(request,workspace,bucket):artifact?artifactRoutes(request,workspace,bucket):task?taskRoutes(request,workspace,bucket):(observation?observationRoutes:reconciliation?creationReconciliationRoutes:imports?importRoutes:search?searchRoutes:catalog?catalogRoutes:identity?r2Routes:operations?operationsRoutes:readiness?readinessRoutes:base?workspaceRoutes:message?messageRoutes:settings?settingsRoutes:authRoutes)(request,workspace));
+  const response=await (claimOutcome?claimOutcomeRoutes(request,workspace):decision?decisionRoutes(request,workspace,bucket):artifact?artifactRoutes(request,workspace,bucket):task?taskRoutes(request,workspace,bucket):(observation?observationRoutes:reconciliation?creationReconciliationRoutes:imports?importRoutes:search?searchRoutes:catalog?catalogRoutes:identity?r2Routes:operations?operationsRoutes:readiness?readinessRoutes:base?workspaceRoutes:message?messageRoutes:settings?settingsRoutes:authRoutes)(request,workspace));
   // Ownership commands commit a durable generation. Schedule its shared repair
   // within the DO lifetime without awaiting after the final authorized projection.
   // Failure remains dirty for the existing scheduled catalog sweep/restart repair.

@@ -6486,6 +6486,121 @@
           "$ref": "#/components/schemas/ObservationReadQuery"
         }
       }
+    },
+    "/v2/workspaces/{workspace_id}/tasks/{task_id}:claim-outcome": {
+      "parameters": [
+        {
+          "name": "workspace_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque stable identifier; never infer authority from its value."
+          }
+        },
+        {
+          "name": "task_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque stable identifier; never infer authority from its value."
+          }
+        }
+      ],
+      "post": {
+        "operationId": "lookupTaskClaimOutcome",
+        "summary": "Read the retained original claim outcome without executing or renewing authority",
+        "description": "Native-only retained-positive lookup. Requires current original tasks:claim and tasks:execute resource authority and original runtime proof. Fingerprints the original :claim path and exact original body/key. Returns the retained original task/run/approval DTO with a fresh lookup request_id; historical data is not a live lease, current fence, or permission to execute. Missing or expired outcome is NOT_FOUND and requires reconciliation, not proof of no effect. Never dispatches, applies, retries, repairs, renews retention or falls back to :claim. Human sessions, CSRF and creation-admission headers are not accepted.",
+        "security": [
+          {
+            "NativeBearer": [],
+            "RuntimeProof": []
+          }
+        ],
+        "x-required-scopes": [
+          "tasks:claim",
+          "tasks:execute"
+        ],
+        "x-actor-kind": "agent",
+        "x-contract-status": "proposed",
+        "responses": {
+          "200": {
+            "description": "Exact retained original claim domain data; fresh lookup correlation; no execution authority.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskCommandResultResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "410": {
+            "$ref": "#/components/responses/Gone"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "description": "Unexpected internal failure; sanitized error only. Reconcile ambiguous mutations before any new intent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-idempotency": "lookup only; original claim key and exact canonical body; no write or retention renewal",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "pattern": "^[!-~]+$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskClaimRequest"
+              }
+            }
+          }
+        },
+        "x-r1-available": false
+      }
     }
   },
   "components": {
