@@ -46,6 +46,8 @@ jobs:
       - run: node --test test/governance/release-evidence-dispatch.test.mjs
       - run: npm run build:ui
       - run: npm run check
+      - run: node --test test/governance/observation-adapter-ci.test.mjs
+      - run: node scripts/check-observation-adapter.mjs
       - run: npm run check:runtime
       - run: npx --no-install playwright install --with-deps chromium
       - run: npm run test:ui -- --reporter=line

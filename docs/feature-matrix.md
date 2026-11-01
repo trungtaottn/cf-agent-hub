@@ -141,3 +141,7 @@ Issue53 adds scoped durable intents and exact prepared-admission reconciliation,
 The [B1 observation service plan](../plans/261101-0434-bounded-observation-service/plan.md) adds an optional, disabled-by-absence diagnostic service with current native owner proof, independently authorized historical reads and bounded durable receipts. Schema18 and additive native18 profiles preserve historical recovery and profile identities; restore validates the original diagnostic graph before invalidating imported sessions and records. Reported observations are not verified execution evidence, task authority, file reservations or merge permission.
 
 The [source evidence ledger](../plans/261101-0434-bounded-observation-service/evidence.md) separates focused tests and independent review from pending full-candidate CI. No adapter installation, observation UI, live two-agent pilot or capability promotion is included in this service slice. Formal Verified/Released rows remain unchanged.
+
+## Local observation adapter source boundary
+
+The [bounded local observation adapter](observation-adapter.md) is independent source-only work: synthetic offline evidence is not hook installation, real pilot activation, supported CI acceptance or release. Generic owner catalogs and frozen native commitments remain unchanged.

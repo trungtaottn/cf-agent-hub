@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {"types": ["node"]},
+  "include": ["packages/observation-adapter/**/*.ts", "test/observation-adapter/**/*.ts", "vitest.observation-adapter.config.ts", "worker-configuration.d.ts"],
+  "exclude": []
+}

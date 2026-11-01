@@ -1,0 +1,11 @@
+{
+  "profile": "claude-posttooluse-path-docs-20261101-v1",
+  "reference": "https://code.claude.com/docs/en/hooks#posttooluse-input",
+  "inspected_date": "2026-11-01",
+  "status": "Synthetic source-only subset, not installed-host compatibility evidence",
+  "events": [
+    {"hook_event_name":"PostToolUse","cwd":"/private/checkout","tool_name":"Read","tool_input":{"file_path":"/private/checkout/src/example.ts"}},
+    {"hook_event_name":"PostToolUse","cwd":"/private/checkout","tool_name":"Write","tool_input":{"file_path":"/private/checkout/src/example.ts","content":"SYNTHETIC_DISCARDED_CONTENT"},"duration_ms":1.5},
+    {"hook_event_name":"PostToolUse","cwd":"/private/checkout","tool_name":"Edit","tool_input":{"file_path":"/private/checkout/src/example.ts","old_string":"SYNTHETIC_OLD","new_string":"SYNTHETIC_NEW"}}
+  ]
+}
