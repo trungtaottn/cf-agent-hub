@@ -98,3 +98,20 @@ test('claim lookup source, custody and actual Worker suites have explicit runtim
  }
  assert.throws(()=>assertClaimLookupOwners(registry.replace("export const nodeExclude=['test/http/claim-outcome-routes.test.ts',","export const nodeExclude=[")));
 });
+
+function assertCoreParityOwner(registry){
+ const part=name=>registry.split(`export const ${name}=[`)[1]?.split('];')[0];
+ const token="'test/mcp/native-worker-parity.test.ts'";
+ const node=part('nodeInclude');assert.ok(node);
+ assert.equal(node.split(token).length-1,1,'one mandatory genuine SDK/native parity suite');
+ for(const name of ['nodeExclude','workersInclude','workersExclude']){const section=part(name);assert.notEqual(section,undefined);assert.ok(!section.includes(token),name);}
+}
+test('all sixteen core native/MCP pairs and shared negatives have one required Node runtime owner',()=>{
+ const registry=readFileSync(new URL('../helpers/runtime-suites.ts',import.meta.url),'utf8');
+ assertCoreParityOwner(registry);
+ const token="'test/mcp/native-worker-parity.test.ts',";
+ assert.throws(()=>assertCoreParityOwner(registry.replace(token,'')));
+ assert.throws(()=>assertCoreParityOwner(registry.replace(token,token+token)));
+ assert.throws(()=>assertCoreParityOwner(registry.replace('export const nodeExclude=[','export const nodeExclude=['+token)));
+ assert.throws(()=>assertCoreParityOwner(registry.replace('export const workersInclude=[','export const workersInclude=['+token)));
+});
