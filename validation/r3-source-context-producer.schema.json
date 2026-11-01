@@ -1,0 +1,823 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cf-agent-hub.invalid/schemas/r3-source-context-producer.schema.json",
+  "$defs": {
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "run_id",
+        "nonce_sha256",
+        "source_context_sha256"
+      ],
+      "properties": {
+        "run_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{32}$"
+        },
+        "nonce_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "source_context_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format_version",
+        "stage",
+        "origin",
+        "acceptance_eligible",
+        "provenance_authenticated",
+        "run_id",
+        "nonce_sha256",
+        "source_context_sha256",
+        "module_path",
+        "project_name",
+        "selected_count",
+        "passed_count",
+        "failed_count",
+        "skipped_count",
+        "tests",
+        "observations",
+        "profile",
+        "context_origin",
+        "contexts",
+        "joins",
+        "observation_count",
+        "context_count",
+        "joined_count"
+      ],
+      "properties": {
+        "format_version": {
+          "const": 2
+        },
+        "stage": {
+          "const": "j1-context-staged-source-candidate"
+        },
+        "origin": {
+          "const": "local-workers-synthetic-fixture"
+        },
+        "acceptance_eligible": {
+          "const": false
+        },
+        "provenance_authenticated": {
+          "const": false
+        },
+        "run_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{32}$"
+        },
+        "nonce_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "source_context_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "module_path": {
+          "const": "test/acceptance/r3-request-journey.test.ts"
+        },
+        "project_name": {
+          "const": "r3-j1-source-context-producer"
+        },
+        "selected_count": {
+          "const": 8
+        },
+        "passed_count": {
+          "const": 8
+        },
+        "failed_count": {
+          "const": 0
+        },
+        "skipped_count": {
+          "const": 0
+        },
+        "tests": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "name",
+              "state",
+              "retry_count",
+              "repeat_count",
+              "error_count"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[-A-Za-z0-9_]{1,128}$"
+              },
+              "name": {
+                "enum": [
+                  "produces actual command-source facts for request_pause_replay",
+                  "produces actual command-source facts for human_approve_replay_revoked",
+                  "produces actual command-source facts for human_reject_replay",
+                  "produces actual command-source facts for pending_command_history_restore",
+                  "produces actual command-source facts for rejected_command_history_restore",
+                  "produces actual command-source facts for changed_chunk_continuation_denied",
+                  "detects same-count authority mutation without putting private values into diagnostics",
+                  "rejects oversized raw SQL fields before full private row materialization"
+                ]
+              },
+              "state": {
+                "const": "passed"
+              },
+              "retry_count": {
+                "const": 0
+              },
+              "repeat_count": {
+                "const": 0
+              },
+              "error_count": {
+                "const": 0
+              }
+            }
+          },
+          "minItems": 8,
+          "maxItems": 8
+        },
+        "observations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "case_id",
+              "artifact"
+            ],
+            "properties": {
+              "case_id": {
+                "enum": [
+                  "request_pause_replay",
+                  "human_approve_replay_revoked",
+                  "human_reject_replay",
+                  "pending_command_history_restore",
+                  "rejected_command_history_restore",
+                  "changed_chunk_continuation_denied"
+                ]
+              },
+              "artifact": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "path",
+                  "sha256",
+                  "byte_size"
+                ],
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "byte_size": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 262144
+                  }
+                }
+              }
+            }
+          },
+          "minItems": 6,
+          "maxItems": 6
+        },
+        "profile": {
+          "const": "j1-context-v2"
+        },
+        "context_origin": {
+          "const": "same-reviewed-fixture-precommand"
+        },
+        "contexts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "case_id",
+              "artifact"
+            ],
+            "properties": {
+              "case_id": {
+                "enum": [
+                  "request_pause_replay",
+                  "human_approve_replay_revoked",
+                  "human_reject_replay",
+                  "pending_command_history_restore",
+                  "rejected_command_history_restore",
+                  "changed_chunk_continuation_denied"
+                ]
+              },
+              "artifact": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "path",
+                  "sha256",
+                  "byte_size"
+                ],
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "byte_size": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 8192
+                  }
+                }
+              }
+            }
+          },
+          "minItems": 6,
+          "maxItems": 6
+        },
+        "joins": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 6,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "case_id",
+              "observation_sha256",
+              "context_sha256",
+              "source_policy_joined",
+              "target_epoch_joined",
+              "configured_principals_joined",
+              "configured_reviewers_joined",
+              "acceptance_eligible",
+              "provenance_authenticated"
+            ],
+            "properties": {
+              "case_id": {
+                "enum": [
+                  "request_pause_replay",
+                  "human_approve_replay_revoked",
+                  "human_reject_replay",
+                  "pending_command_history_restore",
+                  "rejected_command_history_restore",
+                  "changed_chunk_continuation_denied"
+                ]
+              },
+              "observation_sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "context_sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "source_policy_joined": {
+                "const": true
+              },
+              "target_epoch_joined": {
+                "type": "boolean"
+              },
+              "configured_principals_joined": {
+                "const": true
+              },
+              "configured_reviewers_joined": {
+                "const": true
+              },
+              "acceptance_eligible": {
+                "const": false
+              },
+              "provenance_authenticated": {
+                "const": false
+              }
+            }
+          }
+        },
+        "observation_count": {
+          "const": 6
+        },
+        "context_count": {
+          "const": 6
+        },
+        "joined_count": {
+          "const": 6
+        }
+      }
+    },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "tree",
+        "source_files",
+        "inventory_sha256",
+        "lock_sha256",
+        "configuration",
+        "runtime",
+        "environment",
+        "product_build"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "tree": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "source_files": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 256,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "sha256",
+              "byte_size"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "byte_size": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 16777216
+              }
+            }
+          }
+        },
+        "inventory_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "lock_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "configuration": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "file",
+            "sha256",
+            "project_name",
+            "module_path",
+            "filter",
+            "watch",
+            "retry",
+            "exclude",
+            "allow_only",
+            "shard",
+            "file_parallelism",
+            "max_workers",
+            "pool",
+            "reporter",
+            "repeat_policy",
+            "profile",
+            "provided_context"
+          ],
+          "properties": {
+            "file": {
+              "const": "vitest.r3-source-context-producer.config.ts"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "project_name": {
+              "const": "r3-j1-source-context-producer"
+            },
+            "module_path": {
+              "const": "test/acceptance/r3-request-journey.test.ts"
+            },
+            "filter": {
+              "const": null
+            },
+            "watch": {
+              "const": false
+            },
+            "retry": {
+              "const": 0
+            },
+            "exclude": {
+              "const": []
+            },
+            "allow_only": {
+              "const": false
+            },
+            "shard": {
+              "const": null
+            },
+            "file_parallelism": {
+              "const": false
+            },
+            "max_workers": {
+              "const": 1
+            },
+            "pool": {
+              "const": "cloudflare-pool"
+            },
+            "reporter": {
+              "const": "scripts/lib/r3-source-context-reporter.ts"
+            },
+            "repeat_policy": {
+              "const": "reject-nonzero-diagnostic"
+            },
+            "profile": {
+              "const": "j1-context-v2"
+            },
+            "provided_context": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "r3SourceProfile"
+              ],
+              "properties": {
+                "r3SourceProfile": {
+                  "const": "j1-context-v2"
+                }
+              }
+            }
+          }
+        },
+        "runtime": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "node",
+            "vitest",
+            "vite",
+            "workers_plugin",
+            "wrangler",
+            "esbuild",
+            "typescript",
+            "node_executable_sha256",
+            "npm_engine_declared",
+            "npm_executed",
+            "install_origin_verified",
+            "package_entries"
+          ],
+          "properties": {
+            "node": {
+              "const": "24.22.1"
+            },
+            "vitest": {
+              "const": "4.1.12"
+            },
+            "vite": {
+              "const": "7.3.7"
+            },
+            "workers_plugin": {
+              "const": "1.4.7"
+            },
+            "wrangler": {
+              "const": "4.152.0"
+            },
+            "esbuild": {
+              "const": "0.28.2"
+            },
+            "typescript": {
+              "const": "6.0.3"
+            },
+            "node_executable_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "npm_engine_declared": {
+              "const": "11.19.1"
+            },
+            "npm_executed": {
+              "const": false
+            },
+            "install_origin_verified": {
+              "const": false
+            },
+            "package_entries": {
+              "type": "array",
+              "minItems": 6,
+              "maxItems": 6,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "package_json_sha256",
+                  "entry_sha256",
+                  "entry_path"
+                ],
+                "properties": {
+                  "name": {
+                    "enum": [
+                      "vitest",
+                      "vite",
+                      "@cloudflare/vitest-plugin",
+                      "wrangler",
+                      "esbuild",
+                      "typescript"
+                    ]
+                  },
+                  "package_json_sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "entry_sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "entry_path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1024
+                  }
+                }
+              }
+            }
+          }
+        },
+        "environment": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "PATH",
+            "HOME",
+            "XDG_CONFIG_HOME",
+            "TMPDIR",
+            "R3_SOURCE_RUN_STATE",
+            "TZ",
+            "LANG",
+            "CI",
+            "NODE_ENV"
+          ],
+          "properties": {
+            "PATH": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1024
+            },
+            "HOME": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1024
+            },
+            "XDG_CONFIG_HOME": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1024
+            },
+            "TMPDIR": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1024
+            },
+            "R3_SOURCE_RUN_STATE": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1024
+            },
+            "TZ": {
+              "const": "UTC"
+            },
+            "LANG": {
+              "const": "C.UTF-8"
+            },
+            "CI": {
+              "const": "true"
+            },
+            "NODE_ENV": {
+              "const": "test"
+            }
+          }
+        },
+        "product_build": {
+          "const": null
+        }
+      }
+    },
+    "completion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "exit_code",
+        "signal",
+        "closed",
+        "error_code",
+        "elapsed_ms"
+      ],
+      "properties": {
+        "exit_code": {
+          "const": 0
+        },
+        "signal": {
+          "const": null
+        },
+        "closed": {
+          "const": true
+        },
+        "error_code": {
+          "const": null
+        },
+        "elapsed_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1200000
+        }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format_version",
+        "stage",
+        "origin",
+        "acceptance_eligible",
+        "provenance_authenticated",
+        "local_execution_complete",
+        "product_build",
+        "run_id",
+        "nonce_sha256",
+        "source_context_sha256",
+        "source_context",
+        "process",
+        "reporter_manifest",
+        "selected_count",
+        "passed_count",
+        "observation_count",
+        "failed_count",
+        "skipped_count",
+        "missing_stages",
+        "profile",
+        "context_origin",
+        "precommand_comparison_join_complete",
+        "context_count",
+        "joined_count"
+      ],
+      "properties": {
+        "format_version": {
+          "const": 2
+        },
+        "stage": {
+          "const": "j1-local-source-context-execution"
+        },
+        "origin": {
+          "const": "local-workers-synthetic-fixture"
+        },
+        "acceptance_eligible": {
+          "const": false
+        },
+        "provenance_authenticated": {
+          "const": false
+        },
+        "local_execution_complete": {
+          "const": true
+        },
+        "product_build": {
+          "const": null
+        },
+        "run_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{32}$"
+        },
+        "nonce_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "source_context_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "source_context": {
+          "$ref": "#/$defs/context"
+        },
+        "process": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "exit_code",
+            "signal",
+            "closed",
+            "error_code",
+            "elapsed_ms"
+          ],
+          "properties": {
+            "exit_code": {
+              "const": 0
+            },
+            "signal": {
+              "const": null
+            },
+            "closed": {
+              "const": true
+            },
+            "error_code": {
+              "const": null
+            },
+            "elapsed_ms": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1200000
+            }
+          }
+        },
+        "reporter_manifest": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "sha256",
+            "byte_size"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "byte_size": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65536
+            }
+          }
+        },
+        "selected_count": {
+          "const": 8
+        },
+        "passed_count": {
+          "const": 8
+        },
+        "observation_count": {
+          "const": 6
+        },
+        "failed_count": {
+          "const": 0
+        },
+        "skipped_count": {
+          "const": 0
+        },
+        "missing_stages": {
+          "const": [
+            "supported-product-action",
+            "authenticated-producer-controller-build-origin",
+            "live-independent-actors",
+            "installed-native-mcp-positive-parity",
+            "real-provider-lineage",
+            "complete-recovery-rehearsal",
+            "prior-round-acceptance",
+            "independent-round-review",
+            "consumed-journey-J2",
+            "formal67"
+          ]
+        },
+        "profile": {
+          "const": "j1-context-v2"
+        },
+        "context_origin": {
+          "const": "same-reviewed-fixture-precommand"
+        },
+        "precommand_comparison_join_complete": {
+          "const": true
+        },
+        "context_count": {
+          "const": 6
+        },
+        "joined_count": {
+          "const": 6
+        }
+      }
+    }
+  },
+  "title": "Closed J1 context-enabled local source execution (not release evidence)"
+}

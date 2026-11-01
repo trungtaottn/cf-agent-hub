@@ -1,3 +1,5 @@
+import {captureJ1PrecommandContext} from './r3-precommand-capture';
+import type {J1PrecommandSink} from './r3-precommand-context';
 /** Private fixture composition only. No import from production entrypoints or live authority. */
 import {runInDurableObject,evictDurableObject} from 'cloudflare:test';
 import {env} from 'cloudflare:workers';
@@ -115,9 +117,19 @@ async function observation(storage:DurableObjectStorage,r:Pick<Requested,'steps'
  // Recovery cases add actual target facts before the final predicate invocation.
  return value as R3LocalJourneyObservationV1;
 }
-export async function produceR3JourneyCase(caseId:R3JourneyCase):Promise<R3LocalJourneyObservationV1>{
- if(caseId.endsWith('_restore')||caseId==='changed_chunk_continuation_denied')return recoveryCase(caseId);
+export interface R3JourneyOptions {onPrecommandContext:J1PrecommandSink;}
+function precommandSink(options:unknown):J1PrecommandSink|undefined{
+ if(options===undefined)return undefined;
+ if(!options||typeof options!=='object'||Array.isArray(options)||Object.getPrototypeOf(options)!==Object.prototype)fail('J1_PRECOMMAND_OPTIONS_INVALID');
+ const d=Object.getOwnPropertyDescriptors(options),keys=Reflect.ownKeys(d);
+ if(keys.length!==1||keys[0]!=='onPrecommandContext'||!Object.hasOwn(d.onPrecommandContext,'value')||typeof d.onPrecommandContext.value!=='function')fail('J1_PRECOMMAND_OPTIONS_INVALID');
+ return d.onPrecommandContext.value as J1PrecommandSink;
+}
+export async function produceR3JourneyCase(caseId:R3JourneyCase,options?:R3JourneyOptions):Promise<R3LocalJourneyObservationV1>{
+ const sink=precommandSink(options);
+ if(caseId.endsWith('_restore')||caseId==='changed_chunk_continuation_denied')return recoveryCase(caseId,sink);
  const f=await decisionFixture('j1_'+caseId);
+ if(sink)await sink(await captureJ1PrecommandContext(caseId,f));
  return runInDurableObject(f.stub,async(_o,s)=>{
   const r=await request(s.storage,f.name),x=r.x;
   if(caseId==='request_pause_replay'){
@@ -173,8 +185,9 @@ function immutableDecisionRows(snapshot:PrivateSnapshot){
  return {...Object.fromEntries(names.map(n=>[n,snapshot[n]])),task:snapshot.tasks.filter(r=>r.id==='task_a'),run:snapshot.runs.filter(r=>r.id==='run_initial')};
 }
 function safeDecisionProjection(snapshot:PrivateSnapshot){const safe=safeProjection(snapshot);return Object.fromEntries(['tasks','runs','approvals','decision_checkpoints','decision_proposals','decision_artifact_edges','decision_notice_intents','decision_lifecycle_heads','decision_lifecycle_transitions'].map(n=>[n,safe[n]]));}
-async function recoveryCase(caseId:R3JourneyCase):Promise<R3LocalJourneyObservationV1>{
+async function recoveryCase(caseId:R3JourneyCase,sink?:J1PrecommandSink):Promise<R3LocalJourneyObservationV1>{
  const f=await recoveryFixture('j1_'+caseId),rejected=caseId==='rejected_command_history_restore';
+ if(sink)await sink(await captureJ1PrecommandContext(caseId,{stub:f.source,name:f.sourceName,input:f.sourceInput},{name:f.targetName,input:f.targetInput}));
  const original=await runInDurableObject(f.source,async(_o,s)=>{
   const r=await request(s.storage,f.sourceName);if(rejected)await decide(s.storage,r,'reject');
   const obs=await observation(s.storage,r,caseId,f.sourceName,r.x.ctx.bucket!,rejected?'human_operator':null);

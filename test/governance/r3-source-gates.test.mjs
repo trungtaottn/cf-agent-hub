@@ -53,3 +53,28 @@ test('all six exporter source suites are literal required Node entries',()=>{
  const node=registry.split('export const nodeInclude=[')[1]?.split('];')[0];assert.ok(node);
  for(const name of ['producer','producer-io','reporter','atomic','context','failure'])assert.equal(node.split(`'test/acceptance/r3-source-${name}.test.ts'`).length-1,1,name);
 });
+
+const contextCommand='env -i PATH=/usr/bin:/bin "$(command -v node)" scripts/r3-source-context-producer.mjs';
+function assertPristineContext(source){
+ assert.ok(source);
+ const line=`      - run: ${contextCommand}\n`,v1=`      - run: ${producerCommand}\n`;
+ assert.equal(source.split(line).length-1,1,'one unconditional fixed context producer');
+ const position=source.indexOf(line);
+ for(const earlier of ['      - run: npm ci\n','      - run: npm ci --prefix packages/mcp-stdio --ignore-scripts\n',v1])assert.ok(source.indexOf(earlier)>=0&&source.indexOf(earlier)<position,'dependencies and preserved v1 precede v2');
+ for(const later of ['      - run: node --test','      - run: npm run build:ui\n','      - run: npm run check\n'])assert.ok(source.indexOf(later)>position,'context precedes generated outputs');
+ assert.doesNotMatch(source,/continue-on-error|\bif:/);
+}
+test('context producer is mandatory and pristine, with omission/conditional/duplicate/late negatives',()=>{
+ const source=section('source'),line=`      - run: ${contextCommand}\n`;
+ assertPristineContext(source);
+ for(const changed of [source.replace(line,''),source.replace(line,line+line),source.replace(line,`      - if: false\n        run: ${contextCommand}\n`),source.replace(line,'').replace('      - run: npm run check\n',`      - run: npm run check\n${line}`)])assert.throws(()=>assertPristineContext(changed));
+});
+test('all context source suites have explicit runtime owners without removing prior suites',()=>{
+ const registry=readFileSync(new URL('../helpers/runtime-suites.ts',import.meta.url),'utf8');
+ const node=registry.split('export const nodeInclude=[')[1]?.split('];')[0],workers=registry.split('export const workersInclude=[')[1]?.split('];')[0];assert.ok(node&&workers);
+ for(const file of ['r3-precommand-context',...['io','join','measure','packet','reporter','run','validator'].map(x=>`r3-source-context-${x}`)]){
+  const path=`'test/acceptance/${file}.test.ts'`;assert.equal(node.split(path).length-1,1,path);assert.ok(!workers.includes(path));
+ }
+ const chronology="'test/acceptance/r3-precommand-chronology.test.ts'";assert.equal(workers.split(chronology).length-1,1);assert.ok(!node.includes(chronology));
+ for(const path of ["'test/acceptance/r3.test.ts'","'test/acceptance/r3-request-journey.test.ts'"])assert.equal(workers.split(path).length-1,1);
+});

@@ -1,0 +1,9 @@
+import {it,expect,afterEach} from 'vitest';
+import {mkdtempSync,writeFileSync,rmSync,symlinkSync} from 'node:fs';
+import {sourceReference,canonical} from '../../scripts/lib/r3-source-context-measure.mjs';
+const roots:string[]=[];afterEach(()=>{for(const p of roots.splice(0))rmSync(p,{recursive:true,force:true});});
+it('measures exact source bytes and canonical deterministic object order',()=>{const p=mkdtempSync('/tmp/r3-source-context-unit.');roots.push(p);writeFileSync(p+'/a','abc');expect(sourceReference(p,'a')).toEqual({path:'a',byte_size:3,sha256:'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad'});expect(canonical({b:1,a:2})).toBe('{"a":2,"b":1}');});
+it('rejects path escape, aliases and symlink sources',()=>{const p=mkdtempSync('/tmp/r3-source-context-unit.');roots.push(p);writeFileSync(p+'/a','abc');symlinkSync(p+'/a',p+'/alias');for(const name of ['../a','/a','./a','a//b','alias'])expect(()=>sourceReference(p,name)).toThrow();});
+import {execFileSync} from 'node:child_process';
+import {assertJ1ContextCleanSource} from '../../scripts/lib/r3-source-context-measure.mjs';
+it('rechecks new untracked and ignored importable files rather than trusting prior clean status',()=>{const p=mkdtempSync('/tmp/r3-clean-unit.');roots.push(p);const git=(...args:string[])=>execFileSync('/usr/bin/git',['-C',p,...args],{stdio:'ignore'});git('init');writeFileSync(p+'/.gitignore','ignored.ts\n');git('add','.gitignore');git('-c','user.name=Unit','-c','user.email=unit@example.invalid','commit','-m','unit');expect(()=>assertJ1ContextCleanSource(p)).not.toThrow();for(const name of ['new.ts','ignored.ts']){writeFileSync(p+'/'+name,'export const synthetic=true;');expect(()=>assertJ1ContextCleanSource(p)).toThrow();rmSync(p+'/'+name);}expect(()=>assertJ1ContextCleanSource(p)).not.toThrow();});

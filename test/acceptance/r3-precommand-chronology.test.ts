@@ -1,0 +1,31 @@
+/** Actual local Workers ordering. Synthetic identity is not real human provenance. */
+import {it,expect,afterEach} from 'vitest';
+import {env} from 'cloudflare:workers';
+import {runInDurableObject,evictDurableObject} from 'cloudflare:test';
+import {produceR3JourneyCase as originalProduce} from '../helpers/r3-journey-fixture';
+import {J1_PRECOMMAND_TABLES,type J1PrecommandPacket} from '../helpers/r3-precommand-context';
+import {R3_JOURNEY_CASES,type R3JourneyCase} from '../helpers/r3-journey-observation';
+const used=new Set<string>();
+// Fixed-profile object names cannot vary. Reset only private test DOs AFTER assertions.
+afterEach(async()=>{for(const name of used){const stub=env.WORKSPACE.getByName(name);await runInDurableObject(stub,async(_o,s)=>{await s.storage.deleteAll();});await evictDurableObject(stub);}used.clear();});
+function produceR3JourneyCase(caseId:R3JourneyCase,options?:any){const recovery=caseId.endsWith('_restore')||caseId==='changed_chunk_continuation_denied';used.add('j1_'+caseId+(recovery?'_source':''));if(recovery)used.add('j1_'+caseId+'_target');return originalProduce(caseId,options);}
+const counts=(name:string)=>runInDurableObject(env.WORKSPACE.getByName(name),(_o,s)=>Object.fromEntries(J1_PRECOMMAND_TABLES.map(t=>[t,s.storage.sql.exec<{n:number}>('SELECT count(*) AS n FROM "'+t+'"').one().n])));
+for(const caseId of R3_JOURNEY_CASES)it('precommand sink rejection prevents every domain effect: '+caseId,async()=>{
+ let calls=0;let packet:J1PrecommandPacket|undefined;
+ await expect(produceR3JourneyCase(caseId,{onPrecommandContext:async(record:J1PrecommandPacket)=>{calls++;packet=record;const x=JSON.parse(record.canonical_json);expect(await counts(x.source.object_name)).toEqual(x.empty_domain_counts);if(x.target){expect(x.target.preparation).toBe('prepared-not-installed');expect(x.target.config_epoch).toBeGreaterThan(x.source.config_epoch);}throw Error('TEST_PRECOMMAND_ABORT');}})).rejects.toThrow('TEST_PRECOMMAND_ABORT');
+ expect(calls).toBe(1);if(!packet)throw Error('PRECOMMAND_PACKET_MISSING');const x=JSON.parse(packet.canonical_json);expect(await counts(x.source.object_name)).toEqual(x.empty_domain_counts);
+},30000);
+it('awaits exactly one snapshotted callback before successful request/setup',async()=>{
+ let calls=0;const options={onPrecommandContext:async(record:J1PrecommandPacket)=>{calls++;const x=JSON.parse(record.canonical_json);expect(await counts(x.source.object_name)).toEqual(x.empty_domain_counts);await Promise.resolve();}};
+ const promise=produceR3JourneyCase('request_pause_replay',options);options.onPrecommandContext=async()=>{throw Error('MUTATED_CALLBACK_USED');};const observation=await promise;expect(calls).toBe(1);expect(observation.history).toHaveLength(1);
+},30000);
+it('rejects getter/extra callback options without calling accessors',async()=>{let calls=0;const options=Object.defineProperty({},'onPrecommandContext',{get(){calls++;throw Error('GETTER_USED');},enumerable:true});await expect(produceR3JourneyCase('request_pause_replay',options as any)).rejects.toThrow('J1_PRECOMMAND_OPTIONS_INVALID');expect(calls).toBe(0);await expect(produceR3JourneyCase('request_pause_replay',{onPrecommandContext:()=>{},extra:true} as any)).rejects.toThrow('J1_PRECOMMAND_OPTIONS_INVALID');});
+import {decisionFixture} from '../helpers/decision-policy';
+import {captureJ1PrecommandContext} from '../helpers/r3-precommand-capture';
+import {prepareBootstrap,canonicalJson,sha256} from '../../src/config/bootstrap';
+async function preparedSource(){const name='j1_request_pause_replay';used.add(name);return decisionFixture(name);}
+it('captures original primitive identity before mutable prepared aliases change',async()=>{const f=await preparedSource(),pending=captureJ1PrecommandContext('request_pause_replay',f);f.input.config.workspace_policies[0].decision_policy!.actions[0].reviewer_ids.push('changed_after_capture');const packet=await pending;expect(JSON.parse(packet.canonical_json).policy.configured_reviewer_ids).toEqual(['human_operator','human_reviewer']);});
+for(const column of ['config_epoch','installation_digest','admission_state'] as const)it('rejects source installed readback mismatch '+column,async()=>{const f=await preparedSource();await runInDurableObject(f.stub,(_o,s)=>s.storage.sql.exec('UPDATE workspace_metadata SET '+column+'=? WHERE id=1',column==='config_epoch'?2:column==='admission_state'?'maintenance':'b'.repeat(64)).toArray());await expect(captureJ1PrecommandContext('request_pause_replay',f)).rejects.toThrow('J1_PRECOMMAND_CAPTURE_INVALID');expect(Object.values(await counts(f.name)).every(n=>n===0)).toBe(true);});
+it('rejects stale installed requester without exporting raw configuration',async()=>{const f=await preparedSource();await runInDurableObject(f.stub,(_o,s)=>s.storage.sql.exec("UPDATE static_agents SET config_epoch=2 WHERE agent_id='agent_research'").toArray());await expect(captureJ1PrecommandContext('request_pause_replay',f)).rejects.toThrow('J1_PRECOMMAND_CAPTURE_INVALID');});
+it('rejects oversized stored config before private config materialization',async()=>{const f=await preparedSource();await runInDurableObject(f.stub,(_o,s)=>s.storage.sql.exec('UPDATE workspace_metadata SET config_json=? WHERE id=1',JSON.stringify('x'.repeat(1048577))).toArray());await expect(captureJ1PrecommandContext('request_pause_replay',f)).rejects.toThrow('J1_PRECOMMAND_CAPTURE_INVALID');});
+it('rejects prepared target policy drift before domain setup',async()=>{const name='j1_pending_command_history_restore_source';used.add(name);const f=await decisionFixture(name),config=structuredClone(f.input.config),bundle=structuredClone(f.input.bundle),targetName='j1_pending_command_history_restore_target';config.config_epoch=bundle.config_epoch=2;config.workspace_catalog[0].object_name=targetName;config.workspace_policies[0].decision_policy!.expiry_seconds++;bundle.config_digest=await sha256(canonicalJson(config));const target=await prepareBootstrap(config,bundle,'ws_example');await expect(captureJ1PrecommandContext('pending_command_history_restore',f,{name:targetName,input:target})).rejects.toThrow('J1_PRECOMMAND_CONTEXT_INVALID');expect(Object.values(await counts(name)).every(n=>n===0)).toBe(true);});
