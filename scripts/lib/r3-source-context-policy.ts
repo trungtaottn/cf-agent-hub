@@ -1,0 +1,6 @@
+/** Closed additional source profile. Never a free-form producer registry. */
+export const J1_CONTEXT_PROFILE='j1-context-v2' as const;
+export const J1_CONTEXT_PROJECT='r3-j1-source-context-producer' as const;
+export const J1_CONTEXT_LIMITS=Object.freeze({context:8192,contextsTotal:49152,contextField:16384,combinedMetadata:380928,envelope:65536,manifest:65536,execution:65536,observation:262144,observationsTotal:1572864,outputTotal:2097152,sourceCount:256,sourceFile:16777216,sourceTotal:33554432,stagedInputs:13});
+export const J1_CONTEXT_MISSING=Object.freeze(['supported-product-action','authenticated-producer-controller-build-origin','live-independent-actors','installed-native-mcp-positive-parity','real-provider-lineage','complete-recovery-rehearsal','prior-round-acceptance','independent-round-review','consumed-journey-J2','formal67']);
+export const J1_CONTEXT_BINDINGS=Object.freeze(['package-lock.json','test/helpers/r3-journey-fixture.ts','test/helpers/r3-journey-observation.ts','test/helpers/r3-precommand-context.ts','test/helpers/r3-precommand-capture.ts','test/acceptance/r3-request-journey.test.ts','scripts/r3-source-context-producer.mjs','scripts/lib/r3-source-context-reporter.ts','vitest.r3-source-context-producer.config.ts','scripts/lib/r3-source-context-validator.ts']);

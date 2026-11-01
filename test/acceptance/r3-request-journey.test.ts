@@ -1,5 +1,8 @@
 /** J1 actual command-generated PRIVATE fixture observations, not R3 acceptance. */
-import {it,expect} from 'vitest';
+import {it,expect,inject} from 'vitest';
+import {resolveJ1SourceProfile,encodeJ1ContextPacket,encodeJ1ContextMetadata} from '../../scripts/lib/r3-source-context-packet';
+import type {J1PrecommandPacket} from '../helpers/r3-precommand-context';
+const profile=resolveJ1SourceProfile(inject('r3SourceProfile'));
 import {productionDecisionDescriptors} from '../../src/approvals/action-registry';
 import {produceR3JourneyCase} from '../helpers/r3-journey-fixture';
 import {assertR3LocalObservation,encodeR3LocalObservation} from '../helpers/r3-journey-observation';
@@ -7,7 +10,8 @@ import {encodeR3SourcePacket} from '../helpers/r3-source-export-packet';
 const cases=['request_pause_replay','human_approve_replay_revoked','human_reject_replay','pending_command_history_restore','rejected_command_history_restore','changed_chunk_continuation_denied'] as const;
 for(const caseId of cases)it('produces actual command-source facts for '+caseId,async({task})=>{
  expect(productionDecisionDescriptors).toEqual([]);
- const observation=await produceR3JourneyCase(caseId);
+ let context:J1PrecommandPacket|undefined;
+ const observation=profile==='j1-v1'?await produceR3JourneyCase(caseId):await produceR3JourneyCase(caseId,{onPrecommandContext(record){if(context!==undefined)throw Error('R3_PRECOMMAND_DUPLICATE');context=record;}});
  assertR3LocalObservation(observation);
  expect(observation.case_id).toBe(caseId);expect(observation.acceptance_eligible).toBe(false);
  if(caseId==='changed_chunk_continuation_denied')expect(observation.steps.find(s=>s.operation==='changed-chunk-denial')!.response).toEqual({status:null,code:'RECOVERY_CHUNK_MISMATCH'});
@@ -15,7 +19,9 @@ for(const caseId of cases)it('produces actual command-source facts for '+caseId,
  expect(artifact.bytes.byteLength).toBeLessThanOrEqual(262144);
  expect(JSON.parse(new TextDecoder().decode(artifact.bytes))).toEqual(observation);
  expect(productionDecisionDescriptors).toEqual([]);
- task.meta.r3SourceObservation=await encodeR3SourcePacket(caseId,artifact);
+ const packet=await encodeR3SourcePacket(caseId,artifact);
+ if(profile==='j1-v1')task.meta.r3SourceObservation=packet;
+ else{if(context===undefined)throw Error('R3_PRECOMMAND_MISSING');const metadata=await encodeJ1ContextMetadata(packet,await encodeJ1ContextPacket(caseId,context));task.meta.r3SourceObservation=metadata.r3SourceObservation;task.meta.r3SourceContext=metadata.r3SourceContext;}
 },180000);
 
 import {runInDurableObject} from 'cloudflare:test';
