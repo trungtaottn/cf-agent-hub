@@ -38,7 +38,21 @@ async function prepare(page:Page,action:'approval'|'rejection',reason='Synthetic
  await page.getByRole('button',{name:'Confirm reviewed request',exact:true}).click();await expect(page.getByRole('button',{name:'Send decision request',exact:true})).toBeEnabled();
 }
 async function send(page:Page,id:string,action='approve'){
- const response=page.waitForResponse(r=>matches(r.request(),id,action));await page.getByRole('button',{name:'Send decision request',exact:true}).click();const actual=await response;expect(actual.status()).toBe(200);const body=await actual.json();expect(body.data.run===null).toBe(true);expect(body.data.approval.id===id).toBe(true);await expect(page.getByText('Server confirmed the original decision transition, not execution or completion.',{exact:true})).toBeVisible();return actual;
+ const initialLocation=page.url();let mainFrameNavigations=0,status:number|null=null,bodyStarted=false;
+ const navigated=(frame:ReturnType<Page['mainFrame']>)=>{if(frame===page.mainFrame())mainFrameNavigations=Math.min(33,mainFrameNavigations+1);};
+ // Begin retaining actual CDP bytes as soon as the response arrives, not after
+ // click's post-action wait. Handle rejection immediately; never invent a body.
+ const captured=page.waitForResponse(r=>matches(r.request(),id,action)).then(async actual=>{
+  status=actual.status();expect(status).toBe(200);bodyStarted=true;return {actual,body:await actual.json()};
+ }).then(value=>({ok:true as const,value}),error=>({ok:false as const,error}));
+ page.on('framenavigated',navigated);
+ try{
+  await page.getByRole('button',{name:'Send decision request',exact:true}).click();const result=await captured;if(!result.ok)throw result.error;
+  const {actual,body}=result.value;expect(body.data.run===null).toBe(true);expect(body.data.approval.id===id).toBe(true);
+  expect(page.url()===initialLocation).toBe(true);expect(mainFrameNavigations).toBe(0);
+  await expect(page.getByText('Server confirmed the original decision transition, not execution or completion.',{exact:true})).toBeVisible();return actual;
+ }catch(error){const current=new URL(page.url());console.log('DECISION_BODY_CAPTURE_DIAGNOSTIC '+JSON.stringify({status,bodyStarted,mainFrameNavigations,sameLocation:page.url()===initialLocation,viewIsApprovals:current.pathname==='/tasks'&&current.searchParams.get('panel')==='approvals'}));throw error;
+ }finally{page.off('framenavigated',navigated);}
 }
 function observeAccess(page:Page){const requests:Request[]=[],sessions:BrowserResponse[]=[];page.on('request',r=>{if(new URL(r.url()).pathname.startsWith(base))requests.push(r);});page.on('response',r=>{if(new URL(r.url()).pathname===base+'/auth/session')sessions.push(r);});return {requests,sessions};}
 async function assertFinalAccess(observed:ReturnType<typeof observeAccess>,write:Request){

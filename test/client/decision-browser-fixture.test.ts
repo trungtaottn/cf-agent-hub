@@ -59,3 +59,36 @@ it('reset during bounded preflight or old verification cannot dispatch or publis
  probe.armDrop();let release!:()=>void,started!:()=>void;const gate=new Promise<void>(r=>{release=r;}),waiting=new Promise<void>(r=>{started=r;});
  const second=probe.dispatch(new Request(request.url,{method:'POST',body:'{}'}),send,async()=>{started();await gate;}),old=expect(second).rejects.toThrow('FIXTURE_GENERATION_CHANGED');await waiting;expect(()=>probe.resumeDecisions()).toThrow('FIXTURE_NO_COMPLETED_DROP');probe.reset();release();await old;expect(probe.receipts).toEqual([]);expect(()=>probe.resumeDecisions()).toThrow('FIXTURE_NO_COMPLETED_DROP');
 });
+
+import ts from 'typescript';
+function actualBrowserSend(){
+ const source=ts.createSourceFile('decision-session.spec.ts',readFileSync(new URL('../decision-browser/decision-session.spec.ts',import.meta.url),'utf8'),ts.ScriptTarget.Latest,true);
+ const declaration=source.statements.find(s=>ts.isFunctionDeclaration(s)&&s.name?.text==='send')!;
+ const code=ts.transpileModule(declaration.getText(source),{compilerOptions:{target:ts.ScriptTarget.ES2023}}).outputText;
+ const visible={};const assertion=(value:unknown)=>({toBe:(expected:unknown)=>expect(value).toBe(expected),toBeVisible:async()=>expect(value).toBe(visible)});
+ return {send:new Function('matches','expect',code+';return send;')(()=>true,assertion),visible};
+}
+it('captures actual decision JSON while the UI click is still outstanding, retaining response and UI checks',async()=>{
+ const {send,visible}=actualBrowserSend();let arrived!:(value:unknown)=>void,finishClick!:()=>void;const response=new Promise(r=>{arrived=r;}),clicked=new Promise<void>(r=>{finishClick=r;});
+ const json=vi.fn(async()=>({data:{run:null,approval:{id:'approval'}}})),actual={status:()=>200,json};
+ const page={waitForResponse:()=>response,getByRole:()=>({click:()=>{arrived(actual);return clicked;}}),getByText:()=>visible,url:()=> 'https://hub.fixture.example.invalid/tasks?panel=approvals',on:vi.fn(),off:vi.fn(),mainFrame:()=>null};
+ const running=send(page,'approval');await Promise.resolve();await Promise.resolve();const eager=json.mock.calls.length;finishClick();expect(await running).toBe(actual);expect(eager).toBe(1);expect(json).toHaveBeenCalledOnce();
+});
+it('never converts unavailable actual decision JSON into success or skips its payload assertions',async()=>{
+ const {send,visible}=actualBrowserSend();
+ for(const json of [async()=>{throw Error('CDP_BODY_UNAVAILABLE');},async()=>({data:{run:'unexpected',approval:{id:'approval'}}}),async()=>({data:{run:null,approval:{id:'other'}}})]){
+  const actual={status:()=>200,json},page={waitForResponse:async()=>actual,getByRole:()=>({click:async()=>{}}),getByText:()=>visible,url:()=> 'https://hub.fixture.example.invalid/tasks?panel=approvals',on:vi.fn(),off:vi.fn(),mainFrame:()=>null};
+  await expect(send(page,'approval')).rejects.toThrow();
+ }
+});
+it('preserves the original body error and rejects unexpected post-click main-frame navigation with closed diagnostics',async()=>{
+ const {send,visible}=actualBrowserSend(),failure=Error('CDP_BODY_UNAVAILABLE'),frame={},messages:string[]=[];const log=vi.spyOn(console,'log').mockImplementation(message=>{messages.push(String(message));});
+ try{
+  let onNavigation:(frame:object)=>void=()=>{};const actual={status:()=>200,json:async():Promise<unknown>=>{throw failure;}},page={waitForResponse:async()=>actual,getByRole:()=>({click:async()=>{}}),getByText:()=>visible,url:()=> 'https://hub.fixture.example.invalid/tasks?panel=approvals',on:(_name:string,callback:(frame:object)=>void)=>{onNavigation=callback;},off:vi.fn(),mainFrame:()=>frame};
+  await expect(send(page,'approval')).rejects.toBe(failure);
+  actual.json=async()=>({data:{run:null,approval:{id:'approval'}}});page.getByRole=()=>({click:async()=>{onNavigation(frame);}});
+  await expect(send(page,'approval')).rejects.toThrow();
+  const diagnostics=messages.map(message=>JSON.parse(message.replace('DECISION_BODY_CAPTURE_DIAGNOSTIC ','')));
+  expect(diagnostics.map(d=>d.mainFrameNavigations)).toEqual([0,1]);for(const d of diagnostics)expect(Object.keys(d)).toEqual(['status','bodyStarted','mainFrameNavigations','sameLocation','viewIsApprovals']);
+ }finally{log.mockRestore();}
+});
