@@ -1,7 +1,7 @@
 import type {WorkspaceTransaction} from '../storage/transaction';
 import type {ActorContext} from '../workspace/context';
 import type {Approval,TaskState} from '../http/dto';
-import {parseDecisionActor,parseReviewerIds,parseSemanticAnchor,validDecisionTransition} from './stored-validation';
+import {parseDecisionActor,parseReviewerIds,parseSemanticAnchor,validDecisionTransition,type PersistedDecisionBinding} from './stored-validation';
 export type {PersistedDecisionBinding} from './stored-validation';
 import {canonicalJson} from '../config/bootstrap';
 import {validateApproval} from '../http/generated/decision-validators.js';
@@ -44,4 +44,11 @@ export function assertDecisionHead(tx:WorkspaceTransaction,row:TaskRow,approval:
  if(!Number.isSafeInteger(nowMs)||nowMs<0||!head||!proposal||!last||last.created_at>nowMs||![head.task_version,head.transition_count,last.sequence,last.before_version,last.after_version].every(n=>Number.isSafeInteger(n)&&n>0)||!Number.isSafeInteger(last.created_at)||last.created_at<approval.created_at||last.task_id!==row.id||last.before_version+1!==last.after_version||!validDecisionTransition(last.kind,last.before_state,last.after_state)||(last.sequence===1)!==(last.kind==='request')||last.sequence===1&&(last.before_version!==approval.task_version_at_request||last.before_state!=='doing'||last.after_state!=='waiting'||last.run_id!==approval.run_id||last.created_at!==approval.created_at)||row.approval_id!==approval.id||head.task_id!==row.id||head.task_version!==row.task_version||head.task_state!==row.state||last.sequence!==head.transition_count||last.after_version!==head.task_version||last.after_state!==head.task_state||proposal.semantic_anchor_json!==semanticAnchor(row))throw new HttpError('DEPENDENCY_UNAVAILABLE',503);
  if(tx.one('SELECT 1 FROM decision_lifecycle_transitions WHERE workspace_id=? AND approval_id=? AND sequence>? LIMIT 1',[row.workspace_id,approval.id,head.transition_count]))throw new HttpError('DEPENDENCY_UNAVAILABLE',503);
  return head;
+}
+
+/** Immutable stored provenance only, never reconstructed actor authority. Current
+ * caller/session/runtime/grants are independently checked by each consuming lane. */
+export function assertStoredApprovedProvenance(row:ApprovalRow,binding:PersistedDecisionBinding,paused:{agent_id:string;credential_id:string}):void{
+ const requester=parseDecisionActor(row.requested_by_json),assigned=parseReviewerIds(row.reviewer_ids_json),decider=row.decided_by_json===null?null:parseDecisionActor(row.decided_by_json);
+ if(row.status!=='approved'||requester.kind!=='agent'||requester.principal_id!==binding.requestedBy.principalId||requester.agent_id!==requester.principal_id||paused.agent_id!==requester.agent_id||paused.credential_id!==binding.requestedBy.credentialId||decider?.kind!=='human'||!assigned.includes(decider.principal_id)||row.decided_at===null||!Number.isSafeInteger(row.decided_at)||row.decided_at<row.created_at||row.decided_at>=row.expires_at)throw new HttpError('DEPENDENCY_UNAVAILABLE',503);
 }

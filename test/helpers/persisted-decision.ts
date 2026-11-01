@@ -26,10 +26,10 @@ export async function admitted(storage:DurableObjectStorage,name:string){
  return {...x,humanContext:{...x.ctx,identity:human(storage)}};
 }
 /** Additional actual source admission; no fabricated approval/history rows. */
-export async function admittedAdditional(storage:DurableObjectStorage,name:string,now:number,suffix:string){
+export async function admittedAdditional(storage:DurableObjectStorage,name:string,now:number,suffix:string,createTaskRow=true){
  const {withTransaction}=await import('../../src/storage/transaction'),{resolveActor}=await import('../../src/auth/authorize'),{createTask,readyTask}=await import('../../src/tasks/commands');
  const taskId='task_'+suffix,inputId='input_'+suffix,runId='run_'+suffix,approvalId='approval_'+suffix,identity=human(storage),ctx=artifactContext(storage,name,'decision_'+suffix,now);
- withTransaction(storage,tx=>{const c={actor:resolveActor(tx,identity,now),nowMs:now,requestId:'create_'+suffix,idempotencyKey:'create_'+suffix};createTask(tx,{...c,taskId},{title:'Synthetic additional decision',description:''});readyTask(tx,c,taskId,{expected_version:1});});
+ if(createTaskRow)withTransaction(storage,tx=>{const c={actor:resolveActor(tx,identity,now),nowMs:now,requestId:'create_'+suffix,idempotencyKey:'create_'+suffix};createTask(tx,{...c,taskId},{title:'Synthetic additional decision',description:''});readyTask(tx,c,taskId,{expected_version:1});});
  const claimBody={expected_version:2,runtime_instance_id:'runtime_a'},claim=await claimContext(storage,name,claimBody,'claim_'+suffix,now,taskId);
  executeCommand(claim,ctx.identity,claimTaskCommand(taskId,runId,PROOF_A),claimBody);
  const content=JSON.stringify({task_id:taskId,task_version:3}),hash=await sha256(content);

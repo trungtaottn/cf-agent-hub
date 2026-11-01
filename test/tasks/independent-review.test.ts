@@ -20,3 +20,30 @@ it.each(['outcome_unknown','retry_exhausted'] as const)('acceptance_never_bypass
 it('successful_last_attempt_preserves_consumed_retry_budget',async()=>{const f=await reviewFixture('result-review-budget');await runInDurableObject(f.stub,async(_o,s)=>{const now=await setupReview(s.storage,f.name);s.storage.sql.exec("UPDATE tasks SET retry_count=2 WHERE id='task_a'");const send=await client(s.storage,f.name,now+1);await data(await send('submit-result',submission()));expect((await data(await send('accept-result',acceptance,'accept','other',''))).task).toMatchObject({retry_count:2,retry_limit:2,state:'done'});});});
 it.each(['summary','unknown','reason','ids-bytes'] as const)('malformed_or_oversized_%s_input_rolls_back',async kind=>{const f=await reviewFixture('result-input-'+kind);await runInDurableObject(f.stub,async(_o,s)=>{const now=await setupReview(s.storage,f.name),send=await client(s.storage,f.name,now+1);if(kind==='reason')await data(await send('submit-result',submission()));const before=reviewSnapshot(s.storage);const body=kind==='reason'?{...acceptance,reason:'界'.repeat(22000)}:kind==='unknown'?{...submission(),submitted_by:{kind:'human',principal_id:'not-authority',agent_id:null}}:kind==='ids-bytes'?submission(['a'.repeat(8190)]):{...submission(),result:{summary:'界'.repeat(22000),artifact_ids:[]}};const response=await send(kind==='reason'?'accept-result':'submit-result',body,'invalid',kind==='reason'?'other':'owner');expect(response.status).toBe(kind==='unknown'?400:413);expect(reviewSnapshot(s.storage)).toEqual(before);});});
 it.each(['tasks','events','task_history','idempotency_outcomes'] as const)('acceptance_%s_failure_rolls_back_acceptance_task_and_event',async table=>{const f=await reviewFixture('result-accept-fault-'+table);await runInDurableObject(f.stub,async(_o,s)=>{const now=await setupReview(s.storage,f.name),send=await client(s.storage,f.name,now+1);await data(await send('submit-result',submission()));s.storage.sql.exec(`CREATE TRIGGER reject_acceptance BEFORE ${table==='tasks'?'UPDATE':'INSERT'} ON ${table} BEGIN SELECT RAISE(ABORT,'synthetic_acceptance_abort'); END`);const before=reviewSnapshot(s.storage);expect((await send('accept-result',acceptance,'accept','other','')).status).toBe(500);expect(reviewSnapshot(s.storage)).toEqual(before);});});
+
+it.each(['submit-result','accept-result'] as const)('missing_internal_approval_%s_is_unavailable_without_effects',async action=>{
+ const f=await reviewFixture('result-missing-approval-'+action);
+ await runInDurableObject(f.stub,async(_o,s)=>{
+  const now=await setupReview(s.storage,f.name),send=await client(s.storage,f.name,now+1);
+  if(action==='accept-result')await data(await send('submit-result',submission()));
+  s.storage.sql.exec("UPDATE tasks SET approval_id='dormant' WHERE id='task_a'");
+  const snapshot=()=>({...reviewSnapshot(s.storage),...Object.fromEntries(['approvals','decision_checkpoints','decision_proposals','decision_artifact_edges','decision_lifecycle_heads','decision_lifecycle_transitions','decision_notice_intents'].map(table=>[table,s.storage.sql.exec('SELECT * FROM '+table+' ORDER BY rowid').toArray()]))});
+  const before=snapshot(),response=await send(action,action==='submit-result'?submission():acceptance,'missing-dependency',action==='submit-result'?'owner':'other');
+  expect(response.status).toBe(503);
+  const body=await response.json();
+  expect(body).toMatchObject({error:{code:'DEPENDENCY_UNAVAILABLE',message:'Dependency unavailable',retryable:true}});
+  expect(JSON.stringify(body)).not.toMatch(/dormant|task_a|run_a/);
+  expect(snapshot()).toEqual(before);
+  const {approvalRecord}=await import('../../src/approvals/repository'),{withTransaction}=await import('../../src/storage/transaction');
+  expect(()=>withTransaction(s.storage,tx=>approvalRecord(tx,'ws_example','dormant'))).toThrow(expect.objectContaining({code:'NOT_FOUND',status:404}));
+  expect(snapshot()).toEqual(before);
+ });
+});
+it('settlement_missing_dependency_mapping_preserves_other_errors',async()=>{
+ const {assertBoundDecisionRun}=await import('../../src/approvals/settlement'),{HttpError}=await import('../../src/http/envelopes');
+ for(const failure of [Error('synthetic_storage_failure'),new HttpError('LIMIT_EXCEEDED',413),new HttpError('NOT_FOUND',409)]){
+  const tx={one(){throw failure;}};
+  expect(()=>assertBoundDecisionRun(tx as never,{workspace_id:'ws_example',approval_id:'dormant'} as never,{} as never,1)).toThrow(failure);
+  try{assertBoundDecisionRun(tx as never,{workspace_id:'ws_example',approval_id:'dormant'} as never,{} as never,1);throw Error('expected_throw');}catch(observed){expect(observed).toBe(failure);}
+ }
+});

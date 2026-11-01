@@ -1,3 +1,4 @@
+import {assertBoundDecisionRun} from '../approvals/settlement';
 import type {CommandDescriptor} from '../workspace/commands';
 import type {RunHeartbeatRequest,Run} from '../http/dto';
 import type {WorkspaceTransaction} from '../storage/transaction';
@@ -44,7 +45,7 @@ export function assertActiveRun(tx:WorkspaceTransaction,ctx:CommandContext,taskI
  const actor=executionActor(tx,ctx,'tasks:execute',verified),row=runRecord(tx,actor.workspaceId,id);
  taskAccess(tx,actor,'tasks:execute',taskId,ctx.nowMs);const task=taskRecord(tx,actor.workspaceId,taskId),view=taskView(tx,actor,task,ctx.nowMs);
  if(row.task_id!==taskId||row.agent_id!==actor.agentId||row.credential_id!==actor.credentialId||row.runtime_instance_id!==verified.runtime.id||row.authority_epoch!==verified.authorityEpoch||task.state!=='doing'||task.active_run_id!==id||task.latest_run_id!==id||row.status!=='active'||row.ended_at!==null||!Number.isSafeInteger(fence)||fence<1||row.fence!==fence||ctx.nowMs>=row.lease_expires_at)throw new HttpError('STALE_RUN',409);
- if(task.approval_id!==null)throw new HttpError('DEPENDENCY_UNAVAILABLE',503);
+ assertBoundDecisionRun(tx,task,row,ctx.nowMs);
  assertTaskExecutionEligible(tx,{...ctx,actor},view);return runView(row);
 }
 export function heartbeatRun(tx:WorkspaceTransaction,ctx:CommandContext,id:string,request:RunHeartbeatRequest,verified:VerifiedRuntime):Run{

@@ -1,3 +1,4 @@
+import {approvalRecord,assertDecisionHead} from '../approvals/repository';
 import {isRestoreExpiryEvent} from '../recovery/restore-audit';
 import {readImport,importHuman,assertImportVisible} from '../imports/repository';
 import {projectTaskResult} from '../tasks/results';
@@ -91,7 +92,8 @@ export function appendEvent(tx:WorkspaceTransaction,event:RedactedEventInput):{i
   const task=taskRecord(tx,event.workspaceId,event.resourceId);
   const result=tx.one<{id:string;run_id:string;submitted_kind:string;submitted_principal_id:string;submitted_agent_id:string|null;created_at:number}>('SELECT id,run_id,submitted_kind,submitted_principal_id,submitted_agent_id,created_at FROM task_results WHERE workspace_id=? AND task_id=? AND id=?',[event.workspaceId,task.id,task.current_result_id]);
   const run=result?tx.one<{fence:number;agent_id:string;status:string;ended_at:number}>('SELECT fence,agent_id,status,ended_at FROM runs WHERE workspace_id=? AND task_id=? AND id=?',[event.workspaceId,task.id,result.run_id]):null;
-  if(!result||!run||run.status!=='submitted'||run.ended_at===null||task.active_run_id!==null||task.latest_run_id!==result.run_id||task.approval_id!==null)throw new HttpError('INTERNAL_ERROR',500);
+  if(!result||!run||run.status!=='submitted'||run.ended_at===null||task.active_run_id!==null||task.latest_run_id!==result.run_id)throw new HttpError('INTERNAL_ERROR',500);
+  if(task.approval_id!==null){const approval=approvalRecord(tx,event.workspaceId,task.approval_id),head=assertDecisionHead(tx,task,approval,event.nowMs);if(approval.status!=='approved'||approval.consumed_run_id!==result.run_id||approval.consumed_fence!==run.fence||head.last_transition_id!==event.id)throw new HttpError('INTERNAL_ERROR',500);}
   if(event.type==='task.result_submitted'){
    if(task.state!=='review'||result.created_at!==event.nowMs||run.ended_at!==event.nowMs||event.actor.kind!==result.submitted_kind||event.actor.principalId!==result.submitted_principal_id||event.actor.agentId!==result.submitted_agent_id||run.agent_id!==event.actor.agentId)throw new HttpError('INTERNAL_ERROR',500);
   }else{
@@ -129,14 +131,14 @@ function persistEvent(tx:WorkspaceTransaction,row:EventRow,historyTaskId:string|
  return {id:row.id,sequence:stored.sequence};
 }
 /** Trusted expiry producer: identity and correlation are server-created, never a caller ActorContext. */
-export function appendRunExpiryEvent(tx:WorkspaceTransaction,runId:string,nowMs:number):{id:string;sequence:number}{
+export function appendRunExpiryEvent(tx:WorkspaceTransaction,runId:string,nowMs:number,eventId?:string):{id:string;sequence:number}{
  assertAdmissionOpen(tx);
  const workspaceId=tx.one<{workspace_id:string}>('SELECT workspace_id FROM workspace_metadata WHERE id=1')!.workspace_id;
  const run=tx.one<{task_id:string;fence:number;ended_at:number;lease_expires_at:number}>("SELECT task_id,fence,ended_at,lease_expires_at FROM runs WHERE workspace_id=? AND id=? AND status='expired'",[workspaceId,runId]);
  if(!run||run.ended_at!==nowMs||run.lease_expires_at>nowMs)throw new HttpError('INTERNAL_ERROR',500);
  const task=taskRecord(tx,workspaceId,run.task_id);
  if(task.active_run_id!==null||task.latest_run_id!==runId)throw new HttpError('INTERNAL_ERROR',500);
- const id='event_'+crypto.randomUUID();
+ const id=eventId??'event_'+crypto.randomUUID();
  return persistEvent(tx,{id,workspace_id:workspaceId,sequence:1,type:'task.expired',actor_json:canonicalJson({kind:'system',principal_id:'system:lease-expiry',agent_id:null}),resource_type:'task',resource_id:task.id,resource_version:null,thread_id:null,request_id:crypto.randomUUID(),occurred_at:nowMs,summary:definitions['task.expired'].summary,task_version:task.task_version,run_id:runId,fence:run.fence},task.id);
 }
 /** Trusted decision expiry producer; never proves that external work stopped or had no effects. */

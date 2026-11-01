@@ -13,7 +13,7 @@ import type {DecisionActionDescriptor} from './action-registry';
 import {createPolicyRequirementsLookup,currentReviewer} from './policy-source';
 import {inspectProposalBytes,decisionExpiry,type ReadonlyDecisionJson} from './contracts';
 import {parsePersistedBinding,parseReviewerIds} from './stored-validation';
-import {approvalRecord,assertDecisionHead,type ProposalRow} from './repository';
+import {approvalRecord,assertDecisionHead,assertStoredApprovedProvenance,type ProposalRow} from './repository';
 import type {ProposalInputContext} from './input-binding-source';
 function unavailable():never{throw Error('DECISION_UNAVAILABLE');}
 const freeze=<T>(value:T):T=>{if(value&&typeof value==='object'){for(const child of Object.values(value))freeze(child);Object.freeze(value);}return value;};
@@ -67,7 +67,7 @@ class Invocation {
  }
  close(){clearTimeout(this.timer);this.pinned.signal?.removeEventListener('abort',this.abort);this.stopped=true;}
 }
-export type PersistedLane='human'|'claim';
+export type PersistedLane='human'|'claim'|'dispatch';
 /** This object has no serializable authority; only closure membership admits it. */
 export interface PersistedDecisionEvidence {readonly kind:'persisted-decision-evidence';}
 export function createPersistedInputVerifier(descriptors:readonly DecisionActionDescriptor[]){
@@ -77,19 +77,23 @@ export function createPersistedInputVerifier(descriptors:readonly DecisionAction
  function read(tx:WorkspaceTransaction,p:Pinned,id:string,lane:PersistedLane,budget:ReferenceBudget){
   const now=p.now();if(!Number.isSafeInteger(now)||now<0)unavailable();
   currentConfiguration(tx,p.workspace,p.admission);const actor=resolveActor(tx,p.identity,now);
-  if(lane==='human'?actor.kind!=='human':lane!=='claim'||actor.kind!=='agent'||!actor.credentialId)unavailable();
+  if(lane==='human'?actor.kind!=='human':!['claim','dispatch'].includes(lane)||actor.kind!=='agent'||!actor.credentialId)unavailable();
   const approval=approvalRecord(tx,actor.workspaceId,id),task=taskRecord(tx,actor.workspaceId,approval.task_id),head=assertDecisionHead(tx,task,approval,now);
-  if(![approval.approval_version,approval.proposal_version,approval.task_version_at_request,task.task_version,head.transition_count].every(n=>Number.isSafeInteger(n)&&n>0)||!Number.isSafeInteger(approval.created_at)||!Number.isSafeInteger(approval.expires_at)||now<approval.created_at||now>=approval.expires_at||approval.consumed_run_id!==null||approval.consumed_fence!==null)unavailable();
+  if(![approval.approval_version,approval.proposal_version,approval.task_version_at_request,task.task_version,head.transition_count].every(n=>Number.isSafeInteger(n)&&n>0)||!Number.isSafeInteger(approval.created_at)||!Number.isSafeInteger(approval.expires_at)||now<approval.created_at||now>=approval.expires_at)unavailable();
+  if(lane!=='dispatch'&&(approval.consumed_run_id!==null||approval.consumed_fence!==null))unavailable();
   if(approval.expiry_hold_code!==null)unavailable();
-  if(lane==='human'?(approval.status!=='pending'||task.state!=='waiting'):(approval.status!=='approved'||task.state!=='ready'))unavailable();
-  if(task.active_run_id!==null)unavailable();
+  if(lane==='human'?(approval.status!=='pending'||task.state!=='waiting'):(approval.status!=='approved'||task.state!==(lane==='dispatch'?'doing':'ready')))unavailable();
+  const consumed=lane==='dispatch'&&approval.consumed_run_id!==null?runRecord(tx,actor.workspaceId,approval.consumed_run_id):null;
+  if(lane==='dispatch'){if(!consumed||consumed.id===approval.run_id||approval.consumed_fence!==consumed.fence||task.active_run_id!==consumed.id||task.latest_run_id!==consumed.id||consumed.task_id!==task.id||consumed.status!=='active'||consumed.ended_at!==null||consumed.agent_id!==actor.agentId||consumed.credential_id!==actor.credentialId||now>=consumed.lease_expires_at)unavailable();}
+  else if(task.active_run_id!==null)unavailable();
   const paused=runRecord(tx,actor.workspaceId,approval.run_id);
-  if(paused.task_id!==task.id||task.latest_run_id!==paused.id||paused.status!=='paused'||paused.ended_at!==approval.created_at||!Number.isSafeInteger(paused.fence)||paused.fence<1||!Number.isSafeInteger(paused.run_version)||paused.run_version<1)unavailable();
+  if(paused.task_id!==task.id||lane!=='dispatch'&&task.latest_run_id!==paused.id||consumed!==null&&consumed.fence<=paused.fence||paused.status!=='paused'||paused.ended_at!==approval.created_at||!Number.isSafeInteger(paused.fence)||paused.fence<1||!Number.isSafeInteger(paused.run_version)||paused.run_version<1)unavailable();
   const stored=tx.one<ProposalRow>('SELECT * FROM decision_proposals WHERE workspace_id=? AND id=?',[actor.workspaceId,approval.proposal_id]);if(!stored)unavailable();
   const binding=parsePersistedBinding(stored.binding_json),proposal=JSON.parse(binding.proposalCanonicalJson),checkpoint=tx.one<{run_id:string;task_id:string;checkpoint_json:string}>('SELECT run_id,task_id,checkpoint_json FROM decision_checkpoints WHERE workspace_id=? AND id=?',[actor.workspaceId,approval.checkpoint_id]);
   if(stored.task_id!==task.id||stored.proposal_version!==approval.proposal_version||task.proposal_version!==approval.proposal_version||binding.workspaceId!==actor.workspaceId||binding.taskId!==task.id||binding.taskVersion!==approval.task_version_at_request||binding.taskProposalVersion+1!==approval.proposal_version||stored.proposal_json!==binding.proposalCanonicalJson||!checkpoint||checkpoint.task_id!==task.id||checkpoint.run_id!==approval.run_id||checkpoint.checkpoint_json!==binding.checkpointCanonicalJson||binding.resolvedAt>approval.created_at||approval.created_at>=binding.expiresAt)unavailable();
+  if(lane!=='human')assertStoredApprovedProvenance(approval,binding,paused);
   const descriptor=source.find(d=>d.actionId===binding.actionId);if(!descriptor||descriptor.schemaVersion!==binding.schemaVersion||descriptor.schemaSha256!==binding.schemaSha256||descriptor.semanticRevision!==binding.semanticRevision||!equal([...descriptor.resourceKinds].sort(),binding.resourceKinds))unavailable();
-  const required=lane==='human'?['approvals:read','approvals:decide','tasks:read','artifacts:read',...descriptor.reviewerScopes]:['tasks:claim','tasks:execute','tasks:read','artifacts:read',...descriptor.actorScopes];
+  const required=lane==='human'?['approvals:read','approvals:decide','tasks:read','artifacts:read',...descriptor.reviewerScopes]:[...(lane==='claim'?['tasks:claim']:[]),'tasks:execute','tasks:read','artifacts:read',...descriptor.actorScopes];
   if(!required.every(scope=>actor.scopes.has(scope)))unavailable();
   const assigned=parseReviewerIds(approval.reviewer_ids_json);if(!equal(assigned,binding.reviewerIds)||lane==='human'&&!assigned.includes(actor.principalId))unavailable();
   const {config,policy,epoch}=settingsPolicy(tx,actor),metadata=tx.one<{config_digest:string;installation_digest:string}>('SELECT config_digest,installation_digest FROM workspace_metadata WHERE id=1');
@@ -109,10 +113,10 @@ export function createPersistedInputVerifier(descriptors:readonly DecisionAction
   const edges=tx.all<{role:string;artifact_id:string;generation_id:string;artifact_version:number;sha256:string;byte_size:number}>('SELECT role,artifact_id,generation_id,artifact_version,sha256,byte_size FROM decision_artifact_edges WHERE workspace_id=? AND approval_id=? ORDER BY role,artifact_id LIMIT 12',[actor.workspaceId,id]);
   const expected=binding.artifactEdges.map(e=>({role:e.role,artifact_id:e.artifact.artifactId,generation_id:e.artifact.generationId,artifact_version:e.artifact.artifactVersion,sha256:e.artifact.sha256,byte_size:e.artifact.byteLength}));
   if(!equal(edges.map(canonicalJson).sort(),expected.map(canonicalJson).sort()))unavailable();
-  return {actor,approval,task,head,binding,stored,checkpoint,paused,artifacts,edges,descriptor};
+  return {actor,approval,task,head,binding,stored,checkpoint,paused,consumed,artifacts,edges,descriptor};
  }
  type State=ReturnType<typeof read>;
- type Receipt={pinned:Pinned;id:string;lane:PersistedLane;state:State;mode:'bytes'|'metadata'};
+ type Receipt={pinned:Pinned;id:string;lane:PersistedLane;state:State;mode:'bytes'|'metadata';input?:ReadonlyDecisionJson};
  const receipts=new WeakMap<object,Receipt>();
  const snapshot=({actor:_,descriptor:__,...state}:State)=>state;
  function current(tx:WorkspaceTransaction,r:Receipt,budget:ReferenceBudget):State{
@@ -144,7 +148,7 @@ export function createPersistedInputVerifier(descriptors:readonly DecisionAction
    if(inspected.byteLength!==expected||inspected.sha256!==selected.row.sha256||inspected.sha256!==proposal.inputs.sha256||synchronousOutput(state.descriptor.validateInput(inspected.value))!==true)unavailable();
    const targets=targetSnapshot(synchronousOutput(state.descriptor.extractInputTargets(inspected.value as ReadonlyDecisionJson)));
    if(!equal(targets.map(t=>canonicalJson(t)).sort(),state.binding.targetBindings.map(({projectId:_,...t})=>canonicalJson(t)).sort()))unavailable();
-   guard();await op.wait(scheduler.wait(0));guard();const evidence=Object.freeze({kind:'persisted-decision-evidence' as const});receipts.set(evidence,receipt);return evidence;
+   receipt.input=inspected.value as ReadonlyDecisionJson;guard();await op.wait(scheduler.wait(0));guard();const evidence=Object.freeze({kind:'persisted-decision-evidence' as const});receipts.set(evidence,receipt);return evidence;
   }catch{return unavailable();}finally{invocation?.close();if(reader){discard(()=>reader!.cancel());try{reader.releaseLock();}catch{}}else if(body)discard(()=>body!.cancel());}
  }
  function recheck(tx:WorkspaceTransaction,ctx:ProposalInputContext,id:string,evidence:object,mode:'bytes'|'metadata'):State{
@@ -157,7 +161,7 @@ export function createPersistedInputVerifier(descriptors:readonly DecisionAction
  function verifyPersistedDecisionMetadata(ctx:ProposalInputContext,id:string):PersistedDecisionEvidence{
   try{const pinned=pin(ctx),state=withTransaction(pinned.storage,tx=>read(tx,pinned,id,'human',referenceBudget())),evidence=Object.freeze({kind:'persisted-decision-evidence' as const});receipts.set(evidence,{pinned,id,lane:'human',state,mode:'metadata'});return evidence;}catch{return unavailable();}
  }
- const recheckPersistedDecisionInput=(tx:WorkspaceTransaction,ctx:ProposalInputContext,id:string,evidence:object)=>recheck(tx,ctx,id,evidence,'bytes');
+ const recheckPersistedDecisionInput=(tx:WorkspaceTransaction,ctx:ProposalInputContext,id:string,evidence:object)=>{const state=recheck(tx,ctx,id,evidence,'bytes'),r=receipts.get(evidence)!;if(r.input===undefined)unavailable();return {...state,input:r.input};};
  const recheckPersistedDecisionMetadata=(tx:WorkspaceTransaction,ctx:ProposalInputContext,id:string,evidence:object)=>recheck(tx,ctx,id,evidence,'metadata');
  return Object.freeze({verifyPersistedDecisionInput,recheckPersistedDecisionInput,verifyPersistedDecisionMetadata,recheckPersistedDecisionMetadata});
 }
