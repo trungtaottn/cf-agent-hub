@@ -9,7 +9,15 @@ import {HttpError} from '../http/envelopes';
  * This check cannot authorize a new claim or external dispatch. */
 export function assertBoundDecisionRun(tx:WorkspaceTransaction,task:TaskRow,run:RunRow,nowMs:number){
  if(task.approval_id===null)return null;
- const approval=approvalRecord(tx,task.workspace_id,task.approval_id),head=assertDecisionHead(tx,task,approval,nowMs);
+ let approval:ReturnType<typeof approvalRecord>;
+ try{approval=approvalRecord(tx,task.workspace_id,task.approval_id);}
+ catch(error){
+  // A dangling internal reference is an unavailable settlement dependency;
+  // public approval lookups retain NOT_FOUND and other failures stay unchanged.
+  if(error instanceof HttpError&&error.code==='NOT_FOUND'&&error.status===404)throw new HttpError('DEPENDENCY_UNAVAILABLE',503);
+  throw error;
+ }
+ const head=assertDecisionHead(tx,task,approval,nowMs);
  const stored=tx.one<ProposalRow>('SELECT * FROM decision_proposals WHERE workspace_id=? AND id=?',[task.workspace_id,approval.proposal_id]);
  if(!stored)throw new HttpError('DEPENDENCY_UNAVAILABLE',503);
  const binding=parsePersistedBinding(stored.binding_json),checkpoint=tx.one<{task_id:string;run_id:string;checkpoint_json:string}>('SELECT task_id,run_id,checkpoint_json FROM decision_checkpoints WHERE workspace_id=? AND id=?',[task.workspace_id,approval.checkpoint_id]);
