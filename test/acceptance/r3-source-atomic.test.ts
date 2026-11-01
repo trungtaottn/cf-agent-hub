@@ -1,0 +1,10 @@
+import {it,expect,vi,afterEach} from 'vitest';
+const fault=vi.hoisted(()=>({mode:'',writes:0,syncs:0}));
+vi.mock('node:fs',async original=>{const fs=await original<typeof import('node:fs')>();return {...fs,writeSync:(...args:any[])=>{if(fault.mode==='write'&&fault.writes++>0)throw Error('synthetic-write');if(fault.mode==='write')return fs.writeSync(args[0],args[1],args[2],1);return (fs.writeSync as any)(...args);},fsyncSync:(fd:number)=>{fault.syncs++;if(fault.mode==='fsync'||fault.mode==='dirsync'&&fault.syncs===2)throw Error('synthetic-sync');return fs.fsyncSync(fd);},linkSync:(...args:any[])=>{if(fault.mode==='publish')throw Error('synthetic-link');return (fs.linkSync as any)(...args);}};});
+import {mkdtempSync,rmSync,existsSync,readFileSync,writeFileSync} from 'node:fs';
+import {publishJ1Execution} from '../../scripts/lib/r3-source-atomic.mjs';
+const roots:string[]=[];afterEach(()=>{fault.mode='';fault.writes=0;fault.syncs=0;for(const p of roots.splice(0))rmSync(p,{recursive:true,force:true});});
+function root(){const p=mkdtempSync('/tmp/r3-atomic-unit.');roots.push(p);return p;}
+for(const mode of ['write','fsync','publish','dirsync'])it('never reports success on '+mode+' failure and removes any owned published link',()=>{const p=root();fault.mode=mode;expect(()=>publishJ1Execution(p,new TextEncoder().encode('{"complete":true}'))).toThrow();expect(existsSync(p+'/execution.json')).toBe(false);});
+it('publishes whole bytes without replacing prior final',()=>{const p=root(),bytes=new TextEncoder().encode('{"complete":true}');publishJ1Execution(p,bytes);expect(readFileSync(p+'/execution.json','utf8')).toBe('{"complete":true}');expect(()=>publishJ1Execution(p,bytes)).toThrow();expect(readFileSync(p+'/execution.json','utf8')).toBe('{"complete":true}');});
+it('does not delete a preexisting final when exclusive publication fails',()=>{const p=root();writeFileSync(p+'/execution.json','existing',{mode:0o600});expect(()=>publishJ1Execution(p,new TextEncoder().encode('{}'))).toThrow();expect(readFileSync(p+'/execution.json','utf8')).toBe('existing');});
