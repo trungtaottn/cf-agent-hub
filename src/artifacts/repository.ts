@@ -41,6 +41,16 @@ export function artifactAssociationReferences(tx:WorkspaceTransaction,grant:Rela
   // Checkpoints have no reviewed runtime in this round.
   inaccessible();
  }
+ // Schema19's immutable decision roles add conjunctions; they never grant access.
+ // Historical recovery readers of physical18 retain their exact old behavior.
+ if((tx.one<{version:number}>('SELECT MAX(version) AS version FROM schema_migrations')?.version??0)>=19){
+  const decisionEdges=tx.all<{task_id:string|null;generation_id:string;artifact_version:number;sha256:string;byte_size:number}>(`SELECT a.task_id,e.generation_id,e.artifact_version,e.sha256,e.byte_size FROM decision_artifact_edges e LEFT JOIN approvals a ON a.workspace_id=e.workspace_id AND a.id=e.approval_id WHERE e.workspace_id=? AND e.artifact_id=? LIMIT 2049`,[grant.workspaceId,row.id]);
+  if(associations.length+decisionEdges.length>2048)throw new HttpError('DEPENDENCY_UNAVAILABLE',503);
+  for(const edge of decisionEdges){
+   if(!edge.task_id||edge.generation_id!==row.committed_generation_id||edge.artifact_version!==row.artifact_version||edge.sha256!==row.sha256||edge.byte_size!==row.byte_size)inaccessible();
+   refs.push({kind:'task',id:edge.task_id!});
+  }
+ }
  return refs;
 }
 export function assertArtifactAssociations(tx:WorkspaceTransaction,actor:ActorContext,row:ArtifactRow,_nowMs:number,budget?:ReferenceBudget):void{

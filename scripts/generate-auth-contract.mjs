@@ -10,11 +10,11 @@ const r2=[...reconciliation,"Task", "Run", "Artifact", "Agent", "Credential", "C
 const r2Inputs=["CatalogPreviewRequest", "CatalogApplyRequest", "ImportApplyRequest", "TaskCreateRequest", "TaskPatchRequest", "TaskVersionRequest", "TaskReasonRequest", "TaskClaimRequest", "TaskSubmitResultRequest", "TaskFailRequest", "RunHeartbeatRequest", "AgentCreateRequest", "AgentPatchRequest", "AgentArchiveRequest", "RuntimeCreateRequest", "RuntimeHeartbeatRequest", "ArtifactStageRequest", "ArtifactCommitRequest", "CredentialCreateRequest", "CredentialRevokeRequest", "ImportEnvelope"];
 // R3 schema-only bridge: these roots do not enable client operations or routes.
 const decisionInputs=['TaskRequestDecisionRequest','ApprovalDecisionRequest'];
-const decisionOutputs=['Approval'];
+const decisionOutputs=['Approval','ApprovalResponse','ApprovalListResponse','TaskCommandResultResponse','ApprovalDecisionRequest'];
 const observationInputs=['ObservationEstablishRequest','ObservationBatchRequest','ObservationReplaceRequest'];
 const observationRoots=Object.keys(schemas).filter(name=>name.startsWith('Observation'));
 const inputs=[...decisionInputs,'AuthStartRequest','AuthCallbackQuery','AuthLogoutRequest','MessageCreateRequest','MessageAckRequest','ProfileWriteRequest','PreferencesWriteRequest',...r2Inputs,...observationInputs];
-const roots=['Workspace','WorkspaceResponse','Readiness','ReadinessResponse','Liveness','Operations','OperationsResponse','AckResult',...inputs,'AuthStartDataResponse','AuthSessionResponse','AuthLogoutDataResponse','Error','Event','Message','MessageNotification',...settings,...r2,...observationRoots];
+const roots=['Workspace','WorkspaceResponse','Readiness','ReadinessResponse','Liveness','Operations','OperationsResponse','AckResult',...inputs,'AuthStartDataResponse','AuthSessionResponse','AuthLogoutDataResponse','Error','Event','Message','MessageNotification',...settings,...r2,...observationRoots,...decisionOutputs];
 const validated=['Workspace','WorkspaceResponse','Readiness','ReadinessResponse','Liveness','Operations','OperationsResponse',...inputs,'Error','Event','Message','MessageNotification',...settings,'AuthStartData','AuthSession','AuthLogoutData',...r2.filter(name=>!inputs.includes(name)),...observationRoots.filter(name=>!observationInputs.includes(name))];
 // This inventory selects supported source operations; OpenAPI remains the wire/policy owner.
 const inventory=JSON.parse(await readFile('src/contracts/client-operations.json','utf8'));

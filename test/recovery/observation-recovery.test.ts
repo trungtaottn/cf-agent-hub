@@ -33,7 +33,7 @@ async function source(name:string){
 }
 it('stages original18 diagnostics while CLOSED, validates before invalidation, and deletes records then slots in resumable phases',async()=>{
  const f=await source('observation_restore');const capture=await captureCurrentFixture(f,{evict:true});
- expect(capture.manifest.checkpoint.schema_version).toBe(18);
+ expect(capture.manifest.checkpoint.schema_version).toBe(19);
  expect(capture.manifest.database.table_counts).toHaveProperty('observation_slots',1);expect(capture.manifest.database.table_counts).toHaveProperty('observation_records',1);
  let progress=await withCurrentRecoveryWorkspace(f,'target',async w=>beginRestore(w,await recoveryContext(w,'restore',{manifest:capture.manifest,ledger:f.ledger},f.captureId,{anchor:f.anchor,operationId:'begin_observation'}),capture.manifest,f.ledger));
  await denyImportedSession(f);

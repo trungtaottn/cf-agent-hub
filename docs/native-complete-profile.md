@@ -424,3 +424,42 @@ This is code compatibility, not installation or native acceptance. No existing l
 credential or grant is changed automatically. Full17 retains the same unavailable-capability
 denials as full16; required17 retains the same execution roster and deferred cases. Operator
 activation, protected native execution and release evidence remain separately authorized gates.
+
+## Schema19 inactive decision witness
+
+Source-only profiles `native-r2-complete-schema19-v1` and
+`native-r2-required-schema19-v1` explicitly select
+`native-selected-state-schema19-v1`. Defaults and all named schema16/17/18
+artifacts, descriptors, fixture commitments and limits remain unchanged. No
+historical validator treats a physical19 store as historical18.
+
+The new `S` selector requires exactly versions 1–19, with a 20-row lookahead
+(raw 320/bridge 821 bytes). The closed `Z` selector requires eleven fixed labels
+with integer `present=0`: the prior four empty-fixture tables and all seven
+schema19 decision tables, including `decision_notice_intents`. Its literal
+`VALUES` CTE runs the workspace-scoped existence checks under the same source
+transaction and phase fence; it has no caller-selected SQL. The actual Workerd
+compound-SELECT limit ruled out the equivalent longer `UNION ALL` form. Exact
+`Z` canonical bytes are 520 and raw scalar bytes 277; the prior 512 raw, 2048 bridge
+and 16384 generic canonical bounds remain sufficient and unchanged. Duplicate,
+missing, reordered, extra or nonzero labels fail closed.
+
+`node scripts/generate-native-schema19.mjs --check` verifies the additive
+artifacts against frozen18 inputs. The full witness still has 2555 SQL admissions,
+130 `S` executions and 24 `Z` executions; zero-admission `E1` reuse stays zero.
+Total bridge admission is 180810814 bytes (+5330), private canonical admission is
+7896990 bytes (+8568), and the six attachment `S` executions reserve 2369430
+bridge bytes (+246). Only the new19 source-owned logical ledger, canonical limit
+and output reservation incorporate those 8568 private bytes: full 22899235 and
+required 22901283 output bytes. Other command/mutation/artifact reservations,
+execution rosters and release limits do not change. The fixture/catalog marker
+and regenerated family-ledger digest bind these choices transitively through the
+signed profile; old, mixed, additional and caller-expanded budget fields are not
+accepted as schema19.
+
+These are local source compatibility results, not installed authority, native
+acceptance, deployment or release. They add no R2 operation or grant and do not
+activate the production decision registry, an installer, enrollment, provider or
+outbox delivery. The final combined native19/MCP source build measured
+4,185,143 bytes against the unchanged 4,194,304-byte executable cap. Core decision
+and recovery acceptance remain separate gates.

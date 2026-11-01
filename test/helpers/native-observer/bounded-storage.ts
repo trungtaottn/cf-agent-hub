@@ -1,10 +1,10 @@
 /** Private source-only guard over actual synchronous storage. Never an authenticator or SQL simulator. */
 import * as legacyDescriptors from './descriptors.ts';
-import {currentObserverDescriptors,schema18ObserverDescriptors} from './descriptors.ts';
+import {currentObserverDescriptors,schema18ObserverDescriptors,schema19ObserverDescriptors} from './descriptors.ts';
 import type {PreparedObserverBinding} from './registry.ts';
 type Row=Readonly<Record<string,string|number|null>>;
 interface Original {transaction:number;selector:string;canonical:string;byteSize:number;}
-function boundedObserverProfile(schemaVersion:16|17|18,descriptors:typeof currentObserverDescriptors){
+function boundedObserverProfile(schemaVersion:16|17|18|19,descriptors:typeof currentObserverDescriptors){
 const {getObservationLedger,getPreflightDescriptor,getProductQueryDescriptor,validatePreflightRows,validateProductRows,PREFLIGHT_ORDER}=descriptors;
 return function createBoundedObserverStorage(actualStorage:DurableObjectStorage,binding:Readonly<PreparedObserverBinding>,actualTokenDigest:string){
  const ledger=getObservationLedger(binding.step_id),operation=binding.step_id.slice(8);let failed=false,finished=false,active=false,generation=0,transactions=0,preflightQueries=0,productQueries=0,bridgeRawBytes=0,bridgeJsonBytes=0,retainedBytes=0,pendingCursors=0,expiresAt=Infinity;
@@ -59,3 +59,5 @@ export const createBoundedObserverStorage=boundedObserverProfile(16,legacyDescri
 export const createCurrentBoundedObserverStorage=boundedObserverProfile(17,currentObserverDescriptors);
 
 export const createSchema18BoundedObserverStorage=boundedObserverProfile(18,schema18ObserverDescriptors);
+
+export const createSchema19BoundedObserverStorage=boundedObserverProfile(19,schema19ObserverDescriptors);

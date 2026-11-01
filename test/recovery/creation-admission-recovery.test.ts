@@ -1,3 +1,20 @@
+import m1 from '../../src/storage/migrations/0001-foundation.sql';
+import m2 from '../../src/storage/migrations/0002-session-auth-epoch.sql';
+import m3 from '../../src/storage/migrations/0003-preference-owner.sql';
+import m4 from '../../src/storage/migrations/0004-message-admission.sql';
+import m5 from '../../src/storage/migrations/0005-cursor-retention.sql';
+import m6 from '../../src/storage/migrations/0006-outbox-scheduler-diagnostics.sql';
+import m7 from '../../src/storage/migrations/0007-maintenance-generation.sql';
+import m8 from '../../src/storage/migrations/0008-durable-work.sql';
+import m9 from '../../src/storage/migrations/0009-catalog-reference-indexes.sql';
+import m10 from '../../src/storage/migrations/0010-outbox-due-indexes.sql';
+import m11 from '../../src/storage/migrations/0011-task-history-reason.sql';
+import m12 from '../../src/storage/migrations/0012-artifact-admission.sql';
+import m13 from '../../src/storage/migrations/0013-artifact-cleanup.sql';
+import m14 from '../../src/storage/migrations/0014-message-credential-seek.sql';
+import m15 from '../../src/storage/migrations/0015-search-order.sql';
+import m16 from '../../src/storage/migrations/0016-task-auth-return.sql';
+const historical=[m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12,m13,m14,m15,m16].map((sql,index)=>({version:index+1,sql}));
 import {it,expect} from 'vitest';
 import {runInDurableObject,evictDurableObject} from 'cloudflare:test';
 import {CURRENT_SCHEMA_VERSION} from '../../src/storage/schema-version';
@@ -5,8 +22,8 @@ import {decodeCurrentChunk,encodeCurrentChunk,CHUNK_LIMIT} from '../../src/recov
 import {validateManifestShape} from '../../src/recovery/manifest';
 import {currentRestoreFixture,captureCurrentFixture,restoreCurrentFixture,withCurrentRecoveryWorkspace} from './current-restore-fixture';
 
-it('schema18 preserves pending preparation on restart but invalidates a pre-consume snapshot on restore',async()=>{
- expect(CURRENT_SCHEMA_VERSION).toBe(18);
+it('schema19 preserves pending preparation on restart but invalidates a pre-consume snapshot on restore',async()=>{
+ expect(CURRENT_SCHEMA_VERSION).toBe(19);
  const f=await currentRestoreFixture('restore_creation_admission',{seed:false,artifacts:false});
  const id='event_'+'a'.repeat(48),now=Date.now();
  await runInDurableObject(f.source,async(_instance,{storage})=>{
@@ -16,7 +33,7 @@ it('schema18 preserves pending preparation on restart but invalidates a pre-cons
  await evictDurableObject(f.source);
  await runInDurableObject(f.source,async(_instance,{storage})=>{expect(storage.sql.exec('SELECT id FROM creation_admissions').one().id).toBe(id);});
  const capture=await captureCurrentFixture(f);
- expect(capture.manifest.checkpoint.schema_version).toBe(18);
+ expect(capture.manifest.checkpoint.schema_version).toBe(19);
  expect(capture.manifest.database.table_counts).toHaveProperty('creation_admissions',1);
  expect(capture.chunks.some(c=>decodeCurrentChunk(new Uint8Array(c.bytes)).table==='creation_admissions')).toBe(true);
  const chunks=capture.chunks.map(c=>decodeCurrentChunk(new Uint8Array(c.bytes)));
@@ -47,12 +64,14 @@ it('migrates a physical16 database without changing existing events or legacy ev
  const {withTransaction}=await import('../../src/storage/transaction');
  const f=await currentRestoreFixture('migration_creation_admission',{seed:false});
  await runInDurableObject(f.source,async(_instance,{storage})=>{
-  // Recreate the exact reviewed pre17 layout, with no historical receipt mutation.
-  storage.sql.exec('DROP TABLE observation_records');storage.sql.exec('DROP TABLE observation_slots');storage.sql.exec('DELETE FROM schema_migrations WHERE version=18');storage.sql.exec('DROP TABLE creation_admissions');storage.sql.exec('ALTER TABLE events DROP COLUMN creation_binding');storage.sql.exec('DELETE FROM schema_migrations WHERE version=17');
+  // Fresh disposable historical schema; never leave current19 with dropped product tables.
+  const events=storage.sql.exec<Record<string,string|number|null>>('SELECT * FROM events ORDER BY sequence').toArray().map(({creation_binding,...row})=>row);
+  await storage.deleteAll();migrate(storage,historical);
+  for(const row of events){const columns=Object.keys(row);storage.sql.exec('INSERT INTO events ('+columns.join(',')+') VALUES ('+columns.map(()=>'?').join(',')+')',...columns.map(k=>row[k]));}
   expect(withTransaction(storage,tx=>inspectRegistry(tx,16)).schemaVersion).toBe(16);
   const before=storage.sql.exec('SELECT * FROM events ORDER BY sequence').toArray();
   migrate(storage);
-  expect(withTransaction(storage,tx=>inspectRegistry(tx)).schemaVersion).toBe(18);
+  expect(withTransaction(storage,tx=>inspectRegistry(tx)).schemaVersion).toBe(19);
   const after=storage.sql.exec('SELECT * FROM events ORDER BY sequence').toArray();
   expect(after.map(({creation_binding,...event})=>{expect(creation_binding).toBeNull();return event;})).toEqual(before);
   expect(storage.sql.exec('SELECT * FROM creation_admissions').toArray()).toEqual([]);

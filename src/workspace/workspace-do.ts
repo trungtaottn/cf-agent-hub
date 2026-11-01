@@ -1,3 +1,4 @@
+import {decisionPath,decisionRoutes} from '../http/decision-routes';
 import {observationPath,observationRoutes} from '../http/observation-routes';
 import {creationReconciliationPath,creationReconciliationRoutes} from '../http/creation-reconciliation-routes';
 import {assertRecoveryEnvelope,isCurrent16Manifest} from '../recovery/operator-envelope';
@@ -144,7 +145,7 @@ export class WorkspaceDO extends DurableObject<WorkspaceEnvironment> {
    if(!validateRecoveryCommand(body)||body.operation!==operator.operation||body.workspace_id!==operator.workspaceId||body.capture_id!==operator.captureId||body.operation_id!==operator.operationId||body.expected_authority_epoch!==operator.expectedEpoch||body.operation!=='write-chunk'&&binary!==undefined)throw Error('INVALID_RECOVERY_COMMAND');
    const selected=withTransaction(this.ctx.storage,tx=>{
     const schema=tx.one<{version:number}>('SELECT MAX(version) AS version FROM schema_migrations')?.version;
-    if(schema!==16&&schema!==17&&schema!==18)return null;
+    if(schema!==16&&schema!==17&&schema!==18&&schema!==19)return null;
     const rows=tx.all<{id:string}>("SELECT id FROM recovery_jobs WHERE workspace_id=? AND capture_id=? AND operation='restore' LIMIT 2",[operator.workspaceId,operator.captureId]);
     if(rows.length>1)throw Error('RECOVERY_JOB_CONFLICT');return rows.length?loadCurrentRestoreJob(tx,rows[0].id):null;
    });
@@ -152,7 +153,7 @@ export class WorkspaceDO extends DurableObject<WorkspaceEnvironment> {
    // is selected from a validated persisted current manifest, never a caller flag.
    // Keep restore selection separate for admission replay and status dispatch.
    const capturedSource16=body.operation==='resume'&&!selected&&withTransaction(this.ctx.storage,tx=>{
-    const version=tx.one<{version:number}>('SELECT MAX(version) AS version FROM schema_migrations')?.version;if(version!==16&&version!==17&&version!==18)return false;
+    const version=tx.one<{version:number}>('SELECT MAX(version) AS version FROM schema_migrations')?.version;if(version!==16&&version!==17&&version!==18&&version!==19)return false;
     const rows=tx.all<{id:string}>("SELECT id FROM recovery_jobs WHERE workspace_id=? AND capture_id=? AND operation='capture' LIMIT 2",[operator.workspaceId,operator.captureId]);
     if(rows.length>1)throw Error('RECOVERY_JOB_CONFLICT');
     const job=rows.length?loadCurrentCaptureJob(tx,rows[0].id):null;
@@ -193,24 +194,25 @@ export class WorkspaceDO extends DurableObject<WorkspaceEnvironment> {
   const settings=settingsPath.exec(path),message=messagePath.exec(path),operations=operationsPath.exec(path),readiness=readinessPath.exec(path),base=workspacePath.exec(path);
   const identity=identityPath.exec(path),task=taskPath.exec(path),catalog=catalogPath.exec(path);
   const imports=importPath.exec(path),reconciliation=creationReconciliationPath.exec(path);
-  const search=searchPath.exec(path),observation=observationPath.exec(path);
+  const search=searchPath.exec(path),observation=observationPath.exec(path),decision=decisionPath.exec(path);
   const bucket=productArtifactBucket(this.env),artifact=bucket?artifactPath.exec(path):null;
-  const selected=match??settings??message??operations??readiness??base??identity??task??catalog??artifact??search??imports??reconciliation??observation;
+  const selected=match??settings??message??operations??readiness??base??identity??task??catalog??artifact??search??imports??reconciliation??observation??decision;
   if(!selected)return r2Routes(request);
   // Protected diagnostics observe persisted scheduler/probe state. A GET must
   // not repair that state or manufacture a fresh health observation.
   // Identity lifecycle emits only local audit/outcome rows, never outbox work.
   // Do not await unrelated alarm repair after its final authority/secret projection.
-  const diagnostic=Boolean(operations||readiness||identity||task||catalog||artifact||search||imports||reconciliation||observation);
+  const diagnostic=Boolean(operations||readiness||identity||task||catalog||artifact||search||imports||reconciliation||observation||decision);
   if(!diagnostic)await this.#repairDirty();
   const metadata=withTransaction(this.ctx.storage,tx=>tx.one<{workspace_id:string;object_name:string}>('SELECT workspace_id,object_name FROM workspace_metadata WHERE id=1'));
   if(!metadata||metadata.workspace_id!==selected[1]||this.env.WORKSPACE.idFromName(metadata.object_name).toString()!==this.ctx.id.toString()){const headers=new Headers(securityHeaders);if(match?.[2]==='callback')headers.append('set-cookie',cookieHeader('cfhub_login','',0));return authFailure(new AuthError('UNAUTHENTICATED',401),crypto.randomUUID(),headers);}
   const workspace={storage:this.ctx.storage,workspaceId:metadata.workspace_id,objectName:metadata.object_name,secrets:this.env as unknown as Record<string,unknown>,clock:systemClock,entropy:systemEntropy};
-  const response=await (artifact?artifactRoutes(request,workspace,bucket):(observation?observationRoutes:reconciliation?creationReconciliationRoutes:imports?importRoutes:search?searchRoutes:catalog?catalogRoutes:task?taskRoutes:identity?r2Routes:operations?operationsRoutes:readiness?readinessRoutes:base?workspaceRoutes:message?messageRoutes:settings?settingsRoutes:authRoutes)(request,workspace));
+  const response=await (decision?decisionRoutes(request,workspace,bucket):artifact?artifactRoutes(request,workspace,bucket):(observation?observationRoutes:reconciliation?creationReconciliationRoutes:imports?importRoutes:search?searchRoutes:catalog?catalogRoutes:task?taskRoutes:identity?r2Routes:operations?operationsRoutes:readiness?readinessRoutes:base?workspaceRoutes:message?messageRoutes:settings?settingsRoutes:authRoutes)(request,workspace));
   // Ownership commands commit a durable generation. Schedule its shared repair
   // within the DO lifetime without awaiting after the final authorized projection.
   // Failure remains dirty for the existing scheduled catalog sweep/restart repair.
   if(task&&request.method==='POST'&&/:(claim|fail|cancel|submit-result|heartbeat)$/.test(path)&&response.ok)this.ctx.waitUntil(this.#repairDirty());
+  if(decision&&request.method==='POST'&&response.ok)this.ctx.waitUntil(this.#repairDirty());
   if(message&&request.method==='POST'&&response.ok)this.ctx.waitUntil(this.#repairDirty());
   if(artifact&&request.method!=='GET'&&request.method!=='OPTIONS'&&response.ok)this.ctx.waitUntil(this.#repairDirty());
   // Startup repair stays before authentication. No route may await unrelated

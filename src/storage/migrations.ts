@@ -16,13 +16,14 @@ import searchOrder from './migrations/0015-search-order.sql';
 import taskAuthReturn from './migrations/0016-task-auth-return.sql';
 import creationAdmissions from './migrations/0017-creation-admissions.sql';
 import observations from './migrations/0018-observations.sql';
+import decisions from './migrations/0019-decisions.sql';
 import {assertSchemaVersion} from './schema-version';
 import type {WorkspaceTransaction} from './transaction';
 import { withTransaction } from './transaction';
 export const FOUNDATION_SQL=foundation;
 export {CURRENT_SCHEMA_VERSION} from './schema-version';
 export interface Migration {version:number;sql:string;}
-const defaults:readonly Migration[]=[{version:1,sql:foundation},{version:2,sql:sessionEpoch},{version:3,sql:preferenceOwner},{version:4,sql:messageAdmission},{version:5,sql:cursorRetention},{version:6,sql:schedulerDiagnostics},{version:7,sql:maintenanceGeneration},{version:8,sql:durableWork},{version:9,sql:catalogReferenceIndexes},{version:10,sql:outboxDueIndexes},{version:11,sql:taskHistoryReason},{version:12,sql:artifactAdmission},{version:13,sql:artifactCleanup},{version:14,sql:messageCredentialSeek},{version:15,sql:searchOrder},{version:16,sql:taskAuthReturn},{version:17,sql:creationAdmissions},{version:18,sql:observations}];
+const defaults:readonly Migration[]=[{version:1,sql:foundation},{version:2,sql:sessionEpoch},{version:3,sql:preferenceOwner},{version:4,sql:messageAdmission},{version:5,sql:cursorRetention},{version:6,sql:schedulerDiagnostics},{version:7,sql:maintenanceGeneration},{version:8,sql:durableWork},{version:9,sql:catalogReferenceIndexes},{version:10,sql:outboxDueIndexes},{version:11,sql:taskHistoryReason},{version:12,sql:artifactAdmission},{version:13,sql:artifactCleanup},{version:14,sql:messageCredentialSeek},{version:15,sql:searchOrder},{version:16,sql:taskAuthReturn},{version:17,sql:creationAdmissions},{version:18,sql:observations},{version:19,sql:decisions}];
 export function migrate(storage:DurableObjectStorage,migrations:readonly Migration[]=defaults):void {
  // Migration-time entropy is prepared before entering SQL. Existing rows keep these IDs forever.
  const hasPreferences=storage.sql.exec<{name:string}>("SELECT name FROM sqlite_master WHERE type='table' AND name='preferences'").toArray().length>0;
@@ -69,4 +70,12 @@ export function migrateResumedSchema17(tx:WorkspaceTransaction,now:number):void 
  assertSchemaVersion(tx,17);
  if(!tx.one("SELECT id FROM workspace_metadata WHERE id=1 AND admission_state='installed'")||!tx.one("SELECT id FROM maintenance_state WHERE id=1 AND state='open'"))throw Error('FROZEN_SCHEMA_MIGRATION');
  tx.exec(observations);tx.exec('INSERT INTO schema_migrations (version,applied_at) VALUES (18,?)',[now]);
+ migrateResumedSchema18(tx,now);
+}
+
+/** Authorized resume only; preserves captured physical schema18 until the same resume transaction. */
+export function migrateResumedSchema18(tx:WorkspaceTransaction,now:number):void {
+ assertSchemaVersion(tx,18);
+ if(!tx.one("SELECT id FROM workspace_metadata WHERE id=1 AND admission_state='installed'")||!tx.one("SELECT id FROM maintenance_state WHERE id=1 AND state='open'"))throw Error('FROZEN_SCHEMA_MIGRATION');
+ tx.exec(decisions);tx.exec('INSERT INTO schema_migrations (version,applied_at) VALUES (19,?)',[now]);
 }

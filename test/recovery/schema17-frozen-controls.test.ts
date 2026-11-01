@@ -65,7 +65,7 @@ it('retains frozen17 captured authority, probes17 and atomically migrates author
  });
  const receipt=await resume();
  await evictDurableObject(f.source);expect(await resume()).toEqual(receipt);
- await withCurrentRecoveryWorkspace(f,'source',w=>{expect(w.storage.sql.exec('SELECT MAX(version) AS v FROM schema_migrations').one().v).toBe(18);expect(w.storage.sql.exec('SELECT state FROM maintenance_state').one().state).toBe('open');expect(w.storage.sql.exec('SELECT * FROM creation_admissions').toArray()).toEqual(frozen.snapshot.tables.creation_admissions);});
+ await withCurrentRecoveryWorkspace(f,'source',w=>{expect(w.storage.sql.exec('SELECT MAX(version) AS v FROM schema_migrations').one().v).toBe(19);expect(w.storage.sql.exec('SELECT state FROM maintenance_state').one().state).toBe('open');expect(w.storage.sql.exec('SELECT * FROM creation_admissions').toArray()).toEqual(frozen.snapshot.tables.creation_admissions);});
 },90000);
 it('retires a frozen17 source without migration and replays exact retirement after restart',async()=>{
  const {f}=await install();

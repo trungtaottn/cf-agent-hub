@@ -16,7 +16,7 @@ it('restores an untouched genuine baseline17 signed bundle into18 with preserved
  for(const a of frozen.capture.artifacts)await env.RECOVERY_BUCKET.put(a.entry.recovery_object_key,new Uint8Array(a.bytes));
  const result=await restoreCurrentFixture(f,capture,{evict:true});expect(result.state).toBe('complete');
  await withCurrentRecoveryWorkspace(f,'target',w=>{
-  expect(w.storage.sql.exec('SELECT MAX(version) AS version FROM schema_migrations').one().version).toBe(18);
+  expect(w.storage.sql.exec('SELECT MAX(version) AS version FROM schema_migrations').one().version).toBe(19);
   expect(w.storage.sql.exec('SELECT * FROM creation_admissions').toArray()).toEqual([]);
   expect(w.storage.sql.exec('SELECT * FROM observation_slots').toArray()).toEqual([]);
   expect(w.storage.sql.exec('SELECT * FROM observation_records').toArray()).toEqual([]);
