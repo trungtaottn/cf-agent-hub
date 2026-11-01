@@ -4,7 +4,7 @@ import {runInDurableObject} from 'cloudflare:test';
 import spec from '../../spec/openapi.json';
 import {control} from '../helpers/auth';
 import {acceptanceFixture,apiRequest,sqlSnapshot} from '../helpers/r1-acceptance';
-import {validateError,validateMessage,validateMessageCreationReconciliationResponse,validateObservationEstablishRequest,validateObservationBatchRequest,validateObservationReplaceRequest} from '../../src/http/generated/auth-validators.js';
+import {validateError,validateTaskClaimRequest,validateMessage,validateMessageCreationReconciliationResponse,validateObservationEstablishRequest,validateObservationBatchRequest,validateObservationReplaceRequest} from '../../src/http/generated/auth-validators.js';
 
 beforeEach(async()=>{await control('reset');});
 const unavailable=Object.entries(spec.paths).flatMap(([path,item])=>Object.entries(item).flatMap(([method,value])=>{
@@ -29,7 +29,7 @@ const observationBodies:Record<string,{body:unknown;validate:(value:unknown)=>bo
  replaceObservationSession:{body:{run_id:'unavailable_run',fence:1,expected_session_id:observationSessionId,expected_high_water:0,replacement_request_id:'00000000-0000-4000-8000-000000000001',reason:'coverage_loss'},validate:validateObservationReplaceRequest},
 };
 const recoveryOperations=new Set(['reconcileMessageCreation','reconcileTaskCreation','prepareMessageCreation','prepareTaskCreation']);
-for(const route of unavailable.filter(route=>!recoveryOperations.has(route.operation)))it((observationOperations.has(route.operation)?'disabled observation pilot ':availableOperations.has(route.operation)?'ungranted operation ':'unavailable ')+route.operation+' has no R1 mutation surface',async()=>{
+for(const route of unavailable.filter(route=>!recoveryOperations.has(route.operation)&&route.operation!=='lookupTaskClaimOutcome'))it((observationOperations.has(route.operation)?'disabled observation pilot ':availableOperations.has(route.operation)?'ungranted operation ':'unavailable ')+route.operation+' has no R1 mutation surface',async()=>{
  const f=await acceptanceFixture(('r1_unavailable_'+route.operation).toLowerCase());
  const path=route.path.replace('/v2/workspaces/{workspace_id}','').replace('{session_id}',observationSessionId).replace(/\{[^}]+\}/g,'unavailable_fixture')+(route.operation==='searchWorkspace'?'?q=needle':'');
  // Keep the old canonical R1 grant/config unchanged. A real scoped target makes
@@ -56,6 +56,38 @@ for(const route of unavailable.filter(route=>!recoveryOperations.has(route.opera
  expect(response.status,'exact unavailable, disabled-pilot or ungranted boundary must fail without effects').toBe(expectedStatus);
  const value=await response.json() as {error:{code:string}};expect(validateError(value)).toBe(true);expect(value.error.code).toBe(expectedCode);expect('data'in value).toBe(false);
  expect((await sqlSnapshot(f.a)).digest).toBe(beforeA.digest);expect((await sqlSnapshot(f.b)).digest).toBe(beforeB.digest);
+},30_000);
+
+// Claim-outcome is implemented but native-only, not an unavailable R1 write.
+// Cookie/CSRF rejection precedes body/auth; a separate valid native lane proves
+// the unchanged R1 credential still lacks the required current claim grant.
+it('lookupTaskClaimOutcome preserves native-only R1 boundary without effects',async()=>{
+ expect(unavailable.filter(route=>route.operation==='lookupTaskClaimOutcome')).toEqual([{path:'/v2/workspaces/{workspace_id}/tasks/{task_id}:claim-outcome',method:'POST',operation:'lookupTaskClaimOutcome'}]);
+ const f=await acceptanceFixture('r1_native_claim_lookup_boundary');
+ for(const target of [f.a,f.b])await runInDurableObject(target.stub,(_o,state)=>{state.storage.sql.exec("INSERT INTO tasks(id,workspace_id,title,description,state,task_version,proposal_version,retry_count,retry_limit,flags_json,created_at,updated_at) SELECT 'lookup_fixture',workspace_id,'Existing synthetic task','','backlog',1,0,0,0,'[]',1,1 FROM workspace_metadata WHERE id=1");});
+ const body={expected_version:1,runtime_instance_id:'unavailable_runtime'};
+ expect(validateTaskClaimRequest(body)).toBe(true);
+ const beforeA=await sqlSnapshot(f.a),beforeB=await sqlSnapshot(f.b);
+ for(const snapshot of [beforeA,beforeB])for(const row of snapshot.tables.native_credentials!){
+  const scopes=JSON.parse(String(row.scopes_json)) as string[];
+  expect(scopes).not.toContain('tasks:claim');expect(scopes).not.toContain('tasks:execute');
+ }
+ const native={authorization:'Bearer '+f.a.token,'x-runtime-token':btoa('x'.repeat(32)).replace(/=+$/,''),'idempotency-key':'r1_lookup'};
+ const lanes=[
+  {name:'current human cookie and CSRF',target:f.a,headers:{cookie:f.sessionCookie,'x-csrf-token':f.csrf,'idempotency-key':'r1_lookup'},status:400,code:'INVALID_REQUEST'},
+  {name:'native bearer mixed with cookie',target:f.a,headers:{...native,cookie:f.sessionCookie},status:400,code:'INVALID_REQUEST'},
+  {name:'native bearer mixed with CSRF',target:f.a,headers:{...native,'x-csrf-token':f.csrf},status:400,code:'INVALID_REQUEST'},
+  {name:'current R1 native scope',target:f.a,headers:native,status:403,code:'FORBIDDEN'},
+  {name:'foreign workspace credential',target:f.b,headers:native,status:401,code:'UNAUTHENTICATED'},
+  {name:'missing native credential',target:f.a,headers:{'idempotency-key':'r1_lookup'},status:401,code:'UNAUTHENTICATED'},
+ ];
+ for(const lane of lanes){
+  const response=await f.http(apiRequest(lane.target,'/tasks/lookup_fixture:claim-outcome','POST',body,lane.headers as Record<string,string>));
+  expect(response.status,lane.name).toBe(lane.status);const value=await response.json() as {error:{code:string}};
+  expect(validateError(value),lane.name).toBe(true);expect(value.error.code,lane.name).toBe(lane.code);expect('data'in value,lane.name).toBe(false);
+  expect((await sqlSnapshot(f.a)).digest,lane.name+' original workspace').toBe(beforeA.digest);
+  expect((await sqlSnapshot(f.b)).digest,lane.name+' foreign workspace').toBe(beforeB.digest);
+ }
 },30_000);
 
 it('wrong workspace cannot reuse human or native authority and cannot expose foreign resources',async()=>{
