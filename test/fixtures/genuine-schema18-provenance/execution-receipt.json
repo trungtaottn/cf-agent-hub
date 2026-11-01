@@ -1,0 +1,45 @@
+{
+  "scope": "immutable local synthetic schema18 recovery fixture capture only",
+  "producer": {
+    "exit_code": 0,
+    "files": 1,
+    "passed": 1,
+    "duration_seconds": 25.27
+  },
+  "frozen_verifier": {
+    "exit_code": 0,
+    "files": 1,
+    "passed": 5,
+    "duration_seconds": 26.48
+  },
+  "combined_regressions": {
+    "exit_code": 0,
+    "files": 8,
+    "passed": 42,
+    "duration_seconds": 282.38,
+    "test_files": [
+      "test/recovery/schema18-frozen-verification.test.ts",
+      "test/recovery/current-restore.test.ts",
+      "test/recovery/current-controls.test.ts",
+      "test/recovery/creation-admission-snapshot-flow.test.ts",
+      "test/recovery/observation-recovery.test.ts",
+      "test/recovery/schema17-restore-continuity.test.ts",
+      "test/recovery/schema17-frozen-controls.test.ts",
+      "test/recovery/schema17-restore-upgrade.test.ts"
+    ]
+  },
+  "configured_types_exit_code": 0,
+  "production_worker_types_exit_code": 0,
+  "original_tracked_files_unchanged_in_each_checkout": 1432,
+  "git_diff_exit_code": 0,
+  "git_cached_diff_exit_code": 0,
+  "git_diff_check_exit_code": 0,
+  "all_34_chunk_digests_and_sizes_verified": true,
+  "generation_qualified_source_recovery_target_artifact_bytes_verified": true,
+  "fixture_hashes_still_match": true,
+  "new_production_source_or_migrations": false,
+  "real_operator_actions": false,
+  "staged_committed_published": false,
+  "observation_seed": "Synthetic existing repository helper plus test SQL, not HTTP ingestion evidence",
+  "signatures": "Original baseline manifest and ledger signed; ordinary receipts unsigned; R2 bytes authenticated by manifest digests"
+}

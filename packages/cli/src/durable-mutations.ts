@@ -5,11 +5,11 @@ import {prepareNativeOperation} from '../../client/src/native-request';
 import {clientOperations} from '../../../src/http/generated/client-operations';
 import {ClientFault,failure} from '../../client/src/transport';
 import type {ApiResult,VerifiedPrincipalBinding,CredentialDispatchLease,EnabledOperationId,NativeClient,NativeDispatchGuard,RequestFor,SemanticRequest} from '../../client/src/types';
-import {Journal,requestFingerprint,type JournalEntry} from './journal';
+import {Journal,requestFingerprint,type JournalEntry,type JournalProfile} from './journal';
 import {LinuxReplayClock,type DispatchStamp,type ReplayClockEvidence} from './replay-clock';
 import {ProtectedCredentialProvider} from './secret-store';
 export interface ReplayClock {stamp(fingerprint:string):DispatchStamp;sample():ReplayClockEvidence;}
-export interface DurableMutationOptions {origin:string;workspaceId:string;provider:ProtectedCredentialProvider;journalDirectory:string;create?:boolean;fetch:typeof globalThis.fetch;timeoutMs?:number;clock?:ReplayClock;}
+export interface DurableMutationOptions {origin:string;workspaceId:string;provider:ProtectedCredentialProvider;journalDirectory:string;create?:boolean;journalProfile?:JournalProfile;fetch:typeof globalThis.fetch;timeoutMs?:number;clock?:ReplayClock;}
 export interface IntentHandle {id:string;key:string|null;operation:string;origin:string;workspaceId:string;}
 function rejected():never {throw Error('CLI_INTENT_REJECTED');}
 const handle=(entry:JournalEntry):IntentHandle=>({id:entry.id,key:entry.key,operation:entry.request.operation,origin:entry.request.origin,workspaceId:entry.request.workspaceId});
@@ -35,11 +35,11 @@ function restoreRequest(request:JournalEntry['request']):{operation:EnabledOpera
  * per dispatch() call; never retries, enrolls, or replaces caller intent on error. */
 export class DurableMutations {
  readonly #journal:Journal;readonly #provider:ProtectedCredentialProvider;readonly #client:NativeClient;readonly #clock:ReplayClock;
- readonly #origin:string;readonly #workspace:string;#lease:CredentialDispatchLease|null=null;#busy=false;#closed=false;
+ readonly #origin:string;readonly #workspace:string;readonly #journalProfile:JournalProfile;#lease:CredentialDispatchLease|null=null;#busy=false;#closed=false;
  constructor(options:DurableMutationOptions){
-  this.#origin=options.origin;this.#workspace=options.workspaceId;this.#provider=options.provider;this.#clock=options.clock??new LinuxReplayClock();
+  this.#origin=options.origin;this.#workspace=options.workspaceId;this.#journalProfile=options.journalProfile??'native';this.#provider=options.provider;this.#clock=options.clock??new LinuxReplayClock();
   this.#client=createNativeClient({origin:options.origin,workspaceId:options.workspaceId,credentialProvider:options.provider,fetch:options.fetch,...(options.timeoutMs===undefined?{}:{timeoutMs:options.timeoutMs})});
-  this.#journal=new Journal({directory:options.journalDirectory,create:options.create,authority:binding=>{if(!this.#lease)return false;try{this.#provider.assertLeaseBinding(binding,this.#lease);return true;}catch{return false;}}});
+  this.#journal=new Journal({directory:options.journalDirectory,create:options.create,profile:this.#journalProfile,authority:binding=>{if(!this.#lease)return false;try{this.#provider.assertLeaseBinding(binding,this.#lease);return true;}catch{return false;}}});
  }
  #start():void{if(this.#busy||this.#closed)rejected();this.#busy=true;}
  async prepare<K extends EnabledOperationId>(operation:K,input:RequestFor<K>,options:{idempotencyKey?:string;interactive?:boolean}={}):Promise<IntentHandle>{
@@ -54,6 +54,19 @@ export class DurableMutations {
     // The generator runs only after the keyless journal transaction committed.
     if(entry.key===null)entry=this.#journal.attachKeySync(entry.id,randomUUID());return handle(entry);
    });
+  }catch{return rejected();}finally{this.#lease=null;lease?.release();this.#busy=false;}
+ }
+ /** Explicit MCP-only admission: atomic journal lookup preserves original identity
+  * across process/reconnect; no interactive key generation or new replay window. */
+ async prepareOrReuse<K extends EnabledOperationId>(operation:K,input:RequestFor<K>,options:{idempotencyKey:string}):Promise<IntentHandle>{
+  this.#start();let lease:CredentialDispatchLease|undefined;
+  try{
+   if(this.#journalProfile!=='mcp-v1'||!options||Object.keys(options).length!==1)rejected();
+   const idempotencyKey=options.idempotencyKey;if(typeof idempotencyKey!=='string')rejected();
+   const {request:_input,...request}=prepareNativeOperation(this.#origin,this.#workspace,operation,input);restoreRequest(request);
+   this.#provider.assertNoSecrets(JSON.stringify(request));this.#provider.assertNoSecrets(idempotencyKey);
+   const principal=this.#provider.binding();if(!principal)rejected();lease=await this.#provider.acquire(principal);this.#lease=lease;
+   return lease.use(()=>handle(this.#journal.recordOrReuseIntentSync({request,principal,suppliedKey:idempotencyKey})));
   }catch{return rejected();}finally{this.#lease=null;lease?.release();this.#busy=false;}
  }
  /** Final upload guard. Caller invokes within its actual provider-pinned send guard,

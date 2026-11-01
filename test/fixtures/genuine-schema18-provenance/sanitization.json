@@ -1,0 +1,20 @@
+{
+  "fixture_files": [
+    "genuine-schema18-snapshot-bundle.json",
+    "genuine-schema18-bundle.json",
+    "genuine-schema18-restore-lifecycle-bundle.json"
+  ],
+  "embedded_urls": [
+    "https://hub.example.invalid",
+    "https://hub.example.invalid/v2/workspaces/ws_example/auth/callback",
+    "https://identity.example.invalid",
+    "https://identity.example.invalid/authorize",
+    "https://identity.example.invalid/jwks",
+    "https://identity.example.invalid/token",
+    "https://receiver.example.invalid/cfhub",
+    "https://source.example.invalid/item"
+  ],
+  "all_url_hosts_reserved_example_invalid": true,
+  "credential_pattern_scan_findings": [],
+  "scope": "Pattern and URL checks supplement manual synthetic provenance review; not proof of absence of every possible secret."
+}

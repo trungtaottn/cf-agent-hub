@@ -1,0 +1,22 @@
+[
+  {
+    "artifact_id": "artifact_a",
+    "checks": {
+      "source": {
+        "object_key": "artifacts/ws_example/artifact_a/generation_0ef479efc0db76b39ab7f27b9927fd52e8fe3a9441ab2d01/2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+        "sha256": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+        "byte_size": 5
+      },
+      "recovery": {
+        "object_key": "r2/ws_example/capture_genuine18_e25c82edecd64b3cb6320dd13b9fa2ca/artifacts/artifact_a/generation_0ef479efc0db76b39ab7f27b9927fd52e8fe3a9441ab2d01/2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+        "sha256": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+        "byte_size": 5
+      },
+      "target": {
+        "object_key": "artifacts/ws_example/artifact_a/generation_0ef479efc0db76b39ab7f27b9927fd52e8fe3a9441ab2d01/2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+        "sha256": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+        "byte_size": 5
+      }
+    }
+  }
+]

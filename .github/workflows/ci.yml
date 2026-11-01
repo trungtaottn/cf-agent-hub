@@ -43,11 +43,15 @@ jobs:
           test "$(node -p process.versions.node)" = '24.22.1'
           test "$(npm --version)" = '11.19.1'
       - run: npm ci
+      - run: npm ci --prefix packages/mcp-stdio --ignore-scripts
       - run: node --test test/governance/release-evidence-dispatch.test.mjs
       - run: npm run build:ui
       - run: npm run check
       - run: node --test test/governance/observation-adapter-ci.test.mjs
       - run: node scripts/check-observation-adapter.mjs
+      - run: node --test test/governance/r3-source-gates.test.mjs
+      - run: node packages/mcp-stdio/scripts/check.mjs
+      - run: node --test test/acceptance/r3-prerequisites.test.mjs
       - run: npm run check:runtime
       - run: npx --no-install playwright install --with-deps chromium
       - run: npm run test:ui -- --reporter=line
@@ -58,6 +62,7 @@ jobs:
           python -B scripts/validate_plans.py
           python -B -m unittest discover -s test/governance -p test_r2_source_status.py -v
           python -B -m unittest discover -s test/docs -p test_validate_plans.py -v
+          python -B -m unittest discover -s test/docs -p test_validate_docs_status.py -v
   native-source:
     # Separate source-only regression avoids consuming the aggregate job budget.
     # Preserve platform custody checks: skips are not native/live acceptance.
@@ -150,6 +155,8 @@ jobs:
       - run: npm ci
       - name: Installed dependency advisories must be clear
         run: npm audit --audit-level=low
+      - run: npm ci --prefix packages/mcp-stdio --ignore-scripts
+      - run: npm audit --prefix packages/mcp-stdio --audit-level=low
       # Release evidence additionally requires an independently inspected
       # installed/embedded/runtime inventory. npm audit alone does not prove it.
   release-evidence:

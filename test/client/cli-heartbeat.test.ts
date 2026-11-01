@@ -1,6 +1,7 @@
 import {afterEach,describe,expect,it,vi} from 'vitest';
 import {mkdtempSync,rmSync,readFileSync} from 'node:fs';
 import {dirname,join} from 'node:path';
+import {Deadline} from '../../packages/client/src/transport';
 import {DurableMutations} from '../../packages/cli/src/durable-mutations';
 import {ProtectedCredentialProvider} from '../../packages/cli/src/secret-store';
 import {createNativeClient} from '../../packages/client/src/native-client';
@@ -163,9 +164,27 @@ it('outcome persistence failure cannot clear a heartbeat stop',async()=>{
 it('deadline expiring during bounded scan sends nothing and retains conservative pending state',async()=>{
  const f=await fixture();f.mutations.close();const mutations=new DurableMutations({...f.opts,timeoutMs:30});closed.push(mutations);
  const intent=await mutations.prepare('heartbeatRuntime',request,{idempotencyKey:'slow-scan'}),original=Journal.prototype.someValidatedSync;
- const scan=vi.spyOn(Journal.prototype,'someValidatedSync').mockImplementation(function(this:Journal,predicate){const result=original.call(this,predicate);Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,50);return result;});
- try{expect((await mutations.dispatch(intent.id)).ok).toBe(false);}finally{scan.mockRestore();}
- expect(f.fetch).not.toHaveBeenCalled();expect((await mutations.inspect(intent.id))?.replayState).toBe('within-window');
+ // Hold only the test's operational clock/timers until the real bounded scan completes.
+ // The real test watchdog and the independent replay clock remain unchanged.
+ let elapsed=0,deadlineExpirations=0;vi.useFakeTimers({toFake:['setTimeout','clearTimeout']});
+ const now=vi.spyOn(performance,'now').mockImplementation(()=>elapsed),check=Deadline.prototype.check;
+ const deadline=vi.spyOn(Deadline.prototype,'check').mockImplementation(function(this:Deadline){
+  try{return check.call(this);}catch(error){
+   expect(elapsed).toBe(31);expect(this.signal.aborted).toBe(true);
+   expect(error).toMatchObject({code:'REQUEST_TIMEOUT'});deadlineExpirations++;throw error;
+  }
+ });
+ const stamp=vi.spyOn(Journal.prototype,'markFirstDispatchSync');
+ const scan=vi.spyOn(Journal.prototype,'someValidatedSync').mockImplementation(function(this:Journal,predicate){
+  const result=original.call(this,predicate);elapsed=31;return result;
+ });
+ try{
+  // Protected pin normalization exposes REQUEST_ABORTED after the deadline aborts.
+  expect(await mutations.dispatch(intent.id)).toMatchObject({ok:false,error:{code:'REQUEST_ABORTED'}});
+  expect(scan).toHaveBeenCalledTimes(1);expect(deadlineExpirations).toBeGreaterThan(0);
+  expect(stamp).toHaveBeenCalledTimes(1);expect(stamp.mock.results[0]?.value.firstDispatch).toMatchObject({firstDispatchMonotonicMs:10,clockEpochId:'synthetic-clock'});
+  expect(f.fetch).not.toHaveBeenCalled();expect((await mutations.inspect(intent.id))?.replayState).toBe('within-window');
+ }finally{scan.mockRestore();stamp.mockRestore();deadline.mockRestore();now.mockRestore();vi.useRealTimers();}
 });
 it('provider busy timeout denies competing process without any owner fetch',async()=>{
  const f=await fixture(),heartbeat=await f.mutations.prepare('heartbeatRuntime',request,{idempotencyKey:'busy-heartbeat'}),owner=await f.mutations.prepare('heartbeatRuntime',request,{idempotencyKey:'busy-owner'}),launch=await processFixture(f.root);

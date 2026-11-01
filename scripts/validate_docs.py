@@ -72,7 +72,7 @@ def validate_markdown() -> tuple[int, int]:
         content = path.read_text(encoding="utf-8")
         check(content.startswith("# "), f"{rel}: missing H1", "markdown_structure")
         first_lines = content.splitlines()[:6]
-        check(any(line.startswith("Status:") and ("pending" in line.lower() or "no released" in line.lower()) for line in first_lines), f"{rel}: missing accurate baseline status", "markdown_structure")
+        check(any(line.startswith("Status:") and ("pending" in line.lower() or "no released" in line.lower() or line == "Status: Local synthetic source-test evidence; no release, deployment or end-to-end R3 claim.") for line in first_lines), f"{rel}: missing accurate baseline status", "markdown_structure")
         check(len(re.findall(r"^# ", content, flags=re.M)) == 1, f"{rel}: multiple H1 headings", "markdown_structure")
         for token in walk_tokens(tokens):
             if token.type not in {"link_open", "image"}:

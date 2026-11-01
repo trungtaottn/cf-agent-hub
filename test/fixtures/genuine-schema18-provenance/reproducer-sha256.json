@@ -1,0 +1,5 @@
+{
+  "test/recovery/schema18-producer.test.ts": "f0b5ead7ab051584e5deca5e81e07316693106320dffe2a275d0c95a4668c6d5",
+  "test/recovery/schema18-frozen-verification.test.ts": "f6a4aff2cdfb811d0f848dfe948e54b16e23a3dacdee44276e55241b2dbe3d59",
+  "vitest.schema18-capture.config.ts": "3e02b40afe4aa5c6551f89358d0f5ec0dda595084a25af7173e59267692fa4fd"
+}

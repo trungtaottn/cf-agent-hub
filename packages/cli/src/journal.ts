@@ -9,11 +9,12 @@ export type {DispatchStamp,ReplayClockEvidence} from './replay-clock';
 export interface SemanticRequest {operation:string;method:string;path:string;queryCanonical:string;canonicalBody:string;origin:string;workspaceId:string;}
 export interface JournalEntry {id:string;request:SemanticRequest;principal:VerifiedPrincipalBinding;key:string|null;firstDispatch:DispatchStamp|null;replayState:'unsent'|'within-window'|'reconciliation-required'|'settled';}
 export interface RedactedOutcome {status:number|null;code:string|null;requestId:null;}
-export interface JournalOptions {directory:string;create?:boolean;authority:(binding:Readonly<VerifiedPrincipalBinding>)=>boolean;}
+export type JournalProfile='native'|'mcp-v1';
+export interface JournalOptions {directory:string;create?:boolean;profile?:JournalProfile;authority:(binding:Readonly<VerifiedPrincipalBinding>)=>boolean;}
 interface StoredEntry extends JournalEntry {createdAt:number;settledAt:number|null;outcome:RedactedOutcome|null;}
 interface Row {id:string;payload:string;checksum:string;reserved_bytes:number;}
 const MAX_ENTRIES=1000,MAX_BYTES=64*1024*1024,ENTRY_BYTES=128*1024,METADATA_RESERVE=4096,SETTLED_RETENTION_MS=7*86400000;
-const applicationId=0x4346484a;
+const applicationId=0x4346484a,mcpApplicationId=0x43464d4a;
 const schema="CREATE TABLE journal_entries (id TEXT PRIMARY KEY, payload TEXT NOT NULL, checksum TEXT NOT NULL, reserved_bytes INTEGER NOT NULL CHECK (reserved_bytes BETWEEN 4096 AND 131072)) STRICT";
 function deny():never{throw Error('JOURNAL_REJECTED');}
 const object=(value:unknown):value is Record<string,unknown>=>typeof value==='object'&&value!==null&&!Array.isArray(value)&&(Object.getPrototypeOf(value)===Object.prototype||Object.getPrototypeOf(value)===null);
@@ -97,14 +98,15 @@ function scan(db:DatabaseSync,visit:(entry:StoredEntry)=>void):void {
 /** The authority callback is a trusted current pinned-lease gate, not serialized
  * principal metadata. This store performs no fetch and has no implicit retries. */
 export class Journal {
- readonly #store:ProtectedSqlite;readonly #authority:JournalOptions['authority'];
+ readonly #store:ProtectedSqlite;readonly #authority:JournalOptions['authority'];readonly #profile:JournalProfile;
  constructor(options:JournalOptions){
-  if(typeof options?.authority!=='function')deny();this.#authority=options.authority;
+  if(typeof options?.authority!=='function'||options.profile!==undefined&&!['native','mcp-v1'].includes(options.profile))deny();this.#authority=options.authority;this.#profile=options.profile??'native';
+  const expectedApplicationId=this.#profile==='mcp-v1'?mcpApplicationId:applicationId;
   this.#store=new ProtectedSqlite({directory:options.directory,name:'journal.sqlite',create:options.create});
   try{
-   if(options.create)this.#store.transaction(db=>{db.exec(schema);db.exec(`PRAGMA application_id=${applicationId}; PRAGMA user_version=1;`);});
+   if(options.create)this.#store.transaction(db=>{db.exec(schema);db.exec(`PRAGMA application_id=${expectedApplicationId}; PRAGMA user_version=1;`);});
    this.#store.read(db=>{
-    if(db.prepare('PRAGMA application_id').get()?.application_id!==applicationId||db.prepare('PRAGMA user_version').get()?.user_version!==1)deny();
+    if(db.prepare('PRAGMA application_id').get()?.application_id!==expectedApplicationId||db.prepare('PRAGMA user_version').get()?.user_version!==1)deny();
     const definitions=db.prepare("SELECT name,sql FROM sqlite_schema WHERE name NOT GLOB 'sqlite_*' ORDER BY name").all();
     if(definitions.length!==1||definitions[0].name!=='journal_entries'||definitions[0].sql!==schema)deny();
     scan(db,()=>{});
@@ -124,6 +126,29 @@ export class Journal {
     if(!this.#authorized(principal))deny();const stats=db.prepare('SELECT count(*) AS n,coalesce(sum(reserved_bytes),0) AS bytes FROM journal_entries').get()!;
     if(typeof stats.n!=='number'||stats.n>=MAX_ENTRIES||typeof stats.bytes!=='number'||stats.bytes+reserved>MAX_BYTES)deny();
     db.prepare('INSERT INTO journal_entries(id,payload,checksum,reserved_bytes) VALUES (?,?,?,?)').run(entry.id,payload,digest(payload),reserved);return publicEntry(entry);
+   });
+  }catch{throw Error('JOURNAL_REJECTED');}
+ }
+ /** MCP-only atomic explicit-key admission. The full bounded scan and insert share
+  * BEGIN IMMEDIATE, so concurrent processes cannot mint another replay clock.
+  * Existing history (including settled/expired) is never refreshed or discarded. */
+ recordOrReuseIntentSync(input:{request:SemanticRequest;principal:VerifiedPrincipalBinding;suppliedKey:string}):JournalEntry{
+  try{
+   if(this.#profile!=='mcp-v1'||!object(input)||Object.keys(input).length!==3||Object.keys(input).some(k=>!['request','principal','suppliedKey'].includes(k)))deny();
+   const request=requestValue(input.request),principal=principalValue(input.principal),key=keyValue(input.suppliedKey);
+   if(request.origin!==principal.origin||request.workspaceId!==principal.workspaceId)deny();
+   return this.#store.transaction(db=>{
+    if(!this.#authorized(principal))deny();
+    let found:StoredEntry|undefined,count=0,bytes=0;
+    scan(db,entry=>{count++;if(entry.key===key){if(found||!equal(entry.principal,principal)||!equal(entry.request,request))deny();found=entry;}});
+    if(!this.#authorized(principal))deny();
+    if(found)return publicEntry(found);
+    const entry:StoredEntry={id:randomUUID(),request,principal,key,firstDispatch:null,replayState:'unsent',createdAt:Date.now(),settledAt:null,outcome:null};
+    if(!integer(entry.createdAt))deny();const payload=JSON.stringify(entry),reserved=Buffer.byteLength(payload)+METADATA_RESERVE;
+    bytes=Number(db.prepare('SELECT coalesce(sum(reserved_bytes),0) AS bytes FROM journal_entries').get()!.bytes);
+    if(count>=MAX_ENTRIES||reserved>ENTRY_BYTES||bytes+reserved>MAX_BYTES||!this.#authorized(principal))deny();
+    db.prepare('INSERT INTO journal_entries(id,payload,checksum,reserved_bytes) VALUES (?,?,?,?)').run(entry.id,payload,digest(payload),reserved);
+    return publicEntry(entry);
    });
   }catch{throw Error('JOURNAL_REJECTED');}
  }
@@ -179,6 +204,7 @@ export class Journal {
  }
  /** Explicit local cleanup only; unresolved intent is never evicted. No automatic GC. */
  async pruneSettled():Promise<number>{
+  if(this.#profile==='mcp-v1')deny();
   return this.#store.transaction(db=>{const now=Date.now();if(!integer(now))deny();let count=0;const ids:string[]=[];scan(db,entry=>{if(entry.replayState==='settled'&&entry.settledAt!==null&&now-entry.settledAt>=SETTLED_RETENTION_MS)ids.push(entry.id);});for(const id of ids){db.prepare('DELETE FROM journal_entries WHERE id=?').run(id);count++;}return count;});
  }
  close():void{this.#store.close();}
