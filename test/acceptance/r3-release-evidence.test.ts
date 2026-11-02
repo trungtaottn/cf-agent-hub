@@ -1,4 +1,4 @@
-import {it,expect} from 'vitest';
+import {it,expect,describe,beforeAll} from 'vitest';
 import {spawnSync} from 'node:child_process';
 import {verifyRelease} from '../../scripts/verify-release.mjs';
 
@@ -67,12 +67,19 @@ it('rejects inherited routing accessors on the otherwise plain-object prototype'
 
 import {controllerFixture} from './r2-controller-fixtures';
 import {verifyR2Release} from '../../scripts/lib/r2-release-verifier.mjs';
-it('preserves direct R2 verdicts for historical JSON roots and invalid mutations',()=>{
+describe('historical R2 dispatch verdict compatibility',()=>{
+ // Build the byte-identical fixture once; each case owns its JSON root and file bytes.
+ // Keep the normal per-test and hook timeouts, rather than timing six
+ // fixture builds and twelve verifier calls as one aggregate test.
+ let fixture:ReturnType<typeof controllerFixture>;
+ beforeAll(()=>{fixture=controllerFixture();});
  for(const version of [2,3])for(const mutation of ['none','feature','command']){
-  const f=controllerFixture();
-  const root=JSON.parse(JSON.stringify(f.root));root.format_version=version;
-  if(mutation==='feature')root.features.pop();
-  if(mutation==='command')root.commands[0].exit_code=1;
-  expect(verifyRelease(root,f.files)).toEqual(verifyR2Release(root,{files:f.files}));
+  it(`preserves the direct R2 v${version} verdict with ${mutation} mutation`,()=>{
+   const root=JSON.parse(JSON.stringify(fixture.root));root.format_version=version;
+   const files=structuredClone(fixture.files);
+   if(mutation==='feature')root.features.pop();
+   if(mutation==='command')root.commands[0].exit_code=1;
+   expect(verifyRelease(root,files)).toEqual(verifyR2Release(root,{files}));
+  });
  }
 });
