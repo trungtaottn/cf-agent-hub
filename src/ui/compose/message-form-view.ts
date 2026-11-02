@@ -39,7 +39,21 @@ export class MessageForm {
    for(const agent of agents){const input=el('input',undefined,{type:'checkbox',value:agent.id}),label=el('label',agent.display_name+' · '+agent.id);input.addEventListener('change',()=>void this.model.edit(this.body.value,[...this.#checks].filter(([,c])=>c.checked).map(([id])=>id)));label.append(input);this.recipients.append(label);this.#checks.set(agent.id,input);}
   }
   for(const [id,input]of this.#checks)input.checked=selected.includes(id);
-  const refs=this.model.references,ids=this.model.artifactIds,resourceSnapshot=JSON.stringify([refs,ids]);if(resourceSnapshot!==this.#resourceSnapshot){this.#resourceSnapshot=resourceSnapshot;this.referenceList.replaceChildren();for(const ref of refs){const item=el('li',ref.kind+' '+ref.id);item.append(button('Remove reference '+ref.id,()=>void this.model.removeReference(ref.kind,ref.id)));this.referenceList.append(item);}for(const id of ids){const item=el('li','Committed attachment '+id);item.append(button('Remove attachment '+id,()=>void this.model.removeArtifact(id)));this.referenceList.append(item);}}
+  const refs=this.model.references,ids=this.model.artifactIds,resourceSnapshot=JSON.stringify([refs,ids]);
+  if(resourceSnapshot!==this.#resourceSnapshot){
+   this.#resourceSnapshot=resourceSnapshot;
+   const controls=[...this.referenceList.querySelectorAll<HTMLButtonElement>('button')],active=document.activeElement;
+   const focused=controls.findIndex(control=>control===active),key=focused<0?null:controls[focused]!.getAttribute('data-focus-key');
+   this.referenceList.replaceChildren();
+   for(const ref of refs){const item=el('li',ref.kind+' '+ref.id);item.append(button('Remove reference '+ref.id,()=>void this.model.removeReference(ref.kind,ref.id),{'data-focus-key':JSON.stringify(['reference',ref.kind,ref.id])}));this.referenceList.append(item);}
+   for(const id of ids){const item=el('li','Committed attachment '+id);item.append(button('Remove attachment '+id,()=>void this.model.removeArtifact(id),{'data-focus-key':JSON.stringify(['attachment',id])}));this.referenceList.append(item);}
+   // Keep the same association focused, or the next/previous removal control.
+   // A late update must never take focus from another field or a newer view.
+   if(focused>=0&&this.referenceList.isConnected&&!this.element.hidden){
+    const current=[...this.referenceList.querySelectorAll<HTMLButtonElement>('button')];
+    (current.find(control=>control.getAttribute('data-focus-key')===key)??current[Math.min(focused,current.length-1)]??this.referenceId).focus();
+   }
+  }
   const uploads=this.model.uploads?.items??[],attachmentSnapshot=JSON.stringify(uploads);if(attachmentSnapshot!==this.#attachmentSnapshot){this.#attachmentSnapshot=attachmentSnapshot;this.attachmentList.replaceChildren();for(const upload of uploads){const item=el('li',upload.filename+' — '+upload.status+' ('+upload.bytes+' bytes)');if(upload.artifactId&&upload.status!=='committed'){item.append(button('Check upload '+upload.filename,()=>void this.model.uploads?.check(upload.id)),button('Retry exact upload '+upload.filename,()=>void this.model.uploads?.retry(upload.id)));}item.append(button('Abandon local upload '+upload.filename,()=>{this.model.uploads?.remove(upload.id);if(upload.artifactId)void this.model.removeArtifact(upload.artifactId);}));if(upload.status==='stage-unknown')item.append(el('p','Stage outcome unknown. No retry: abandon only local state; the server artifact may exist.'));this.attachmentList.append(item);}}
   const messages=this.model.referenceMessages,messageSnapshot=JSON.stringify(messages.map(m=>m.id));if(messageSnapshot!==this.#messageSnapshot){this.#messageSnapshot=messageSnapshot;this.messageChoices.replaceChildren();for(const m of messages)this.messageChoices.append(button('Reference message '+m.id,()=>void this.model.addReference('message',m.id)));}
   this.replyContext.textContent=this.model.replyThreadId?'Reply to '+this.model.replyThreadId+' — recipients are an observed subset, not full membership. Server checks permission to reply.':'New thread — no previous history is included.';
