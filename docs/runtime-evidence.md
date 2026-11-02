@@ -111,3 +111,30 @@ A release verifier failure leaves evidence available for diagnosis and never
 triggers rollback or deletion. Correct the missing implementation/evidence and
 record a new candidate. Verified and Released remain separate: publication
 requires its own authorized repository and operator promotion gate.
+
+## R3 dispatch checkpoint — verification remains unavailable
+
+The shared entry point recognizes
+`npm run verify:release -- --round R3 --evidence <actual-path>`, but this bounded
+checkpoint **always exits 1** with `R3_PROFILE_INCOMPLETE`, `passed: false`,
+`scope: structural-only` and `acceptance: pending-external-inspection`.
+It deliberately does not read the supplied path or validate any R3 evidence.
+The in-process entry point recognizes `round: R3` and, when provided, the
+reserved `profile: r3-runtime-v1` routing marker. This is not an accepted schema:
+unknown profiles fail closed, and no classification, pass flag or exception
+can produce an R3 pass. Proxy/nonplain roots and root accessors are rejected
+before routing; the pending R3 path does not inspect nested evidence or files.
+
+[Issue #66](https://github.com/trungtaottn/cf-agent-hub/issues/66) remains
+incomplete. Its required domain, human-decision browser, STDIO/native, actual
+client launch and recovery semantics for F31/F32/F33/F35, exact candidate and
+prior-round bindings, genuine command provenance and independent review still
+need complete integration and negative verification. The schema and existing
+R1/R2 receipt formats are unchanged. The CI release selector remains R1/R2;
+this checkpoint does not enable R3 publication, deployment or production actions.
+
+Synthetic inputs in `test/acceptance/r3-release-evidence.test.ts` test rejection
+only; they must not be materialized as runtime receipts. A future reviewed
+implementation must satisfy all mandatory evidence families before this closed
+gate can be replaced. Actual acceptance remains separately owned by
+[issue #67](https://github.com/trungtaottn/cf-agent-hub/issues/67).
