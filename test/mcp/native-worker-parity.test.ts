@@ -57,3 +57,13 @@ import {runSharedParity} from './native-worker-parity-driver';
 for(const kind of ['cursor','authority','claim-loss'] as const)it(`shared ${kind}: actual source boundary and no hidden business resend`,async()=>{
  expect(await runSharedParity(kind)).toMatchObject({kind,source_only:true,acceptance_eligible:false,completed:true});
 },60000);
+
+import {runWorkspaceReadParity} from './workspace-read-parity-driver';
+it('two real workspaces retain native/MCP own-task reads and deny foreign task IDs without effects',async()=>{
+ const result=await runWorkspaceReadParity();
+ expect(result).toEqual({
+  workspaces:2,own_task_pairs:2,foreign_task_pairs:2,
+  protocol_workspace_rejections:2,both_stores_unchanged:true,
+  source_only:true,acceptance_eligible:false,
+ });
+},60000);

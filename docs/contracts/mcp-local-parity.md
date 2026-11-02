@@ -36,3 +36,24 @@ Missing-scope cases use otherwise valid local resources and actual runtime enrol
 The post-commit loss case preserves the complete validated journal entry privately across process restart and performs observation reads only. It proves one committed claim and no automatic business resend; it does not turn a historical response or a read into renewed execution authority or an external-action no-effect proof.
 
 Production decision descriptors remain empty. The existing tool17 unavailable-action/revocation test is separate negative evidence, not a positive `request_decision` journey. See [MCP client evidence](mcp-client-evidence.md) for the remaining action, deployed environment, advertised-client and formal acceptance boundaries. A passing local suite does not close formal R3 acceptance.
+
+## Two-workspace task-read follow-up
+
+The same required Node suite now includes a bounded task-read isolation case,
+using [a separate private fixture](../../test/mcp/workspace-read-parity-fixture.ts)
+and [the built-STDIO driver](../../test/mcp/workspace-read-parity-driver.ts).
+Two configured workspace IDs resolve to distinct SQLite Durable Objects. Each
+workspace receives a task through the actual native create command and its own
+synthetic protected-provider state. Native and MCP reads must agree on the own
+task and on denial of the other workspace's genuine task ID, in both directions.
+Complete bounded snapshots of both stores must remain unchanged after every
+read. The separate wrong-workspace tool-argument checks are protocol rejection,
+not a substitute for the HTTP/domain foreign-resource comparisons.
+
+This follow-up is authored source, not an executed receipt. Local execution is
+blocked in the editing environment by absent root/MCP dependencies and a Node
+24.11.0 image rather than the pinned 24.22.1 runtime. The existing package check
+and required Node suite must run on the exact new candidate before this case is
+reported passing. Existing 22-test observations above remain historical and do
+not attest the additional case. This slice does not cover cross-workspace writes,
+all resource families, positive decision action admission, or live acceptance.
