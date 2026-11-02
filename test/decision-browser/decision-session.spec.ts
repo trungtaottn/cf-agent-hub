@@ -72,6 +72,18 @@ async function assertFinalAccess(observed:ReturnType<typeof observeAccess>,write
 }
 test.beforeEach(async({page})=>{await page.addInitScript(installDecisionResponseObserver);await page.goto(appOrigin+'/health/live');await fixtureControl(page,'reset');});
 
+for(const [name,body] of [['invalid JSON','{'],['unknown action','{"action":"synthetic-unsupported-action"}']]){
+ test('private control rejects '+name+' and remains usable',async({page})=>{
+  const rejected=await page.evaluate(async value=>{
+   const response=await fetch('/__ui_fixture/control',{method:'POST',headers:{'content-type':'application/json'},body:value});
+   return {status:response.status,body:await response.text()};
+  },body!);
+  expect(rejected).toEqual({status:400,body:''});
+  expect(await fixtureControl(page,'reset')).toEqual({ok:true});
+  expect(Object.keys((await snapshot(page)).cases).sort()).toEqual(['approve','denied','reject','unknown']);
+ });
+}
+
 test('actual OIDC human approves exact bound inputs with fresh final session CSRF and frozen intent',async({page})=>{
  const {state,item}=await enter(page,'approve');await expect(page.getByLabel('Full original JSON input')).toBeVisible();const observed=observeAccess(page);
  await prepare(page,'approval','First synthetic reason');await page.getByRole('textbox',{name:'Decision reason',exact:true}).fill('Final synthetic reason');await expect(page.getByRole('button',{name:'Send decision request',exact:true})).toBeDisabled();await page.getByRole('button',{name:'Confirm reviewed request',exact:true}).click();

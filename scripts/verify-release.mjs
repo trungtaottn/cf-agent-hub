@@ -1,3 +1,4 @@
+import {inspectReleaseDispatch,pendingR3Release} from './lib/release-dispatch.mjs';
 import {verifyR2Checkout} from './lib/r2-release-cli.mjs';
 import {verifyR2Release} from './lib/r2-release-verifier.mjs';
 import {createHash} from 'node:crypto';
@@ -22,7 +23,9 @@ const hasSecret=text=>/\bBearer\s+[A-Za-z0-9_-]{20,}|cfhub_(?:session|login)=[A-
 const hasPrivateOrigin=text=>[...text.matchAll(/https?:\/\/[^\s"<>]+/g)].some(([url])=>{try{const host=new URL(url).hostname;return !host.endsWith('.invalid')&&!['nodejs.org','github.com','registry.npmjs.org','developers.cloudflare.com','playwright.dev'].includes(host);}catch{return true;}});
 /** Structural/byte verification only. The controller must inspect the actual runs and independent review. */
 export function verifyRelease(input,files){
- if([2,3].includes(input?.format_version)&&input?.round==='R2')return verifyR2Release(input,{files});
+ const dispatch=inspectReleaseDispatch(input);
+ if(dispatch.result)return dispatch.result;
+ if([2,3].includes(dispatch.formatVersion)&&dispatch.round==='R2')return verifyR2Release(input,{files});
  const findings=[];const fail=(code,path,message)=>findings.push({code,path,message});
  let serialized;try{serialized=JSON.stringify(input);}catch{fail('INVALID_EVIDENCE','/','Evidence must be finite JSON.');return {passed:false,findings};}
  if(typeof serialized!=='string'||Buffer.byteLength(serialized)>4*1024*1024){fail('EVIDENCE_LIMIT','/','Evidence exceeds its bounded representation.');return {passed:false,findings};}
@@ -134,6 +137,9 @@ function loadFile(root,path){
 }
 export function runCli(argv=process.argv.slice(2),root=process.cwd()){
  try{
+  if(argv.length===4&&argv[0]==='--round'&&argv[1]==='R3'&&argv[2]==='--evidence'){
+   process.stdout.write(JSON.stringify(pendingR3Release())+'\n');return 1;
+  }
   if(argv.length===4&&argv[0]==='--round'&&argv[1]==='R2'&&argv[2]==='--evidence'){
    const result=verifyR2Checkout(root,argv[3]);process.stdout.write(JSON.stringify(result)+'\n');return result.passed?0:1;
   }
