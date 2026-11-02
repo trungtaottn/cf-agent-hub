@@ -124,9 +124,17 @@ fabricate a domain response, bypass TLS validation, or relax deployment-origin
 rules. This is local reverse-proxy test composition, not deployed hostname/proxy
 certification or a live credential run.
 
-Missing: allowed/denied comparisons against the actual native domain for every
-tool, positive decision action activation/parity, full two-workspace persistent-effect
-matrix, live current-authority/fence races, external advertised desktop clients,
-deployed credentials, independent security acceptance and release evidence.
+The [local parity suite](mcp-local-parity.md) now covers allowed/denied comparisons
+for the sixteen ordinary tools against the actual local Worker/SQLite domain,
+including full retained-result comparisons and bounded persistent-effect checks.
+Its source fixtures do not establish deployed acceptance. The earlier broad
+missing-parity statement predates that suite.
+
+Missing: positive decision action activation/parity, the complete two-workspace
+persistent-effect matrix, live current-authority/fence races, external advertised
+desktop clients, deployed credentials, independent security acceptance and release
+evidence. A separate two-workspace task-read source test is authored in this
+checkpoint; execution on its exact candidate is pending, and it does not complete
+the matrix or enable the seventeenth action.
 Synthetic fixtures do not satisfy those gates. No arbitrary client configuration
 is labeled verified.
