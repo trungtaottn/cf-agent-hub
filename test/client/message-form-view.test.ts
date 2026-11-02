@@ -1,10 +1,17 @@
 import {it,expect,vi,afterEach} from 'vitest';
 import {MessageForm} from '../../src/ui/compose/message-form-view';
 class Node {
+ parent:Node|null=null;
  children:Node[]=[];attrs=new Map<string,string>();listeners=new Map<string,Function>();textContent='';value='';checked=false;disabled=false;hidden=false;focused=false;
- constructor(readonly tagName:string){}setAttribute(k:string,v:string){this.attrs.set(k,v);}append(...v:Node[]){this.children.push(...v);}replaceChildren(...v:Node[]){this.children=v;}addEventListener(k:string,v:Function){this.listeners.set(k,v);}focus(){this.focused=true;}getAttribute(k:string){return this.attrs.get(k)??null;}
+ constructor(readonly tagName:string){}setAttribute(k:string,v:string){this.attrs.set(k,v);}
+ append(...v:Node[]){for(const node of v)node.parent=this;this.children.push(...v);}
+ replaceChildren(...v:Node[]){const doc=document as unknown as {activeElement:Node|null};if(this.children.some(node=>node.contains(doc.activeElement)))doc.activeElement=null;for(const node of this.children)node.parent=null;this.children=[];this.append(...v);}
+ contains(node:Node|null):boolean{return node===this||this.children.some(child=>child.contains(node));}
+ get isConnected():boolean{return this===(document.body as unknown as Node)||Boolean(this.parent?.isConnected);}
+ querySelectorAll(selector:string):Node[]{if(selector!=='button')throw Error('Unsupported fixture selector');return this.children.flatMap(child=>[...(child.tagName==='BUTTON'?[child]:[]),...child.querySelectorAll(selector)]);}
+ addEventListener(k:string,v:Function){this.listeners.set(k,v);}focus(){this.focused=true;(document as unknown as {activeElement:Node|null}).activeElement=this;}getAttribute(k:string){return this.attrs.get(k)??null;}
 }
-function fixture(){vi.stubGlobal('document',{createElement:(tag:string)=>new Node(tag.toUpperCase())});const model:any={references:[],artifactIds:[],referenceMessages:[],replyThreadId:null,uploads:null,body:'Kept',recipients:['outside_page'],agents:[{id:'agent_one',display_name:'<img onerror=1>'}],cursor:null,threadId:null,validationError:null,state:{status:'ready',entry:null},edit:vi.fn(),submit:vi.fn(),loadRecipients:vi.fn(),review:vi.fn(),acknowledge:vi.fn(),discard:vi.fn()};const form=new MessageForm(model,vi.fn());form.update();return {model,form};}
+function fixture(){vi.stubGlobal('document',{activeElement:null,body:new Node('BODY'),createElement:(tag:string)=>new Node(tag.toUpperCase())});const model:any={references:[],artifactIds:[],referenceMessages:[],replyThreadId:null,uploads:null,body:'Kept',recipients:['outside_page'],agents:[{id:'agent_one',display_name:'<img onerror=1>'}],cursor:null,threadId:null,validationError:null,state:{status:'ready',entry:null},edit:vi.fn(),submit:vi.fn(),loadRecipients:vi.fn(),review:vi.fn(),acknowledge:vi.fn(),discard:vi.fn()};const form=new MessageForm(model,vi.fn());document.body.append(form.element);form.update();return {model,form};}
 const all=(n:Node):Node[]=>[n,...n.children.flatMap(all)];
 afterEach(()=>vi.unstubAllGlobals());
 it('text edits retain saved recipients outside the visible server page until explicit removal',()=>{const {model,form}=fixture();const nodes=all(form.element as unknown as Node);expect(nodes.some(n=>n.textContent.includes('not observed'))).toBe(true);const text=form.body as unknown as Node;text.value='Edited';text.listeners.get('input')!();expect(model.edit).toHaveBeenCalledWith('Edited',['outside_page']);});
@@ -14,3 +21,24 @@ it('offers the explicit retained-admission check while uncertain but keeps Send 
 it('preparation error is visible and permits deliberate retry or review, not false admission',()=>{const {model,form}=fixture();model.state={status:'preparation-error',entry:null};form.update();expect(form.status.textContent).toContain('Preparation failed');expect(form.status.textContent).toContain('No message was sent');expect(form.review.hidden).toBe(false);expect(form.send.disabled).toBe(false);});
 
 it('semantic message form exposes references attachments reply context and invalid-submit focus',async()=>{const {model,form}=fixture();expect(form.referenceId.getAttribute('aria-label')).toBe('Reference ID');expect(form.file.getAttribute('type')).toBe('file');expect(form.threadInput.getAttribute('aria-label')).toBe('Thread ID for reply or message references');model.body='';model.submit.mockImplementation(async()=>{model.validationError='Enter a message';});await(form.form as unknown as Node).listeners.get('submit')!({preventDefault(){}});expect((form.body as unknown as Node).focused).toBe(true);expect(form.body.getAttribute('aria-invalid')).toBe('true');});
+
+it('association refresh retains the same focused key and removal falls back through previous and input',()=>{
+ const {model,form}=fixture();form.element.hidden=false;
+ model.references=[{kind:'task',id:'first'},{kind:'artifact',id:'last'}];form.update();
+ const controls=()=>form.referenceList.querySelectorAll<HTMLButtonElement>('button');
+ controls()[1]!.focus();model.references=[{kind:'task',id:'inserted'},...model.references];form.update();
+ expect(document.activeElement).toBe(controls()[2]);
+ model.references=model.references.slice(0,2);form.update();expect(document.activeElement).toBe(controls()[1]);
+ model.references=[];form.update();expect(document.activeElement).toBe(form.referenceId);
+});
+it('association refresh does not steal external focus or focus a hidden or detached composer',()=>{
+ for(const state of ['external','hidden','detached']){
+  const {model,form}=fixture();form.element.hidden=false;model.references=[{kind:'task',id:'first'}];form.update();
+  form.referenceList.querySelectorAll<HTMLButtonElement>('button')[0]!.focus();
+  if(state==='external')form.body.focus();
+  if(state==='hidden')form.element.hidden=true;
+  if(state==='detached')document.body.replaceChildren();
+  model.references=[];form.update();
+  expect(document.activeElement).toBe(state==='external'?form.body:null);
+ }
+});

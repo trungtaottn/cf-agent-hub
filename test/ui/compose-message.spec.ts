@@ -130,3 +130,31 @@ test('keyboard_tab_shift_tab_and_invalid_submit_return_focus_without_pointer',as
  for(const target of [page.getByRole('button',{name:'Read reference thread',exact:true}),page.getByRole('button',{name:'Reply to observed thread',exact:true}),page.getByRole('button',{name:'Start new thread',exact:true}),page.getByLabel('Reference kind'),page.getByLabel('Reference ID',{exact:true}),page.getByRole('button',{name:'Add reference',exact:true}),page.getByLabel('Files to upload (committed attachments only)'),page.getByRole('button',{name:'Send message',exact:true})]){await page.keyboard.press('Tab');await expect(target).toBeFocused();}
  await page.keyboard.press('Enter');await expect(body).toBeFocused();await expect(body).toHaveAttribute('aria-invalid','true');await page.keyboard.insertText('Keyboard valid message');await page.keyboard.press('Tab');await page.keyboard.press('Space');for(let n=0;n<20&&!await page.getByRole('button',{name:'Send message',exact:true}).evaluate(e=>e===document.activeElement);n++)await page.keyboard.press('Tab');await expect(page.getByRole('button',{name:'Send message',exact:true})).toBeFocused();await page.keyboard.press('Enter');await expect(page.getByTestId('message-compose-status')).toContainText('Durably admitted');
 });
+
+test('keyboard_reference_removal_preserves_next_control_and_returns_to_reference_input',async({page})=>{
+ await open(page);
+ const composer=page.getByTestId('message-composer'),body=page.getByLabel('Message text',{exact:true}),referenceId=page.getByLabel('Reference ID',{exact:true});
+ await body.fill('Keep draft while removing associations');
+ await page.getByLabel('Files to upload (committed attachments only)').setInputFiles({name:'focus.txt',mimeType:'text/plain',buffer:Buffer.from('focus attachment')});
+ const attachment=composer.getByRole('button',{name:/^Remove attachment /});await expect(attachment).toHaveCount(1);
+ const id=(await attachment.textContent())!.slice('Remove attachment '.length);
+ await page.getByLabel('Reference kind').selectOption('artifact');await referenceId.fill(id);
+ await page.getByRole('button',{name:'Add reference',exact:true}).click();
+ const reference=composer.getByRole('button',{name:'Remove reference '+id,exact:true});await expect(reference).toBeVisible();
+ await reference.focus();await page.keyboard.press('Enter');await expect(reference).toHaveCount(0);await expect(attachment).toBeFocused();
+ await page.keyboard.press('Enter');await expect(attachment).toHaveCount(0);await expect(referenceId).toBeFocused();
+ await expect(body).toHaveValue('Keep draft while removing associations');
+ expect((await compositionSnapshot(page)).messages).toHaveLength(0);
+ const snapshot=await uploadSnapshot(page);expect(snapshot.artifacts.find((artifact:any)=>artifact.id===id).status).toBe('committed');
+});
+
+test('reference_list_refresh_does_not_steal_focus_outside_the_list',async({page})=>{
+ await open(page);
+ const body=page.getByLabel('Message text',{exact:true});
+ await page.getByLabel('Files to upload (committed attachments only)').setInputFiles({name:'external-focus.txt',mimeType:'text/plain',buffer:Buffer.from('focus attachment')});
+ const attachment=page.getByTestId('message-composer').getByRole('button',{name:/^Remove attachment /});await expect(attachment).toHaveCount(1);
+ await body.focus();
+ // Activate without moving focus, as a delayed association update can occur while typing.
+ await attachment.evaluate((button:HTMLButtonElement)=>button.click());
+ await expect(attachment).toHaveCount(0);await expect(body).toBeFocused();
+});
